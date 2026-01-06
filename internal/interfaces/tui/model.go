@@ -44,6 +44,7 @@ type filterPopup struct {
 	operatorIndex int
 	input         string
 	operators     []dto.Operator
+	cursor        int
 }
 
 type Model struct {
@@ -250,15 +251,26 @@ func (m *Model) handlePopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k":
 		m.movePopupSelection(-1)
 		return m, nil
+	case "left":
+		if m.popup.step == filterInputValue {
+			m.popup.cursor = clamp(m.popup.cursor-1, 0, len(m.popup.input))
+		}
+		return m, nil
+	case "right":
+		if m.popup.step == filterInputValue {
+			m.popup.cursor = clamp(m.popup.cursor+1, 0, len(m.popup.input))
+		}
+		return m, nil
 	case "backspace":
 		if m.popup.step == filterInputValue && m.popup.input != "" {
-			m.popup.input = m.popup.input[:len(m.popup.input)-1]
+			m.popup.input, m.popup.cursor = deleteAtCursor(m.popup.input, m.popup.cursor)
 		}
 		return m, nil
 	}
 
 	if m.popup.step == filterInputValue && msg.Type == tea.KeyRunes {
-		m.popup.input += msg.String()
+		insert := string(msg.Runes)
+		m.popup.input, m.popup.cursor = insertAtCursor(m.popup.input, insert, m.popup.cursor)
 	}
 	return m, nil
 }
@@ -454,6 +466,7 @@ func (m *Model) openFilterPopup() {
 		operatorIndex: 0,
 		input:         "",
 		operators:     nil,
+		cursor:        0,
 	}
 }
 
@@ -484,6 +497,7 @@ func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
 		operator := m.popup.operators[m.popup.operatorIndex]
 		if operator.RequiresValue {
 			m.popup.input = ""
+			m.popup.cursor = 0
 			m.popup.step = filterInputValue
 			return m, nil
 		}
@@ -667,6 +681,24 @@ func clamp(value, min, max int) int {
 		return max
 	}
 	return value
+}
+
+func insertAtCursor(value, insert string, cursor int) (string, int) {
+	if insert == "" {
+		return value, cursor
+	}
+	cursor = clamp(cursor, 0, len(value))
+	updated := value[:cursor] + insert + value[cursor:]
+	return updated, cursor + len(insert)
+}
+
+func deleteAtCursor(value string, cursor int) (string, int) {
+	if value == "" || cursor <= 0 {
+		return value, 0
+	}
+	cursor = clamp(cursor, 0, len(value))
+	updated := value[:cursor-1] + value[cursor:]
+	return updated, cursor - 1
 }
 
 func loadTablesCmd(ctx context.Context, uc *usecase.ListTables) tea.Cmd {

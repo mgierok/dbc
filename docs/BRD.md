@@ -125,6 +125,7 @@ These checklists are part of the business documentation and can be updated in fu
 - Navigation: vim-style motion keys (`h/j/k/l`), page scrolling (`Ctrl+f/Ctrl+b`), and jump-to-top/bottom (`gg/G`).
 - Panel focus: vim-style switching between panels (`Ctrl+w h`, `Ctrl+w l`, `Ctrl+w w`).
 - Mode indicator: read-only status is always visible in the status bar.
+- Status bar: shows contextual action shortcuts for the active panel (non-navigation).
 - Exit: `q` or `Ctrl+C`.
 - Exclusions: no data writes, no schema changes, no SQL REPL.
 

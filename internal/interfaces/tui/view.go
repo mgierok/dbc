@@ -177,7 +177,10 @@ func (m *Model) renderPopup(totalWidth int) []string {
 		}
 		lines = append(lines, renderPopupList(items, m.popup.operatorIndex, width-2)...)
 	case filterInputValue:
-		lines = append(lines, "|"+padRight("Value: "+m.popup.input, width-2)+"|")
+		input := m.popup.input
+		cursor := clamp(m.popup.cursor, 0, len(input))
+		value := input[:cursor] + "|" + input[cursor:]
+		lines = append(lines, "|"+padRight("Value: "+value, width-2)+"|")
 	}
 
 	lines = append(lines, border)
@@ -193,6 +196,10 @@ func (m *Model) renderStatus(width int) string {
 		fmt.Sprintf("View: %s", m.viewModeLabel()),
 		fmt.Sprintf("Table: %s", m.currentTableName()),
 		m.filterSummary(),
+	}
+	shortcuts := m.statusShortcuts()
+	if strings.TrimSpace(shortcuts) != "" {
+		parts = append(parts, shortcuts)
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		parts = append(parts, m.statusMessage)
@@ -216,6 +223,21 @@ func (m *Model) filterSummary() string {
 		return fmt.Sprintf("Filter: %s %s %s", m.currentFilter.Column, m.currentFilter.Operator.SQL, m.currentFilter.Value)
 	}
 	return fmt.Sprintf("Filter: %s %s", m.currentFilter.Column, m.currentFilter.Operator.SQL)
+}
+
+func (m *Model) statusShortcuts() string {
+	switch {
+	case m.popup.active:
+		return "Popup: Enter apply | Esc close"
+	case m.focus == FocusTables:
+		return "Tables: R records | S schema | F filter"
+	case m.focus == FocusContent && m.viewMode == ViewSchema:
+		return "Schema: R records | F filter"
+	case m.focus == FocusContent && m.viewMode == ViewRecords:
+		return "Records: S schema | F filter"
+	default:
+		return ""
+	}
 }
 
 func renderList(items []string, selected, height, width int, focused bool) []string {
