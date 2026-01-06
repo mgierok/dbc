@@ -1,0 +1,3 @@
+[database]
+name = "local"
+db_path = "/path/to/db.sqlite"
