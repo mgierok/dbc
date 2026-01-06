@@ -1,6 +1,8 @@
 module github.com/mgierok/dbc
 
-go 1.24.0
+go 1.25.0
+
+toolchain go1.25.5
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10

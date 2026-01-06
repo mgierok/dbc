@@ -95,6 +95,9 @@ internal/
 - `modernc.org/sqlite`
 - `github.com/pelletier/go-toml/v2`
 
+## Toolchain
+- Go 1.25.5
+
 ## Performance and Concurrency
 - Use goroutines safely with proper synchronization mechanisms.
 - Implement goroutine cancellation using context propagation.
