@@ -269,7 +269,7 @@ func (m *Model) handlePopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.popup.step == filterInputValue && msg.Type == tea.KeyRunes {
-		insert := msg.String()
+		insert := string(msg.Runes)
 		m.popup.input, m.popup.cursor = insertAtCursor(m.popup.input, insert, m.popup.cursor)
 	}
 	return m, nil
@@ -504,8 +504,7 @@ func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
 		return m.applyFilter(operator, "")
 	case filterInputValue:
 		operator := m.popup.operators[m.popup.operatorIndex]
-		value := normalizePastedValue(m.popup.input)
-		return m.applyFilter(operator, value)
+		return m.applyFilter(operator, m.popup.input)
 	default:
 		return m, nil
 	}
@@ -700,13 +699,6 @@ func deleteAtCursor(value string, cursor int) (string, int) {
 	cursor = clamp(cursor, 0, len(value))
 	updated := value[:cursor-1] + value[cursor:]
 	return updated, cursor - 1
-}
-
-func normalizePastedValue(value string) string {
-	if len(value) >= 2 && strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]") {
-		return strings.TrimSuffix(strings.TrimPrefix(value, "["), "]")
-	}
-	return value
 }
 
 func loadTablesCmd(ctx context.Context, uc *usecase.ListTables) tea.Cmd {

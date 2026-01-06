@@ -2,32 +2,6 @@ package tui
 
 import "testing"
 
-func TestNormalizePastedValue_StripsBrackets(t *testing.T) {
-	// Arrange
-	input := "[hello]"
-
-	// Act
-	result := normalizePastedValue(input)
-
-	// Assert
-	if result != "hello" {
-		t.Fatalf("expected %q, got %q", "hello", result)
-	}
-}
-
-func TestNormalizePastedValue_LeavesPlainValue(t *testing.T) {
-	// Arrange
-	input := "hello"
-
-	// Act
-	result := normalizePastedValue(input)
-
-	// Assert
-	if result != "hello" {
-		t.Fatalf("expected %q, got %q", "hello", result)
-	}
-}
-
 func TestInsertAtCursor_AddsAtPosition(t *testing.T) {
 	// Arrange
 	value := "abcd"
