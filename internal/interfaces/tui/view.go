@@ -177,7 +177,10 @@ func (m *Model) renderPopup(totalWidth int) []string {
 		}
 		lines = append(lines, renderPopupList(items, m.popup.operatorIndex, width-2)...)
 	case filterInputValue:
-		lines = append(lines, "|"+padRight("Value: "+m.popup.input, width-2)+"|")
+		input := m.popup.input
+		cursor := clamp(m.popup.cursor, 0, len(input))
+		value := input[:cursor] + "|" + input[cursor:]
+		lines = append(lines, "|"+padRight("Value: "+value, width-2)+"|")
 	}
 
 	lines = append(lines, border)
