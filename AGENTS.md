@@ -18,6 +18,7 @@
 ## Architecture (Clean Architecture + DDD)
 
 This document is authoritative for architecture in this repository. All new code MUST follow Clean Architecture with Domain-Driven Design (DDD).
+See `docs/CLEAN_ARCHITECTURE_DDD.md` for full details and examples.
 
 ### Architecture Rules (Non-Negotiable)
 
@@ -100,6 +101,7 @@ internal/
 - Write short, focused functions with single responsibility.
 - Handle errors explicitly; avoid global state.
 - Adding third-party dependencies requires explicit approval.
+- Follow TDD practices described in `docs/TEST_DRIVEN_DEVELOPMENT.md`.
 
 ## Approved Libraries (Stage 1)
 
