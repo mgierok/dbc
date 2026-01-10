@@ -67,8 +67,7 @@ G       jump to the bottom
 Ctrl+f  page down by one screen
 Ctrl+b  page up by one screen
 
-R       show records in the right panel
-S       show schema in the right panel
+Enter   show records in the right panel
 F       open filter popup for the current table
 
 q       quit application
