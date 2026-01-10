@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -25,7 +26,28 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	db, err := sql.Open("sqlite", cfg.Database.Path)
+	databases, err := cfg.DatabaseList()
+	if err != nil {
+		log.Fatalf("failed to load database config: %v", err)
+	}
+
+	options := make([]tui.DatabaseOption, len(databases))
+	for i, database := range databases {
+		options[i] = tui.DatabaseOption{
+			Name:       database.Name,
+			ConnString: database.Path,
+		}
+	}
+
+	selected, err := tui.SelectDatabase(options)
+	if err != nil {
+		if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
+			return
+		}
+		log.Fatalf("failed to select database: %v", err)
+	}
+
+	db, err := sql.Open("sqlite", selected.ConnString)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
