@@ -1,3 +1,7 @@
-[database]
+[[databases]]
 name = "local"
 db_path = "/path/to/db.sqlite"
+
+[[databases]]
+name = "analytics"
+db_path = "/path/to/analytics.sqlite"
