@@ -36,7 +36,7 @@ Tagline: Database Commander: inspect data at the speed of your terminal.
 - Advanced analytics or reporting.
 
 ## 7. Domain Glossary
-- Database: a single SQLite file defined in config.
+- Database: a named config entry pointing to a SQLite file.
 - Table: a collection of records; primary browsing unit.
 - Column: a single field in a table with a data type.
 - Record: a single row of data in a table.
@@ -78,6 +78,7 @@ Ctrl+w h  focus left panel
 Ctrl+w l  focus right panel
 Ctrl+w w  cycle panel focus
 ```
+Startup selector uses the same navigation keys; Enter confirms the database choice and Esc exits.
 
 ## 10. Business Requirements (non-implementation)
 - Extensibility from day one to support additional database engines.
@@ -103,7 +104,7 @@ These checklists are part of the business documentation and can be updated in fu
 - [x] UX principles (layout, navigation, shortcuts)
 
 ### Stage 1: SQLite Browsing (MVP)
-- [ ] Open SQLite database file (from config)
+- [ ] Startup database selector (from config list)
 - [ ] Table list and schema view (schema shown in right panel)
 - [ ] Record preview with infinite scroll (records shown in right panel)
 - [ ] Column filter popup with operator selection
@@ -112,9 +113,10 @@ These checklists are part of the business documentation and can be updated in fu
 
 #### Stage 1 Definition (Detailed)
 - Scope: SQLite only, with architecture prepared for future engine adapters.
-- Configuration: load a single database from `~/.config/dbc/config.toml` with `[database] name` and `db_path`.
+- Configuration: load databases from `~/.config/dbc/config.toml` using `[[databases]]` entries with `name` and `db_path`.
 - Layout: left panel lists tables; right panel switches between schema and records for the selected table.
-- Default view: schema in the right panel on startup.
+- Startup: show a centered database selector listing `Name | conn_string`; Enter selects and Esc exits.
+- Default view: schema in the right panel after database selection.
 - Schema view: shows the selected table's columns and data types in the right panel.
 - Records view: read-only table data with infinite scroll for large datasets; values are truncated to panel width (no horizontal scroll in Stage 1).
 - Table list: sorted alphabetically.
