@@ -8,10 +8,10 @@ import (
 	"github.com/mgierok/dbc/internal/infrastructure/config"
 )
 
-func TestDecode_ValidConfig(t *testing.T) {
+func TestDecode_SingleDatabase(t *testing.T) {
 	// Arrange
 	input := `
-[database]
+[[databases]]
 name = "local"
 db_path = "/tmp/example.sqlite"
 `
@@ -23,14 +23,14 @@ db_path = "/tmp/example.sqlite"
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if cfg.Database == nil {
-		t.Fatal("expected database config, got nil")
+	if len(cfg.Databases) != 1 {
+		t.Fatalf("expected 1 database, got %d", len(cfg.Databases))
 	}
-	if cfg.Database.Name != "local" {
-		t.Fatalf("expected name %q, got %q", "local", cfg.Database.Name)
+	if cfg.Databases[0].Name != "local" {
+		t.Fatalf("expected name %q, got %q", "local", cfg.Databases[0].Name)
 	}
-	if cfg.Database.Path != "/tmp/example.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/example.sqlite", cfg.Database.Path)
+	if cfg.Databases[0].Path != "/tmp/example.sqlite" {
+		t.Fatalf("expected path %q, got %q", "/tmp/example.sqlite", cfg.Databases[0].Path)
 	}
 }
 
@@ -83,10 +83,24 @@ func TestDecode_MissingDatabaseSection(t *testing.T) {
 	}
 }
 
-func TestDecode_MissingDatabaseName(t *testing.T) {
+func TestDecode_EmptyDatabasesList(t *testing.T) {
+	// Arrange
+	input := `databases = []`
+
+	// Act
+	_, err := config.Decode(strings.NewReader(input))
+
+	// Assert
+	if !errors.Is(err, config.ErrMissingDatabase) {
+		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabase, err)
+	}
+}
+
+func TestDecode_LegacyDatabaseSection(t *testing.T) {
 	// Arrange
 	input := `
 [database]
+name = "legacy"
 db_path = "/tmp/example.sqlite"
 `
 
@@ -94,24 +108,8 @@ db_path = "/tmp/example.sqlite"
 	_, err := config.Decode(strings.NewReader(input))
 
 	// Assert
-	if !errors.Is(err, config.ErrMissingDatabaseName) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabaseName, err)
-	}
-}
-
-func TestDecode_MissingDatabasePath(t *testing.T) {
-	// Arrange
-	input := `
-[database]
-name = "local"
-`
-
-	// Act
-	_, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if !errors.Is(err, config.ErrMissingDatabasePath) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabasePath, err)
+	if !errors.Is(err, config.ErrMissingDatabase) {
+		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabase, err)
 	}
 }
 
@@ -144,59 +142,5 @@ name = "local"
 	// Assert
 	if !errors.Is(err, config.ErrMissingDatabasePath) {
 		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabasePath, err)
-	}
-}
-
-func TestDatabaseList_SingleDatabase(t *testing.T) {
-	// Arrange
-	cfg := config.Config{
-		Database: &config.DatabaseConfig{
-			Name: "local",
-			Path: "/tmp/example.sqlite",
-		},
-	}
-
-	// Act
-	databases, err := cfg.DatabaseList()
-
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(databases) != 1 {
-		t.Fatalf("expected 1 database, got %d", len(databases))
-	}
-	if databases[0].Name != "local" {
-		t.Fatalf("expected name %q, got %q", "local", databases[0].Name)
-	}
-	if databases[0].Path != "/tmp/example.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/example.sqlite", databases[0].Path)
-	}
-}
-
-func TestDatabaseList_MultipleDatabases(t *testing.T) {
-	// Arrange
-	cfg := config.Config{
-		Databases: []config.DatabaseConfig{
-			{Name: "local", Path: "/tmp/example.sqlite"},
-			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
-		},
-	}
-
-	// Act
-	databases, err := cfg.DatabaseList()
-
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(databases) != 2 {
-		t.Fatalf("expected 2 databases, got %d", len(databases))
-	}
-	if databases[1].Name != "analytics" {
-		t.Fatalf("expected name %q, got %q", "analytics", databases[1].Name)
-	}
-	if databases[1].Path != "/tmp/analytics.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/analytics.sqlite", databases[1].Path)
 	}
 }

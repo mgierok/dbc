@@ -26,13 +26,8 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	databases, err := cfg.DatabaseList()
-	if err != nil {
-		log.Fatalf("failed to load database config: %v", err)
-	}
-
-	options := make([]tui.DatabaseOption, len(databases))
-	for i, database := range databases {
+	options := make([]tui.DatabaseOption, len(cfg.Databases))
+	for i, database := range cfg.Databases {
 		options[i] = tui.DatabaseOption{
 			Name:       database.Name,
 			ConnString: database.Path,

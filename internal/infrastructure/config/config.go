@@ -23,7 +23,6 @@ var (
 )
 
 type Config struct {
-	Database  *DatabaseConfig  `toml:"database"`
 	Databases []DatabaseConfig `toml:"databases"`
 }
 
@@ -45,39 +44,18 @@ func Decode(r io.Reader) (Config, error) {
 }
 
 func (c Config) Validate() error {
-	if len(c.Databases) > 0 {
-		for _, database := range c.Databases {
-			if strings.TrimSpace(database.Name) == "" {
-				return ErrMissingDatabaseName
-			}
-			if strings.TrimSpace(database.Path) == "" {
-				return ErrMissingDatabasePath
-			}
-		}
-		return nil
-	}
-	if c.Database == nil {
+	if len(c.Databases) == 0 {
 		return ErrMissingDatabase
 	}
-	if strings.TrimSpace(c.Database.Name) == "" {
-		return ErrMissingDatabaseName
-	}
-	if strings.TrimSpace(c.Database.Path) == "" {
-		return ErrMissingDatabasePath
+	for _, database := range c.Databases {
+		if strings.TrimSpace(database.Name) == "" {
+			return ErrMissingDatabaseName
+		}
+		if strings.TrimSpace(database.Path) == "" {
+			return ErrMissingDatabasePath
+		}
 	}
 	return nil
-}
-
-func (c Config) DatabaseList() ([]DatabaseConfig, error) {
-	if err := c.Validate(); err != nil {
-		return nil, err
-	}
-	if len(c.Databases) > 0 {
-		databases := make([]DatabaseConfig, len(c.Databases))
-		copy(databases, c.Databases)
-		return databases, nil
-	}
-	return []DatabaseConfig{*c.Database}, nil
 }
 
 func PathFromHome(home string) string {
