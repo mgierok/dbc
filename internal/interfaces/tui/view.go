@@ -230,11 +230,11 @@ func (m *Model) statusShortcuts() string {
 	case m.popup.active:
 		return "Popup: Enter apply | Esc close"
 	case m.focus == FocusTables:
-		return "Tables: R records | S schema | F filter"
+		return "Tables: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
-		return "Schema: R records | F filter"
+		return "Schema: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return "Records: S schema | F filter"
+		return "Records: F filter"
 	default:
 		return ""
 	}

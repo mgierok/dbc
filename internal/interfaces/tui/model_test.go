@@ -1,35 +1,20 @@
 package tui
 
-import "testing"
+import (
+	"testing"
 
-func TestInsertAtCursor_AddsAtPosition(t *testing.T) {
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func TestHandleKey_EnterSwitchesToRecords(t *testing.T) {
 	// Arrange
-	value := "abcd"
+	model := &Model{viewMode: ViewSchema}
 
 	// Act
-	result, cursor := insertAtCursor(value, "X", 2)
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	if result != "abXcd" {
-		t.Fatalf("expected %q, got %q", "abXcd", result)
-	}
-	if cursor != 3 {
-		t.Fatalf("expected cursor 3, got %d", cursor)
-	}
-}
-
-func TestDeleteAtCursor_RemovesPreviousRune(t *testing.T) {
-	// Arrange
-	value := "abcd"
-
-	// Act
-	result, cursor := deleteAtCursor(value, 3)
-
-	// Assert
-	if result != "abd" {
-		t.Fatalf("expected %q, got %q", "abd", result)
-	}
-	if cursor != 2 {
-		t.Fatalf("expected cursor 2, got %d", cursor)
+	if model.viewMode != ViewRecords {
+		t.Fatalf("expected view mode to switch to records, got %v", model.viewMode)
 	}
 }

@@ -214,10 +214,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "G":
 		return m.jumpBottom()
-	case "R":
+	case "enter":
 		return m.switchToRecords()
-	case "S":
-		return m.switchToSchema()
 	case "F":
 		return m.startFilterPopup()
 	case "j":

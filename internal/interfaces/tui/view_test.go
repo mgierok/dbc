@@ -10,7 +10,7 @@ func TestStatusShortcuts_TablesPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Tables: R records | S schema | F filter" {
+	if shortcuts != "Tables: F filter" {
 		t.Fatalf("expected table shortcuts, got %q", shortcuts)
 	}
 }
@@ -41,7 +41,7 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: S schema | F filter" {
+	if shortcuts != "Records: F filter" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
 	}
 }
