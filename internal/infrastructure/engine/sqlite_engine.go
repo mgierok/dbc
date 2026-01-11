@@ -67,7 +67,12 @@ func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (model.S
 		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
 			return model.Schema{}, err
 		}
-		columns = append(columns, model.Column{Name: name, Type: typ})
+		columns = append(columns, model.Column{
+			Name:       name,
+			Type:       typ,
+			Nullable:   notnull == 0,
+			PrimaryKey: pk > 0,
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return model.Schema{}, err

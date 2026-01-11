@@ -57,8 +57,9 @@ func main() {
 	getSchema := usecase.NewGetSchema(engine)
 	listRecords := usecase.NewListRecords(engine)
 	listOperators := usecase.NewListOperators(engine)
+	saveEdits := usecase.NewSaveRecordEdits(engine)
 
-	if err := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators); err != nil {
+	if err := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators, saveEdits); err != nil {
 		fmt.Printf("application error: %v\n", err)
 	}
 }

@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 	"strings"
+
+	"github.com/mgierok/dbc/internal/application/dto"
 )
 
 func (m *Model) View() string {
@@ -13,7 +15,7 @@ func (m *Model) View() string {
 	right := m.renderContent(rightWidth, bodyHeight)
 	lines := mergePanels(left, right, leftWidth, rightWidth)
 
-	if m.popup.active {
+	if m.filterPopup.active || m.editPopup.active || m.confirmPopup.active {
 		lines = append(lines, "")
 		lines = append(lines, m.renderPopup(leftWidth+rightWidth+3)...)
 	}
@@ -129,13 +131,40 @@ func (m *Model) renderRecords(width, height int) []string {
 		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
 			prefix = "> "
 		}
-		row := formatRow(m.records[i].Values, columnWidths)
+		displayValues := make([]string, len(columns))
+		edited := make([]bool, len(columns))
+		for colIndex := range columns {
+			if staged, ok := m.stagedEditForRow(i, colIndex); ok {
+				displayValues[colIndex] = displayValue(staged.Value)
+				edited[colIndex] = true
+			} else {
+				displayValues[colIndex] = m.recordValue(i, colIndex)
+			}
+		}
+		focusColumn := -1
+		if m.recordFieldFocus && i == m.recordSelection {
+			focusColumn = m.recordColumn
+		}
+		row := formatRecordRow(displayValues, columnWidths, focusColumn, edited)
 		lines = append(lines, padRight(prefix+row, width))
 	}
 	return padLines(lines, height, width)
 }
 
 func (m *Model) renderPopup(totalWidth int) []string {
+	if m.editPopup.active {
+		return m.renderEditPopup(totalWidth)
+	}
+	if m.confirmPopup.active {
+		return m.renderConfirmPopup(totalWidth)
+	}
+	if m.filterPopup.active {
+		return m.renderFilterPopup(totalWidth)
+	}
+	return nil
+}
+
+func (m *Model) renderFilterPopup(totalWidth int) []string {
 	width := totalWidth
 	if width <= 0 {
 		width = 60
@@ -152,7 +181,7 @@ func (m *Model) renderPopup(totalWidth int) []string {
 	lines = append(lines, "|"+padRight("Filter", width-2)+"|")
 
 	stepLabel := ""
-	switch m.popup.step {
+	switch m.filterPopup.step {
 	case filterSelectColumn:
 		stepLabel = "Select column"
 	case filterSelectOperator:
@@ -163,22 +192,22 @@ func (m *Model) renderPopup(totalWidth int) []string {
 	lines = append(lines, "|"+padRight(stepLabel, width-2)+"|")
 	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
 
-	switch m.popup.step {
+	switch m.filterPopup.step {
 	case filterSelectColumn:
 		items := make([]string, len(m.schema.Columns))
 		for i, column := range m.schema.Columns {
 			items[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
 		}
-		lines = append(lines, renderPopupList(items, m.popup.columnIndex, width-2)...)
+		lines = append(lines, renderPopupList(items, m.filterPopup.columnIndex, width-2)...)
 	case filterSelectOperator:
-		items := make([]string, len(m.popup.operators))
-		for i, operator := range m.popup.operators {
+		items := make([]string, len(m.filterPopup.operators))
+		for i, operator := range m.filterPopup.operators {
 			items[i] = fmt.Sprintf("%s (%s)", operator.Name, operator.SQL)
 		}
-		lines = append(lines, renderPopupList(items, m.popup.operatorIndex, width-2)...)
+		lines = append(lines, renderPopupList(items, m.filterPopup.operatorIndex, width-2)...)
 	case filterInputValue:
-		input := m.popup.input
-		cursor := clamp(m.popup.cursor, 0, len(input))
+		input := m.filterPopup.input
+		cursor := clamp(m.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
 		lines = append(lines, "|"+padRight("Value: "+value, width-2)+"|")
 	}
@@ -187,12 +216,105 @@ func (m *Model) renderPopup(totalWidth int) []string {
 	return lines
 }
 
+func (m *Model) renderEditPopup(totalWidth int) []string {
+	width := totalWidth
+	if width <= 0 {
+		width = 60
+	}
+	if width > 60 {
+		width = 60
+	}
+	if width < 30 {
+		width = 30
+	}
+
+	border := "+" + strings.Repeat("-", width-2) + "+"
+	lines := []string{border}
+	lines = append(lines, "|"+padRight("Edit Cell", width-2)+"|")
+
+	columnLabel := "Unknown column"
+	nullableLabel := "NOT NULL"
+	inputKind := dto.ColumnInputText
+	var options []string
+	if m.editPopup.columnIndex >= 0 && m.editPopup.columnIndex < len(m.schema.Columns) {
+		column := m.schema.Columns[m.editPopup.columnIndex]
+		columnLabel = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+		if column.Nullable {
+			nullableLabel = "NULLABLE"
+		}
+		inputKind = column.Input.Kind
+		options = column.Input.Options
+	}
+	lines = append(lines, "|"+padRight(columnLabel, width-2)+"|")
+	lines = append(lines, "|"+padRight(nullableLabel, width-2)+"|")
+	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
+
+	if inputKind == dto.ColumnInputSelect {
+		current := "NULL"
+		if !m.editPopup.isNull {
+			if len(options) > 0 {
+				current = options[clamp(m.editPopup.optionIndex, 0, len(options)-1)]
+			} else {
+				current = m.editPopup.input
+			}
+		}
+		lines = append(lines, "|"+padRight("Value: "+current, width-2)+"|")
+		if len(options) > 0 {
+			lines = append(lines, renderPopupList(options, m.editPopup.optionIndex, width-2)...)
+		}
+	} else {
+		if m.editPopup.isNull {
+			lines = append(lines, "|"+padRight("Value: NULL", width-2)+"|")
+		} else {
+			input := m.editPopup.input
+			cursor := clamp(m.editPopup.cursor, 0, len(input))
+			value := input[:cursor] + "|" + input[cursor:]
+			lines = append(lines, "|"+padRight("Value: "+value, width-2)+"|")
+		}
+	}
+
+	if strings.TrimSpace(m.editPopup.errorMessage) != "" {
+		lines = append(lines, "|"+padRight("Error: "+m.editPopup.errorMessage, width-2)+"|")
+	}
+
+	lines = append(lines, border)
+	return lines
+}
+
+func (m *Model) renderConfirmPopup(totalWidth int) []string {
+	width := totalWidth
+	if width <= 0 {
+		width = 50
+	}
+	if width > 60 {
+		width = 60
+	}
+	if width < 20 {
+		width = 20
+	}
+
+	border := "+" + strings.Repeat("-", width-2) + "+"
+	lines := []string{border}
+	lines = append(lines, "|"+padRight("Confirm", width-2)+"|")
+	message := m.confirmPopup.message
+	if strings.TrimSpace(message) == "" {
+		message = "Are you sure?"
+	}
+	lines = append(lines, "|"+padRight(message, width-2)+"|")
+	lines = append(lines, border)
+	return lines
+}
+
 func (m *Model) renderStatus(width int) string {
 	if width <= 0 {
 		width = 80
 	}
+	mode := "READ-ONLY"
+	if m.hasDirtyEdits() {
+		mode = fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount())
+	}
 	parts := []string{
-		"READ-ONLY",
+		mode,
 		fmt.Sprintf("View: %s", m.viewModeLabel()),
 		fmt.Sprintf("Table: %s", m.currentTableName()),
 		m.filterSummary(),
@@ -227,14 +349,18 @@ func (m *Model) filterSummary() string {
 
 func (m *Model) statusShortcuts() string {
 	switch {
-	case m.popup.active:
+	case m.editPopup.active:
+		return "Edit: Enter confirm | Esc cancel | Ctrl+n null"
+	case m.confirmPopup.active:
+		return "Confirm: Enter yes | Esc no"
+	case m.filterPopup.active:
 		return "Popup: Enter apply | Esc close"
 	case m.focus == FocusTables:
 		return "Tables: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
 		return "Schema: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return "Records: F filter"
+		return "Records: Enter edit | w save | F filter"
 	default:
 		return ""
 	}
@@ -326,6 +452,39 @@ func formatRow(values []string, widths []int) string {
 		parts[i] = padRight(value, width)
 	}
 	return strings.Join(parts, " | ")
+}
+
+func formatRecordRow(values []string, widths []int, focusColumn int, edited []bool) string {
+	parts := make([]string, len(widths))
+	for i, width := range widths {
+		value := ""
+		if i < len(values) {
+			value = values[i]
+		}
+		editedCell := false
+		if i < len(edited) {
+			editedCell = edited[i]
+		}
+		focused := i == focusColumn
+		parts[i] = formatRecordCell(value, width, focused, editedCell)
+	}
+	return strings.Join(parts, " | ")
+}
+
+func formatRecordCell(value string, width int, focused, edited bool) string {
+	if edited && width > 0 {
+		value = value + "*"
+	}
+	if focused {
+		if width <= 1 {
+			return padRight(">", width)
+		}
+		innerWidth := width - 2
+		value = truncate(value, innerWidth)
+		value = padRight(value, innerWidth)
+		return "[" + value + "]"
+	}
+	return padRight(value, width)
 }
 
 func scrollStart(selection, height, total int) int {

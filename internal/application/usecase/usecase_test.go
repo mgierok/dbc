@@ -43,6 +43,10 @@ func (f *fakeEngine) ListOperators(ctx context.Context, columnType string) ([]mo
 	return f.operators, nil
 }
 
+func (f *fakeEngine) ApplyRecordUpdates(ctx context.Context, tableName string, updates []model.RecordUpdate) error {
+	return nil
+}
+
 func TestListTables_SortsAlphabetically(t *testing.T) {
 	// Arrange
 	engine := &fakeEngine{
@@ -74,8 +78,8 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 	engine := &fakeEngine{
 		schema: model.Schema{
 			Columns: []model.Column{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+				{Name: "id", Type: "INTEGER", Nullable: false, PrimaryKey: true},
+				{Name: "name", Type: "TEXT", Nullable: true},
 			},
 		},
 	}
@@ -92,8 +96,19 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 		t.Fatalf("expected table name %q, got %q", "users", result.TableName)
 	}
 	expectedColumns := []dto.SchemaColumn{
-		{Name: "id", Type: "INTEGER"},
-		{Name: "name", Type: "TEXT"},
+		{
+			Name:       "id",
+			Type:       "INTEGER",
+			Nullable:   false,
+			PrimaryKey: true,
+			Input:      dto.ColumnInput{Kind: dto.ColumnInputText},
+		},
+		{
+			Name:     "name",
+			Type:     "TEXT",
+			Nullable: true,
+			Input:    dto.ColumnInput{Kind: dto.ColumnInputText},
+		},
 	}
 	if !reflect.DeepEqual(result.Columns, expectedColumns) {
 		t.Fatalf("expected %v, got %v", expectedColumns, result.Columns)
