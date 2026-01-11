@@ -43,6 +43,10 @@ func (f *fakeEngine) ListOperators(ctx context.Context, columnType string) ([]mo
 	return f.operators, nil
 }
 
+func (f *fakeEngine) ApplyRecordUpdates(ctx context.Context, tableName string, updates []model.RecordUpdate) error {
+	return nil
+}
+
 func TestListTables_SortsAlphabetically(t *testing.T) {
 	// Arrange
 	engine := &fakeEngine{
