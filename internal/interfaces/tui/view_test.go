@@ -1,6 +1,11 @@
 package tui
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	domainmodel "github.com/mgierok/dbc/internal/domain/model"
+)
 
 func TestStatusShortcuts_TablesPanel(t *testing.T) {
 	// Arrange
@@ -18,7 +23,7 @@ func TestStatusShortcuts_TablesPanel(t *testing.T) {
 func TestStatusShortcuts_Popup(t *testing.T) {
 	// Arrange
 	model := &Model{
-		popup: filterPopup{active: true},
+		filterPopup: filterPopup{active: true},
 	}
 
 	// Act
@@ -41,7 +46,28 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: F filter" {
+	if shortcuts != "Records: Enter edit | w save | F filter" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
+	}
+}
+
+func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
+	// Arrange
+	model := &Model{
+		stagedEdits: map[string]recordEdits{
+			"id=1": {
+				changes: map[int]stagedEdit{
+					0: {Value: domainmodel.Value{Text: "bob", Raw: "bob"}},
+				},
+			},
+		},
+	}
+
+	// Act
+	status := model.renderStatus(80)
+
+	// Assert
+	if !strings.Contains(status, "WRITE (dirty: 1)") {
+		t.Fatalf("expected dirty status, got %q", status)
 	}
 }
