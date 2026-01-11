@@ -104,12 +104,12 @@ These checklists are part of the business documentation and can be updated in fu
 - [x] UX principles (layout, navigation, shortcuts)
 
 ### Stage 1: SQLite Browsing (MVP)
-- [ ] Startup database selector (from config list)
-- [ ] Table list and schema view (schema shown in right panel)
-- [ ] Record preview with infinite scroll (records shown in right panel)
-- [ ] Column filter popup with operator selection
-- [ ] Read-only mode by default
-- [ ] Fast keyboard navigation (vim-like)
+- [x] Startup database selector (from config list)
+- [x] Table list and schema view (schema shown in right panel)
+- [x] Record preview with infinite scroll (records shown in right panel)
+- [x] Column filter popup with operator selection
+- [x] Read-only mode by default
+- [x] Fast keyboard navigation (vim-like)
 
 #### Stage 1 Definition (Detailed)
 - Scope: SQLite only, with architecture prepared for future engine adapters.
