@@ -131,9 +131,25 @@ These checklists are part of the business documentation and can be updated in fu
 - Exclusions: no data writes, no schema changes, no SQL REPL.
 
 ### Stage 2: SQLite Data Operations
-- [ ] Insert, edit, delete records
+- [ ] Insert records
+- [ ] Edit records
+- [ ] Delete records
 - [ ] Transaction management for safe writes
 - [ ] Session-level undo/redo
+
+#### Stage 2 Definition (Detailed)
+- Scope: SQLite data writes (insert, update, delete) for a single table at a time; no schema changes.
+- Default mode: read-only until a write action is performed; the status bar shows `READ-ONLY` or `WRITE (dirty: N)` with a per-table dirty counter.
+- Records navigation: in Records view the first row is selected by default; `j/k`, `Ctrl+f/Ctrl+b`, `gg/G` move across rows; selection is highlighted.
+- Field focus: `Enter` on a row enables field selection for that row; `h/l` moves across columns; `j/k` moves between rows while keeping the column focus; `Esc` exits field selection; the focused cell is highlighted; `Enter` opens the edit popup.
+- Edit popup: shows current value, column type, and nullable status; proposed shortcut `Ctrl+n` sets `NULL` for nullable fields; `Enter` confirms a staged change; `Esc` cancels; edited cells are visually marked; multiple edits can be staged without writing to the database.
+- Input controls: boolean or option-backed fields use a selection list instead of free text input.
+- Validation: input is validated when confirming the edit; invalid values keep the popup open and show an error.
+- Save changes: proposed shortcut `w` runs a single transaction that applies all staged changes for the current table; show a confirmation popup before applying; on error, rollback and show the error.
+- Unsaved changes prompt: if the user switches tables with staged changes, show a warning that changes will be lost; options are discard changes or return to editing.
+- Insert: proposed shortcut `i` adds a new record at the top of the list; auto-increment columns are hidden and assigned on save, but users may enter explicit values; other default values are prefilled; the row is marked as pending insert and can be edited like any other row.
+- Delete: proposed shortcut `d` toggles delete on the selected row; deleted rows are visually marked; deleting a pending insert removes it from the list; deletions apply on save.
+- Undo/redo: session-level undo/redo applies to staged changes before save; shortcuts `u` and `Ctrl+r`.
 
 ### Stage 3: SQLite Schema Management
 - [ ] Create and modify tables
