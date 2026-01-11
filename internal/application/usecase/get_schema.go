@@ -5,6 +5,7 @@ import (
 
 	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/port"
+	"github.com/mgierok/dbc/internal/domain/service"
 )
 
 type GetSchema struct {
@@ -23,7 +24,21 @@ func (uc *GetSchema) Execute(ctx context.Context, tableName string) (dto.Schema,
 
 	columns := make([]dto.SchemaColumn, len(schema.Columns))
 	for i, column := range schema.Columns {
-		columns[i] = dto.SchemaColumn{Name: column.Name, Type: column.Type}
+		inputSpec := service.InputSpecForType(column.Type)
+		inputKind := dto.ColumnInputText
+		if inputSpec.Kind == service.InputSelect {
+			inputKind = dto.ColumnInputSelect
+		}
+		columns[i] = dto.SchemaColumn{
+			Name:       column.Name,
+			Type:       column.Type,
+			Nullable:   column.Nullable,
+			PrimaryKey: column.PrimaryKey,
+			Input: dto.ColumnInput{
+				Kind:    inputKind,
+				Options: inputSpec.Options,
+			},
+		}
 	}
 
 	return dto.Schema{
