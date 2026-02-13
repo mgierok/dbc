@@ -11,5 +11,5 @@ type Engine interface {
 	GetSchema(ctx context.Context, tableName string) (model.Schema, error)
 	ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter) (model.RecordPage, error)
 	ListOperators(ctx context.Context, columnType string) ([]model.Operator, error)
-	ApplyRecordUpdates(ctx context.Context, tableName string, updates []model.RecordUpdate) error
+	ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error
 }

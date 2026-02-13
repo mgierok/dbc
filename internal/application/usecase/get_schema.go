@@ -30,10 +30,12 @@ func (uc *GetSchema) Execute(ctx context.Context, tableName string) (dto.Schema,
 			inputKind = dto.ColumnInputSelect
 		}
 		columns[i] = dto.SchemaColumn{
-			Name:       column.Name,
-			Type:       column.Type,
-			Nullable:   column.Nullable,
-			PrimaryKey: column.PrimaryKey,
+			Name:          column.Name,
+			Type:          column.Type,
+			Nullable:      column.Nullable,
+			PrimaryKey:    column.PrimaryKey,
+			DefaultValue:  column.DefaultValue,
+			AutoIncrement: column.AutoIncrement,
 			Input: dto.ColumnInput{
 				Kind:    inputKind,
 				Options: inputSpec.Options,

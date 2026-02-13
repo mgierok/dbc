@@ -1,8 +1,8 @@
 # Stage 2 Completion Plan: SQLite Data Operations (Remaining Work)
 
 ## Summary
-- Current state: update/edit flow with staged cell edits and transactional save is implemented.
-- Remaining Stage 2 scope to finish: insert, delete, and session-level undo/redo.
+- Current state: Milestone A is delivered (insert/delete/unified save pipeline + schema metadata extension).
+- Remaining Stage 2 scope to finish: session-level undo/redo and Stage 2 polish from Milestone B.
 - Delivery strategy (chosen): two milestones.
 - Undo/redo scope (chosen): table-scoped.
 - Insert auto-increment UX (chosen): hidden by default with optional reveal/edit.
@@ -88,6 +88,75 @@
 7. Table switch with dirty state
 - Keep current confirm behavior ("Discard changes and switch tables?").
 - Discard clears inserts/updates/deletes for current table.
+
+## Milestone A Delivery Summary (Context for Milestone B)
+Status: Completed on branch `stage2`.
+
+1. Domain/Application contract changes delivered
+- `ApplyRecordUpdates` was replaced with `ApplyRecordChanges` in the engine port.
+- `RecordInsert`, `RecordDelete`, `TableChanges` and new validation errors were added in the domain model.
+- `SaveRecordEdits` was replaced with `SaveTableChanges`, and wiring was updated in app startup + TUI.
+
+2. SQLite infrastructure changes delivered
+- Unified transactional executor implemented in `sqlite_update.go`.
+- Save order is `INSERT` -> `UPDATE` -> `DELETE`.
+- Any failing statement causes rollback of the full save batch.
+- Updates for rows that are also marked for delete are skipped in the same save batch.
+
+3. Schema metadata extension delivered
+- `DefaultValue` and `AutoIncrement` were added to domain and DTO column models.
+- SQLite schema loader now maps `PRAGMA table_info(...).dflt_value`.
+- SQLite schema loader derives `AutoIncrement` from `sqlite_master` table SQL for PK columns.
+
+4. TUI Milestone A behavior delivered
+- Staged state was refactored from `stagedEdits` to:
+  - `pendingInserts`
+  - `pendingUpdates`
+  - `pendingDeletes`
+  - `history` / `future` placeholders for Milestone B.
+- Dirty counter now includes:
+  - changed update cells
+  - count of pending inserts
+  - count of pending deletes.
+- Insert UX:
+  - `i` adds a pending row at the top and selects it.
+  - Prefill rules implemented (default / NULL / empty-required).
+  - Auto-increment fields are hidden by default in pending insert rows.
+  - `Ctrl+a` toggles auto field visibility for the selected pending insert row.
+  - Pending inserts are marked with `[INS]`.
+- Delete UX:
+  - `d` toggles delete mark for persisted rows.
+  - Persisted delete-marked rows are tagged with `[DEL]`.
+  - `d` on a pending insert removes that pending insert row.
+- Save UX:
+  - Save confirmation uses "Save staged changes?".
+  - Success clears staged state and reloads records from offset 0 (current table/filter preserved).
+  - Failure keeps staged state and reports error in status.
+- Table switching with dirty state:
+  - Existing discard confirmation behavior retained.
+  - Confirming discard clears table-scoped staged insert/update/delete state.
+
+5. Validation and tests completed for Milestone A
+- `go test ./...` passed after implementation.
+- Application tests updated for `SaveTableChanges` delegation and validation.
+- Infrastructure tests cover:
+  - transaction success across insert+update+delete,
+  - rollback behavior,
+  - composite PK delete,
+  - insert with explicit auto value,
+  - skipping updates for delete-marked rows.
+- TUI tests cover:
+  - insert creation/prefill,
+  - delete toggle/remove behavior,
+  - unified save payload building,
+  - dirty counter aggregation,
+  - discard-on-table-switch clearing staged state,
+  - updated status shortcuts for Milestone A.
+
+6. Explicitly deferred to Milestone B
+- Undo/redo operation model and key handling (`u`, `Ctrl+r`).
+- Records status shortcut text update to include undo/redo keys.
+- Additional undo/redo-specific tests and polish items listed in Milestone B.
 
 ## Milestone B (Undo/Redo + Stage 2 polish)
 1. Undo/redo model (table-scoped)
