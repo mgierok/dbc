@@ -124,4 +124,22 @@ internal/
 ## Documentation
 
 - Keep business and roadmap docs in `docs/`.
-- Update `docs/BRD.md` when scope or roadmap changes.
+- `docs/PRODUCT_DOCUMENTATION.md` is the single source of truth for the current application state from a product perspective.
+- Treat `docs/BRD.md` as legacy/planning context, not as the authoritative description of the current product state.
+- Update `docs/PRODUCT_DOCUMENTATION.md` with every codebase change that affects product behavior, scope, UX, workflows, constraints, or terminology.
+
+### Product Documentation Purpose
+
+- `docs/PRODUCT_DOCUMENTATION.md` defines what DBC currently is and how it behaves for users and business stakeholders.
+- The document must describe delivered product capabilities and constraints, not implementation internals.
+- The document must be written so it is understandable for both a Junior Product Manager and a Junior Software Engineer.
+- Use clear, plain language; explain product terms when needed; avoid unnecessary jargon.
+
+### Product Documentation Principles
+
+- Current-state accuracy: every statement must reflect actual behavior present in the codebase now.
+- Business-first language: explain user outcomes and product behavior; avoid build/technology details except product-level specifications (for example SQLite support).
+- Scope clarity: clearly separate in-scope delivered capabilities from out-of-scope items and roadmap.
+- Consistent naming: use one canonical terminology set across the whole document.
+- Safety transparency: clearly communicate safeguards, confirmations, and known user-impacting limitations.
+- Actionable structure: keep a clear, scannable markdown structure that supports quick product decisions.
