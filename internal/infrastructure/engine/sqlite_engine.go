@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/mgierok/dbc/internal/application/port"
 	"github.com/mgierok/dbc/internal/domain/model"
@@ -47,6 +49,11 @@ func (e *SQLiteEngine) ListTables(ctx context.Context) ([]model.Table, error) {
 }
 
 func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (model.Schema, error) {
+	tableSQL, err := e.tableDefinitionSQL(ctx, tableName)
+	if err != nil {
+		return model.Schema{}, err
+	}
+
 	query := fmt.Sprintf("PRAGMA table_info(%s)", quoteIdentifier(tableName))
 	rows, err := e.db.QueryContext(ctx, query)
 	if err != nil {
@@ -67,11 +74,21 @@ func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (model.S
 		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
 			return model.Schema{}, err
 		}
+		var defaultValue *string
+		if dflt.Valid {
+			defaultValue = &dflt.String
+		}
+		autoIncrement := false
+		if pk > 0 {
+			autoIncrement = columnHasAutoIncrement(tableSQL, name)
+		}
 		columns = append(columns, model.Column{
-			Name:       name,
-			Type:       typ,
-			Nullable:   notnull == 0,
-			PrimaryKey: pk > 0,
+			Name:          name,
+			Type:          typ,
+			Nullable:      notnull == 0,
+			PrimaryKey:    pk > 0,
+			DefaultValue:  defaultValue,
+			AutoIncrement: autoIncrement,
 		})
 	}
 	if err := rows.Err(); err != nil {
@@ -154,4 +171,31 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 
 func (e *SQLiteEngine) ListOperators(ctx context.Context, columnType string) ([]model.Operator, error) {
 	return operatorsForType(columnType), nil
+}
+
+func (e *SQLiteEngine) tableDefinitionSQL(ctx context.Context, tableName string) (string, error) {
+	var tableSQL sql.NullString
+	const query = `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?`
+	if err := e.db.QueryRowContext(ctx, query, tableName).Scan(&tableSQL); err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+	if !tableSQL.Valid {
+		return "", nil
+	}
+	return tableSQL.String, nil
+}
+
+func columnHasAutoIncrement(tableSQL, columnName string) bool {
+	if strings.TrimSpace(tableSQL) == "" {
+		return false
+	}
+	if !strings.Contains(strings.ToUpper(tableSQL), "AUTOINCREMENT") {
+		return false
+	}
+	quotedColumn := regexp.QuoteMeta(columnName)
+	pattern := fmt.Sprintf("(?is)([\"`\\[]?%s[\"`\\]]?\\s+[^,]*PRIMARY\\s+KEY[^,]*AUTOINCREMENT)", quotedColumn)
+	return regexp.MustCompile(pattern).MatchString(tableSQL)
 }

@@ -18,9 +18,11 @@ type ColumnInput struct {
 }
 
 type SchemaColumn struct {
-	Name       string
-	Type       string
-	Nullable   bool
-	PrimaryKey bool
-	Input      ColumnInput
+	Name          string
+	Type          string
+	Nullable      bool
+	PrimaryKey    bool
+	DefaultValue  *string
+	AutoIncrement bool
+	Input         ColumnInput
 }

@@ -43,7 +43,7 @@ func (f *fakeEngine) ListOperators(ctx context.Context, columnType string) ([]mo
 	return f.operators, nil
 }
 
-func (f *fakeEngine) ApplyRecordUpdates(ctx context.Context, tableName string, updates []model.RecordUpdate) error {
+func (f *fakeEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
 	return nil
 }
 
@@ -75,11 +75,13 @@ func TestListTables_SortsAlphabetically(t *testing.T) {
 
 func TestGetSchema_MapsColumns(t *testing.T) {
 	// Arrange
+	defaultName := "'guest'"
 	engine := &fakeEngine{
 		schema: model.Schema{
 			Columns: []model.Column{
-				{Name: "id", Type: "INTEGER", Nullable: false, PrimaryKey: true},
+				{Name: "id", Type: "INTEGER", Nullable: false, PrimaryKey: true, AutoIncrement: true},
 				{Name: "name", Type: "TEXT", Nullable: true},
+				{Name: "display_name", Type: "TEXT", Nullable: false, DefaultValue: &defaultName},
 			},
 		},
 	}
@@ -97,17 +99,27 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 	}
 	expectedColumns := []dto.SchemaColumn{
 		{
-			Name:       "id",
-			Type:       "INTEGER",
-			Nullable:   false,
-			PrimaryKey: true,
-			Input:      dto.ColumnInput{Kind: dto.ColumnInputText},
+			Name:          "id",
+			Type:          "INTEGER",
+			Nullable:      false,
+			PrimaryKey:    true,
+			AutoIncrement: true,
+			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 		{
-			Name:     "name",
-			Type:     "TEXT",
-			Nullable: true,
-			Input:    dto.ColumnInput{Kind: dto.ColumnInputText},
+			Name:          "name",
+			Type:          "TEXT",
+			Nullable:      true,
+			AutoIncrement: false,
+			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
+		},
+		{
+			Name:          "display_name",
+			Type:          "TEXT",
+			Nullable:      false,
+			DefaultValue:  &defaultName,
+			AutoIncrement: false,
+			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 	}
 	if !reflect.DeepEqual(result.Columns, expectedColumns) {

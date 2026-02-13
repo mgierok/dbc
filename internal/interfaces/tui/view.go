@@ -119,13 +119,14 @@ func (m *Model) renderRecords(width, height int) []string {
 		return padLines(lines, height, width)
 	}
 
-	if len(m.records) == 0 {
+	if m.totalRecordRows() == 0 {
 		lines = append(lines, padRight("No records.", width))
 		return padLines(lines, height, width)
 	}
 
-	start := scrollStart(m.recordSelection, listHeight, len(m.records))
-	end := minInt(len(m.records), start+listHeight)
+	totalRows := m.totalRecordRows()
+	start := scrollStart(m.recordSelection, listHeight, totalRows)
+	end := minInt(totalRows, start+listHeight)
 	for i := start; i < end; i++ {
 		prefix := "  "
 		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
@@ -133,12 +134,20 @@ func (m *Model) renderRecords(width, height int) []string {
 		}
 		displayValues := make([]string, len(columns))
 		edited := make([]bool, len(columns))
-		for colIndex := range columns {
-			if staged, ok := m.stagedEditForRow(i, colIndex); ok {
-				displayValues[colIndex] = displayValue(staged.Value)
-				edited[colIndex] = true
-			} else {
-				displayValues[colIndex] = m.recordValue(i, colIndex)
+		if insertIndex, isInsert := m.pendingInsertIndex(i); isInsert {
+			for colIndex := range columns {
+				if value, ok := m.pendingInserts[insertIndex].values[colIndex]; ok {
+					displayValues[colIndex] = displayValue(value.Value)
+				}
+			}
+		} else {
+			for colIndex := range columns {
+				if staged, ok := m.stagedEditForRow(i, colIndex); ok {
+					displayValues[colIndex] = displayValue(staged.Value)
+					edited[colIndex] = true
+				} else {
+					displayValues[colIndex] = m.visibleRowValue(i, colIndex)
+				}
 			}
 		}
 		focusColumn := -1
@@ -146,7 +155,13 @@ func (m *Model) renderRecords(width, height int) []string {
 			focusColumn = m.recordColumn
 		}
 		row := formatRecordRow(displayValues, columnWidths, focusColumn, edited)
-		lines = append(lines, padRight(prefix+row, width))
+		rowTag := ""
+		if _, isInsert := m.pendingInsertIndex(i); isInsert {
+			rowTag = "[INS] "
+		} else if m.isRowMarkedDelete(i) {
+			rowTag = "[DEL] "
+		}
+		lines = append(lines, padRight(prefix+rowTag+row, width))
 	}
 	return padLines(lines, height, width)
 }
@@ -360,7 +375,7 @@ func (m *Model) statusShortcuts() string {
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
 		return "Schema: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return "Records: Enter edit | w save | F filter"
+		return "Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter"
 	default:
 		return ""
 	}

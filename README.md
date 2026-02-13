@@ -13,3 +13,12 @@ cp docs/config.example.toml ~/.config/dbc/config.toml
 ```
 go run ./cmd/dbc
 ```
+
+## Keyboard Shortcuts (Records View)
+- `Enter` edit selected cell (or enter field focus)
+- `i` insert pending row
+- `d` toggle delete on persisted row / remove pending insert
+- `u` undo last staged action
+- `Ctrl+r` redo staged action
+- `w` save staged changes
+- `F` open filter popup

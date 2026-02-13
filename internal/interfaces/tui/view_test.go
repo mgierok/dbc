@@ -46,7 +46,7 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: Enter edit | w save | F filter" {
+	if shortcuts != "Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
 	}
 }
@@ -54,20 +54,22 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	// Arrange
 	model := &Model{
-		stagedEdits: map[string]recordEdits{
+		pendingUpdates: map[string]recordEdits{
 			"id=1": {
 				changes: map[int]stagedEdit{
 					0: {Value: domainmodel.Value{Text: "bob", Raw: "bob"}},
 				},
 			},
 		},
+		pendingInserts: []pendingInsertRow{{}},
+		pendingDeletes: map[string]recordDelete{"id=2": {}},
 	}
 
 	// Act
 	status := model.renderStatus(80)
 
 	// Assert
-	if !strings.Contains(status, "WRITE (dirty: 1)") {
+	if !strings.Contains(status, "WRITE (dirty: 3)") {
 		t.Fatalf("expected dirty status, got %q", status)
 	}
 }

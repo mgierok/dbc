@@ -8,8 +8,8 @@ import (
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
-func Run(ctx context.Context, listTables *usecase.ListTables, getSchema *usecase.GetSchema, listRecords *usecase.ListRecords, listOperators *usecase.ListOperators, saveEdits *usecase.SaveRecordEdits) error {
-	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveEdits)
+func Run(ctx context.Context, listTables *usecase.ListTables, getSchema *usecase.GetSchema, listRecords *usecase.ListRecords, listOperators *usecase.ListOperators, saveChanges *usecase.SaveTableChanges) error {
+	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges)
 	program := tea.NewProgram(model, tea.WithAltScreen())
 	_, err := program.Run()
 	return err
