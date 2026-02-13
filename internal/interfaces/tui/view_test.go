@@ -46,7 +46,7 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: Enter edit | i insert | d delete | w save | F filter" {
+	if shortcuts != "Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
 	}
 }

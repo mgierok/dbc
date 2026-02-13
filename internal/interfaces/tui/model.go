@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -69,7 +70,53 @@ type recordDelete struct {
 	identity model.RecordIdentity
 }
 
+type stagedOperationKind int
+
+const (
+	opInsertAdded stagedOperationKind = iota
+	opInsertRemoved
+	opCellEdited
+	opDeleteToggled
+)
+
+type cellEditTarget int
+
+const (
+	cellEditPersisted cellEditTarget = iota
+	cellEditInsert
+)
+
+type insertOperation struct {
+	index int
+	row   pendingInsertRow
+}
+
+type cellEditOperation struct {
+	target             cellEditTarget
+	insertIndex        int
+	recordKey          string
+	identity           model.RecordIdentity
+	columnIndex        int
+	before             stagedEdit
+	beforeExists       bool
+	after              stagedEdit
+	afterExists        bool
+	beforeExplicitAuto bool
+	afterExplicitAuto  bool
+}
+
+type deleteToggleOperation struct {
+	key          string
+	identity     model.RecordIdentity
+	beforeMarked bool
+	afterMarked  bool
+}
+
 type stagedOperation struct {
+	kind   stagedOperationKind
+	insert insertOperation
+	cell   cellEditOperation
+	del    deleteToggleOperation
 }
 
 type editPopup struct {
@@ -324,6 +371,10 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.addPendingInsert()
 	case "d":
 		return m.toggleDeleteSelection()
+	case "u":
+		return m.undoStagedAction()
+	case "ctrl+r":
+		return m.redoStagedAction()
 	case "ctrl+a":
 		return m.toggleInsertAutoFields()
 	case "j":
@@ -728,6 +779,7 @@ func (m *Model) setContentSelection(index int) (tea.Model, tea.Cmd) {
 		return m, nil
 	case ViewRecords:
 		m.recordSelection = index
+		m.syncRecordColumnForSelection()
 		return m, m.maybeLoadMoreRecords()
 	default:
 		return m, nil
@@ -1056,7 +1108,17 @@ func (m *Model) addPendingInsert() (tea.Model, tea.Cmd) {
 	for index, column := range m.schema.Columns {
 		row.values[index] = stagedEdit{Value: initialInsertValue(column)}
 	}
-	m.pendingInserts = append([]pendingInsertRow{row}, m.pendingInserts...)
+	if err := m.insertPendingRowAt(0, row); err != nil {
+		m.statusMessage = "Error: " + err.Error()
+		return m, nil
+	}
+	m.recordOperation(stagedOperation{
+		kind: opInsertAdded,
+		insert: insertOperation{
+			index: 0,
+			row:   clonePendingInsertRow(row),
+		},
+	})
 	m.recordSelection = 0
 	m.recordColumn = m.defaultRecordColumnForRow(0)
 	m.recordFieldFocus = true
@@ -1071,7 +1133,18 @@ func (m *Model) toggleDeleteSelection() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if insertIndex, isInsert := m.pendingInsertIndexForSelection(); isInsert {
-		m.removePendingInsert(insertIndex)
+		removed, err := m.removePendingInsert(insertIndex)
+		if err != nil {
+			m.statusMessage = "Error: " + err.Error()
+			return m, nil
+		}
+		m.recordOperation(stagedOperation{
+			kind: opInsertRemoved,
+			insert: insertOperation{
+				index: insertIndex,
+				row:   removed,
+			},
+		})
 		return m, nil
 	}
 	if !m.canEditRecords() {
@@ -1083,14 +1156,21 @@ func (m *Model) toggleDeleteSelection() (tea.Model, tea.Cmd) {
 		m.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
-	if m.pendingDeletes == nil {
-		m.pendingDeletes = make(map[string]recordDelete)
+	_, exists := m.pendingDeletes[key]
+	nextMarked := !exists
+	if err := m.setDeleteMark(key, identity, nextMarked); err != nil {
+		m.statusMessage = "Error: " + err.Error()
+		return m, nil
 	}
-	if _, exists := m.pendingDeletes[key]; exists {
-		delete(m.pendingDeletes, key)
-	} else {
-		m.pendingDeletes[key] = recordDelete{identity: identity}
-	}
+	m.recordOperation(stagedOperation{
+		kind: opDeleteToggled,
+		del: deleteToggleOperation{
+			key:          key,
+			identity:     identity,
+			beforeMarked: exists,
+			afterMarked:  nextMarked,
+		},
+	})
 	return m, nil
 }
 
@@ -1117,6 +1197,156 @@ func (m *Model) toggleInsertAutoFields() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *Model) undoStagedAction() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent || len(m.history) == 0 {
+		return m, nil
+	}
+	lastIndex := len(m.history) - 1
+	op := m.history[lastIndex]
+	m.history = m.history[:lastIndex]
+	if err := m.applyInverseOperation(op); err != nil {
+		m.statusMessage = "Error: " + err.Error()
+		m.history = append(m.history, op)
+		return m, nil
+	}
+	m.future = append(m.future, op)
+	m.normalizeRecordSelection()
+	return m, nil
+}
+
+func (m *Model) redoStagedAction() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent || len(m.future) == 0 {
+		return m, nil
+	}
+	lastIndex := len(m.future) - 1
+	op := m.future[lastIndex]
+	m.future = m.future[:lastIndex]
+	if err := m.applyOperation(op); err != nil {
+		m.statusMessage = "Error: " + err.Error()
+		m.future = append(m.future, op)
+		return m, nil
+	}
+	m.history = append(m.history, op)
+	m.normalizeRecordSelection()
+	return m, nil
+}
+
+func (m *Model) applyOperation(op stagedOperation) error {
+	switch op.kind {
+	case opInsertAdded:
+		return m.insertPendingRowAt(op.insert.index, op.insert.row)
+	case opInsertRemoved:
+		_, err := m.removePendingInsert(op.insert.index)
+		return err
+	case opCellEdited:
+		return m.applyCellEditState(op.cell, false)
+	case opDeleteToggled:
+		return m.setDeleteMark(op.del.key, op.del.identity, op.del.afterMarked)
+	default:
+		return fmt.Errorf("unsupported staged operation")
+	}
+}
+
+func (m *Model) applyInverseOperation(op stagedOperation) error {
+	switch op.kind {
+	case opInsertAdded:
+		_, err := m.removePendingInsert(op.insert.index)
+		return err
+	case opInsertRemoved:
+		return m.insertPendingRowAt(op.insert.index, op.insert.row)
+	case opCellEdited:
+		return m.applyCellEditState(op.cell, true)
+	case opDeleteToggled:
+		return m.setDeleteMark(op.del.key, op.del.identity, op.del.beforeMarked)
+	default:
+		return fmt.Errorf("unsupported staged operation")
+	}
+}
+
+func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
+	edit := op.after
+	exists := op.afterExists
+	explicitAuto := op.afterExplicitAuto
+	if useBefore {
+		edit = op.before
+		exists = op.beforeExists
+		explicitAuto = op.beforeExplicitAuto
+	}
+	switch op.target {
+	case cellEditInsert:
+		if op.insertIndex < 0 || op.insertIndex >= len(m.pendingInserts) {
+			return fmt.Errorf("insert index out of range")
+		}
+		row := m.pendingInserts[op.insertIndex]
+		if row.values == nil {
+			row.values = make(map[int]stagedEdit, len(m.schema.Columns))
+		}
+		if row.explicitAuto == nil {
+			row.explicitAuto = make(map[int]bool)
+		}
+		if exists {
+			row.values[op.columnIndex] = edit
+		} else {
+			delete(row.values, op.columnIndex)
+		}
+		if op.columnIndex >= 0 && op.columnIndex < len(m.schema.Columns) && m.schema.Columns[op.columnIndex].AutoIncrement {
+			if explicitAuto {
+				row.explicitAuto[op.columnIndex] = true
+			} else {
+				delete(row.explicitAuto, op.columnIndex)
+			}
+		}
+		m.pendingInserts[op.insertIndex] = row
+		return nil
+	case cellEditPersisted:
+		if strings.TrimSpace(op.recordKey) == "" {
+			return fmt.Errorf("record key missing")
+		}
+		if m.pendingUpdates == nil {
+			m.pendingUpdates = make(map[string]recordEdits)
+		}
+		edits := m.pendingUpdates[op.recordKey]
+		if edits.changes == nil {
+			edits.changes = make(map[int]stagedEdit)
+		}
+		edits.identity = op.identity
+		if exists {
+			edits.changes[op.columnIndex] = edit
+			m.pendingUpdates[op.recordKey] = edits
+			return nil
+		}
+		delete(edits.changes, op.columnIndex)
+		if len(edits.changes) == 0 {
+			delete(m.pendingUpdates, op.recordKey)
+			return nil
+		}
+		m.pendingUpdates[op.recordKey] = edits
+		return nil
+	default:
+		return fmt.Errorf("unsupported cell edit target")
+	}
+}
+
+func (m *Model) setDeleteMark(key string, identity model.RecordIdentity, marked bool) error {
+	if strings.TrimSpace(key) == "" {
+		return fmt.Errorf("record key missing")
+	}
+	if m.pendingDeletes == nil {
+		m.pendingDeletes = make(map[string]recordDelete)
+	}
+	if marked {
+		m.pendingDeletes[key] = recordDelete{identity: identity}
+		return nil
+	}
+	delete(m.pendingDeletes, key)
+	return nil
+}
+
+func (m *Model) recordOperation(op stagedOperation) {
+	m.history = append(m.history, op)
+	m.future = nil
+}
+
 func (m *Model) stageEdit(rowIndex, columnIndex int, value model.Value) error {
 	if columnIndex < 0 || columnIndex >= len(m.schema.Columns) {
 		return fmt.Errorf("column index out of range")
@@ -1125,15 +1355,29 @@ func (m *Model) stageEdit(rowIndex, columnIndex int, value model.Value) error {
 		return fmt.Errorf("record index out of range")
 	}
 	if insertIndex, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		return m.stageInsertEdit(insertIndex, columnIndex, value)
+		op, changed, err := m.stageInsertEdit(insertIndex, columnIndex, value)
+		if err != nil {
+			return err
+		}
+		if changed {
+			m.recordOperation(op)
+		}
+		return nil
 	}
-	return m.stagePersistedEdit(rowIndex, columnIndex, value)
-}
-
-func (m *Model) stagePersistedEdit(visibleRowIndex, columnIndex int, value model.Value) error {
-	key, identity, err := m.recordIdentityForVisibleRow(visibleRowIndex)
+	op, changed, err := m.stagePersistedEdit(rowIndex, columnIndex, value)
 	if err != nil {
 		return err
+	}
+	if changed {
+		m.recordOperation(op)
+	}
+	return nil
+}
+
+func (m *Model) stagePersistedEdit(visibleRowIndex, columnIndex int, value model.Value) (stagedOperation, bool, error) {
+	key, identity, err := m.recordIdentityForVisibleRow(visibleRowIndex)
+	if err != nil {
+		return stagedOperation{}, false, err
 	}
 	if m.pendingUpdates == nil {
 		m.pendingUpdates = make(map[string]recordEdits)
@@ -1143,29 +1387,48 @@ func (m *Model) stagePersistedEdit(visibleRowIndex, columnIndex int, value model
 		edits.changes = make(map[int]stagedEdit)
 	}
 	edits.identity = identity
+	before, beforeExists := edits.changes[columnIndex]
+	after, afterExists := stagedEdit{}, false
 
 	original := m.visibleRowValue(visibleRowIndex, columnIndex)
 	if displayValue(value) == original {
 		delete(edits.changes, columnIndex)
 		if len(edits.changes) == 0 {
 			delete(m.pendingUpdates, key)
-			return nil
+		} else {
+			m.pendingUpdates[key] = edits
 		}
+	} else {
+		after = stagedEdit{Value: value}
+		afterExists = true
+		edits.changes[columnIndex] = after
 		m.pendingUpdates[key] = edits
-		return nil
 	}
-
-	edits.changes[columnIndex] = stagedEdit{Value: value}
-	m.pendingUpdates[key] = edits
-	return nil
+	changed := beforeExists != afterExists || (beforeExists && afterExists && !stagedEditEqual(before, after))
+	if !changed {
+		return stagedOperation{}, false, nil
+	}
+	return stagedOperation{
+		kind: opCellEdited,
+		cell: cellEditOperation{
+			target:       cellEditPersisted,
+			recordKey:    key,
+			identity:     identity,
+			columnIndex:  columnIndex,
+			before:       before,
+			beforeExists: beforeExists,
+			after:        after,
+			afterExists:  afterExists,
+		},
+	}, true, nil
 }
 
-func (m *Model) stageInsertEdit(insertIndex, columnIndex int, value model.Value) error {
+func (m *Model) stageInsertEdit(insertIndex, columnIndex int, value model.Value) (stagedOperation, bool, error) {
 	if insertIndex < 0 || insertIndex >= len(m.pendingInserts) {
-		return fmt.Errorf("insert index out of range")
+		return stagedOperation{}, false, fmt.Errorf("insert index out of range")
 	}
 	if columnIndex < 0 || columnIndex >= len(m.schema.Columns) {
-		return fmt.Errorf("column index out of range")
+		return stagedOperation{}, false, fmt.Errorf("column index out of range")
 	}
 	row := m.pendingInserts[insertIndex]
 	if row.values == nil {
@@ -1174,12 +1437,34 @@ func (m *Model) stageInsertEdit(insertIndex, columnIndex int, value model.Value)
 	if row.explicitAuto == nil {
 		row.explicitAuto = make(map[int]bool)
 	}
-	row.values[columnIndex] = stagedEdit{Value: value}
+	before, beforeExists := row.values[columnIndex]
+	beforeExplicitAuto := row.explicitAuto[columnIndex]
+	after := stagedEdit{Value: value}
+	row.values[columnIndex] = after
+	afterExplicitAuto := beforeExplicitAuto
 	if m.schema.Columns[columnIndex].AutoIncrement {
 		row.explicitAuto[columnIndex] = true
+		afterExplicitAuto = true
 	}
 	m.pendingInserts[insertIndex] = row
-	return nil
+	changed := !beforeExists || !stagedEditEqual(before, after) || beforeExplicitAuto != afterExplicitAuto
+	if !changed {
+		return stagedOperation{}, false, nil
+	}
+	return stagedOperation{
+		kind: opCellEdited,
+		cell: cellEditOperation{
+			target:             cellEditInsert,
+			insertIndex:        insertIndex,
+			columnIndex:        columnIndex,
+			before:             before,
+			beforeExists:       beforeExists,
+			after:              after,
+			afterExists:        true,
+			beforeExplicitAuto: beforeExplicitAuto,
+			afterExplicitAuto:  afterExplicitAuto,
+		},
+	}, true, nil
 }
 
 func (m *Model) canEditRecords() bool {
@@ -1411,20 +1696,54 @@ func (m *Model) isRowMarkedDelete(rowIndex int) bool {
 	return marked
 }
 
-func (m *Model) removePendingInsert(index int) {
+func (m *Model) removePendingInsert(index int) (pendingInsertRow, error) {
 	if index < 0 || index >= len(m.pendingInserts) {
-		return
+		return pendingInsertRow{}, fmt.Errorf("insert index out of range")
 	}
+	removed := clonePendingInsertRow(m.pendingInserts[index])
 	m.pendingInserts = append(m.pendingInserts[:index], m.pendingInserts[index+1:]...)
-	if m.recordSelection >= m.totalRecordRows() {
-		m.recordSelection = maxInt(0, m.totalRecordRows()-1)
+	if m.recordSelection > index {
+		m.recordSelection--
 	}
-	if m.totalRecordRows() == 0 {
+	m.normalizeRecordSelection()
+	return removed, nil
+}
+
+func (m *Model) insertPendingRowAt(index int, row pendingInsertRow) error {
+	if index < 0 || index > len(m.pendingInserts) {
+		return fmt.Errorf("insert index out of range")
+	}
+	cloned := clonePendingInsertRow(row)
+	m.pendingInserts = append(m.pendingInserts, pendingInsertRow{})
+	copy(m.pendingInserts[index+1:], m.pendingInserts[index:])
+	m.pendingInserts[index] = cloned
+	if m.recordSelection >= index {
+		m.recordSelection++
+	}
+	m.normalizeRecordSelection()
+	return nil
+}
+
+func (m *Model) normalizeRecordSelection() {
+	totalRows := m.totalRecordRows()
+	if totalRows == 0 {
 		m.recordSelection = 0
 		m.recordFieldFocus = false
+		m.recordColumn = 0
+		return
 	}
+	m.recordSelection = clamp(m.recordSelection, 0, totalRows-1)
+	m.syncRecordColumnForSelection()
+}
+
+func (m *Model) syncRecordColumnForSelection() {
 	visibleColumns := m.visibleColumnIndicesForSelection()
-	if len(visibleColumns) > 0 && !containsInt(visibleColumns, m.recordColumn) {
+	if len(visibleColumns) == 0 {
+		m.recordColumn = 0
+		m.recordFieldFocus = false
+		return
+	}
+	if !containsInt(visibleColumns, m.recordColumn) {
 		m.recordColumn = visibleColumns[0]
 	}
 }
@@ -1517,6 +1836,28 @@ func displayValue(value model.Value) string {
 		return fmt.Sprint(value.Raw)
 	}
 	return ""
+}
+
+func stagedEditEqual(left, right stagedEdit) bool {
+	if left.Value.IsNull != right.Value.IsNull || left.Value.Text != right.Value.Text {
+		return false
+	}
+	return reflect.DeepEqual(left.Value.Raw, right.Value.Raw)
+}
+
+func clonePendingInsertRow(row pendingInsertRow) pendingInsertRow {
+	cloned := pendingInsertRow{
+		values:       make(map[int]stagedEdit, len(row.values)),
+		explicitAuto: make(map[int]bool, len(row.explicitAuto)),
+		showAuto:     row.showAuto,
+	}
+	for key, value := range row.values {
+		cloned.values[key] = value
+	}
+	for key, value := range row.explicitAuto {
+		cloned.explicitAuto[key] = value
+	}
+	return cloned
 }
 
 func optionIndex(options []string, value string) int {

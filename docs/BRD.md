@@ -131,11 +131,11 @@ These checklists are part of the business documentation and can be updated in fu
 - Exclusions: no data writes, no schema changes, no SQL REPL.
 
 ### Stage 2: SQLite Data Operations
-- [ ] Insert records
+- [x] Insert records
 - [x] Edit records
-- [ ] Delete records
+- [x] Delete records
 - [x] Transaction management for safe writes
-- [ ] Session-level undo/redo
+- [x] Session-level undo/redo
 
 #### Stage 2 Definition (Detailed)
 - Scope: SQLite data writes (insert, update, delete) for a single table at a time; no schema changes.

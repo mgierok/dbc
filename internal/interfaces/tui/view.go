@@ -375,7 +375,7 @@ func (m *Model) statusShortcuts() string {
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
 		return "Schema: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return "Records: Enter edit | i insert | d delete | w save | F filter"
+		return "Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter"
 	default:
 		return ""
 	}

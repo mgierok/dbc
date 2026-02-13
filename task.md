@@ -184,6 +184,48 @@ Status: Completed on branch `stage2`.
 - Update `docs/BRD.md` Stage 2 checklist to completed items when implementation lands.
 - Update shortcut list in `README.md` or doc section where runtime keys are documented.
 
+## Milestone B Delivery Summary
+Status: Completed on branch `stage2`.
+
+1. Undo/redo model delivered (table-scoped)
+- Added reversible staged operation entries:
+  - `opInsertAdded`
+  - `opInsertRemoved`
+  - `opCellEdited`
+  - `opDeleteToggled`
+- Implemented `u` (undo) to pop and apply inverse operation.
+- Implemented `Ctrl+r` (redo) to reapply operations from redo stack.
+- Any new staged action clears the redo stack.
+
+2. Undo/redo boundaries delivered
+- Undo/redo is table-scoped (staged state of current table).
+- Undo/redo is only handled in normal records mode (not while popups are active).
+- On table switch with discard confirmation accepted, staged state and both undo/redo stacks are cleared.
+
+3. Stage 2 UX polish delivered
+- Records status shortcuts updated to:
+  - `Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter`
+- Existing mode indicator retained:
+  - `READ-ONLY` vs `WRITE (dirty: N)`.
+- Field focus navigation now keeps column focus valid when moving between persisted rows and pending insert rows (including hidden auto-increment columns).
+
+4. Documentation updates delivered
+- Updated `docs/BRD.md` Stage 2 checklist:
+  - Insert records: completed
+  - Delete records: completed
+  - Session-level undo/redo: completed
+- Added records runtime shortcut documentation in `README.md`.
+
+5. Validation and tests completed for Milestone B
+- `go test ./...` passes after Milestone B implementation.
+- Added/updated TUI tests to cover:
+  - undo/redo for insert add/remove,
+  - undo/redo for persisted cell edits,
+  - undo/redo for delete toggles,
+  - redo stack clearing after a new staged action,
+  - field-focus column adjustment across pending insert and persisted rows,
+  - updated records status shortcut text.
+
 ## Test Plan and Acceptance Scenarios
 1. Domain/Application tests
 - `SaveTableChanges` delegates full `TableChanges` payload to engine.
