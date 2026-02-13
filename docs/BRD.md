@@ -132,9 +132,9 @@ These checklists are part of the business documentation and can be updated in fu
 
 ### Stage 2: SQLite Data Operations
 - [ ] Insert records
-- [ ] Edit records
+- [x] Edit records
 - [ ] Delete records
-- [ ] Transaction management for safe writes
+- [x] Transaction management for safe writes
 - [ ] Session-level undo/redo
 
 #### Stage 2 Definition (Detailed)
