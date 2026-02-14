@@ -70,11 +70,21 @@ func DefaultPath() (string, error) {
 	return PathFromHome(home), nil
 }
 
-func LoadFile(path string) (Config, error) {
+func LoadFile(path string) (cfg Config, err error) {
+	// #nosec G304 -- path is provided by trusted caller flow (default path or explicit local user input).
 	file, err := os.Open(path)
 	if err != nil {
 		return Config{}, err
 	}
-	defer file.Close()
-	return Decode(file)
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	cfg, err = Decode(file)
+	if err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
 }
