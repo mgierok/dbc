@@ -1,162 +1,148 @@
-# Project Rules
+# AGENTS
 
-## Project Overview
+## 1. Purpose
 
-- DBC is a terminal application for browsing and managing databases.
-- First supported engine: SQLite; additional engines planned later.
-- UI should feel like Midnight Commander with vim-like shortcuts.
-- Go is the implementation language.
+This file defines operating instructions for AI coding agents (for example Codex, Claude Code) working in this repository during:
 
-## Running the App
+- planning future tasks
+- implementing new features
+- changing existing behavior
+- refactoring and maintenance
 
-- Read README.md to understand how to run the app in development environment.
+Goal: keep product and code changes consistent, safe, and aligned with project standards.
 
-## Language
+## 2. Scope and Priority
 
-- Use English for identifiers (variables, functions, types, packages, etc.) and internal documentation.
+- This file applies to the whole repository (project root level).
+- Source of truth split:
+  - Product perspective: `docs/PRODUCT_DOCUMENTATION.md`
+  - Technical perspective: `docs/TECHNICAL_DOCUMENTATION.md`
+- `docs/BRD.md` is legacy/planning context, not authoritative for current state.
 
-## Architecture (Clean Architecture + DDD)
+If any documentation conflicts with current code behavior:
 
-This document is authoritative for architecture in this repository. All new code MUST follow Clean Architecture with Domain-Driven Design (DDD).
-See `docs/CLEAN_ARCHITECTURE_DDD.md` for full details and examples.
+1. Treat current code as factual state.
+2. Update the relevant documentation in the same change set.
 
-### Architecture Rules (Non-Negotiable)
+## 3. Mandatory Context Loading
 
-- The canonical layers are Domain, Application, Interfaces (TUI adapters), and Infrastructure.
-- Source code dependencies MUST point inward: Interfaces and Infrastructure depend on Application, Application depends on Domain, Domain depends on nothing.
-- Domain MUST NOT import packages from other internal layers or external frameworks.
-- Application MAY depend on Domain only. It MUST NOT depend on Infrastructure or Interfaces.
-- Interfaces MUST depend on Application (and Domain types) only. It MUST NOT depend on Infrastructure.
-- Infrastructure MAY depend on Application and Domain to implement ports. It MUST NOT depend on Interfaces.
-- The TUI is an adapter: it handles input/output only and MUST NOT contain business rules or database access logic.
-- Database engine interfaces live in Domain or Application; implementations live in Infrastructure.
+Before planning or coding, load only relevant sections:
 
-### Preferred Directory Layout (for new code)
+- Product behavior and scope:
+  - `docs/PRODUCT_DOCUMENTATION.md#4-current-product-scope`
+  - `docs/PRODUCT_DOCUMENTATION.md#7-functional-specification-current-state`
+  - `docs/PRODUCT_DOCUMENTATION.md#10-known-constraints-and-non-goals`
+- Technical implementation baseline:
+  - `docs/TECHNICAL_DOCUMENTATION.md#3-project-structure`
+  - `docs/TECHNICAL_DOCUMENTATION.md#4-architecture-guidelines`
+  - `docs/TECHNICAL_DOCUMENTATION.md#5-runtime-flow`
+  - `docs/TECHNICAL_DOCUMENTATION.md#8-testing-strategy-and-workflow`
+  - `docs/TECHNICAL_DOCUMENTATION.md#9-feature-delivery-guide`
+- Deep-dive references (when needed):
+  - `docs/CLEAN_ARCHITECTURE_DDD.md`
+  - `docs/TEST_DRIVEN_DEVELOPMENT.md`
 
-```
-cmd/
-  dbc/
-    main.go
-internal/
-  domain/
-    model/
-    service/
-    repository/
-    event/
-    engine/         # engine interfaces
-  application/
-    usecase/
-    port/
-    dto/
-  interfaces/
-    tui/
-  infrastructure/
-    engine/
-    config/
-```
+## 4. Agent Workflow Standard
 
-### Placement Rules
+### 4.1 Planning
 
-- Entities, value objects, and aggregates live in `internal/domain/model`.
-- Domain services live in `internal/domain/service`.
-- Repository interfaces live in `internal/domain/repository`.
-- Domain events live in `internal/domain/event`.
-- Use cases live in `internal/application/usecase`.
-- DTOs live in `internal/application/dto` or under Interfaces if TUI-specific.
-- Ports live in `internal/application/port` and must be implemented in Infrastructure.
-- TUI adapters (input handling, rendering) live in `internal/interfaces/tui`.
-- Database engine implementations live in `internal/infrastructure/engine`.
+For each task:
 
-### DDD Glossary
+1. Define expected product outcome (what changes for the user).
+2. Map affected layers/packages.
+3. Identify test impact (new tests or updates).
+4. Identify documentation impact (`PRODUCT` and/or `TECHNICAL` docs).
 
-- Bounded context: A clearly defined domain boundary with its own model, language, and business rules.
-- Entity: A domain object defined by identity, not by its attributes. It can change state over time while keeping the same identity.
-- Value object: An immutable domain object defined by its attributes. Equality is based on value, not identity.
-- Aggregate: A cluster of entities and value objects that must remain consistent. The aggregate root is the only entry point for changes.
-- Ubiquitous language: Shared terminology used by the team and reflected in code and docs within a bounded context.
-- Repository: An interface that provides access to aggregates. It belongs in the domain or application layer; implementations live in infrastructure.
-- Domain service: Stateless domain logic that does not naturally fit in an entity or value object.
-- Application service (use case): Orchestrates domain behavior to fulfill a business capability.
-- Port: An interface that defines a boundary between the application/domain and infrastructure.
-- Adapter: A concrete implementation that translates between external systems and ports.
-- Infrastructure: Implementation details such as databases and frameworks.
-- DTO: A structure used to move data across boundaries; DTOs must not be used as domain models.
+### 4.2 Implementation
 
-## Database Engine Rules
+- Keep changes minimal and scoped to task intent.
+- Respect architecture boundaries and dependency direction.
+- Prefer interface-driven changes through application ports.
+- Do not bypass use cases from interface adapters.
+- Prefer TDD-first for behavior changes: add/update the relevant test before implementation.
+- If any requirement, product behavior, or technical decision is unclear, ask the user before implementing assumptions.
 
-- SQLite is the first supported engine.
-- Adding a new engine must not require changes to TUI code paths beyond wiring.
-- Default mode is read-only; write features must be explicit and safe.
+### 4.3 Verification
 
-## UI/UX Principles
+- Apply quality gates for code changes:
+  - run formatter for changed code (for Go: `gofmt`)
+  - run linter for affected scope (for Go: `golangci-lint run`)
+  - run tests; for feature/code changes run `go test ./...`
+- If tests cannot run, explicitly report why.
 
-- Keyboard-first navigation; vim-like motions for common actions.
-- Consistent panel-based layout inspired by Midnight Commander.
-- Clear mode indicators (read-only vs write).
+### 4.4 Completion
 
-## Development Guidelines
+A task is complete when:
 
-- Write idiomatic Go code following standard conventions and patterns.
-- Use interface-driven development with explicit dependency injection.
-- Write short, focused functions with single responsibility.
-- Handle errors explicitly; avoid global state.
+- code change is implemented
+- tests pass (or limitation is explicitly documented)
+- impacted documentation is updated
+- naming and terminology remain consistent
+
+## 5. Engineering Guardrails
+
+### 5.1 Language and Style
+
+- Use English for identifiers and internal technical documentation.
+- Write idiomatic Go.
+- Keep functions focused and explicit in error handling.
+
+### 5.2 Architecture
+
+Use `docs/TECHNICAL_DOCUMENTATION.md#4-architecture-guidelines` as primary architecture guide.
+
+Non-negotiable summary:
+
+- Dependencies point inward.
+- Domain must stay isolated from outer layers.
+- TUI is an adapter (no direct database/business rule implementation).
+- Infrastructure implements ports; it does not drive use case logic.
+
+### 5.3 Dependencies and Toolchain
+
+- Dependency/toolchain baseline is defined in:
+  - `docs/TECHNICAL_DOCUMENTATION.md#7-technology-stack-and-versions`
+  - `go.mod`
 - Adding third-party dependencies requires explicit approval.
-- Follow TDD practices described in `docs/TEST_DRIVEN_DEVELOPMENT.md`.
 
-## Approved Libraries (Stage 1)
+## 6. Documentation Policy
 
-- `github.com/charmbracelet/bubbletea`
-- `modernc.org/sqlite`
-- `github.com/pelletier/go-toml/v2`
+### 6.1 Product Documentation
 
-## Toolchain
+`docs/PRODUCT_DOCUMENTATION.md` must be updated for every change affecting:
 
-- Go 1.25.5
+- product behavior
+- feature scope
+- user workflows
+- UX constraints or shortcuts
+- product terminology
 
-## Performance and Concurrency
+Writing standard:
 
-- Use goroutines safely with proper synchronization mechanisms.
-- Implement goroutine cancellation using context propagation.
-- Minimize allocations and profile before optimizing.
-- Use benchmarks to track performance regressions.
-- Guard shared state with channels or sync primitives.
+- understandable for Junior Product Manager and Junior Software Engineer
+- clear, plain language
+- no unnecessary technical internals (except product-level specs, e.g., SQLite support)
 
-## Documentation
+### 6.2 Technical Documentation
 
-- Keep business and roadmap docs in `docs/`.
-- `docs/PRODUCT_DOCUMENTATION.md` is the single source of truth for the current application state from a product perspective.
-- `docs/TECHNICAL_DOCUMENTATION.md` is the single source of truth for the current application state from a technical perspective.
-- Treat `docs/BRD.md` as legacy/planning context, not as the authoritative description of the current product state.
-- Update `docs/PRODUCT_DOCUMENTATION.md` with every codebase change that affects product behavior, scope, UX, workflows, constraints, or terminology.
-- Update `docs/TECHNICAL_DOCUMENTATION.md` with every codebase change that affects architecture, technical decisions, runtime flow, dependencies, testing approach, or engineering conventions.
+`docs/TECHNICAL_DOCUMENTATION.md` must be updated for every change affecting:
 
-### Product Documentation Purpose
+- architecture and boundaries
+- technical decisions
+- runtime flow
+- dependencies/toolchain versions
+- test strategy or engineering workflow
 
-- `docs/PRODUCT_DOCUMENTATION.md` defines what DBC currently is and how it behaves for users and business stakeholders.
-- The document must describe delivered product capabilities and constraints, not implementation internals.
-- The document must be written so it is understandable for both a Junior Product Manager and a Junior Software Engineer.
-- Use clear, plain language; explain product terms when needed; avoid unnecessary jargon.
+Writing standard:
 
-### Product Documentation Principles
+- understandable for Junior Software Engineer
+- practical, implementation-oriented, and code-aligned
+- link to deep-dive docs instead of duplicating long conceptual content
 
-- Current-state accuracy: every statement must reflect actual behavior present in the codebase now.
-- Business-first language: explain user outcomes and product behavior; avoid build/technology details except product-level specifications (for example SQLite support).
-- Scope clarity: clearly separate in-scope delivered capabilities from out-of-scope items and roadmap.
-- Consistent naming: use one canonical terminology set across the whole document.
-- Safety transparency: clearly communicate safeguards, confirmations, and known user-impacting limitations.
-- Actionable structure: keep a clear, scannable markdown structure that supports quick product decisions.
+## 7. Quick Reference
 
-### Technical Documentation Purpose
-
-- `docs/TECHNICAL_DOCUMENTATION.md` defines how DBC is structured, wired, tested, and extended.
-- The document must help a Junior Software Engineer enter the project quickly and deliver features safely.
-- The document must stay aligned with the live codebase and link to deeper architecture/TDD documents where relevant.
-
-### Technical Documentation Principles
-
-- Current-state accuracy: describe only what is implemented in the codebase now.
-- Junior-friendly clarity: use clear, practical language and explain project-specific technical terms.
-- Architecture alignment: keep guidance consistent with `docs/CLEAN_ARCHITECTURE_DDD.md`.
-- Testing alignment: keep workflow and expectations consistent with `docs/TEST_DRIVEN_DEVELOPMENT.md`.
-- Version precision: keep dependency and toolchain versions consistent with `go.mod`.
-- Delivery focus: include actionable guidance that helps contributors implement and ship features.
+- Product source of truth: `docs/PRODUCT_DOCUMENTATION.md`
+- Technical source of truth: `docs/TECHNICAL_DOCUMENTATION.md`
+- Architecture deep dive: `docs/CLEAN_ARCHITECTURE_DDD.md`
+- TDD deep dive: `docs/TEST_DRIVEN_DEVELOPMENT.md`
+- Run/setup basics: `README.md`
