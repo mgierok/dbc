@@ -8,7 +8,7 @@
 | Audience | Junior Software Engineer (primary), all contributors |
 | Purpose | Describe how the project is built, structured, tested, and extended |
 | Status | Active |
-| Last Updated | 2026-02-13 |
+| Last Updated | 2026-02-14 |
 | Source of Truth Scope | Current technical state of the codebase |
 
 ## Table of Contents
@@ -70,6 +70,12 @@ go run ./cmd/dbc
 
 ```bash
 go test ./...
+```
+
+### 2.5 Run Linter
+
+```bash
+golangci-lint run ./...
 ```
 
 ## 3. Project Structure
@@ -277,6 +283,17 @@ Version source: `go.mod`.
 
 - Additional packages in `go.mod` are transitive dependencies and should not be edited manually unless intentionally upgrading dependencies.
 
+### 7.4 Linting Tooling
+
+- Static analysis is configured in `.golangci.yml`.
+- The project uses deterministic `golangci-lint` configuration (`linters.default: standard` with explicitly enabled additional linters).
+- `revive` comment-enforcement rules are intentionally disabled:
+  - `package-comments`
+  - `exported`
+- `//nolint` usage is restricted:
+  - explanation is required
+  - specific linter name is required
+
 ## 8. Testing Strategy and Workflow
 
 This repository follows TDD expectations documented in:
@@ -303,6 +320,10 @@ This repository follows TDD expectations documented in:
 4. Run full suite:
    ```bash
    go test ./...
+   ```
+5. Run static checks:
+   ```bash
+   golangci-lint run ./...
    ```
 
 ### 8.3 Current Conventions Seen in Tests
