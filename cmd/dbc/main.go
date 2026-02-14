@@ -46,11 +46,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-	defer db.Close()
 
 	if err := db.Ping(); err != nil {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("failed to close database after ping failure: %v", closeErr)
+		}
 		log.Fatalf("failed to connect to database: %v", err)
 	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("failed to close database: %v", closeErr)
+		}
+	}()
 
 	engine := engine.NewSQLiteEngine(db)
 	listTables := usecase.NewListTables(engine)

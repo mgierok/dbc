@@ -786,18 +786,6 @@ func (m *Model) setContentSelection(index int) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m *Model) switchToSchema() (tea.Model, tea.Cmd) {
-	m.viewMode = ViewSchema
-	m.recordFieldFocus = false
-	if m.currentTableName() == "" {
-		return m, nil
-	}
-	if len(m.schema.Columns) == 0 {
-		return m, m.loadSchemaCmd()
-	}
-	return m, nil
-}
-
 func (m *Model) switchToRecords() (tea.Model, tea.Cmd) {
 	m.viewMode = ViewRecords
 	m.recordFieldFocus = false
