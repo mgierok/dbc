@@ -42,6 +42,19 @@ Before planning or coding, load only relevant sections:
   - `docs/CLEAN_ARCHITECTURE_DDD.md`
   - `docs/TEST_DRIVEN_DEVELOPMENT.md`
 
+### 3.1 Mandatory Unit-Test Skill Reference Loading
+
+Explicitly load `.agents/skills/create-unit-tests/references/unit-testing-guide.md` before implementation when at least one of these situations is true:
+
+- creating new unit tests
+- modifying existing unit tests
+- fixing failing unit tests
+- refactoring brittle/flaky unit tests
+- reviewing unit-test quality, scope, or structure
+- designing unit-test cases for changed behavior
+
+Do not skip this reference for unit-test work, regardless of language, framework, or methodology (`TDD`, `BDD`, or test-after).
+
 ## 4. Agent Workflow Standard
 
 ### 4.1 Planning

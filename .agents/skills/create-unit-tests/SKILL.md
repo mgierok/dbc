@@ -1,5 +1,5 @@
 ---
-name: creating-unit-test
+name: create-unit-tests
 description: Design, create, and modify unit tests as black-box behavioral checks using AAA and FIRST principles with test doubles for external dependencies. Use when asked to add new unit tests, update existing unit tests after production-code changes, refactor brittle or flaky unit tests, improve coverage, fix failing unit tests, review unit-test quality, or explain unit-testing strategy in any language/framework and regardless of methodology (TDD, BDD, or test-after).
 ---
 
