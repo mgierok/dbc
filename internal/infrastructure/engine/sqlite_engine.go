@@ -21,7 +21,7 @@ func NewSQLiteEngine(db *sql.DB) *SQLiteEngine {
 	return &SQLiteEngine{db: db}
 }
 
-func (e *SQLiteEngine) ListTables(ctx context.Context) ([]model.Table, error) {
+func (e *SQLiteEngine) ListTables(ctx context.Context) (tables []model.Table, err error) {
 	const query = `
 		SELECT name
 		FROM sqlite_master
@@ -32,9 +32,12 @@ func (e *SQLiteEngine) ListTables(ctx context.Context) ([]model.Table, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
-	var tables []model.Table
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
@@ -48,7 +51,7 @@ func (e *SQLiteEngine) ListTables(ctx context.Context) ([]model.Table, error) {
 	return tables, nil
 }
 
-func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (model.Schema, error) {
+func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (schema model.Schema, err error) {
 	tableSQL, err := e.tableDefinitionSQL(ctx, tableName)
 	if err != nil {
 		return model.Schema{}, err
@@ -59,7 +62,11 @@ func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (model.S
 	if err != nil {
 		return model.Schema{}, err
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	var columns []model.Column
 	for rows.Next() {
@@ -101,7 +108,7 @@ func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (model.S
 	}, nil
 }
 
-func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter) (model.RecordPage, error) {
+func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter) (page model.RecordPage, err error) {
 	if limit <= 0 {
 		return model.RecordPage{}, nil
 	}
@@ -109,7 +116,8 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		offset = 0
 	}
 
-	query := fmt.Sprintf("SELECT * FROM %s", quoteIdentifier(tableName))
+	// #nosec G202 -- table name is treated as an SQL identifier and escaped via quoteIdentifier.
+	query := "SELECT * FROM " + quoteIdentifier(tableName)
 	clause, args, err := buildFilterClause(filter)
 	if err != nil {
 		return model.RecordPage{}, err
@@ -124,7 +132,11 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 	if err != nil {
 		return model.RecordPage{}, err
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	columns, err := rows.Columns()
 	if err != nil {
