@@ -175,6 +175,29 @@ Before coding, define clear success criteria that can be verified:
 
 Avoid vague goals like "make it better" or "improve code quality" without measurable checks.
 
+### 4.3.2 Lint and Safety Prevention Rules
+
+For every code change, apply the following non-negotiable rules:
+
+1. No new lint debt:
+   - Do not introduce new lint violations.
+   - Before finalizing, run `golangci-lint run ./...` and keep it clean.
+2. Resource closing discipline:
+   - Do not use unchecked `defer x.Close()` in production code.
+   - Handle `Close()` errors explicitly or justify a deliberate ignore.
+3. SQL safety:
+   - Do not build runtime SQL using unvalidated string interpolation.
+   - Use placeholders for values.
+   - For dynamic identifiers (table/column names), use strict allowlist and/or safe identifier quoting.
+4. Security findings policy:
+   - Do not disable security linters globally to silence findings.
+   - If an exception is required, apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
+   - Every local linter exception requires explicit user approval each time (no blanket pre-approval).
+5. Mandatory verification evidence in completion report:
+   - Include `golangci-lint run ./...` result.
+   - Include `go test ./...` result.
+   - List any accepted local exceptions (`#nosec` / `nolint`) with rationale.
+
 ### 4.4 Completion
 
 A task is complete when:
