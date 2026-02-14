@@ -55,6 +55,17 @@ Explicitly load `.agents/skills/create-unit-tests/references/unit-testing-guide.
 
 Do not skip this reference for unit-test work, regardless of language, framework, or methodology (`TDD`, `BDD`, or test-after).
 
+### 3.2 Mandatory Commit-Message Skill Invocation
+
+Explicitly invoke skill `write-commit-messages` when at least one of these situations is true:
+
+- user asks to create/propose/write a commit message
+- user asks to run `commit` without providing a message
+- user asks to improve or validate an existing commit message
+- user asks to classify commit type/scope according to Conventional Commits
+
+When this skill is invoked, generate commit messages in Conventional Commits format and use the changed files/diff as primary context.
+
 ## 4. Agent Workflow Standard
 
 ### 4.1 Planning

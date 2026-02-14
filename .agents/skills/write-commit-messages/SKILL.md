@@ -1,5 +1,5 @@
 ---
-name: commit-message
+name: write-commit-messages
 description: Create Conventional Commits v1.0.0 commit messages from user intent, diff, or staged changes. Use when the user asks for a commit message, says "propose commit message", "write commit title", "name commit message", "commit name", "zaproponuj commit", "zaproponuj message do commita", "nazwa commita", "wymysl nazwe commita", or asks to commit without providing a message. Select type, optional scope, and breaking-change footer when needed. Do not use for PR titles, release notes, or changelog generation unless explicitly requested.
 ---
 
