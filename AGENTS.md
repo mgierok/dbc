@@ -83,8 +83,23 @@ For each task:
 - Respect architecture boundaries and dependency direction.
 - Prefer interface-driven changes through application ports.
 - Do not bypass use cases from interface adapters.
-- Prefer TDD-first for behavior changes: add/update the relevant test before implementation.
+- Use TDD as default for behavior changes: add/update the relevant failing test before implementation.
 - If any requirement, product behavior, or technical decision is unclear, ask the user before implementing assumptions.
+
+### 4.2.1 Mandatory TDD Execution Rules
+
+For every feature change, bug fix, or behavior-impacting refactor, execute `Red -> Green -> Refactor`:
+
+1. `Red`: add or update a test that fails for the target behavior.
+2. `Green`: implement the minimal production change required to pass.
+3. `Refactor`: improve code/test structure while keeping tests green.
+
+Additional mandatory rules:
+
+- For bug fixes, write a regression test reproducing the bug before applying the fix.
+- Do not weaken assertions just to make failing behavior pass.
+- Do not skip the `Red` step unless technically impossible.
+- If `Red` is technically impossible (for example missing seam in legacy code), explicitly document why and apply test-after only as a justified exception.
 
 ### 4.3 Verification
 
@@ -99,6 +114,7 @@ For each task:
 A task is complete when:
 
 - code change is implemented
+- required tests are added/updated according to TDD rules (or exception is explicitly documented)
 - tests pass (or limitation is explicitly documented)
 - impacted documentation is updated
 - naming and terminology remain consistent
