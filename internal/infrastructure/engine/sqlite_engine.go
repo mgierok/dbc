@@ -125,7 +125,7 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 	if clause != "" {
 		query = query + " " + clause
 	}
-	query = query + " LIMIT ? OFFSET ?"
+	query += " LIMIT ? OFFSET ?"
 	args = append(args, limit+1, offset)
 
 	rows, err := e.db.QueryContext(ctx, query, args...)

@@ -488,7 +488,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int, edited []bo
 
 func formatRecordCell(value string, width int, focused, edited bool) string {
 	if edited && width > 0 {
-		value = value + "*"
+		value += "*"
 	}
 	if focused {
 		if width <= 1 {

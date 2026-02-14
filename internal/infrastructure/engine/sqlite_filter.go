@@ -27,7 +27,7 @@ func buildFilterClause(filter *model.Filter) (string, []any, error) {
 	clause := fmt.Sprintf("WHERE %s %s", quoteIdentifier(filter.Column), filter.Operator.SQL)
 	var args []any
 	if filter.Operator.RequiresValue {
-		clause = clause + " ?"
+		clause += " ?"
 		args = append(args, filter.Value)
 	}
 	return clause, args, nil

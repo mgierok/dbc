@@ -131,7 +131,7 @@ func affinityForType(columnType string) valueAffinity {
 	if strings.Contains(normalized, "BLOB") {
 		return affinityBlob
 	}
-	if strings.Contains(normalized, "REAL") || strings.Contains(normalized, "FLOA") || strings.Contains(normalized, "DOUB") {
+	if strings.Contains(normalized, "REAL") || strings.Contains(normalized, "FLOA") || strings.Contains(normalized, "DOUBLE") {
 		return affinityReal
 	}
 	return affinityNumeric

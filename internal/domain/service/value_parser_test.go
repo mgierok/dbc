@@ -104,6 +104,23 @@ func TestParseValue_Real(t *testing.T) {
 	}
 }
 
+func TestParseValue_DoublePrecision(t *testing.T) {
+	// Act
+	value, err := ParseValue("DOUBLE PRECISION", "2.5", false, true)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	typed, ok := value.Raw.(float64)
+	if !ok {
+		t.Fatalf("expected float64 raw value, got %T", value.Raw)
+	}
+	if typed != 2.5 {
+		t.Fatalf("expected 2.5, got %v", typed)
+	}
+}
+
 func TestParseValue_BlobHex(t *testing.T) {
 	// Act
 	value, err := ParseValue("BLOB", "0xFF00", false, true)
