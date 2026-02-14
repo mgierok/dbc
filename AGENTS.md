@@ -77,6 +77,24 @@ For each task:
 3. Identify test impact (new tests or updates).
 4. Identify documentation impact (`PRODUCT` and/or `TECHNICAL` docs).
 
+### 4.1.1 Assumptions and Ambiguity Protocol
+
+Before implementing non-trivial work, explicitly state assumptions.
+
+Format:
+
+`ASSUMPTIONS:`
+`1. ...`
+`2. ...`
+`-> Confirm or correct before I proceed.`
+
+If requirements are ambiguous or inconsistent:
+
+1. Stop.
+2. Name the exact conflict.
+3. Ask one focused clarifying question or present two options with tradeoffs.
+4. Wait for user decision before continuing.
+
 ### 4.2 Implementation
 
 - Keep changes minimal and scoped to task intent.
@@ -101,6 +119,30 @@ Additional mandatory rules:
 - Do not skip the `Red` step unless technically impossible.
 - If `Red` is technically impossible (for example missing seam in legacy code), explicitly document why and apply test-after only as a justified exception.
 
+### 4.2.2 Simplicity and Scope Discipline (Mandatory)
+
+Apply minimum-change rules:
+
+- Prefer the simplest solution that satisfies requirements.
+- Do not add speculative abstractions, configurability, or extensibility that were not requested.
+- Keep changes surgical; every changed line must map directly to task intent.
+- Do not refactor adjacent or orthogonal code unless explicitly requested.
+- If unrelated issues are discovered, report them separately instead of changing them.
+
+### 4.2.3 Pushback and Decision Checkpoints
+
+When a proposed direction has clear technical downside:
+
+- push back directly and explain the concrete risk
+- propose a safer or simpler alternative
+- proceed with the user's choice after the risk is made explicit
+
+For multi-step tasks, include short checkpoints:
+
+- planned step
+- verification signal
+- next decision point requiring user confirmation
+
 ### 4.3 Verification
 
 - Apply quality gates for code changes:
@@ -108,6 +150,15 @@ Additional mandatory rules:
   - run linter for affected scope (for Go: `golangci-lint run`)
   - run tests; for feature/code changes run `go test ./...`
 - If tests cannot run, explicitly report why.
+
+### 4.3.1 Goal-Driven Verification
+
+Before coding, define verifiable success criteria:
+
+- bug fix: add failing regression test first, then make it pass
+- new behavior: cover happy path, edge cases, and error path
+- refactor: verify no behavior change with tests before and after
+- optimization: implement obviously-correct baseline first, then optimize while preserving behavior
 
 ### 4.4 Completion
 
@@ -118,6 +169,14 @@ A task is complete when:
 - tests pass (or limitation is explicitly documented)
 - impacted documentation is updated
 - naming and terminology remain consistent
+
+### 4.4.1 Mandatory Completion Report
+
+After each completed implementation, report:
+
+- `CHANGES MADE`: file-level summary of what changed and why
+- `THINGS NOT TOUCHED`: areas intentionally left unchanged
+- `RISKS / VERIFY`: potential regressions and additional checks to run
 
 ## 5. Engineering Guardrails
 
