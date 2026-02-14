@@ -79,21 +79,29 @@ For each task:
 
 ### 4.1.1 Assumptions and Ambiguity Protocol
 
-Before implementing non-trivial work, explicitly state assumptions.
+For any non-trivial task, state assumptions before coding.
 
-Format:
+Use this format:
 
 `ASSUMPTIONS:`
 `1. ...`
 `2. ...`
 `-> Confirm or correct before I proceed.`
 
-If requirements are ambiguous or inconsistent:
+If requirements are ambiguous or inconsistent, follow this flow:
 
 1. Stop.
 2. Name the exact conflict.
 3. Ask one focused clarifying question or present two options with tradeoffs.
 4. Wait for user decision before continuing.
+
+Wait for user decision when ambiguity affects behavior, architecture boundaries, data safety, or public interfaces.
+You may proceed without waiting only for low-risk mechanical work (for example naming, formatting, or obvious local cleanup), but still state assumptions.
+
+Quick examples:
+
+- Good: "File A says read-only, file B says write allowed. Which is correct?"
+- Bad: silently choosing one interpretation and implementing it.
 
 ### 4.2 Implementation
 
@@ -129,19 +137,24 @@ Apply minimum-change rules:
 - Do not refactor adjacent or orthogonal code unless explicitly requested.
 - If unrelated issues are discovered, report them separately instead of changing them.
 
+Quick examples:
+
+- Good: edit one use case and its tests for one behavior change.
+- Bad: adding new generic helper layers "for future reuse" when only one call site exists.
+
 ### 4.2.3 Pushback and Decision Checkpoints
 
-When a proposed direction has clear technical downside:
+When a proposed direction has a clear technical downside:
 
 - push back directly and explain the concrete risk
 - propose a safer or simpler alternative
 - proceed with the user's choice after the risk is made explicit
 
-For multi-step tasks, include short checkpoints:
+For multi-step tasks, include short checkpoints in this format:
 
-- planned step
-- verification signal
-- next decision point requiring user confirmation
+- `STEP`: what will be done now
+- `VERIFY`: how success will be checked
+- `DECISION`: what needs user confirmation before next step
 
 ### 4.3 Verification
 
@@ -153,12 +166,14 @@ For multi-step tasks, include short checkpoints:
 
 ### 4.3.1 Goal-Driven Verification
 
-Before coding, define verifiable success criteria:
+Before coding, define clear success criteria that can be verified:
 
 - bug fix: add failing regression test first, then make it pass
 - new behavior: cover happy path, edge cases, and error path
 - refactor: verify no behavior change with tests before and after
 - optimization: implement obviously-correct baseline first, then optimize while preserving behavior
+
+Avoid vague goals like "make it better" or "improve code quality" without measurable checks.
 
 ### 4.4 Completion
 
@@ -177,6 +192,8 @@ After each completed implementation, report:
 - `CHANGES MADE`: file-level summary of what changed and why
 - `THINGS NOT TOUCHED`: areas intentionally left unchanged
 - `RISKS / VERIFY`: potential regressions and additional checks to run
+
+Keep this report short and concrete so a junior engineer can quickly review and validate the result.
 
 ## 5. Engineering Guardrails
 
