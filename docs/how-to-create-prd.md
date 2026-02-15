@@ -193,7 +193,7 @@ Use these headings in this exact order:
 15. Review loop
    - Focused feedback was requested on scope, metrics, non-goals, and residual risks.
 16. File output compliance
-   - Final PRD is saved in `.tasks` as `PRD[id]-[short-name].md` with next numeric `id`.
+   - Final PRD is saved in `.tasks` as `PRD-[id]-[short-name].md` with next numeric `id`.
 
 ## 8. Anti-Patterns (Reject and Revise)
 Reject the draft if any of these appear:
@@ -225,8 +225,8 @@ Do not include:
 When saving the generated PRD:
 
 1. Save in `.tasks`.
-2. Use filename format `PRD[id]-[short-name].md`.
-3. Set `[id]` to next numeric ID among `.tasks/PRD*-*.md`.
+2. Use filename format `PRD-[id]-[short-name].md`.
+3. Set `[id]` to next numeric ID among `.tasks/PRD-*-*.md`.
 4. Use a short, meaningful `[short-name]`.
 5. Use kebab-case for `[short-name]`.
 
