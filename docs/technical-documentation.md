@@ -117,7 +117,7 @@ Package responsibilities:
 
 This project follows the architecture rules defined in:
 
-- `docs/CLEAN_ARCHITECTURE_DDD.md`
+- `docs/clean-architecture-ddd.md`
 - `AGENTS.md` (Project Rules and layer constraints)
 
 ### 4.1 Dependency Direction
@@ -298,7 +298,7 @@ Version source: `go.mod`.
 
 This repository follows TDD expectations documented in:
 
-- `docs/TEST_DRIVEN_DEVELOPMENT.md`
+- `docs/test-driven-development.md`
 
 ### 8.1 Current Test Layers
 
@@ -338,7 +338,7 @@ This is a practical checklist for adding a feature correctly.
 
 ### 9.1 Step-by-Step
 
-1. Confirm product behavior in `docs/PRODUCT_DOCUMENTATION.md`.
+1. Confirm product behavior in `docs/product-documentation.md`.
 2. Define technical boundary impact:
    - domain model/service?
    - use case?
@@ -349,8 +349,8 @@ This is a practical checklist for adding a feature correctly.
 4. Implement changes by layer, respecting dependency direction.
 5. Run `go test ./...`.
 6. Update documentation:
-   - `docs/PRODUCT_DOCUMENTATION.md` for product behavior changes.
-   - `docs/TECHNICAL_DOCUMENTATION.md` for technical changes.
+   - `docs/product-documentation.md` for product behavior changes.
+   - `docs/technical-documentation.md` for technical changes.
 7. Verify naming consistency and terminology.
 
 ### 9.2 Typical Change Patterns
@@ -378,11 +378,11 @@ This is a practical checklist for adding a feature correctly.
 ## 11. Reference Documents
 
 - Architecture and DDD details:
-  - `docs/CLEAN_ARCHITECTURE_DDD.md`
+  - `docs/clean-architecture-ddd.md`
 - TDD principles and workflow:
-  - `docs/TEST_DRIVEN_DEVELOPMENT.md`
+  - `docs/test-driven-development.md`
 - Product behavior source of truth:
-  - `docs/PRODUCT_DOCUMENTATION.md`
+  - `docs/product-documentation.md`
 - Contributor rules:
   - `AGENTS.md`
 

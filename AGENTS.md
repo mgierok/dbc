@@ -15,9 +15,9 @@ Goal: keep product and code changes consistent, safe, and aligned with project s
 
 - This file applies to the whole repository (project root level).
 - Source of truth split:
-  - Product perspective: `docs/PRODUCT_DOCUMENTATION.md`
-  - Technical perspective: `docs/TECHNICAL_DOCUMENTATION.md`
-- `docs/BRD.md` is legacy/planning context, not authoritative for current state.
+  - Product perspective: `docs/product-documentation.md`
+  - Technical perspective: `docs/technical-documentation.md`
+- `docs/brd.md` is legacy/planning context, not authoritative for current state.
 
 If any documentation conflicts with current code behavior:
 
@@ -29,18 +29,18 @@ If any documentation conflicts with current code behavior:
 Before planning or coding, load only relevant sections:
 
 - Product behavior and scope:
-  - `docs/PRODUCT_DOCUMENTATION.md#4-current-product-scope`
-  - `docs/PRODUCT_DOCUMENTATION.md#7-functional-specification-current-state`
-  - `docs/PRODUCT_DOCUMENTATION.md#10-known-constraints-and-non-goals`
+  - `docs/product-documentation.md#4-current-product-scope`
+  - `docs/product-documentation.md#7-functional-specification-current-state`
+  - `docs/product-documentation.md#10-known-constraints-and-non-goals`
 - Technical implementation baseline:
-  - `docs/TECHNICAL_DOCUMENTATION.md#3-project-structure`
-  - `docs/TECHNICAL_DOCUMENTATION.md#4-architecture-guidelines`
-  - `docs/TECHNICAL_DOCUMENTATION.md#5-runtime-flow`
-  - `docs/TECHNICAL_DOCUMENTATION.md#8-testing-strategy-and-workflow`
-  - `docs/TECHNICAL_DOCUMENTATION.md#9-feature-delivery-guide`
+  - `docs/technical-documentation.md#3-project-structure`
+  - `docs/technical-documentation.md#4-architecture-guidelines`
+  - `docs/technical-documentation.md#5-runtime-flow`
+  - `docs/technical-documentation.md#8-testing-strategy-and-workflow`
+  - `docs/technical-documentation.md#9-feature-delivery-guide`
 - Deep-dive references (when needed):
-  - `docs/CLEAN_ARCHITECTURE_DDD.md`
-  - `docs/TEST_DRIVEN_DEVELOPMENT.md`
+  - `docs/clean-architecture-ddd.md`
+  - `docs/test-driven-development.md`
 
 ### 3.1 Mandatory Unit-Test Skill Reference Loading
 
@@ -75,7 +75,7 @@ For each task:
 1. Define expected product outcome (what changes for the user).
 2. Map affected layers/packages.
 3. Identify test impact (new tests or updates).
-4. Identify documentation impact (`PRODUCT` and/or `TECHNICAL` docs).
+4. Identify documentation impact (`docs/technical-documentation.md` and/or `docs/product-documentation.md`).
 
 ### 4.1.1 Assumptions and Ambiguity Protocol
 
@@ -228,7 +228,7 @@ Keep this report short and concrete so a junior engineer can quickly review and 
 
 ### 5.2 Architecture
 
-Use `docs/TECHNICAL_DOCUMENTATION.md#4-architecture-guidelines` as primary architecture guide.
+Use `docs/technical-documentation.md#4-architecture-guidelines` as primary architecture guide.
 
 Non-negotiable summary:
 
@@ -240,7 +240,7 @@ Non-negotiable summary:
 ### 5.3 Dependencies and Toolchain
 
 - Dependency/toolchain baseline is defined in:
-  - `docs/TECHNICAL_DOCUMENTATION.md#7-technology-stack-and-versions`
+  - `docs/technical-documentation.md#7-technology-stack-and-versions`
   - `go.mod`
 - Adding third-party dependencies requires explicit approval.
 
@@ -248,7 +248,7 @@ Non-negotiable summary:
 
 ### 6.1 Product Documentation
 
-`docs/PRODUCT_DOCUMENTATION.md` must be updated for every change affecting:
+`docs/product-documentation.md` must be updated for every change affecting:
 
 - product behavior
 - feature scope
@@ -264,7 +264,7 @@ Writing standard:
 
 ### 6.2 Technical Documentation
 
-`docs/TECHNICAL_DOCUMENTATION.md` must be updated for every change affecting:
+`docs/technical-documentation.md` must be updated for every change affecting:
 
 - architecture and boundaries
 - technical decisions
@@ -280,8 +280,8 @@ Writing standard:
 
 ## 7. Quick Reference
 
-- Product source of truth: `docs/PRODUCT_DOCUMENTATION.md`
-- Technical source of truth: `docs/TECHNICAL_DOCUMENTATION.md`
-- Architecture deep dive: `docs/CLEAN_ARCHITECTURE_DDD.md`
-- TDD deep dive: `docs/TEST_DRIVEN_DEVELOPMENT.md`
+- Product source of truth: `docs/product-documentation.md`
+- Technical source of truth: `docs/technical-documentation.md`
+- Architecture deep dive: `docs/clean-architecture-ddd.md`
+- TDD deep dive: `docs/test-driven-development.md`
 - Run/setup basics: `README.md`
