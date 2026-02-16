@@ -68,6 +68,10 @@ Follow this sequence exactly:
    - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
 6. Execute selected task implementation.
    - Perform implementation directly using required knowledge sources from Section 2, rule 8.
+   - Hint: to read only `Completion Summary` of one task without opening the whole file, run:
+     ```bash
+     rg --multiline --multiline-dotall "^## Completion Summary\\n\\n([\\s\\S]*?)(?:\\n## |\\z)" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md --replace '$1'
+     ```
 7. Verify implementation.
    - Run verification checks required by task `Verification Plan`.
    - If verification fails, iterate implementation until checks pass or report hard blocker.
