@@ -4,7 +4,7 @@ Extend startup selector into a configuration management surface so users can add
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-1-database-config-management.md
 - Task ID: 2
 - Task File: PRD-1-TASK-2-selector-crud-and-persistence.md
@@ -62,4 +62,28 @@ Users can still select and open a database from startup selector, and now can ma
 
 ## Completion Summary
 
-Not started
+Implemented selector-level configuration CRUD with use-case integration and explicit delete confirmation.
+
+- Reworked startup selector integration:
+  - `cmd/dbc/main.go` now passes config management use cases (`list/create/update/delete/active-path`) into selector startup flow.
+  - `internal/interfaces/tui/selector.go` now uses a config-management adapter over application use cases instead of static options.
+- Added selector CRUD interactions in startup UI:
+  - `a` opens add form.
+  - `e` opens edit form for selected entry.
+  - `d` opens explicit delete confirmation (delete only on confirm).
+  - Form supports field switching (`Tab`), field clear (`Ctrl+u`), submit (`Enter`), cancel (`Esc`).
+  - Selector refreshes entries after successful mutations and keeps selection stable.
+- Added active config-path visibility:
+  - Selector renders `Config: <active-path>` in startup management view.
+- Added selector tests for new behavior:
+  - `internal/interfaces/tui/selector_test.go` now covers add/edit/delete flows, explicit delete confirmation, and active path rendering.
+- Updated documentation to reflect delivered behavior:
+  - `docs/product-documentation.md`
+  - `docs/technical-documentation.md`
+
+Verification run:
+- `go test ./...` passed
+- `golangci-lint run ./...` passed
+
+Downstream context for Task 3/4:
+- Selector now supports empty-list rendering and in-place creation/editing/deletion mechanics, providing reusable building blocks for forced first-database setup and later `:config` navigation integration.
