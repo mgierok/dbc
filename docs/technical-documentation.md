@@ -167,10 +167,14 @@ When adding functionality:
    - create/update/delete configured database entry,
    - resolve active config path.
 3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each mutation.
-4. User confirms selected database from refreshed selector list.
-5. Selected SQLite database is opened and pinged.
-6. SQLite engine and runtime table/record use cases are created.
-7. Bubble Tea application loop starts (`tui.Run`).
+4. When config has zero entries, selector starts in mandatory first-entry setup:
+   - first valid add is required before continue,
+   - users can optionally add more entries in the same setup context,
+   - normal browsing cannot start until at least one entry exists.
+5. User confirms selected database from refreshed selector list.
+6. Selected SQLite database is opened and pinged.
+7. SQLite engine and runtime table/record use cases are created.
+8. Bubble Tea application loop starts (`tui.Run`).
 
 ### 5.2 Main Read Flow
 

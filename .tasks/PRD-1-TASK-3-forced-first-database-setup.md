@@ -4,7 +4,7 @@ Implement mandatory first-database creation when no configured entries exist, wi
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-1-database-config-management.md
 - Task ID: 3
 - Task File: PRD-1-TASK-3-forced-first-database-setup.md
@@ -62,4 +62,23 @@ Startup remains functional for existing users with configured entries, and first
 
 ## Completion Summary
 
-Not started
+Implemented mandatory first-database setup gating in startup selector with optional add-more loop before entering main browsing.
+
+- Added forced setup startup branch in selector model:
+  - `internal/interfaces/tui/selector.go`
+  - when config list is empty at startup, selector enters add form immediately (`requiresFirstEntry` path),
+  - exiting add form is blocked until at least one valid entry is persisted,
+  - after first successful add, user can either continue (`Enter`) or add additional entries (`a`) before finishing selection.
+- Preserved normal startup behavior for existing non-empty config entries.
+- Added/updated selector tests covering the startup flow:
+  - `internal/interfaces/tui/selector_test.go`
+  - verifies empty config enters forced setup,
+  - verifies first entry is required before continue,
+  - verifies optional additional entry creation in same setup context.
+- Updated documentation to reflect delivered behavior:
+  - `docs/product-documentation.md`
+  - `docs/technical-documentation.md`
+
+Verification run:
+- `go test ./...` passed
+- `golangci-lint run ./...` passed
