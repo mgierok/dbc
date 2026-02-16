@@ -7,7 +7,7 @@ We will know this is true when configuration-related startup failures drop from 
 
 # Metadata
 
-- Status: READY
+- Status: DONE
 
 # Problem Statement
 
