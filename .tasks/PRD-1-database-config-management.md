@@ -5,6 +5,10 @@ This PRD defines an in-app database configuration management capability within t
 We believe that enabling in-app management of configured databases for individual developers using DBC will reduce startup configuration failures and speed up first successful data access.
 We will know this is true when configuration-related startup failures drop from 18% to 5% or lower within 8 weeks after release.
 
+# Metadata
+
+- Status: READY
+
 # Problem Statement
 
 Users currently depend on manual configuration-file editing to maintain database entries. This creates friction, especially on first run and across different operating systems where default config locations differ. The lack of in-app management increases startup failure risk, slows onboarding, and forces context switching to external editors. Additionally, users working inside a selected database cannot directly return to the selector/management context through an in-app command workflow.

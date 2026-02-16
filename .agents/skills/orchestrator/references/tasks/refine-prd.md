@@ -18,16 +18,17 @@ The output must:
 5. Every task must include a working-software checkpoint (no broken intermediate target states).
 6. Generate at least one task per PRD; most PRDs should produce multiple tasks.
 7. Task status is restricted to `READY` or `DONE` only.
-8. Dependencies are optional but, when used, must be explicit using `blocked-by` and/or `blocks`.
-9. Parallel execution is allowed only for tasks with all blockers completed.
-10. Every task must explicitly reference:
+8. Parent PRD status must be `READY`; planning must not proceed when parent PRD status is missing, invalid, or `DONE`.
+9. Dependencies are optional but, when used, must be explicit using `blocked-by` and/or `blocks`.
+10. Parallel execution is allowed only for tasks with all blockers completed.
+11. Every task must explicitly reference:
     - parent PRD,
     - dependency tasks (or explicit `none`).
-11. All task files must be Markdown.
-12. Do not include unresolved placeholders such as `TBD` or `TODO`.
-13. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
-14. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
-15. This workflow must run in `Plan` mode; if current mode is not `Plan`, stop and request mode switch before continuing.
+12. All task files must be Markdown.
+13. Do not include unresolved placeholders such as `TBD` or `TODO`.
+14. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
+15. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
+16. This workflow must run in `Plan` mode; if current mode is not `Plan`, stop and request mode switch before continuing.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -38,6 +39,9 @@ Follow this sequence exactly:
 2. Validate inputs.
    - Confirm PRD file path.
    - Confirm PRD ID from filename pattern `PRD-[prd-id]-[short-name].md`.
+   - Confirm PRD contains explicit `Status`.
+   - Continue only if parent PRD status is exactly `READY`.
+   - If PRD status is missing, invalid, or `DONE`, stop and request PRD status correction/reopening before task drafting.
    - Load current codebase state and current documentation at a high level to avoid stale planning.
 3. Load optional supplemental references.
    - If user provided extra files (for example user stories), load them as secondary constraints.
@@ -153,18 +157,19 @@ When saving tasks:
 
 ## 10. Quality Gates (All Must Pass Before Final Output)
 1. At least one task is generated for the PRD.
-2. Every task file follows the exact structure from Section 5.
-3. Every task has exactly one technical objective.
-4. Every task has a working-software checkpoint.
-5. Every task has explicit `In Scope` and `Out of Scope`.
-6. Every task includes verifiable acceptance criteria.
-7. Every task includes `Status` and it is either `READY` or `DONE`.
-8. Every task references the correct parent PRD.
-9. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
-10. Dependency references are valid, resolvable, and acyclic.
-11. File names follow required naming format.
-12. No task includes unresolved placeholders.
-13. Workflow execution mode was `Plan` for the full run.
+2. Parent PRD contains explicit valid `Status` and it is exactly `READY`.
+3. Every task file follows the exact structure from Section 5.
+4. Every task has exactly one technical objective.
+5. Every task has a working-software checkpoint.
+6. Every task has explicit `In Scope` and `Out of Scope`.
+7. Every task includes verifiable acceptance criteria.
+8. Every task includes `Status` and it is either `READY` or `DONE`.
+9. Every task references the correct parent PRD.
+10. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
+11. Dependency references are valid, resolvable, and acyclic.
+12. File names follow required naming format.
+13. No task includes unresolved placeholders.
+14. Workflow execution mode was `Plan` for the full run.
 
 ## 11. Forbidden Content
 Do not include:
@@ -179,9 +184,10 @@ When running this workflow:
 
 1. Confirm execution happened in `Plan` mode.
 2. Confirm the PRD input used.
-3. Confirm whether supplemental references were used.
-4. Produce/save task files in `.tasks` with required naming.
-5. Return concise summary:
+3. Confirm detected PRD status is `READY`.
+4. Confirm whether supplemental references were used.
+5. Produce/save task files in `.tasks` with required naming.
+6. Return concise summary:
    - generated task count,
    - ordered task list,
    - dependency highlights,

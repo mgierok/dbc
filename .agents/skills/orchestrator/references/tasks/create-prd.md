@@ -20,7 +20,8 @@ The PRD must be:
 8. Do not finalize the PRD with any `TBD` values.
 9. Do not include an `Open Questions` section or unresolved decision placeholders.
 10. Continue clarification until all critical unknowns are resolved into explicit decisions or explicit scope exclusions.
-11. Do not include metadata blocks, user stories, timeline, milestones, or change log.
+11. Every PRD must include a `Metadata` section with `Status` set to exactly one of: `READY`, `DONE`.
+12. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -46,6 +47,9 @@ Follow this sequence exactly:
 4. Publish `Answer Summary`.
    - List confirmed answers and assumptions.
 5. Draft the PRD using the fixed structure (Section 5).
+   - Set `Status` in `Metadata`:
+     - default `READY`,
+     - use `DONE` only when user explicitly confirms the PRD represents completed and closed scope.
 6. Run one review loop.
    - Ask for focused feedback on scope, metrics, non-goals, and residual risks.
    - Revise if feedback is provided.
@@ -102,18 +106,19 @@ Rules:
 Use these headings in this exact order:
 
 1. `Overview`
-2. `Problem Statement`
-3. `Current State (As-Is)`
-4. `Target State After Release (To-Be)`
-5. `Business Rationale and Strategic Fit`
-6. `Goals`
-7. `Non-Goals`
-8. `Scope (In Scope / Out of Scope)`
-9. `Functional Requirements`
-10. `Non-Functional Product Requirements`
-11. `Success Metrics and Release Criteria`
-12. `Risks and Dependencies`
-13. `Assumptions`
+2. `Metadata`
+3. `Problem Statement`
+4. `Current State (As-Is)`
+5. `Target State After Release (To-Be)`
+6. `Business Rationale and Strategic Fit`
+7. `Goals`
+8. `Non-Goals`
+9. `Scope (In Scope / Out of Scope)`
+10. `Functional Requirements`
+11. `Non-Functional Product Requirements`
+12. `Success Metrics and Release Criteria`
+13. `Risks and Dependencies`
+14. `Assumptions`
 
 ## 6. Section Rules (Authoring Guide)
 1. `Overview`
@@ -121,78 +126,83 @@ Use these headings in this exact order:
    - Include this problem-first hypothesis:
      - `We believe that [change] for [target segment] will [business/user outcome].`
      - `We will know this is true when [metric target] within [time window].`
-2. `Problem Statement`
+2. `Metadata`
+   - Must include:
+     - `Status`: `READY` or `DONE`.
+3. `Problem Statement`
    - Describe current pain, affected users, and business consequences.
-3. `Current State (As-Is)`
+4. `Current State (As-Is)`
    - Explain how the product/process works now and where it fails.
-4. `Target State After Release (To-Be)`
+5. `Target State After Release (To-Be)`
    - Describe expected future behavior and observable outcomes.
-5. `Business Rationale and Strategic Fit`
+6. `Business Rationale and Strategic Fit`
    - Explain why this matters now and how it supports strategy.
-6. `Goals`
+7. `Goals`
    - Include only outcome-oriented goals.
-7. `Non-Goals`
+8. `Non-Goals`
    - Define explicit boundaries to prevent scope creep.
-8. `Scope (In Scope / Out of Scope)`
+9. `Scope (In Scope / Out of Scope)`
    - Describe release boundaries in plain business language.
-9. `Functional Requirements`
+10. `Functional Requirements`
    - Describe what the product must do from user/business perspective.
    - Use stable IDs: `FR-001`, `FR-002`, ...
    - Keep requirements atomic (one behavior per requirement).
    - Add one observable acceptance statement per `FR-*`.
-10. `Non-Functional Product Requirements`
+11. `Non-Functional Product Requirements`
    - Define product quality needs in business terms (for example usability, reliability, compliance).
    - Use stable IDs: `NFR-001`, `NFR-002`, ...
-11. `Success Metrics and Release Criteria`
+12. `Success Metrics and Release Criteria`
    - Use quantified metrics and minimum pass criteria.
    - For each metric include: baseline, target, measurement window, and measurement method.
    - Include:
      - one `Primary Outcome Metric`,
      - 1-3 `Leading Indicators`,
      - at least one `Guardrail Metric`.
-12. `Risks and Dependencies`
+13. `Risks and Dependencies`
    - List risks to value delivery and key dependencies that can affect scope, release readiness, or metric outcomes.
-13. `Assumptions`
+14. `Assumptions`
    - List explicit assumptions used for missing input.
 
 ## 7. Quality Gates (All Must Pass Before Final Output)
 1. Completeness
-   - All 13 required sections exist and are non-empty.
-2. Delta clarity
+   - All 14 required sections exist and are non-empty.
+2. Status validity
+   - `Metadata` contains `Status` and value is exactly `READY` or `DONE`.
+3. Delta clarity
    - `Current State (As-Is)` and `Target State After Release (To-Be)` are both present and materially different.
-3. Measurability
+4. Measurability
    - Every goal has at least one metric with baseline, target, and measurement window.
-4. Scope control
+5. Scope control
    - Both in-scope and out-of-scope are explicit.
-5. Requirement quality
+6. Requirement quality
    - Requirements are clear, atomic, outcome-focused, uniquely identified, and non-overlapping.
    - Every `FR-*` has one observable acceptance statement.
-6. Business focus
+7. Business focus
    - No architecture, stack, API, schema, infrastructure, or implementation-plan content.
-7. Assumption transparency
+8. Assumption transparency
    - Missing information is visible in `Assumptions`.
-8. No open questions policy
+9. No open questions policy
    - Final PRD contains no `Open Questions` section and no unresolved decision placeholders.
-9. Clarification option quality
+10. Clarification option quality
    - Each clarifying question has exactly `A`, `B`, `C`, `D`.
    - `A-C` fit feature and project context.
    - `D` allows user-defined input.
-10. Clarification sequencing
+11. Clarification sequencing
    - Questions were asked one by one and answered before proceeding.
-11. Clarification prioritization
+12. Clarification prioritization
    - Initial clarification round has 3-5 questions focused on highest-impact uncertainty.
    - Additional targeted questions are allowed and required when needed to resolve critical unknowns.
-12. Metric quality
+13. Metric quality
    - Every success metric includes baseline, target, measurement window, and method.
    - Metrics include one primary outcome metric, leading indicators, and guardrail metric.
-13. Constraint integrity
+14. Constraint integrity
    - Final PRD contains no `TBD`.
    - Every previously unknown critical constraint is resolved as a confirmed decision or explicit out-of-scope item.
-14. Consistency
+15. Consistency
    - Goals, scope, requirements, and metrics do not contradict each other.
-15. Review loop
+16. Review loop
    - Focused feedback was requested on scope, metrics, non-goals, and residual risks.
-16. File output compliance
+17. File output compliance
    - Final PRD is saved in `.tasks` as `PRD-[prd-id]-[short-name].md` with next numeric `prd-id`.
 
 ## 8. Anti-Patterns (Reject and Revise)
@@ -215,7 +225,7 @@ Do not include:
 - database schema or API contract details,
 - sprint or task breakdown,
 - implementation steps,
-- metadata block,
+- additional metadata blocks beyond required `Metadata`,
 - user stories section,
 - timeline or milestones section,
 - change log/history section,

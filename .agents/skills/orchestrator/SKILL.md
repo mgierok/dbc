@@ -31,7 +31,8 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 2. Preserve required order, required formats, and non-negotiable constraints.
 3. Do not merge or blend rules between task files unless a task file explicitly says to do so.
 4. If task instructions conflict with higher-priority runtime constraints, explain the conflict and apply the safe fallback.
-5. Keep outputs concise and verifiable against the selected task's quality gates.
+5. Enforce status lifecycle constraints defined by the selected task (for example parent PRD must be `READY` for `refine-prd`, while task statuses use `READY`/`DONE`).
+6. Keep outputs concise and verifiable against the selected task's quality gates.
 
 ## Extending This Skill
 
