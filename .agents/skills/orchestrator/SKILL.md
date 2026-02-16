@@ -26,7 +26,7 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
   - Execution rule: follow this task file exactly as written; this workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
 - `Execute Task` (`references/tasks/execute-task.md`)
   - Trigger examples: "execute task", "run next task from PRD", "implement PRD task".
-  - Execution rule: follow this task file exactly as written; this workflow executes exactly one task in `Default` mode using a subagent.
+  - Execution rule: follow this task file exactly as written; this workflow executes exactly one task in `Default` mode.
 
 ## Execution Rules
 

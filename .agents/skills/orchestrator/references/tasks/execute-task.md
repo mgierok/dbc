@@ -13,30 +13,29 @@ The output must:
 1. Apply shared baseline rules from `../../SKILL.md` section `Shared Workflow Baseline`.
 2. This workflow executes exactly one task; do not execute multiple tasks in one run.
 3. Execution mode must be `Default`; if mode is not `Default`, stop and request mode switch.
-4. Execution must run through a subagent.
-5. Input must identify either:
+4. Input must identify either:
    - one explicit task file, or
    - one explicit PRD file.
-6. If input is PRD-only, select the first executable task for that PRD.
-7. A task is executable only if:
+5. If input is PRD-only, select the first executable task for that PRD.
+6. A task is executable only if:
    - task `Status` is exactly `READY`, and
    - all tasks listed in `blocked-by` are `DONE`.
-8. Execute work on branch derived from PRD filename:
+7. Execute work on branch derived from PRD filename:
    - branch name must equal lowercase PRD filename stem (`prd-[prd-id]-[short-name]`),
    - if branch does not exist, create it from local `main` and checkout to it,
    - do not pull/sync automatically unless user explicitly requests it.
-9. Required knowledge sources for implementation:
+8. Required knowledge sources for implementation:
    - selected task content,
    - completion summaries from dependency tasks,
    - parent PRD content,
    - current codebase state and current documentation.
-10. Verification must be executed according to selected task `Verification Plan`.
-11. After successful implementation:
+9. Verification must be executed according to selected task `Verification Plan`.
+10. After successful implementation:
    - set task `Status` to `DONE`,
    - fill `Completion Summary` with concrete delivered changes and important follow-up context.
-12. Commit completed task changes.
-13. If technical/process issues are discovered and they can be prevented by AGENTS instructions, append concrete proposal(s) to `lessons-learned.md` in repository root as numbered list items.
-14. If no other task in the same PRD remains in `READY`, set parent PRD `Status` to `DONE`.
+11. Commit completed task changes.
+12. If technical/process issues are discovered and they can be prevented by AGENTS instructions, append concrete proposal(s) to `lessons-learned.md` in repository root as numbered list items.
+13. If no other task in the same PRD remains in `READY`, set parent PRD `Status` to `DONE`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -59,9 +58,8 @@ Follow this sequence exactly:
    - Derive branch name from PRD filename stem and convert to lowercase (`prd-[prd-id]-[short-name]`).
    - If branch exists, checkout it.
    - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
-6. Launch subagent execution.
-   - Delegate implementation of selected task to subagent with strict task scope.
-   - Provide subagent with required knowledge sources from Section 2, rule 9.
+6. Execute selected task implementation.
+   - Perform implementation directly using required knowledge sources from Section 2, rule 8.
 7. Verify implementation.
    - Run verification checks required by task `Verification Plan`.
    - If verification fails, iterate implementation until checks pass or report hard blocker.
@@ -114,15 +112,14 @@ Follow this sequence exactly:
 1. Execution mode was `Default`.
 2. Exactly one task was selected and executed.
 3. Selected task was executable (`READY` + dependencies `DONE`) before implementation.
-4. Task execution ran through subagent.
-5. Branch matched parent PRD filename stem.
+4. Branch matched parent PRD filename stem.
    - Name was lowercase.
-6. Verification followed task `Verification Plan` and passed.
-7. Task status was updated to `DONE` with non-empty `Completion Summary`.
-8. Implementation was committed.
-9. If PRD status changed, that change was committed separately.
-10. `lessons-learned.md` entries were appended as numbered list items when instruction-worthy issues were discovered.
-11. Parent PRD status was set to `DONE` when no sibling task remained `READY`.
+5. Verification followed task `Verification Plan` and passed.
+6. Task status was updated to `DONE` with non-empty `Completion Summary`.
+7. Implementation was committed.
+8. If PRD status changed, that change was committed separately.
+9. `lessons-learned.md` entries were appended as numbered list items when instruction-worthy issues were discovered.
+10. Parent PRD status was set to `DONE` when no sibling task remained `READY`.
 
 ## 8. Agent Output Contract
 When running this workflow, return concise output with:
