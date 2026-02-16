@@ -223,6 +223,99 @@ func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
 	}
 }
 
+func TestDatabaseSelector_EmptyConfigStartsInForcedSetupForm(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Assert
+	if !model.requiresFirstEntry {
+		t.Fatal("expected forced setup mode when no configured databases exist")
+	}
+	if model.mode != selectorModeAdd {
+		t.Fatalf("expected add form mode in forced setup, got %v", model.mode)
+	}
+}
+
+func TestDatabaseSelector_ForcedSetupRequiresFirstEntryBeforeContinue(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act: attempt to leave forced setup without creating first entry.
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.mode != selectorModeAdd {
+		t.Fatalf("expected add form to remain active, got mode %v", model.mode)
+	}
+	if !strings.Contains(model.statusMessage, "required") {
+		t.Fatalf("expected required-first-entry status, got %q", model.statusMessage)
+	}
+
+	// Act: create first entry and continue.
+	model = typeText(model, "local")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = typeText(model, "/tmp/local.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if len(model.options) != 1 {
+		t.Fatalf("expected one option after first setup entry, got %d", len(model.options))
+	}
+	if !model.chosen {
+		t.Fatal("expected selector completion after first valid entry")
+	}
+}
+
+func TestDatabaseSelector_ForcedSetupSupportsOptionalAdditionalEntries(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act: add first entry.
+	model = typeText(model, "local")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = typeText(model, "/tmp/local.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Act: optionally add second entry before finishing.
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	model = typeText(model, "analytics")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = typeText(model, "/tmp/analytics.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if len(manager.created) != 2 {
+		t.Fatalf("expected two created entries in forced setup, got %d", len(manager.created))
+	}
+	if len(model.options) != 2 {
+		t.Fatalf("expected two selector options after forced setup additions, got %d", len(model.options))
+	}
+	if model.options[0].Name != "local" || model.options[1].Name != "analytics" {
+		t.Fatalf("unexpected option names after forced setup: %#v", model.options)
+	}
+}
+
 func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
 	current := model
 	for _, r := range text {

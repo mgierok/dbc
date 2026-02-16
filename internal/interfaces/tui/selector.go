@@ -104,6 +104,8 @@ type databaseSelectorModel struct {
 
 	activeConfigPath string
 	statusMessage    string
+
+	requiresFirstEntry bool
 }
 
 func SelectDatabase(
@@ -165,6 +167,11 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager) (*da
 	if err := model.refreshActivePath(); err != nil {
 		return nil, err
 	}
+	if len(model.options) == 0 {
+		model.requiresFirstEntry = true
+		model.openAddForm()
+		model.statusMessage = "First database entry is required"
+	}
 	return model, nil
 }
 
@@ -223,6 +230,10 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			if len(m.options) == 0 {
+				if m.requiresFirstEntry {
+					m.openAddForm()
+					m.statusMessage = "First database entry is required"
+				}
 				return m, nil
 			}
 			m.chosen = true
@@ -249,9 +260,17 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.openAddForm()
 			return m, nil
 		case "e":
+			if m.requiresFirstEntry {
+				m.statusMessage = "Edit is unavailable during first setup"
+				return m, nil
+			}
 			m.openEditForm()
 			return m, nil
 		case "d":
+			if m.requiresFirstEntry {
+				m.statusMessage = "Delete is unavailable during first setup"
+				return m, nil
+			}
 			m.openDeleteConfirmation()
 			return m, nil
 		default:
@@ -482,6 +501,10 @@ func (m *databaseSelectorModel) openDeleteConfirmation() {
 func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
+		if m.requiresFirstEntry && len(m.options) == 0 {
+			m.statusMessage = "First database entry is required"
+			return m, nil
+		}
 		m.mode = selectorModeBrowse
 		m.form = selectorForm{}
 		m.statusMessage = "Config update canceled"
@@ -594,6 +617,10 @@ func (m *databaseSelectorModel) submitForm() (tea.Model, tea.Cmd) {
 	}
 	if previousMode == selectorModeAdd && len(m.options) > 0 {
 		m.selected = len(m.options) - 1
+		if m.requiresFirstEntry {
+			m.statusMessage = "Database added. Press Enter to continue or a to add another"
+			return m, nil
+		}
 		m.statusMessage = "Database added"
 		return m, nil
 	}
@@ -623,10 +650,13 @@ func (m *databaseSelectorModel) contextLines() []string {
 	if m.mode != selectorModeBrowse {
 		return nil
 	}
-	lines := []string{
-		"",
-		"j/k navigate | Enter select | a add | e edit | d delete",
-		"Esc cancel | q quit",
+	lines := []string{""}
+	if m.requiresFirstEntry {
+		lines = append(lines, "First setup: Enter continue | a add database")
+		lines = append(lines, "j/k navigate | q quit")
+	} else {
+		lines = append(lines, "j/k navigate | Enter select | a add | e edit | d delete")
+		lines = append(lines, "Esc cancel | q quit")
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		lines = append(lines, "Status: "+m.statusMessage)
