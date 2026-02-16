@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -10,9 +11,10 @@ import (
 )
 
 var (
-	ErrConfigDatabaseNameRequired    = errors.New("config database name is required")
-	ErrConfigDatabasePathRequired    = errors.New("config database path is required")
-	ErrConfigDatabaseIndexOutOfRange = errors.New("config database index out of range")
+	ErrConfigDatabaseNameRequired     = errors.New("config database name is required")
+	ErrConfigDatabasePathRequired     = errors.New("config database path is required")
+	ErrConfigDatabaseIndexOutOfRange  = errors.New("config database index out of range")
+	ErrConfigDatabaseConnectionFailed = errors.New("config database connection failed")
 )
 
 type ListConfiguredDatabases struct {
@@ -51,11 +53,15 @@ func (uc *GetActiveConfigPath) Execute(ctx context.Context) (string, error) {
 }
 
 type CreateConfiguredDatabase struct {
-	store port.ConfigStore
+	store             port.ConfigStore
+	connectionChecker port.DatabaseConnectionChecker
 }
 
-func NewCreateConfiguredDatabase(store port.ConfigStore) *CreateConfiguredDatabase {
-	return &CreateConfiguredDatabase{store: store}
+func NewCreateConfiguredDatabase(store port.ConfigStore, connectionChecker port.DatabaseConnectionChecker) *CreateConfiguredDatabase {
+	return &CreateConfiguredDatabase{
+		store:             store,
+		connectionChecker: connectionChecker,
+	}
 }
 
 func (uc *CreateConfiguredDatabase) Execute(ctx context.Context, database dto.ConfigDatabase) error {
@@ -63,15 +69,22 @@ func (uc *CreateConfiguredDatabase) Execute(ctx context.Context, database dto.Co
 	if err != nil {
 		return err
 	}
+	if err := uc.connectionChecker.CanConnect(ctx, entry.DBPath); err != nil {
+		return fmt.Errorf("%w: %w", ErrConfigDatabaseConnectionFailed, err)
+	}
 	return uc.store.Create(ctx, entry)
 }
 
 type UpdateConfiguredDatabase struct {
-	store port.ConfigStore
+	store             port.ConfigStore
+	connectionChecker port.DatabaseConnectionChecker
 }
 
-func NewUpdateConfiguredDatabase(store port.ConfigStore) *UpdateConfiguredDatabase {
-	return &UpdateConfiguredDatabase{store: store}
+func NewUpdateConfiguredDatabase(store port.ConfigStore, connectionChecker port.DatabaseConnectionChecker) *UpdateConfiguredDatabase {
+	return &UpdateConfiguredDatabase{
+		store:             store,
+		connectionChecker: connectionChecker,
+	}
 }
 
 func (uc *UpdateConfiguredDatabase) Execute(ctx context.Context, index int, database dto.ConfigDatabase) error {
@@ -81,6 +94,9 @@ func (uc *UpdateConfiguredDatabase) Execute(ctx context.Context, index int, data
 	entry, err := toConfigEntry(database)
 	if err != nil {
 		return err
+	}
+	if err := uc.connectionChecker.CanConnect(ctx, entry.DBPath); err != nil {
+		return fmt.Errorf("%w: %w", ErrConfigDatabaseConnectionFailed, err)
 	}
 	return uc.store.Update(ctx, index, entry)
 }

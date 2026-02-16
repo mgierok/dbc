@@ -22,9 +22,10 @@ func main() {
 	}
 
 	configStore := config.NewStore(cfgPath)
+	connectionChecker := engine.NewSQLiteConnectionChecker()
 	listConfiguredDatabases := usecase.NewListConfiguredDatabases(configStore)
-	createConfiguredDatabase := usecase.NewCreateConfiguredDatabase(configStore)
-	updateConfiguredDatabase := usecase.NewUpdateConfiguredDatabase(configStore)
+	createConfiguredDatabase := usecase.NewCreateConfiguredDatabase(configStore, connectionChecker)
+	updateConfiguredDatabase := usecase.NewUpdateConfiguredDatabase(configStore, connectionChecker)
 	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(configStore)
 	getActiveConfigPath := usecase.NewGetActiveConfigPath(configStore)
 

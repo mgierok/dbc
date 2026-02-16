@@ -161,6 +161,81 @@ func TestDatabaseSelector_EditUpdatesEntry(t *testing.T) {
 	}
 }
 
+func TestDatabaseSelector_AddKeepsFormWhenCreateFails(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+		createErr: errors.New("cannot connect to database"),
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	model = typeText(model, "analytics")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = typeText(model, "/tmp/analytics.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if model.mode != selectorModeAdd {
+		t.Fatalf("expected add form to stay open, got mode %v", model.mode)
+	}
+	if len(model.options) != 1 {
+		t.Fatalf("expected options to stay unchanged, got %d", len(model.options))
+	}
+	if !strings.Contains(model.form.errorMessage, "cannot connect") {
+		t.Fatalf("expected connection error in form, got %q", model.form.errorMessage)
+	}
+	if len(manager.created) != 0 {
+		t.Fatalf("expected no created entries, got %d", len(manager.created))
+	}
+}
+
+func TestDatabaseSelector_EditKeepsFormWhenUpdateFails(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+		updateErr: errors.New("cannot connect to database"),
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
+	model = typeText(model, "prod")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
+	model = typeText(model, "/tmp/prod.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if model.mode != selectorModeEdit {
+		t.Fatalf("expected edit form to stay open, got mode %v", model.mode)
+	}
+	if len(model.options) != 1 {
+		t.Fatalf("expected options to stay unchanged, got %d", len(model.options))
+	}
+	if model.options[0].Name != "local" {
+		t.Fatalf("expected original option to remain unchanged, got %q", model.options[0].Name)
+	}
+	if !strings.Contains(model.form.errorMessage, "cannot connect") {
+		t.Fatalf("expected connection error in form, got %q", model.form.errorMessage)
+	}
+	if len(manager.updated) != 0 {
+		t.Fatalf("expected no updated entries, got %d", len(manager.updated))
+	}
+}
+
 func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{

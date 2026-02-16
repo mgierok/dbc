@@ -166,7 +166,8 @@ When adding functionality:
    - list configured databases,
    - create/update/delete configured database entry,
    - resolve active config path.
-3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each mutation.
+3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each successful mutation.
+   Add/edit submit path performs use-case validation in this order: required fields -> SQLite connection check -> config store mutation.
    Active add/edit text input renders a caret (`|`) in the currently focused field.
 4. When config has zero entries, selector starts in mandatory first-entry setup:
    - first valid add is required before continue,
@@ -261,16 +262,21 @@ Where:
 Decision:
 
 - Require at least one configured database, each with `name` and `db_path`.
+- Require successful SQLite connection validation before persisting add/edit changes.
 
 Why:
 
 - Prevent ambiguous startup behavior.
 - Keep startup errors explicit and actionable.
+- Prevent saving unreachable or non-existent database targets in selector configuration.
 
 Where:
 
 - `internal/infrastructure/config/config.go`
 - `internal/infrastructure/config/config_test.go`
+- `internal/application/port/database_connection_checker.go`
+- `internal/application/usecase/config_management.go`
+- `internal/infrastructure/engine/sqlite_connection_checker.go`
 
 ### 6.5 Operator Allowlist for Filters
 

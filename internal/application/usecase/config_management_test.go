@@ -24,6 +24,8 @@ type fakeConfigStore struct {
 	lastUpdatedIndex int
 	lastUpdatedEntry port.ConfigEntry
 	lastDeletedIndex int
+	createCalls      int
+	updateCalls      int
 }
 
 func (f *fakeConfigStore) List(ctx context.Context) ([]port.ConfigEntry, error) {
@@ -37,6 +39,7 @@ func (f *fakeConfigStore) Create(ctx context.Context, entry port.ConfigEntry) er
 	if f.createErr != nil {
 		return f.createErr
 	}
+	f.createCalls++
 	f.lastCreated = entry
 	f.entries = append(f.entries, entry)
 	return nil
@@ -46,6 +49,7 @@ func (f *fakeConfigStore) Update(ctx context.Context, index int, entry port.Conf
 	if f.updateErr != nil {
 		return f.updateErr
 	}
+	f.updateCalls++
 	f.lastUpdatedIndex = index
 	f.lastUpdatedEntry = entry
 	if index < 0 || index >= len(f.entries) {
@@ -72,6 +76,21 @@ func (f *fakeConfigStore) ActivePath(ctx context.Context) (string, error) {
 		return "", f.activePathErr
 	}
 	return f.activePath, nil
+}
+
+type fakeDatabaseConnectionChecker struct {
+	err       error
+	callCount int
+	lastPath  string
+}
+
+func (f *fakeDatabaseConnectionChecker) CanConnect(_ context.Context, dbPath string) error {
+	f.callCount++
+	f.lastPath = dbPath
+	if f.err != nil {
+		return f.err
+	}
+	return nil
 }
 
 func TestListConfiguredDatabases_MapsEntries(t *testing.T) {
@@ -120,7 +139,8 @@ func TestGetActiveConfigPath_ReturnsPath(t *testing.T) {
 func TestCreateConfiguredDatabase_CreatesEntry(t *testing.T) {
 	// Arrange
 	store := &fakeConfigStore{}
-	uc := usecase.NewCreateConfiguredDatabase(store)
+	checker := &fakeDatabaseConnectionChecker{}
+	uc := usecase.NewCreateConfiguredDatabase(store, checker)
 
 	// Act
 	err := uc.Execute(context.Background(), dto.ConfigDatabase{
@@ -136,12 +156,19 @@ func TestCreateConfiguredDatabase_CreatesEntry(t *testing.T) {
 	if !reflect.DeepEqual(store.lastCreated, expected) {
 		t.Fatalf("expected created entry %v, got %v", expected, store.lastCreated)
 	}
+	if checker.callCount != 1 {
+		t.Fatalf("expected connection checker call count %d, got %d", 1, checker.callCount)
+	}
+	if checker.lastPath != "/tmp/local.sqlite" {
+		t.Fatalf("expected checker path %q, got %q", "/tmp/local.sqlite", checker.lastPath)
+	}
 }
 
 func TestCreateConfiguredDatabase_ValidatesName(t *testing.T) {
 	// Arrange
 	store := &fakeConfigStore{}
-	uc := usecase.NewCreateConfiguredDatabase(store)
+	checker := &fakeDatabaseConnectionChecker{}
+	uc := usecase.NewCreateConfiguredDatabase(store, checker)
 
 	// Act
 	err := uc.Execute(context.Background(), dto.ConfigDatabase{
@@ -158,7 +185,8 @@ func TestCreateConfiguredDatabase_ValidatesName(t *testing.T) {
 func TestCreateConfiguredDatabase_ValidatesPath(t *testing.T) {
 	// Arrange
 	store := &fakeConfigStore{}
-	uc := usecase.NewCreateConfiguredDatabase(store)
+	checker := &fakeDatabaseConnectionChecker{}
+	uc := usecase.NewCreateConfiguredDatabase(store, checker)
 
 	// Act
 	err := uc.Execute(context.Background(), dto.ConfigDatabase{
@@ -179,7 +207,8 @@ func TestUpdateConfiguredDatabase_UpdatesEntry(t *testing.T) {
 			{Name: "local", DBPath: "/tmp/local.sqlite"},
 		},
 	}
-	uc := usecase.NewUpdateConfiguredDatabase(store)
+	checker := &fakeDatabaseConnectionChecker{}
+	uc := usecase.NewUpdateConfiguredDatabase(store, checker)
 
 	// Act
 	err := uc.Execute(context.Background(), 0, dto.ConfigDatabase{
@@ -198,12 +227,19 @@ func TestUpdateConfiguredDatabase_UpdatesEntry(t *testing.T) {
 	if !reflect.DeepEqual(store.lastUpdatedEntry, expected) {
 		t.Fatalf("expected updated entry %v, got %v", expected, store.lastUpdatedEntry)
 	}
+	if checker.callCount != 1 {
+		t.Fatalf("expected connection checker call count %d, got %d", 1, checker.callCount)
+	}
+	if checker.lastPath != "/tmp/prod.sqlite" {
+		t.Fatalf("expected checker path %q, got %q", "/tmp/prod.sqlite", checker.lastPath)
+	}
 }
 
 func TestUpdateConfiguredDatabase_ValidatesIndex(t *testing.T) {
 	// Arrange
 	store := &fakeConfigStore{}
-	uc := usecase.NewUpdateConfiguredDatabase(store)
+	checker := &fakeDatabaseConnectionChecker{}
+	uc := usecase.NewUpdateConfiguredDatabase(store, checker)
 
 	// Act
 	err := uc.Execute(context.Background(), -1, dto.ConfigDatabase{
@@ -214,6 +250,64 @@ func TestUpdateConfiguredDatabase_ValidatesIndex(t *testing.T) {
 	// Assert
 	if !errors.Is(err, usecase.ErrConfigDatabaseIndexOutOfRange) {
 		t.Fatalf("expected error %v, got %v", usecase.ErrConfigDatabaseIndexOutOfRange, err)
+	}
+}
+
+func TestCreateConfiguredDatabase_BlocksCreateWhenConnectionValidationFails(t *testing.T) {
+	// Arrange
+	store := &fakeConfigStore{}
+	checker := &fakeDatabaseConnectionChecker{err: errors.New("cannot connect")}
+	uc := usecase.NewCreateConfiguredDatabase(store, checker)
+
+	// Act
+	err := uc.Execute(context.Background(), dto.ConfigDatabase{
+		Name: "local",
+		Path: " /tmp/local.sqlite ",
+	})
+
+	// Assert
+	if !errors.Is(err, usecase.ErrConfigDatabaseConnectionFailed) {
+		t.Fatalf("expected error %v, got %v", usecase.ErrConfigDatabaseConnectionFailed, err)
+	}
+	if checker.callCount != 1 {
+		t.Fatalf("expected checker call count %d, got %d", 1, checker.callCount)
+	}
+	if checker.lastPath != "/tmp/local.sqlite" {
+		t.Fatalf("expected checker path %q, got %q", "/tmp/local.sqlite", checker.lastPath)
+	}
+	if store.createCalls != 0 {
+		t.Fatalf("expected no create call, got %d", store.createCalls)
+	}
+}
+
+func TestUpdateConfiguredDatabase_BlocksUpdateWhenConnectionValidationFails(t *testing.T) {
+	// Arrange
+	store := &fakeConfigStore{
+		entries: []port.ConfigEntry{
+			{Name: "local", DBPath: "/tmp/local.sqlite"},
+		},
+	}
+	checker := &fakeDatabaseConnectionChecker{err: errors.New("cannot connect")}
+	uc := usecase.NewUpdateConfiguredDatabase(store, checker)
+
+	// Act
+	err := uc.Execute(context.Background(), 0, dto.ConfigDatabase{
+		Name: "prod",
+		Path: " /tmp/prod.sqlite ",
+	})
+
+	// Assert
+	if !errors.Is(err, usecase.ErrConfigDatabaseConnectionFailed) {
+		t.Fatalf("expected error %v, got %v", usecase.ErrConfigDatabaseConnectionFailed, err)
+	}
+	if checker.callCount != 1 {
+		t.Fatalf("expected checker call count %d, got %d", 1, checker.callCount)
+	}
+	if checker.lastPath != "/tmp/prod.sqlite" {
+		t.Fatalf("expected checker path %q, got %q", "/tmp/prod.sqlite", checker.lastPath)
+	}
+	if store.updateCalls != 0 {
+		t.Fatalf("expected no update call, got %d", store.updateCalls)
 	}
 }
 
