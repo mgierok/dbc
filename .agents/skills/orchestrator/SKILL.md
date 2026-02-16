@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Orchestrate repeatable multi-step workflows by selecting one task specification from `references/tasks/*.md` and executing it strictly. Use when the user asks for standardized process execution managed by this skill, including running the Create PRD task from `references/tasks/create-prd.md`.
+description: Orchestrate repeatable multi-step workflows by selecting one task specification from `references/tasks/*.md` and executing it strictly. Use when the user asks for standardized process execution managed by this skill, including running the Create PRD task from `references/tasks/create-prd.md` or the Refine PRD task from `references/tasks/refine-prd.md`.
 ---
 
 # Orchestrator
@@ -21,6 +21,9 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 - `Create PRD` (`references/tasks/create-prd.md`)
   - Trigger examples: "create PRD", "prepare product requirements", "build PRD from short prompt".
   - Execution rule: follow this task file exactly as written.
+- `Refine PRD` (`references/tasks/refine-prd.md`)
+  - Trigger examples: "refine PRD", "break PRD into tasks", "generate implementation tasks from PRD".
+  - Execution rule: follow this task file exactly as written; this workflow must run in `Plan` mode.
 
 ## Execution Rules
 
