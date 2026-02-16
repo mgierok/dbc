@@ -35,7 +35,10 @@ The output must:
    - fill `Completion Summary` with concrete delivered changes and important follow-up context.
 11. Commit completed task changes.
 12. If technical/process issues are discovered and they can be prevented by AGENTS instructions, append concrete proposal(s) to `lessons-learned.md` in repository root as numbered list items.
-13. If no other task in the same PRD remains in `READY`, set parent PRD `Status` to `DONE`.
+13. Set parent PRD `Status` to `DONE` only when both are true:
+    - no other task in the same PRD remains in `READY`,
+    - parent PRD final acceptance matrix has passed (all required rows marked `PASS`).
+    If either condition is not met, keep parent PRD open and report the exact blocker.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -112,7 +115,9 @@ Follow this sequence exactly:
      rg -n "^- Status: READY$" .tasks/PRD-[prd-id]-TASK-*.md
      ```
    - Use when: deciding whether parent PRD can be moved to `DONE`.
-   - If none has `Status: READY`, set parent PRD `Status: DONE`.
+   - Validate final acceptance matrix status in the parent PRD and confirm all required rows are `PASS`.
+   - If none has `Status: READY` and matrix status is fully `PASS`, set parent PRD `Status: DONE`.
+   - Otherwise keep parent PRD `Status` unchanged and report blocking rows or missing matrix evidence.
 12. Commit PRD status change separately.
     - If parent PRD status changed in step 11, create a separate commit containing only PRD status update.
 13. Publish concise completion report.
@@ -165,6 +170,7 @@ Follow this sequence exactly:
 8. If PRD status changed, that change was committed separately.
 9. `lessons-learned.md` entries were appended as numbered list items when instruction-worthy issues were discovered.
 10. Parent PRD status was set to `DONE` when no sibling task remained `READY`.
+10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and final acceptance matrix rows were all `PASS`.
 
 ## 8. Agent Output Contract
 When running this workflow, return concise output with:
@@ -177,3 +183,4 @@ When running this workflow, return concise output with:
 6. Task commit hash.
 7. Optional PRD-status commit hash (when PRD status changed).
 8. Whether parent PRD was moved to `DONE` or why not.
+9. Final acceptance matrix result used for PRD closure decision.
