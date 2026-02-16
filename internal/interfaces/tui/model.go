@@ -141,12 +141,22 @@ type confirmAction int
 const (
 	confirmSave confirmAction = iota + 1
 	confirmDiscardTable
+	confirmConfigSaveAndOpen
+	confirmConfigDiscardAndOpen
+	confirmConfigCancel
 )
 
+type confirmOption struct {
+	label  string
+	action confirmAction
+}
+
 type confirmPopup struct {
-	active  bool
-	action  confirmAction
-	message string
+	active   bool
+	action   confirmAction
+	message  string
+	options  []confirmOption
+	selected int
 }
 
 type pkColumn struct {
@@ -197,6 +207,7 @@ type Model struct {
 	pendingCtrlW      bool
 	pendingG          bool
 	pendingTableIndex int
+	pendingConfigOpen bool
 
 	openConfigSelector bool
 	statusMessage      string
@@ -292,10 +303,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case saveChangesMsg:
 		if msg.err != nil {
+			m.pendingConfigOpen = false
 			m.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
 		}
 		m.clearStagedState()
+		if m.pendingConfigOpen {
+			m.pendingConfigOpen = false
+			m.openConfigSelector = true
+			m.statusMessage = "Opening config manager"
+			return m, tea.Quit
+		}
 		m.statusMessage = fmt.Sprintf("Saved %d changes", msg.count)
 		return m, m.loadRecordsCmd(true)
 	case errMsg:
@@ -546,18 +564,39 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch key {
+	case "j", "down":
+		if len(m.confirmPopup.options) > 0 {
+			m.confirmPopup.selected = clamp(m.confirmPopup.selected+1, 0, len(m.confirmPopup.options)-1)
+		}
+		return m, nil
+	case "k", "up":
+		if len(m.confirmPopup.options) > 0 {
+			m.confirmPopup.selected = clamp(m.confirmPopup.selected-1, 0, len(m.confirmPopup.options)-1)
+		}
+		return m, nil
 	case "esc", "n":
 		m.closeConfirmPopup()
 		m.pendingTableIndex = -1
+		m.pendingConfigOpen = false
 		return m, nil
 	case "enter", "y":
 		action := m.confirmPopup.action
+		if len(m.confirmPopup.options) > 0 {
+			action = m.confirmPopup.options[clamp(m.confirmPopup.selected, 0, len(m.confirmPopup.options)-1)].action
+		}
 		m.closeConfirmPopup()
 		switch action {
 		case confirmSave:
 			return m.confirmSaveChanges()
 		case confirmDiscardTable:
 			return m.confirmDiscardTableSwitch()
+		case confirmConfigSaveAndOpen:
+			return m.confirmConfigSaveAndOpen()
+		case confirmConfigDiscardAndOpen:
+			return m.confirmConfigDiscardAndOpen()
+		case confirmConfigCancel:
+			m.pendingConfigOpen = false
+			return m, nil
 		default:
 			return m, nil
 		}
@@ -660,6 +699,19 @@ func (m *Model) closeEditPopup() {
 
 func (m *Model) openConfirmPopup(action confirmAction, message string) {
 	m.confirmPopup = confirmPopup{active: true, action: action, message: message}
+}
+
+func (m *Model) openConfirmPopupWithOptions(message string, options []confirmOption, selected int) {
+	if len(options) == 0 {
+		m.openConfirmPopup(confirmConfigCancel, message)
+		return
+	}
+	m.confirmPopup = confirmPopup{
+		active:   true,
+		message:  message,
+		options:  options,
+		selected: clamp(selected, 0, len(options)-1),
+	}
 }
 
 func (m *Model) closeConfirmPopup() {
@@ -889,6 +941,18 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	m.commandInput = commandInput{}
 
 	if strings.EqualFold(command, ":config") {
+		if m.hasDirtyEdits() {
+			m.openConfirmPopupWithOptions(
+				"Unsaved changes detected. Choose save, discard, or cancel.",
+				[]confirmOption{
+					{label: "Save and open config", action: confirmConfigSaveAndOpen},
+					{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
+					{label: "Cancel", action: confirmConfigCancel},
+				},
+				0,
+			)
+			return m, nil
+		}
 		m.openConfigSelector = true
 		m.statusMessage = "Opening config manager"
 		return m, tea.Quit
@@ -1143,6 +1207,23 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	}
 	count := m.dirtyEditCount()
 	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes, count)
+}
+
+func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
+	m.pendingConfigOpen = true
+	updatedModel, cmd := m.confirmSaveChanges()
+	if cmd == nil {
+		m.pendingConfigOpen = false
+	}
+	return updatedModel, cmd
+}
+
+func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
+	m.pendingConfigOpen = false
+	m.clearStagedState()
+	m.openConfigSelector = true
+	m.statusMessage = "Opening config manager"
+	return m, tea.Quit
 }
 
 func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {

@@ -4,7 +4,7 @@ Protect staged data integrity during `:config` navigation by requiring explicit 
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-1-database-config-management.md
 - Task ID: 5
 - Task File: PRD-1-TASK-5-dirty-state-decision-flow-for-config-navigation.md
@@ -66,4 +66,29 @@ Add mandatory tri-option dirty-state prompt (`save`, `discard`, `cancel`) before
 
 ## Completion Summary
 
-Not started
+Implemented dirty-state decision flow for `:config` with explicit `save`, `discard`, and `cancel` paths.
+
+- Updated `internal/interfaces/tui/model.go`:
+  - `:config` now checks dirty state and opens tri-option decision popup when staged changes exist.
+  - Added keyboard selection support for multi-option confirm popups (`j/k`, `Enter`, `Esc`).
+  - Implemented behaviors:
+    - `save`: execute save flow, then open selector only after successful save.
+    - `discard`: clear staged state and open selector immediately.
+    - `cancel`: close popup and keep current session with staged state preserved.
+  - Save error path now blocks navigation and preserves staged state.
+- Updated `internal/interfaces/tui/view.go`:
+  - confirm popup renders selectable options for tri-option decisions,
+  - status shortcut hints include multi-option confirm controls.
+- Added regression tests in `internal/interfaces/tui/model_test.go` covering:
+  - dirty `:config` prompt gating,
+  - cancel keeps staged state and blocks navigation,
+  - discard clears state and navigates,
+  - save success navigates only after persistence,
+  - save failure keeps staged state and blocks navigation.
+- Updated documentation:
+  - `docs/product-documentation.md`
+  - `docs/technical-documentation.md`
+
+Verification run:
+- `go test ./...` passed.
+- `golangci-lint run ./...` passed with `0 issues`.

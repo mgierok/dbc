@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -144,6 +145,202 @@ func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
 		if _, ok := cmd().(tea.QuitMsg); ok {
 			t.Fatal("expected no quit command without explicit ':' prefix")
 		}
+	}
+}
+
+func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:       ViewRecords,
+		pendingInserts: []pendingInsertRow{{}},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected dirty :config to wait for explicit decision")
+		}
+	}
+	if !model.confirmPopup.active {
+		t.Fatal("expected dirty :config decision popup to open")
+	}
+	if model.openConfigSelector {
+		t.Fatal("expected selector navigation to remain blocked until explicit decision")
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:       ViewRecords,
+		pendingInserts: []pendingInsertRow{{}},
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Act
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.confirmPopup.active {
+		t.Fatal("expected decision popup to close on cancel")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to stay untouched on cancel")
+	}
+	if model.openConfigSelector {
+		t.Fatal("expected no navigation on cancel")
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:       ViewRecords,
+		pendingInserts: []pendingInsertRow{{}},
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected quit command after discard decision")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after discard decision, got %T", cmd())
+	}
+	if model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to be cleared on discard")
+	}
+	if !model.openConfigSelector {
+		t.Fatal("expected selector navigation after discard")
+	}
+}
+
+func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
+	// Arrange
+	engine := &tuiSpyEngine{}
+	saveChanges := usecase.NewSaveTableChanges(engine)
+	model := &Model{
+		ctx:         context.Background(),
+		viewMode:    ViewRecords,
+		saveChanges: saveChanges,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+				{Name: "name", Type: "TEXT", Nullable: false},
+			},
+		},
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
+					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+		tables: []dto.Table{{Name: "users"}},
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Act
+	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if saveCmd == nil {
+		t.Fatal("expected save command after selecting save decision")
+	}
+	msg := saveCmd()
+	_, quitCmd := model.Update(msg)
+
+	// Assert
+	if quitCmd == nil {
+		t.Fatal("expected quit command after successful save decision")
+	}
+	if _, ok := quitCmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after successful save decision, got %T", quitCmd())
+	}
+	if model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to be cleared after successful save")
+	}
+	if !model.openConfigSelector {
+		t.Fatal("expected selector navigation after successful save")
+	}
+}
+
+func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T) {
+	// Arrange
+	engine := &tuiSpyEngine{saveErr: errors.New("boom")}
+	saveChanges := usecase.NewSaveTableChanges(engine)
+	model := &Model{
+		ctx:         context.Background(),
+		viewMode:    ViewRecords,
+		saveChanges: saveChanges,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+				{Name: "name", Type: "TEXT", Nullable: false},
+			},
+		},
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
+					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+		tables: []dto.Table{{Name: "users"}},
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Act
+	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if saveCmd == nil {
+		t.Fatal("expected save command after selecting save decision")
+	}
+	msg := saveCmd()
+	_, quitCmd := model.Update(msg)
+
+	// Assert
+	if quitCmd != nil {
+		if _, ok := quitCmd().(tea.QuitMsg); ok {
+			t.Fatal("expected no navigation when save fails")
+		}
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to be preserved on save error")
+	}
+	if model.openConfigSelector {
+		t.Fatal("expected selector navigation to remain blocked on save error")
+	}
+	if !strings.Contains(model.statusMessage, "boom") {
+		t.Fatalf("expected save error status to be surfaced, got %q", model.statusMessage)
 	}
 }
 
@@ -579,6 +776,7 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 
 type tuiSpyEngine struct {
 	lastChanges domainmodel.TableChanges
+	saveErr     error
 }
 
 func (s *tuiSpyEngine) ListTables(ctx context.Context) ([]domainmodel.Table, error) {
@@ -599,5 +797,5 @@ func (s *tuiSpyEngine) ListOperators(ctx context.Context, columnType string) ([]
 
 func (s *tuiSpyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes domainmodel.TableChanges) error {
 	s.lastChanges = changes
-	return nil
+	return s.saveErr
 }

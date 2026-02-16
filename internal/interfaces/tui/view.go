@@ -316,6 +316,14 @@ func (m *Model) renderConfirmPopup(totalWidth int) []string {
 		message = "Are you sure?"
 	}
 	lines = append(lines, "|"+padRight(message, width-2)+"|")
+	if len(m.confirmPopup.options) > 0 {
+		lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
+		items := make([]string, len(m.confirmPopup.options))
+		for i, option := range m.confirmPopup.options {
+			items[i] = option.label
+		}
+		lines = append(lines, renderPopupList(items, m.confirmPopup.selected, width-2)...)
+	}
 	lines = append(lines, border)
 	return lines
 }
@@ -370,6 +378,9 @@ func (m *Model) statusShortcuts() string {
 	case m.editPopup.active:
 		return "Edit: Enter confirm | Esc cancel | Ctrl+n null"
 	case m.confirmPopup.active:
+		if len(m.confirmPopup.options) > 0 {
+			return "Confirm: j/k choose | Enter select | Esc cancel"
+		}
 		return "Confirm: Enter yes | Esc no"
 	case m.filterPopup.active:
 		return "Popup: Enter apply | Esc close"

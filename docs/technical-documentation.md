@@ -183,7 +183,13 @@ When adding functionality:
 2. Selected table schema is loaded.
 3. Records are loaded in pages (`offset`, `limit`) with optional filter.
 4. Additional records load when selection approaches loaded tail.
-5. Command entry (`:`) is handled inside TUI model; `:config` sets selector-return signal and exits runtime loop.
+5. Command entry (`:`) is handled inside TUI model.
+6. `:config` routing behavior:
+   - if no staged changes: set selector-return signal and exit runtime loop,
+   - if staged changes exist: open dirty-state decision popup with `save`, `discard`, `cancel`,
+   - `save` executes save flow first and exits to selector only after successful save,
+   - `discard` clears staged state and exits to selector immediately,
+   - `cancel` keeps runtime session active with staged state unchanged.
 
 ### 5.3 Write Flow
 
@@ -194,7 +200,9 @@ When adding functionality:
    - inserts
    - updates (skipping rows also marked for delete)
    - deletes
-5. On success: staged state is cleared and records are reloaded.
+5. On success:
+   - default save action: staged state is cleared and records are reloaded,
+   - save triggered from dirty `:config` decision: staged state is cleared and runtime exits to selector instead of reloading records.
 6. On failure: rollback occurs and staged state remains.
 
 ## 6. Technical Decisions
