@@ -127,7 +127,8 @@ Use these headings in this exact order:
 11. `Non-Functional Product Requirements`
 12. `Success Metrics and Release Criteria`
 13. `Risks and Dependencies`
-14. `Assumptions`
+14. `State & Failure Matrix`
+15. `Assumptions`
 
 ## 6. Section Rules (Authoring Guide)
 1. `Overview`
@@ -169,12 +170,25 @@ Use these headings in this exact order:
      - at least one `Guardrail Metric`.
 13. `Risks and Dependencies`
    - List risks to value delivery and key dependencies that can affect scope, release readiness, or metric outcomes.
-14. `Assumptions`
+14. `State & Failure Matrix`
+   - Mandatory for every PRD.
+   - Define expected product behavior for critical user-impacting state transitions and failure scenarios.
+   - Include these generic control-flow rows exactly:
+     - `startup` (or session initialization)
+     - `config` (or settings/configuration change)
+     - `save` (or persistence/commit operation)
+     - `navigation` (or context/screen/workflow switch)
+   - For each row, provide:
+     - trigger or failure mode,
+     - expected product response,
+     - user-visible recovery path.
+   - If a row is not relevant for the feature, mark it explicitly as `Out of scope` and provide a short reason.
+15. `Assumptions`
    - List explicit assumptions used for missing input.
 
 ## 7. Quality Gates (All Must Pass Before Final Output)
 1. Completeness
-   - All 14 required sections exist and are non-empty.
+   - All 15 required sections exist and are non-empty.
 2. Status validity
    - `Metadata` contains `Status` and value is exactly `READY`.
 3. Delta clarity
@@ -209,13 +223,17 @@ Use these headings in this exact order:
    - Every previously unknown critical constraint is resolved as a confirmed decision or explicit out-of-scope item.
 15. Consistency
    - Goals, scope, requirements, and metrics do not contradict each other.
-16. Review loop
+16. State and recovery coverage
+   - `State & Failure Matrix` exists.
+   - It includes rows for `startup`, `config`, `save`, and `navigation` (or explicit `Out of scope` rationale for any row).
+   - Each included row has trigger/failure, expected response, and user-visible recovery path.
+17. Review loop
    - Focused feedback was requested on scope, metrics, non-goals, and residual risks.
-17. File output compliance
+18. File output compliance
    - Final PRD is saved in `.tasks` as `PRD-[prd-id]-[short-name].md` with next numeric `prd-id`.
-18. Draft mode compliance
+19. Draft mode compliance
    - Clarification, drafting, and draft quality checks were executed in `Plan` mode.
-19. Save mode compliance
+20. Save mode compliance
    - Final PRD file save was executed only in `Default` mode.
 
 ## 8. Anti-Patterns (Reject and Revise)
