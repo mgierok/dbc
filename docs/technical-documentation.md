@@ -173,6 +173,7 @@ When adding functionality:
    - first valid add is required before continue,
    - users can optionally add more entries in the same setup context,
    - normal browsing cannot start until at least one entry exists.
+   Pressing `Esc` in this setup cancels startup and exits application loop before DB open.
    Invalid config content (for example malformed TOML) is still treated as startup error.
 5. User confirms selected database from refreshed selector list.
 6. Selected SQLite database is opened and pinged.

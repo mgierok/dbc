@@ -158,6 +158,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - If startup config file is missing or has zero entries, DBC opens mandatory first-entry setup before normal browsing can start.
 - If startup config exists but is malformed (for example invalid TOML or invalid entry shape), DBC stops startup with an explicit error.
 - During mandatory setup, users add one required entry and can optionally add more entries before continuing.
+- During mandatory setup, `Esc` cancels startup and exits the application.
 - Each entry requires:
   - `name` (display name).
   - `db_path` (SQLite connection path/string).
@@ -328,7 +329,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Add entry | `a` |
 | Edit selected entry | `e` |
 | Delete selected entry (confirm required) | `d`, then `Enter` |
-| Selector form interaction | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel |
+| Selector form interaction | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel (or exit startup during mandatory first setup) |
 
 ## 9. Data Safety and Change Governance
 

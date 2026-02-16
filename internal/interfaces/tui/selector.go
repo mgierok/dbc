@@ -502,8 +502,8 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 	switch msg.String() {
 	case "esc":
 		if m.requiresFirstEntry && len(m.options) == 0 {
-			m.statusMessage = "First database entry is required"
-			return m, nil
+			m.canceled = true
+			return m, tea.Quit
 		}
 		m.mode = selectorModeBrowse
 		m.form = selectorForm{}
@@ -684,6 +684,11 @@ func (m *databaseSelectorModel) formLines() []string {
 		pathValue += "|"
 	}
 
+	escLabel := "Esc cancel"
+	if m.requiresFirstEntry && len(m.options) == 0 && m.mode == selectorModeAdd {
+		escLabel = "Esc exit app"
+	}
+
 	lines := []string{
 		title,
 		"",
@@ -691,7 +696,7 @@ func (m *databaseSelectorModel) formLines() []string {
 		pathPrefix + "Path: " + pathValue,
 		"",
 		"Tab switch field | Ctrl+u clear field",
-		"Enter save | Esc cancel",
+		"Enter save | " + escLabel,
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
 		lines = append(lines, "Error: "+m.form.errorMessage)

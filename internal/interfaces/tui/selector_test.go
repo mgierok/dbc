@@ -387,7 +387,7 @@ func TestDatabaseSelector_EmptyConfigStartsInForcedSetupForm(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_ForcedSetupRequiresFirstEntryBeforeContinue(t *testing.T) {
+func TestDatabaseSelector_ForcedSetupEscCancelsStartup(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{},
@@ -397,15 +397,30 @@ func TestDatabaseSelector_ForcedSetupRequiresFirstEntryBeforeContinue(t *testing
 		t.Fatalf("expected selector model, got error %v", err)
 	}
 
-	// Act: attempt to leave forced setup without creating first entry.
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEsc})
+	// Act
+	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
 
 	// Assert
-	if model.mode != selectorModeAdd {
-		t.Fatalf("expected add form to remain active, got mode %v", model.mode)
+	selector := updated.(*databaseSelectorModel)
+	if !selector.canceled {
+		t.Fatal("expected forced setup Esc to cancel selector startup")
 	}
-	if !strings.Contains(model.statusMessage, "required") {
-		t.Fatalf("expected required-first-entry status, got %q", model.statusMessage)
+	if cmd == nil {
+		t.Fatal("expected quit command on forced setup Esc")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatal("expected tea.QuitMsg from quit command")
+	}
+}
+
+func TestDatabaseSelector_ForcedSetupAllowsContinueAfterFirstEntry(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
 	}
 
 	// Act: create first entry and continue.
@@ -421,6 +436,25 @@ func TestDatabaseSelector_ForcedSetupRequiresFirstEntryBeforeContinue(t *testing
 	}
 	if !model.chosen {
 		t.Fatal("expected selector completion after first valid entry")
+	}
+}
+
+func TestDatabaseSelector_ForcedSetupFormShowsEscExitAppHint(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	lines := strings.Join(model.formLines(), "\n")
+
+	// Assert
+	if !strings.Contains(lines, "Enter save | Esc exit app") {
+		t.Fatalf("expected forced setup Esc hint to exit app, got %q", lines)
 	}
 }
 
