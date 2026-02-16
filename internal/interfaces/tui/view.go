@@ -334,6 +334,9 @@ func (m *Model) renderStatus(width int) string {
 		fmt.Sprintf("Table: %s", m.currentTableName()),
 		m.filterSummary(),
 	}
+	if m.commandInput.active {
+		parts = append(parts, "Command: "+m.commandPrompt())
+	}
 	shortcuts := m.statusShortcuts()
 	if strings.TrimSpace(shortcuts) != "" {
 		parts = append(parts, shortcuts)
@@ -370,6 +373,8 @@ func (m *Model) statusShortcuts() string {
 		return "Confirm: Enter yes | Esc no"
 	case m.filterPopup.active:
 		return "Popup: Enter apply | Esc close"
+	case m.commandInput.active:
+		return "Command: Enter run | Esc cancel"
 	case m.focus == FocusTables:
 		return "Tables: F filter"
 	case m.focus == FocusContent && m.viewMode == ViewSchema:

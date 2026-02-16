@@ -28,46 +28,51 @@ func main() {
 	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(configStore)
 	getActiveConfigPath := usecase.NewGetActiveConfigPath(configStore)
 
-	selected, err := tui.SelectDatabase(
-		context.Background(),
-		listConfiguredDatabases,
-		createConfiguredDatabase,
-		updateConfiguredDatabase,
-		deleteConfiguredDatabase,
-		getActiveConfigPath,
-	)
-	if err != nil {
-		if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
-			return
+	for {
+		selected, err := tui.SelectDatabase(
+			context.Background(),
+			listConfiguredDatabases,
+			createConfiguredDatabase,
+			updateConfiguredDatabase,
+			deleteConfiguredDatabase,
+			getActiveConfigPath,
+		)
+		if err != nil {
+			if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
+				return
+			}
+			log.Fatalf("failed to select database: %v", err)
 		}
-		log.Fatalf("failed to select database: %v", err)
-	}
 
-	db, err := sql.Open("sqlite", selected.ConnString)
-	if err != nil {
-		log.Fatalf("failed to open database: %v", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		if closeErr := db.Close(); closeErr != nil {
-			log.Printf("failed to close database after ping failure: %v", closeErr)
+		db, err := sql.Open("sqlite", selected.ConnString)
+		if err != nil {
+			log.Fatalf("failed to open database: %v", err)
 		}
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-	defer func() {
+
+		if err := db.Ping(); err != nil {
+			if closeErr := db.Close(); closeErr != nil {
+				log.Printf("failed to close database after ping failure: %v", closeErr)
+			}
+			log.Fatalf("failed to connect to database: %v", err)
+		}
+
+		engine := engine.NewSQLiteEngine(db)
+		listTables := usecase.NewListTables(engine)
+		getSchema := usecase.NewGetSchema(engine)
+		listRecords := usecase.NewListRecords(engine)
+		listOperators := usecase.NewListOperators(engine)
+		saveChanges := usecase.NewSaveTableChanges(engine)
+
+		runErr := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges)
 		if closeErr := db.Close(); closeErr != nil {
 			log.Printf("failed to close database: %v", closeErr)
 		}
-	}()
-
-	engine := engine.NewSQLiteEngine(db)
-	listTables := usecase.NewListTables(engine)
-	getSchema := usecase.NewGetSchema(engine)
-	listRecords := usecase.NewListRecords(engine)
-	listOperators := usecase.NewListOperators(engine)
-	saveChanges := usecase.NewSaveTableChanges(engine)
-
-	if err := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges); err != nil {
-		fmt.Printf("application error: %v\n", err)
+		if errors.Is(runErr, tui.ErrOpenConfigSelector) {
+			continue
+		}
+		if runErr != nil {
+			fmt.Printf("application error: %v\n", runErr)
+		}
+		return
 	}
 }

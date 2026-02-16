@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -83,6 +84,66 @@ func TestHandleKey_EscClearsFieldFocus(t *testing.T) {
 	// Assert
 	if model.recordFieldFocus {
 		t.Fatalf("expected record field focus to be disabled")
+	}
+}
+
+func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected quit command for :config")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg for :config, got %T", cmd())
+	}
+}
+
+func TestHandleKey_InvalidCommandShowsErrorAndKeepsSessionActive(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "unknown" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected invalid command to keep session active")
+		}
+	}
+	if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected unknown command status message, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected no quit command without explicit ':' prefix")
+		}
 	}
 }
 

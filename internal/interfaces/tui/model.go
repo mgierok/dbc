@@ -51,6 +51,12 @@ type filterPopup struct {
 	cursor        int
 }
 
+type commandInput struct {
+	active bool
+	value  string
+	cursor int
+}
+
 type stagedEdit struct {
 	Value model.Value
 }
@@ -184,6 +190,7 @@ type Model struct {
 
 	currentFilter     *dto.Filter
 	filterPopup       filterPopup
+	commandInput      commandInput
 	editPopup         editPopup
 	confirmPopup      confirmPopup
 	pendingFilterOpen bool
@@ -191,7 +198,8 @@ type Model struct {
 	pendingG          bool
 	pendingTableIndex int
 
-	statusMessage string
+	openConfigSelector bool
+	statusMessage      string
 }
 
 var _ tea.Model = (*Model)(nil)
@@ -312,6 +320,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.filterPopup.active {
 		return m.handleFilterPopupKey(msg)
 	}
+	if m.commandInput.active {
+		return m.handleCommandInputKey(msg)
+	}
 
 	if m.pendingCtrlW {
 		m.pendingCtrlW = false
@@ -341,6 +352,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key {
 	case "ctrl+c", "q":
 		return m, tea.Quit
+	case ":":
+		return m.startCommandInput()
 	case "ctrl+w":
 		m.pendingCtrlW = true
 		return m, nil
@@ -428,6 +441,34 @@ func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.filterPopup.step == filterInputValue && msg.Type == tea.KeyRunes {
 		insert := string(msg.Runes)
 		m.filterPopup.input, m.filterPopup.cursor = insertAtCursor(m.filterPopup.input, insert, m.filterPopup.cursor)
+	}
+	return m, nil
+}
+
+func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
+	switch key {
+	case "esc":
+		m.commandInput = commandInput{}
+		return m, nil
+	case "enter":
+		return m.submitCommandInput()
+	case "left":
+		m.commandInput.cursor = clamp(m.commandInput.cursor-1, 0, len(m.commandInput.value))
+		return m, nil
+	case "right":
+		m.commandInput.cursor = clamp(m.commandInput.cursor+1, 0, len(m.commandInput.value))
+		return m, nil
+	case "backspace":
+		if m.commandInput.value != "" {
+			m.commandInput.value, m.commandInput.cursor = deleteAtCursor(m.commandInput.value, m.commandInput.cursor)
+		}
+		return m, nil
+	}
+
+	if msg.Type == tea.KeyRunes {
+		insert := string(msg.Runes)
+		m.commandInput.value, m.commandInput.cursor = insertAtCursor(m.commandInput.value, insert, m.commandInput.cursor)
 	}
 	return m, nil
 }
@@ -834,6 +875,29 @@ func (m *Model) closeFilterPopup() {
 	m.filterPopup = filterPopup{}
 }
 
+func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
+	m.commandInput = commandInput{
+		active: true,
+		value:  "",
+		cursor: 0,
+	}
+	return m, nil
+}
+
+func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
+	command := ":" + strings.TrimSpace(m.commandInput.value)
+	m.commandInput = commandInput{}
+
+	if strings.EqualFold(command, ":config") {
+		m.openConfigSelector = true
+		m.statusMessage = "Opening config manager"
+		return m, tea.Quit
+	}
+
+	m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
+	return m, nil
+}
+
 func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
 	switch m.filterPopup.step {
 	case filterSelectColumn:
@@ -1030,6 +1094,19 @@ func (m *Model) currentTableName() string {
 		return ""
 	}
 	return m.tables[m.selectedTable].Name
+}
+
+func (m *Model) commandPrompt() string {
+	if !m.commandInput.active {
+		return ""
+	}
+	cursor := clamp(m.commandInput.cursor, 0, len(m.commandInput.value))
+	value := m.commandInput.value[:cursor] + "|" + m.commandInput.value[cursor:]
+	return ":" + value
+}
+
+func (m *Model) ShouldOpenConfigSelector() bool {
+	return m.openConfigSelector
 }
 
 func (m *Model) schemaColumns() []string {

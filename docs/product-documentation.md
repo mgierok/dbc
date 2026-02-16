@@ -77,6 +77,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - Edit database entry.
   - Delete database entry with explicit confirmation.
   - Display active config file path.
+- In-session command entry supports `:config` to return to selector/management without restarting.
 - Two-panel browsing experience:
   - Left panel: table list.
   - Right panel: schema view or records view for selected table.
@@ -164,6 +165,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - Add and edit require non-empty `name` and `db_path`.
   - Delete requires explicit confirmation.
 - Startup selector displays active configuration file path.
+- During active database session, users can open command entry with `:` and execute `:config` to return to selector/management.
 
 ### 7.2 Main Layout and Focus Model
 
@@ -284,6 +286,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | --- | --- |
 | Open records view / enter field focus / open edit popup | `Enter` (context dependent) |
 | Exit field focus | `Esc` |
+| Open command entry | `:` |
 | Open filter popup | `F` |
 | Stage insert | `i` |
 | Toggle delete marker / remove pending insert | `d` |
@@ -299,6 +302,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Filter popup | `j/k` selection, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` (nullable fields) |
 | Confirm popup | `Enter` or `y` confirm, `Esc` or `n` cancel |
+| Command entry | `Enter` execute command, `Esc` cancel command |
 
 ### 8.4 Startup Selector
 
@@ -334,6 +338,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - There is no direct shortcut to switch from Records view back to Schema view after entering Records view.
 - No dedicated command exists to clear filter directly (filter resets on table switch or is replaced by applying a new filter).
 - Quit action does not prompt to preserve unsaved staged changes.
+- `:config` navigation does not yet require save/discard/cancel decision when staged changes exist.
 
 ### Explicit Non-Goals in Current State
 

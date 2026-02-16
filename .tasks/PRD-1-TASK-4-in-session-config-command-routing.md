@@ -4,7 +4,7 @@ Add in-session command routing so users in an active database session can invoke
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-1-database-config-management.md
 - Task ID: 4
 - Task File: PRD-1-TASK-4-in-session-config-command-routing.md
@@ -62,4 +62,26 @@ Main browsing remains fully operational; users can invoke `:config` from session
 
 ## Completion Summary
 
-Not started
+Implemented in-session command routing for `:config` and runtime return to selector management.
+
+- Added command-entry state and parsing in `internal/interfaces/tui/model.go`:
+  - `:` opens command mode,
+  - `Enter` executes command,
+  - `Esc` cancels command input,
+  - unknown commands fail safely with `Unknown command: ...` status message.
+- Added `:config` routing signal in runtime model and app loop:
+  - `internal/interfaces/tui/app.go` now returns `ErrOpenConfigSelector` when runtime exits by `:config`,
+  - `cmd/dbc/main.go` now loops selector -> session so users can return to selector and reopen databases without restarting.
+- Preserved existing non-command keyboard behavior and added tests:
+  - `internal/interfaces/tui/model_test.go` now covers success path (`:config`), invalid command handling, and explicit-prefix requirement.
+- Updated documentation:
+  - `docs/product-documentation.md`
+  - `docs/technical-documentation.md`
+
+Verification run:
+- `go test ./internal/interfaces/tui` passed (after Red -> Green cycle).
+- `go test ./...` passed.
+- `golangci-lint run ./...` passed with `0 issues`.
+
+Downstream context for Task 5:
+- `:config` currently navigates immediately once invoked; staged-change decision flow (save/discard/cancel) is intentionally still pending in Task 5.

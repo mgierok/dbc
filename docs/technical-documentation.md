@@ -175,6 +175,7 @@ When adding functionality:
 6. Selected SQLite database is opened and pinged.
 7. SQLite engine and runtime table/record use cases are created.
 8. Bubble Tea application loop starts (`tui.Run`).
+9. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), the DB connection is closed and startup selector flow runs again without restarting process.
 
 ### 5.2 Main Read Flow
 
@@ -182,6 +183,7 @@ When adding functionality:
 2. Selected table schema is loaded.
 3. Records are loaded in pages (`offset`, `limit`) with optional filter.
 4. Additional records load when selection approaches loaded tail.
+5. Command entry (`:`) is handled inside TUI model; `:config` sets selector-return signal and exits runtime loop.
 
 ### 5.3 Write Flow
 
