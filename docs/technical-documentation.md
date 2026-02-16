@@ -177,6 +177,8 @@ When adding functionality:
    Invalid config content (for example malformed TOML) is still treated as startup error.
 5. User confirms selected database from refreshed selector list.
 6. Selected SQLite database is opened and pinged.
+   If open/ping fails, startup loop reopens selector with status error and preferred selection set to failed connection string.
+   Runtime does not start until user selects a reachable entry or updates configuration.
 7. SQLite engine and runtime table/record use cases are created.
 8. Bubble Tea application loop starts (`tui.Run`).
 9. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), the DB connection is closed and startup selector flow runs again without restarting process.

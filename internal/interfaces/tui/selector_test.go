@@ -493,6 +493,74 @@ func TestDatabaseSelector_ForcedSetupSupportsOptionalAdditionalEntries(t *testin
 	}
 }
 
+func TestDatabaseSelector_AppliesInitialStatusMessage(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		StatusMessage: "Connection failed: invalid path",
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if model.statusMessage != "Connection failed: invalid path" {
+		t.Fatalf("expected initial status message, got %q", model.statusMessage)
+	}
+}
+
+func TestDatabaseSelector_PrefersSelectionByConnString(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		PreferConnString: "/tmp/analytics.sqlite",
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if model.selected != 1 {
+		t.Fatalf("expected preferred selection index %d, got %d", 1, model.selected)
+	}
+}
+
+func TestDatabaseSelector_IgnoresMissingPreferredConnString(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		PreferConnString: "/tmp/missing.sqlite",
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if model.selected != 0 {
+		t.Fatalf("expected default selection index %d, got %d", 0, model.selected)
+	}
+}
+
 func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
 	current := model
 	for _, r := range text {

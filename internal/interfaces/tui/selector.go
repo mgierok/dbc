@@ -22,6 +22,11 @@ type DatabaseOption struct {
 	ConnString string
 }
 
+type SelectorLaunchState struct {
+	StatusMessage    string
+	PreferConnString string
+}
+
 type selectorManager interface {
 	List(ctx context.Context) ([]dto.ConfigDatabase, error)
 	Create(ctx context.Context, entry dto.ConfigDatabase) error
@@ -116,6 +121,26 @@ func SelectDatabase(
 	deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
 	getActiveConfigPath *usecase.GetActiveConfigPath,
 ) (DatabaseOption, error) {
+	return SelectDatabaseWithState(
+		ctx,
+		listConfiguredDatabases,
+		createConfiguredDatabase,
+		updateConfiguredDatabase,
+		deleteConfiguredDatabase,
+		getActiveConfigPath,
+		SelectorLaunchState{},
+	)
+}
+
+func SelectDatabaseWithState(
+	ctx context.Context,
+	listConfiguredDatabases *usecase.ListConfiguredDatabases,
+	createConfiguredDatabase *usecase.CreateConfiguredDatabase,
+	updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
+	deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
+	getActiveConfigPath *usecase.GetActiveConfigPath,
+	state SelectorLaunchState,
+) (DatabaseOption, error) {
 	if listConfiguredDatabases == nil || createConfiguredDatabase == nil || updateConfiguredDatabase == nil || deleteConfiguredDatabase == nil || getActiveConfigPath == nil {
 		return DatabaseOption{}, errors.New("selector config management use cases are required")
 	}
@@ -126,7 +151,7 @@ func SelectDatabase(
 		update: updateConfiguredDatabase,
 		del:    deleteConfiguredDatabase,
 		active: getActiveConfigPath,
-	})
+	}, state)
 	if err != nil {
 		return DatabaseOption{}, err
 	}
@@ -152,9 +177,13 @@ func SelectDatabase(
 	return selector.options[selector.selected], nil
 }
 
-func newDatabaseSelectorModel(ctx context.Context, manager selectorManager) (*databaseSelectorModel, error) {
+func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, launchState ...SelectorLaunchState) (*databaseSelectorModel, error) {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	state := SelectorLaunchState{}
+	if len(launchState) > 0 {
+		state = launchState[0]
 	}
 	model := &databaseSelectorModel{
 		ctx:     ctx,
@@ -167,12 +196,29 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager) (*da
 	if err := model.refreshActivePath(); err != nil {
 		return nil, err
 	}
+	model.applyLaunchState(state)
 	if len(model.options) == 0 {
 		model.requiresFirstEntry = true
 		model.openAddForm()
 		model.statusMessage = "First database entry is required"
 	}
 	return model, nil
+}
+
+func (m *databaseSelectorModel) applyLaunchState(state SelectorLaunchState) {
+	if strings.TrimSpace(state.StatusMessage) != "" {
+		m.statusMessage = state.StatusMessage
+	}
+	preferredConnString := strings.TrimSpace(state.PreferConnString)
+	if preferredConnString == "" || len(m.options) == 0 {
+		return
+	}
+	for i, option := range m.options {
+		if strings.TrimSpace(option.ConnString) == preferredConnString {
+			m.selected = i
+			return
+		}
+	}
 }
 
 func (m *databaseSelectorModel) refreshOptions() error {

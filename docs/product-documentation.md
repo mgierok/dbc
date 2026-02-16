@@ -170,6 +170,8 @@ DBC positions itself as a productivity-focused database commander for terminal u
     - if connection validation fails, entry is not saved and user stays in form with an error message.
   - Delete requires explicit confirmation.
   - Add/edit form shows a visible caret (`|`) in the active editable field.
+- If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
+- After such startup connection error, user must select another reachable entry or edit the selected entry before main view can open.
 - Startup selector displays active configuration file path.
 - During active database session, users can open command entry with `:` and execute `:config` to return to selector/management.
 - If `:config` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
