@@ -22,14 +22,20 @@ The PRD must be:
 10. Continue clarification until all critical unknowns are resolved into explicit decisions or explicit scope exclusions.
 11. Every PRD must include a `Metadata` section with `Status` set to exactly one of: `READY`, `DONE`.
 12. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
+13. This workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
+14. Do not save or overwrite PRD files while still in `Plan` mode.
+15. If current mode does not match the required phase, stop and request mode switch before continuing.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
 
-1. Understand the request.
+1. Confirm drafting mode.
+   - Verify current execution mode is `Plan`.
+   - If mode is not `Plan`, do not continue; ask for switch to `Plan` mode.
+2. Understand the request.
    - Restate the feature in one sentence.
    - Identify missing information.
-2. Run mandatory clarification.
+3. Run mandatory clarification.
    - Start with 3-5 highest-impact questions.
    - Ask one question at a time (single-question mode).
    - Wait for the answer before asking the next question.
@@ -40,21 +46,28 @@ Follow this sequence exactly:
    - If two consecutive answers are still ambiguous, pause and ask one explicit decision question with trade-offs.
    - After the initial 3-5 questions, run additional targeted questions if needed to resolve remaining critical unknowns.
    - Do not move to final PRD output while any critical unknown remains unresolved.
-3. Handle incomplete information.
+4. Handle incomplete information.
    - Continue with an `Assumptions` section for non-critical items only.
    - Add confidence per assumption: `High`, `Medium`, or `Low`.
    - If a critical item cannot be resolved, do not produce final PRD. Ask a direct decision question and wait for answer.
-4. Publish `Answer Summary`.
+5. Publish `Answer Summary`.
    - List confirmed answers and assumptions.
-5. Draft the PRD using the fixed structure (Section 5).
+6. Draft the PRD using the fixed structure (Section 5).
    - Set `Status` in `Metadata`:
      - default `READY`,
      - use `DONE` only when user explicitly confirms the PRD represents completed and closed scope.
-6. Run one review loop.
+7. Run one review loop.
    - Ask for focused feedback on scope, metrics, non-goals, and residual risks.
    - Revise if feedback is provided.
-7. Run `Quality Gate Check`.
-8. If any gate fails, revise and re-check before final output.
+8. Run draft quality pre-check for all non-save gates.
+9. If any draft pre-check fails, revise and re-check before proceeding to save phase.
+10. Request mode switch for save phase.
+   - Ask for switch to `Default` mode before file save.
+11. Confirm save mode.
+   - Verify current execution mode is `Default`.
+   - If mode is not `Default`, do not save; request switch and wait.
+12. Save final PRD file in `.tasks` using required naming.
+13. Run final full `Quality Gate Check` and publish summary with gate results and saved file path.
 
 ## 4. Clarifying Questions
 
@@ -204,6 +217,10 @@ Use these headings in this exact order:
    - Focused feedback was requested on scope, metrics, non-goals, and residual risks.
 17. File output compliance
    - Final PRD is saved in `.tasks` as `PRD-[prd-id]-[short-name].md` with next numeric `prd-id`.
+18. Draft mode compliance
+   - Clarification, drafting, and draft quality checks were executed in `Plan` mode.
+19. Save mode compliance
+   - Final PRD file save was executed only in `Default` mode.
 
 ## 8. Anti-Patterns (Reject and Revise)
 Reject the draft if any of these appear:
@@ -234,22 +251,25 @@ Do not include:
 ## 10. File Output Rules
 When saving the generated PRD:
 
-1. Save in `.tasks`.
-2. Use filename format `PRD-[prd-id]-[short-name].md`.
-3. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
-4. Use a short, meaningful `[short-name]`.
-5. Use kebab-case for `[short-name]`.
+1. Save only in `Default` mode; if current mode is `Plan`, stop and request switch to `Default`.
+2. Save in `.tasks`.
+3. Use filename format `PRD-[prd-id]-[short-name].md`.
+4. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
+5. Use a short, meaningful `[short-name]`.
+6. Use kebab-case for `[short-name]`.
 
 ## 11. Agent Output Contract
 When generating a PRD, follow this output flow:
 
-1. Start clarification in single-question mode with `Question 1` only.
-2. Wait for user response, then continue to `Question 2`, and so on.
-3. Continue asking targeted questions until all critical unknowns are resolved.
-4. After clarification, output `Answer Summary` with confirmed choices and assumptions.
-5. Output the PRD using the exact fixed structure.
-6. Request focused feedback on scope, metrics, non-goals, and residual risks.
-7. Revise draft if feedback is provided.
-8. Save final PRD to `.tasks` using required naming (Section 10).
-9. End with `Quality Gate Check` and mark each gate `PASS`.
-10. If any gate is not `PASS`, revise and repeat the check before finalizing.
+1. Confirm draft phase is running in `Plan` mode.
+2. Start clarification in single-question mode with `Question 1` only.
+3. Wait for user response, then continue to `Question 2`, and so on.
+4. Continue asking targeted questions until all critical unknowns are resolved.
+5. After clarification, output `Answer Summary` with confirmed choices and assumptions.
+6. Output PRD draft using the exact fixed structure and request focused feedback on scope, metrics, non-goals, and residual risks.
+7. Revise draft if feedback is provided and rerun draft quality gates.
+8. Request switch to `Default` mode for file-save phase.
+9. Confirm save phase is running in `Default` mode.
+10. Save final PRD to `.tasks` using required naming (Section 10).
+11. End with `Quality Gate Check` and mark each gate `PASS`.
+12. If any gate is not `PASS`, revise and repeat the check before finalizing.

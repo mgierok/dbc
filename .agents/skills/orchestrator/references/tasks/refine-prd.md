@@ -28,13 +28,15 @@ The output must:
 13. Do not include unresolved placeholders such as `TBD` or `TODO`.
 14. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
 15. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
-16. This workflow must run in `Plan` mode; if current mode is not `Plan`, stop and request mode switch before continuing.
+16. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
+17. Do not save task files while still in `Plan` mode.
+18. If current mode does not match required phase, stop and request mode switch before continuing.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
 
 1. Confirm execution mode.
-   - Verify current execution mode is `Plan`.
+   - Verify current execution mode is `Plan` for draft phase.
    - If mode is not `Plan`, do not continue; ask for switch to `Plan` mode.
 2. Validate inputs.
    - Confirm PRD file path.
@@ -54,8 +56,14 @@ Follow this sequence exactly:
 6. Draft task files using fixed structure (Section 5).
 7. Run one internal review pass.
    - Check sequencing, dependency validity, and execution readiness.
-8. Save task files in `.tasks` with required naming (Section 9).
-9. Publish a concise plan summary listing generated tasks and dependency order.
+8. Run draft quality pre-checks for gates that do not require file-save phase evidence.
+9. Request mode switch for save phase.
+   - Ask for switch to `Default` mode before writing task files.
+10. Confirm save mode.
+   - Verify current execution mode is `Default`.
+   - If mode is not `Default`, do not save; request switch and wait.
+11. Save task files in `.tasks` with required naming (Section 9).
+12. Run final full quality gate check and publish a concise summary listing generated tasks and dependency order.
 
 ## 4. Clarification Protocol
 Ask clarifying questions only when missing information blocks safe planning.
@@ -147,13 +155,14 @@ Each generated task file must use these headings in this exact order:
 ## 9. File Output Rules
 When saving tasks:
 
-1. Save in `.tasks`.
-2. Use filename format:
+1. Save only in `Default` mode; if current mode is `Plan`, stop and request switch to `Default`.
+2. Save in `.tasks`.
+3. Use filename format:
    - `PRD-[prd-id]-TASK-[task-id]-[short-task-name].md`
-3. `prd-id` must match parent PRD ID.
-4. `task-id` must be sequential from `1` to `N` within that PRD.
-5. Use kebab-case for `[short-task-name]`.
-6. Each task file must contain explicit PRD reference and explicit linked dependency references in content.
+4. `prd-id` must match parent PRD ID.
+5. `task-id` must be sequential from `1` to `N` within that PRD.
+6. Use kebab-case for `[short-task-name]`.
+7. Each task file must contain explicit PRD reference and explicit linked dependency references in content.
 
 ## 10. Quality Gates (All Must Pass Before Final Output)
 1. At least one task is generated for the PRD.
@@ -169,7 +178,8 @@ When saving tasks:
 11. Dependency references are valid, resolvable, and acyclic.
 12. File names follow required naming format.
 13. No task includes unresolved placeholders.
-14. Workflow execution mode was `Plan` for the full run.
+14. Draft phase execution mode was `Plan`.
+15. Save phase execution mode was `Default`.
 
 ## 11. Forbidden Content
 Do not include:
@@ -182,12 +192,13 @@ Do not include:
 ## 12. Agent Output Contract
 When running this workflow:
 
-1. Confirm execution happened in `Plan` mode.
+1. Confirm draft phase execution happened in `Plan` mode.
 2. Confirm the PRD input used.
 3. Confirm detected PRD status is `READY`.
 4. Confirm whether supplemental references were used.
-5. Produce/save task files in `.tasks` with required naming.
-6. Return concise summary:
+5. Confirm mode switch to `Default` happened before saving files.
+6. Produce/save task files in `.tasks` with required naming.
+7. Return concise summary:
    - generated task count,
    - ordered task list,
    - dependency highlights,

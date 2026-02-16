@@ -20,10 +20,10 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 
 - `Create PRD` (`references/tasks/create-prd.md`)
   - Trigger examples: "create PRD", "prepare product requirements", "build PRD from short prompt".
-  - Execution rule: follow this task file exactly as written.
+  - Execution rule: follow this task file exactly as written; this workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
 - `Refine PRD` (`references/tasks/refine-prd.md`)
   - Trigger examples: "refine PRD", "break PRD into tasks", "generate implementation tasks from PRD".
-  - Execution rule: follow this task file exactly as written; this workflow must run in `Plan` mode.
+  - Execution rule: follow this task file exactly as written; this workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
 
 ## Execution Rules
 
@@ -32,7 +32,8 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 3. Do not merge or blend rules between task files unless a task file explicitly says to do so.
 4. If task instructions conflict with higher-priority runtime constraints, explain the conflict and apply the safe fallback.
 5. Enforce status lifecycle constraints defined by the selected task (for example parent PRD must be `READY` for `refine-prd`, while task statuses use `READY`/`DONE`).
-6. Keep outputs concise and verifiable against the selected task's quality gates.
+6. If selected task requires mode switch, pause at phase boundary and request explicit switch before any file-save step.
+7. Keep outputs concise and verifiable against the selected task's quality gates.
 
 ## Extending This Skill
 
