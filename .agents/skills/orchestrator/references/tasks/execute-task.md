@@ -49,6 +49,11 @@ Follow this sequence exactly:
 3. Resolve execution target.
    - If task file is provided, use it as target.
    - If PRD file is provided, enumerate its tasks in deterministic order (`Task ID` ascending) and pick first executable task.
+   - Hint: to list task files for one PRD in deterministic numeric order, run:
+     ```bash
+     rg --files .tasks | rg "^\\.tasks/PRD-[prd-id]-TASK-[0-9]+-" | sort -V
+     ```
+   - Use when: selector input is a PRD file and you must avoid accidental out-of-order task selection.
 4. Validate task executability.
    - Confirm target task `Status: READY`.
    - Confirm every `blocked-by` dependency is `DONE`.
@@ -56,13 +61,20 @@ Follow this sequence exactly:
      ```bash
      rg -n "^- Status:|^- blocked-by:" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md
      ```
+   - Use when: you already have candidate task file and need only executability metadata.
    - Then verify dependency statuses for the same PRD:
      ```bash
      rg -n "^- Status:" .tasks/PRD-[prd-id]-TASK-*.md
      ```
+   - Use when: task has one or more `blocked-by` dependencies and you need dependency status snapshot.
    - If not executable, stop and report exact blocker.
 5. Resolve parent PRD and branch.
    - Identify parent PRD from task metadata.
+   - Hint: to read parent PRD pointer without opening full task file, run:
+     ```bash
+     rg -n "^- PRD:" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md
+     ```
+   - Use when: selector input is a task file and branch source PRD must be resolved quickly.
    - Derive branch name from PRD filename stem and convert to lowercase (`prd-[prd-id]-[short-name]`).
    - If branch exists, checkout it.
    - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
@@ -70,10 +82,21 @@ Follow this sequence exactly:
    - Perform implementation directly using required knowledge sources from Section 2, rule 8.
    - Hint: to read only `Completion Summary` of one task without opening the whole file, run:
      ```bash
-     rg --multiline --multiline-dotall "^## Completion Summary\\n\\n([\\s\\S]*?)(?:\\n## |\\z)" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md --replace '$1'
+     rg --multiline --multiline-dotall "^## Completion Summary\\n\\n([\\s\\S]*?)(?:\\n## [^\\n]*|\\z)" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md --replace '$1'
      ```
+   - Use when: you need compact status context for current task before coding or before final update.
+   - Hint: to read only dependency task completion summaries, run:
+     ```bash
+     rg --multiline --multiline-dotall "^## Completion Summary\\n\\n([\\s\\S]*?)(?:\\n## [^\\n]*|\\z)" .tasks/PRD-[prd-id]-TASK-[dep-task-id]-*.md --replace '$1'
+     ```
+   - Use when: current task has `blocked-by` dependencies and you only need delivered outcomes from those tasks.
 7. Verify implementation.
    - Run verification checks required by task `Verification Plan`.
+   - Hint: to read only `Verification Plan` for selected task, run:
+     ```bash
+     rg --multiline --multiline-dotall "^## Verification Plan\\n\\n([\\s\\S]*?)(?:\\n## [^\\n]*|\\z)" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md --replace '$1'
+     ```
+   - Use when: you need exact verification scope without loading full task details.
    - If verification fails, iterate implementation until checks pass or report hard blocker.
 8. Finalize task state.
    - Update task file: set `Status: DONE`.
@@ -83,8 +106,13 @@ Follow this sequence exactly:
 10. Commit.
     - Create one commit containing task implementation and task-state update.
 11. Finalize PRD state.
-    - Inspect sibling tasks for same PRD.
-    - If none has `Status: READY`, set parent PRD `Status: DONE`.
+   - Inspect sibling tasks for same PRD.
+   - Hint: to quickly check whether any sibling task is still `READY`, run:
+     ```bash
+     rg -n "^- Status: READY$" .tasks/PRD-[prd-id]-TASK-*.md
+     ```
+   - Use when: deciding whether parent PRD can be moved to `DONE`.
+   - If none has `Status: READY`, set parent PRD `Status: DONE`.
 12. Commit PRD status change separately.
     - If parent PRD status changed in step 11, create a separate commit containing only PRD status update.
 13. Publish concise completion report.
@@ -95,8 +123,9 @@ Follow this sequence exactly:
    - Consider only tasks belonging to that PRD.
    - Hint: to quickly inspect task statuses for one PRD without opening full files, run:
      ```bash
-     rg -n "^- Task ID:|^- Status:" .tasks/PRD-[prd-id]-TASK-*.md
+     rg -n "^- Task ID:|^- Status:" .tasks/PRD-[prd-id]-TASK-*.md | sort -V
      ```
+   - Use when: identifying first executable task while preserving `Task ID` order.
    - Order by `Task ID` ascending.
    - Choose first task that satisfies executability rules.
 2. If no executable task exists:
