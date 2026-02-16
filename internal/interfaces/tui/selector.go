@@ -674,17 +674,21 @@ func (m *databaseSelectorModel) formLines() []string {
 	}
 	namePrefix := "  "
 	pathPrefix := "  "
+	nameValue := m.form.nameValue
+	pathValue := m.form.pathValue
 	if m.form.activeField == selectorInputName {
 		namePrefix = "> "
+		nameValue += "|"
 	} else {
 		pathPrefix = "> "
+		pathValue += "|"
 	}
 
 	lines := []string{
 		title,
 		"",
-		namePrefix + "Name: " + m.form.nameValue,
-		pathPrefix + "Path: " + m.form.pathValue,
+		namePrefix + "Name: " + nameValue,
+		pathPrefix + "Path: " + pathValue,
 		"",
 		"Tab switch field | Ctrl+u clear field",
 		"Enter save | Esc cancel",

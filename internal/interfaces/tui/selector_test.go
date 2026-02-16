@@ -161,6 +161,74 @@ func TestDatabaseSelector_EditUpdatesEntry(t *testing.T) {
 	}
 }
 
+func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	lines := strings.Join(model.formLines(), "\n")
+
+	// Assert
+	if !strings.Contains(lines, "> Name: |") {
+		t.Fatalf("expected caret in active name field, got %q", lines)
+	}
+	if strings.Contains(lines, "> Path: |") {
+		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	lines = strings.Join(model.formLines(), "\n")
+
+	// Assert
+	if !strings.Contains(lines, "> Path: |") {
+		t.Fatalf("expected caret in active path field after tab, got %q", lines)
+	}
+}
+
+func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	lines := strings.Join(model.formLines(), "\n")
+
+	// Assert
+	if !strings.Contains(lines, "> Name: local|") {
+		t.Fatalf("expected caret in active edit name field, got %q", lines)
+	}
+	if strings.Contains(lines, "> Path: /tmp/local.sqlite|") {
+		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	lines = strings.Join(model.formLines(), "\n")
+
+	// Assert
+	if !strings.Contains(lines, "> Path: /tmp/local.sqlite|") {
+		t.Fatalf("expected caret in active edit path field after tab, got %q", lines)
+	}
+}
+
 func TestDatabaseSelector_DeleteRequiresConfirmation(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{

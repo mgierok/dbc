@@ -167,6 +167,7 @@ When adding functionality:
    - create/update/delete configured database entry,
    - resolve active config path.
 3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each mutation.
+   Active add/edit text input renders a caret (`|`) in the currently focused field.
 4. When config has zero entries, selector starts in mandatory first-entry setup:
    - first valid add is required before continue,
    - users can optionally add more entries in the same setup context,

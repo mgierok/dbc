@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mgierok/dbc/internal/application/dto"
 	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
 
@@ -71,5 +72,73 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	// Assert
 	if !strings.Contains(status, "WRITE (dirty: 3)") {
 		t.Fatalf("expected dirty status, got %q", status)
+	}
+}
+
+func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
+	// Arrange
+	model := &Model{
+		commandInput: commandInput{
+			active: true,
+			value:  "config",
+			cursor: 3,
+		},
+	}
+
+	// Act
+	status := model.renderStatus(200)
+
+	// Assert
+	if !strings.Contains(status, "Command: :con|fig") {
+		t.Fatalf("expected command prompt caret in status, got %q", status)
+	}
+}
+
+func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
+	// Arrange
+	model := &Model{
+		filterPopup: filterPopup{
+			active: true,
+			step:   filterInputValue,
+			input:  "abc",
+			cursor: 1,
+		},
+	}
+
+	// Act
+	popup := strings.Join(model.renderFilterPopup(60), "\n")
+
+	// Assert
+	if !strings.Contains(popup, "Value: a|bc") {
+		t.Fatalf("expected caret in filter value input, got %q", popup)
+	}
+}
+
+func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
+	// Arrange
+	model := &Model{
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{
+					Name:  "name",
+					Type:  "TEXT",
+					Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+				},
+			},
+		},
+		editPopup: editPopup{
+			active:      true,
+			columnIndex: 0,
+			input:       "john",
+			cursor:      2,
+		},
+	}
+
+	// Act
+	popup := strings.Join(model.renderEditPopup(60), "\n")
+
+	// Assert
+	if !strings.Contains(popup, "Value: jo|hn") {
+		t.Fatalf("expected caret in edit text input, got %q", popup)
 	}
 }
