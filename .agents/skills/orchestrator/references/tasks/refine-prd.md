@@ -11,7 +11,7 @@ The output must:
 - avoid executing implementation work as part of this workflow.
 
 ## 2. Core Rules (Non-Negotiable)
-1. Use English only for all agent outputs in this workflow: clarifying questions, summaries, quality checks, and task content.
+1. Apply shared baseline rules from `../../SKILL.md` section `Shared Workflow Baseline`.
 2. This workflow creates/refines task files only; it does not implement code.
 3. The referenced PRD is the main source of truth for scope.
 4. Task planning must also reflect current application state and current documentation.
@@ -20,19 +20,16 @@ The output must:
 7. Generate at least one task per PRD; most PRDs should produce multiple tasks.
 8. Task status is restricted to `READY` or `DONE` only.
 9. Parent PRD status must be `READY`; planning must not proceed when parent PRD status is missing, invalid, or `DONE`.
-10. Dependencies are optional but, when used, must be explicit using `blocked-by` and/or `blocks`.
+10. Every task must include explicit `blocked-by` and `blocks` fields; use `none` when no dependency exists.
 11. Parallel execution is allowed only for tasks with all blockers completed.
 12. Every task must explicitly reference:
     - parent PRD,
     - dependency tasks (or explicit `none`).
 13. Every task must include explicit traceability to parent PRD requirement IDs (`FR-*` and/or `NFR-*`), and every parent PRD requirement must be covered by at least one task.
 14. All task files must be Markdown.
-15. Do not include unresolved placeholders such as `TBD` or `TODO`.
-16. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
-17. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
-18. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
-19. Do not save task files while still in `Plan` mode.
-20. If current mode does not match required phase, stop and request mode switch before continuing.
+15. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
+16. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
+17. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -107,6 +104,7 @@ Each generated task file must use these headings in this exact order:
      - `PRD`: exact PRD filename
      - `Task ID`: integer for current PRD sequence
      - `Task File`: current task filename
+     - `Task ID` must match `[task-id]` segment in `Task File` filename.
      - `PRD Requirements`: explicit list of covered parent PRD requirement IDs (`FR-*` and/or `NFR-*`)
 3. `Objective`
    - One technical objective only.
@@ -187,9 +185,10 @@ When saving tasks:
 12. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
 13. Dependency references are valid, resolvable, and acyclic.
 14. File names follow required naming format.
-15. No task includes unresolved placeholders.
-16. Draft phase execution mode was `Plan`.
-17. Save phase execution mode was `Default`.
+15. `Task ID` metadata value matches `[task-id]` in filename for every task.
+16. No task includes unresolved placeholders.
+17. Draft phase execution mode was `Plan`.
+18. Save phase execution mode was `Default`.
 
 ## 11. Forbidden Content
 Do not include:

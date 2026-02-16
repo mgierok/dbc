@@ -34,14 +34,29 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 2. Preserve required order, required formats, and non-negotiable constraints.
 3. Do not merge or blend rules between task files unless a task file explicitly says to do so.
 4. If task instructions conflict with higher-priority runtime constraints, explain the conflict and apply the safe fallback.
-5. Enforce status lifecycle constraints defined by the selected task (for example parent PRD must be `READY` for `refine-prd`, while task statuses use `READY`/`DONE`).
+5. Enforce lifecycle invariants across workflows:
+   - parent PRD must be `READY` for planning/refinement workflows,
+   - parent PRD can move to `DONE` only after execution closes all `READY` tasks for that PRD,
+   - task statuses use `READY`/`DONE` only.
 6. If selected task requires mode switch, pause at phase boundary and request explicit switch before any file-save step.
 7. Keep outputs concise and verifiable against the selected task's quality gates.
+
+## Shared Workflow Baseline
+
+These rules apply to all orchestrator workflows unless a task file defines a stricter rule:
+
+1. Use English only for all agent outputs.
+2. Respect mode boundaries strictly:
+   - draft phases run in `Plan`,
+   - save/write phases run in `Default`,
+   - if mode mismatches the required phase, stop and request a mode switch.
+3. Do not allow unresolved placeholders (`TBD`, `TODO`) in final saved artifacts.
+4. End each workflow with concise quality gate results (`PASS`/`FAIL` per gate).
 
 ## Extending This Skill
 
 1. Add each new workflow as a separate file in `references/tasks/`.
-2. Keep each task file self-contained, with clear:
+2. Keep each task file self-contained for workflow-specific behavior and reference `Shared Workflow Baseline` for common constraints, with clear:
    - purpose,
    - required workflow/order,
    - output contract,

@@ -10,7 +10,7 @@ The PRD must be:
 - explicit about the change from current state to target state after release.
 
 ## 2. Core Rules (Non-Negotiable)
-1. Use English only for all agent outputs in this workflow: clarifying questions, assumptions, answer summaries, feedback requests, quality checks, and PRD content.
+1. Apply shared baseline rules from `../../SKILL.md` section `Shared Workflow Baseline`.
 2. Ask clarifying questions before drafting the PRD.
 3. Focus on user value, business impact, measurable outcomes, and scope boundaries.
 4. Do not include technical implementation details.
@@ -20,11 +20,9 @@ The PRD must be:
 8. Do not finalize the PRD with any `TBD` values.
 9. Do not include an `Open Questions` section or unresolved decision placeholders.
 10. Continue clarification until all critical unknowns are resolved into explicit decisions or explicit scope exclusions.
-11. Every PRD must include a `Metadata` section with `Status` set to exactly one of: `READY`, `DONE`.
+11. Every PRD must include a `Metadata` section with `Status` set to exactly `READY`.
 12. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
 13. This workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
-14. Do not save or overwrite PRD files while still in `Plan` mode.
-15. If current mode does not match the required phase, stop and request mode switch before continuing.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -53,9 +51,7 @@ Follow this sequence exactly:
 5. Publish `Answer Summary`.
    - List confirmed answers and assumptions.
 6. Draft the PRD using the fixed structure (Section 5).
-   - Set `Status` in `Metadata`:
-     - default `READY`,
-     - use `DONE` only when user explicitly confirms the PRD represents completed and closed scope.
+   - Set `Status` in `Metadata` to exactly `READY`.
 7. Run one review loop.
    - Ask for focused feedback on scope, metrics, non-goals, and residual risks.
    - Revise if feedback is provided.
@@ -141,7 +137,7 @@ Use these headings in this exact order:
      - `We will know this is true when [metric target] within [time window].`
 2. `Metadata`
    - Must include:
-     - `Status`: `READY` or `DONE`.
+     - `Status`: `READY`.
 3. `Problem Statement`
    - Describe current pain, affected users, and business consequences.
 4. `Current State (As-Is)`
@@ -180,7 +176,7 @@ Use these headings in this exact order:
 1. Completeness
    - All 14 required sections exist and are non-empty.
 2. Status validity
-   - `Metadata` contains `Status` and value is exactly `READY` or `DONE`.
+   - `Metadata` contains `Status` and value is exactly `READY`.
 3. Delta clarity
    - `Current State (As-Is)` and `Target State After Release (To-Be)` are both present and materially different.
 4. Measurability

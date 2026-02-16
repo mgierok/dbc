@@ -10,7 +10,7 @@ The output must:
 - commit implementation changes for the completed task.
 
 ## 2. Core Rules (Non-Negotiable)
-1. Use English only for all agent outputs in this workflow: clarifications, summaries, checks, and completion report.
+1. Apply shared baseline rules from `../../SKILL.md` section `Shared Workflow Baseline`.
 2. This workflow executes exactly one task; do not execute multiple tasks in one run.
 3. Execution mode must be `Default`; if mode is not `Default`, stop and request mode switch.
 4. Execution must run through a subagent.
@@ -23,7 +23,8 @@ The output must:
    - all tasks listed in `blocked-by` are `DONE`.
 8. Execute work on branch derived from PRD filename:
    - branch name must equal lowercase PRD filename stem (`prd-[prd-id]-[short-name]`),
-   - if branch does not exist, create it from `main` and checkout to it.
+   - if branch does not exist, create it from local `main` and checkout to it,
+   - do not pull/sync automatically unless user explicitly requests it.
 9. Required knowledge sources for implementation:
    - selected task content,
    - completion summaries from dependency tasks,
@@ -57,7 +58,7 @@ Follow this sequence exactly:
    - Identify parent PRD from task metadata.
    - Derive branch name from PRD filename stem and convert to lowercase (`prd-[prd-id]-[short-name]`).
    - If branch exists, checkout it.
-   - If branch does not exist, checkout `main`, create branch, then checkout new branch.
+   - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
 6. Launch subagent execution.
    - Delegate implementation of selected task to subagent with strict task scope.
    - Provide subagent with required knowledge sources from Section 2, rule 9.
@@ -95,8 +96,8 @@ Follow this sequence exactly:
    - `prd-[prd-id]-[short-name]`
 3. Creation flow when missing:
    - checkout `main`,
-   - pull latest `main` when policy requires it,
-   - create and checkout target branch.
+   - create and checkout target branch from current local `main` state,
+   - do not pull latest `main` automatically; pull only when user explicitly asks.
 4. Do not execute task on unrelated branch.
 
 ## 6. Verification and Completion Rules
