@@ -115,6 +115,9 @@ func LoadFile(path string) (cfg Config, err error) {
 func (s *Store) List(_ context.Context) ([]port.ConfigEntry, error) {
 	cfg, err := LoadFile(s.path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) || errors.Is(err, ErrMissingDatabase) {
+			return []port.ConfigEntry{}, nil
+		}
 		return nil, err
 	}
 	result := make([]port.ConfigEntry, len(cfg.Databases))
@@ -130,7 +133,11 @@ func (s *Store) List(_ context.Context) ([]port.ConfigEntry, error) {
 func (s *Store) Create(_ context.Context, entry port.ConfigEntry) error {
 	cfg, err := LoadFile(s.path)
 	if err != nil {
-		return err
+		if errors.Is(err, os.ErrNotExist) || errors.Is(err, ErrMissingDatabase) {
+			cfg = Config{}
+		} else {
+			return err
+		}
 	}
 	cfg.Databases = append(cfg.Databases, DatabaseConfig{
 		Name: entry.Name,

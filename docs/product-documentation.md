@@ -155,7 +155,8 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - macOS and Linux: `~/.config/dbc/config.toml`
   - Windows: `%APPDATA%\dbc\config.toml`
 - Configuration requires at least one database entry.
-- If startup config has zero entries, DBC opens mandatory first-entry setup before normal browsing can start.
+- If startup config file is missing or has zero entries, DBC opens mandatory first-entry setup before normal browsing can start.
+- If startup config exists but is malformed (for example invalid TOML or invalid entry shape), DBC stops startup with an explicit error.
 - During mandatory setup, users add one required entry and can optionally add more entries before continuing.
 - Each entry requires:
   - `name` (display name).

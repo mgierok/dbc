@@ -169,10 +169,11 @@ When adding functionality:
 3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each successful mutation.
    Add/edit submit path performs use-case validation in this order: required fields -> SQLite connection check -> config store mutation.
    Active add/edit text input renders a caret (`|`) in the currently focused field.
-4. When config has zero entries, selector starts in mandatory first-entry setup:
+4. When config file is missing or has zero entries, selector starts in mandatory first-entry setup:
    - first valid add is required before continue,
    - users can optionally add more entries in the same setup context,
    - normal browsing cannot start until at least one entry exists.
+   Invalid config content (for example malformed TOML) is still treated as startup error.
 5. User confirms selected database from refreshed selector list.
 6. Selected SQLite database is opened and pinged.
 7. SQLite engine and runtime table/record use cases are created.
@@ -406,7 +407,8 @@ This is a practical checklist for adding a feature correctly.
 - Table edit/delete for persisted rows depends on primary key identity.
 - Filter supports one active condition at a time in TUI state.
 - Records view currently has no direct shortcut to return to schema view.
-- Application behavior assumes config file exists and is valid at startup.
+- Missing or empty config file is tolerated at startup (mapped to zero configured entries and forced first-entry setup).
+- Invalid config content still stops startup with explicit error.
 
 ## 11. Reference Documents
 
