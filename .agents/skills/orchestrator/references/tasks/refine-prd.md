@@ -30,6 +30,10 @@ The output must:
 15. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
 16. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
 17. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
+18. For every parent `FR-*`, plan at least:
+    - one happy-path verification scenario,
+    - one negative-path verification scenario.
+    Each scenario must be mapped to a specific task and an explicit test/check in that task `Verification Plan`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -55,6 +59,7 @@ Follow this sequence exactly:
    - Ensure each slice is independently verifiable and leaves software working.
    - Determine ordering and dependency edges.
    - Build a requirement coverage map `FR/NFR -> TASK-*` and ensure full parent-PRD requirement coverage.
+   - Build a verification coverage map `FR-* -> (happy-path task + test/check, negative-path task + test/check)`.
 6. Draft task files using fixed structure (Section 5).
 7. Run one internal review pass.
    - Check sequencing, dependency validity, and execution readiness.
@@ -182,13 +187,14 @@ When saving tasks:
 9. Every task references the correct parent PRD.
 10. Every task includes explicit `PRD Requirements` with valid parent-PRD requirement IDs (`FR-*` / `NFR-*`).
 11. Combined task set provides full parent-PRD requirement coverage (no orphan `FR-*` / `NFR-*`).
-12. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
-13. Dependency references are valid, resolvable, and acyclic.
-14. File names follow required naming format.
-15. `Task ID` metadata value matches `[task-id]` in filename for every task.
-16. No task includes unresolved placeholders.
-17. Draft phase execution mode was `Plan`.
-18. Save phase execution mode was `Default`.
+12. Every parent `FR-*` is mapped to at least one happy-path and one negative-path scenario, each linked to a specific task and explicit test/check in that task `Verification Plan`.
+13. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
+14. Dependency references are valid, resolvable, and acyclic.
+15. File names follow required naming format.
+16. `Task ID` metadata value matches `[task-id]` in filename for every task.
+17. No task includes unresolved placeholders.
+18. Draft phase execution mode was `Plan`.
+19. Save phase execution mode was `Default`.
 
 ## 11. Forbidden Content
 Do not include:
