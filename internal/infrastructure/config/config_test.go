@@ -1,12 +1,14 @@
 package config_test
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/mgierok/dbc/internal/application/port"
 	"github.com/mgierok/dbc/internal/infrastructure/config"
 )
 
@@ -188,5 +190,112 @@ func TestLoadFile_ReturnsErrorWhenFileDoesNotExist(t *testing.T) {
 	// Assert
 	if err == nil {
 		t.Fatal("expected error for missing file, got nil")
+	}
+}
+
+func TestResolvePathForOS_LinuxUsesHomeConfig(t *testing.T) {
+	// Arrange
+	home := "/home/tester"
+
+	// Act
+	path := config.ResolvePathForOS("linux", home, "")
+
+	// Assert
+	expected := filepath.Join(home, ".config", "dbc", "config.toml")
+	if path != expected {
+		t.Fatalf("expected %q, got %q", expected, path)
+	}
+}
+
+func TestResolvePathForOS_MacOSUsesHomeConfig(t *testing.T) {
+	// Arrange
+	home := "/Users/tester"
+
+	// Act
+	path := config.ResolvePathForOS("darwin", home, "")
+
+	// Assert
+	expected := filepath.Join(home, ".config", "dbc", "config.toml")
+	if path != expected {
+		t.Fatalf("expected %q, got %q", expected, path)
+	}
+}
+
+func TestResolvePathForOS_WindowsUsesAppData(t *testing.T) {
+	// Arrange
+	appData := "C:/Users/tester/AppData/Roaming"
+
+	// Act
+	path := config.ResolvePathForOS("windows", "C:/Users/tester", appData)
+
+	// Assert
+	expected := filepath.Join(appData, "dbc", "config.toml")
+	if path != expected {
+		t.Fatalf("expected %q, got %q", expected, path)
+	}
+}
+
+func TestConfigStore_CRUDPersistence(t *testing.T) {
+	// Arrange
+	path := filepath.Join(t.TempDir(), "config.toml")
+	content := `
+[[databases]]
+name = "local"
+db_path = "/tmp/local.sqlite"
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp config file: %v", err)
+	}
+	store := config.NewStore(path)
+
+	// Act
+	err := store.Create(context.Background(), port.ConfigEntry{Name: "analytics", DBPath: "/tmp/analytics.sqlite"})
+	if err != nil {
+		t.Fatalf("expected no create error, got %v", err)
+	}
+	err = store.Update(context.Background(), 0, port.ConfigEntry{Name: "primary", DBPath: "/tmp/primary.sqlite"})
+	if err != nil {
+		t.Fatalf("expected no update error, got %v", err)
+	}
+	err = store.Delete(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("expected no delete error, got %v", err)
+	}
+	entries, err := store.List(context.Background())
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no list error, got %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected one entry, got %d", len(entries))
+	}
+	if entries[0].Name != "primary" {
+		t.Fatalf("expected name %q, got %q", "primary", entries[0].Name)
+	}
+	if entries[0].DBPath != "/tmp/primary.sqlite" {
+		t.Fatalf("expected path %q, got %q", "/tmp/primary.sqlite", entries[0].DBPath)
+	}
+}
+
+func TestConfigStore_CreateRejectsInvalidEntry(t *testing.T) {
+	// Arrange
+	path := filepath.Join(t.TempDir(), "config.toml")
+	content := `
+[[databases]]
+name = "local"
+db_path = "/tmp/local.sqlite"
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp config file: %v", err)
+	}
+	store := config.NewStore(path)
+
+	// Act
+	err := store.Create(context.Background(), port.ConfigEntry{Name: " ", DBPath: "/tmp/analytics.sqlite"})
+
+	// Assert
+	if !errors.Is(err, config.ErrMissingDatabaseName) {
+		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabaseName, err)
 	}
 }

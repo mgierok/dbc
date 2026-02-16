@@ -1,0 +1,1 @@
+1. For terminal-first CLI apps (including Homebrew-installed binaries), do not assume macOS `~/Library/Application Support` as default config location; confirm CLI convention (`~/.config/...`) with product intent before implementation.

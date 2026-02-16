@@ -4,7 +4,7 @@ Build the configuration-management foundation so application and UI layers can s
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-1-database-config-management.md
 - Task ID: 1
 - Task File: PRD-1-TASK-1-config-management-foundation.md
@@ -63,4 +63,28 @@ The app still starts and loads existing config entries exactly as today, while n
 
 ## Completion Summary
 
-Not started
+Implemented config-management foundation across application and infrastructure layers.
+
+- Added application contracts for config management:
+  - `internal/application/port/config_store.go`
+  - `internal/application/dto/config_database.go`
+  - `internal/application/usecase/config_management.go`
+- Added use-case tests for list/create/update/delete/path behaviors and validation:
+  - `internal/application/usecase/config_management_test.go`
+- Extended config infrastructure with:
+  - OS-aware path resolver (`ResolvePathForOS`) using:
+    - macOS/Linux: `~/.config/dbc/config.toml`
+    - Windows: `%APPDATA%\\dbc\\config.toml` (fallback `%USERPROFILE%\\AppData\\Roaming\\dbc\\config.toml`)
+  - persistent config store (`NewStore`) with safe temp-file write + rename for create/update/delete
+  - active path lookup via store
+- Added infrastructure tests for path resolver and CRUD persistence:
+  - `internal/infrastructure/config/config_test.go`
+- Kept startup flow working by loading configured databases through new use-case/port adapter in:
+  - `cmd/dbc/main.go`
+- Updated product/technical documentation to reflect path behavior and startup flow changes:
+  - `docs/product-documentation.md`
+  - `docs/technical-documentation.md`
+
+Verification run:
+- `go test ./...` passed
+- `golangci-lint run ./...` passed
