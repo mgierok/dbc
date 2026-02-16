@@ -23,20 +23,19 @@ func main() {
 
 	configStore := config.NewStore(cfgPath)
 	listConfiguredDatabases := usecase.NewListConfiguredDatabases(configStore)
-	configuredDatabases, err := listConfiguredDatabases.Execute(context.Background())
-	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
-	}
+	createConfiguredDatabase := usecase.NewCreateConfiguredDatabase(configStore)
+	updateConfiguredDatabase := usecase.NewUpdateConfiguredDatabase(configStore)
+	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(configStore)
+	getActiveConfigPath := usecase.NewGetActiveConfigPath(configStore)
 
-	options := make([]tui.DatabaseOption, len(configuredDatabases))
-	for i, database := range configuredDatabases {
-		options[i] = tui.DatabaseOption{
-			Name:       database.Name,
-			ConnString: database.Path,
-		}
-	}
-
-	selected, err := tui.SelectDatabase(options)
+	selected, err := tui.SelectDatabase(
+		context.Background(),
+		listConfiguredDatabases,
+		createConfiguredDatabase,
+		updateConfiguredDatabase,
+		deleteConfiguredDatabase,
+		getActiveConfigPath,
+	)
 	if err != nil {
 		if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
 			return

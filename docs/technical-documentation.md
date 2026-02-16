@@ -8,7 +8,7 @@
 | Audience | Junior Software Engineer (primary), all contributors |
 | Purpose | Describe how the project is built, structured, tested, and extended |
 | Status | Active |
-| Last Updated | 2026-02-14 |
+| Last Updated | 2026-02-16 |
 | Source of Truth Scope | Current technical state of the codebase |
 
 ## Table of Contents
@@ -162,11 +162,15 @@ When adding functionality:
 1. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
    - macOS/Linux: `~/.config/dbc/config.toml`
    - Windows: `%APPDATA%\dbc\config.toml` (fallback `%USERPROFILE%\AppData\Roaming\dbc\config.toml` when `APPDATA` is unset).
-2. Config entries are loaded through config management use case and validated by config infrastructure.
-3. Database selector UI is shown.
-4. Selected SQLite database is opened and pinged.
-5. SQLite engine and use cases are created.
-6. Bubble Tea application loop starts (`tui.Run`).
+2. Startup selector is created with config-management use cases:
+   - list configured databases,
+   - create/update/delete configured database entry,
+   - resolve active config path.
+3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each mutation.
+4. User confirms selected database from refreshed selector list.
+5. Selected SQLite database is opened and pinged.
+6. SQLite engine and runtime table/record use cases are created.
+7. Bubble Tea application loop starts (`tui.Run`).
 
 ### 5.2 Main Read Flow
 

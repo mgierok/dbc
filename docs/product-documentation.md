@@ -9,7 +9,7 @@
 | Audience | Junior Product Manager and Junior Software Engineer |
 | Purpose | Define the current product state from a business and user-value perspective |
 | Status | Active |
-| Last Updated | 2026-02-13 |
+| Last Updated | 2026-02-16 |
 | Source of Truth Scope | Current product behavior and scope (product perspective) |
 
 ## Table of Contents
@@ -72,6 +72,11 @@ DBC positions itself as a productivity-focused database commander for terminal u
 
 - SQLite database support.
 - Multi-database startup selector from local configuration.
+- In-selector configuration management for startup databases:
+  - Add database entry.
+  - Edit database entry.
+  - Delete database entry with explicit confirmation.
+  - Display active config file path.
 - Two-panel browsing experience:
   - Left panel: table list.
   - Right panel: schema view or records view for selected table.
@@ -109,7 +114,9 @@ DBC positions itself as a productivity-focused database commander for terminal u
 ### Step 1: Startup and Database Selection
 
 - User launches DBC and sees a centered database selector.
+- Selector displays active config file path.
 - Each database option is presented as `Name | Connection String`.
+- User can manage entries in place (`add`, `edit`, `delete` with confirmation).
 - User can confirm selection or cancel startup.
 
 ### Step 2: Table Discovery and Schema Orientation
@@ -151,6 +158,10 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - `name` (display name).
   - `db_path` (SQLite connection path/string).
 - Startup selector displays entries in configuration order.
+- Startup selector supports in-app add/edit/delete management:
+  - Add and edit require non-empty `name` and `db_path`.
+  - Delete requires explicit confirmation.
+- Startup selector displays active configuration file path.
 
 ### 7.2 Main Layout and Focus Model
 
@@ -296,6 +307,10 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Move selection | `j/k` and arrow keys |
 | Jump to top/bottom | `g`/`G` and `Home`/`End` |
 | Page navigation | `Ctrl+f`/`Ctrl+b` and `PgDown`/`PgUp` |
+| Add entry | `a` |
+| Edit selected entry | `e` |
+| Delete selected entry (confirm required) | `d`, then `Enter` |
+| Selector form interaction | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel |
 
 ## 9. Data Safety and Change Governance
 

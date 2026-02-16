@@ -1,16 +1,27 @@
 package tui
 
 import (
+	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/application/dto"
 )
 
 func TestDatabaseSelector_EnterSelects(t *testing.T) {
 	// Arrange
-	model := newDatabaseSelectorModel([]DatabaseOption{
-		{Name: "local", ConnString: "/tmp/example.sqlite"},
-	})
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/example.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
 
 	// Act
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -24,9 +35,15 @@ func TestDatabaseSelector_EnterSelects(t *testing.T) {
 
 func TestDatabaseSelector_EscCancels(t *testing.T) {
 	// Arrange
-	model := newDatabaseSelectorModel([]DatabaseOption{
-		{Name: "local", ConnString: "/tmp/example.sqlite"},
-	})
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/example.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
 
 	// Act
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
@@ -40,10 +57,16 @@ func TestDatabaseSelector_EscCancels(t *testing.T) {
 
 func TestDatabaseSelector_MoveSelection(t *testing.T) {
 	// Arrange
-	model := newDatabaseSelectorModel([]DatabaseOption{
-		{Name: "local", ConnString: "/tmp/example.sqlite"},
-		{Name: "analytics", ConnString: "/tmp/analytics.sqlite"},
-	})
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/example.sqlite"},
+			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
 
 	// Act
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
@@ -62,4 +85,224 @@ func TestDatabaseSelector_MoveSelection(t *testing.T) {
 	if selector.selected != 0 {
 		t.Fatalf("expected selection to move up, got %d", selector.selected)
 	}
+}
+
+func TestDatabaseSelector_AddCreatesEntryAndRefreshesList(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	model = typeText(model, "analytics")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = typeText(model, "/tmp/analytics.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	selector := model
+	if len(manager.created) != 1 {
+		t.Fatalf("expected one create call, got %d", len(manager.created))
+	}
+	if manager.created[0].Name != "analytics" || manager.created[0].Path != "/tmp/analytics.sqlite" {
+		t.Fatalf("unexpected create payload: %#v", manager.created[0])
+	}
+	if len(selector.options) != 2 {
+		t.Fatalf("expected two options after add, got %d", len(selector.options))
+	}
+	if selector.options[1].Name != "analytics" {
+		t.Fatalf("expected new option in selector list, got %q", selector.options[1].Name)
+	}
+}
+
+func TestDatabaseSelector_EditUpdatesEntry(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
+	model = typeText(model, "warehouse")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
+	model = typeText(model, "/tmp/warehouse.sqlite")
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	selector := model
+	if len(manager.updated) != 1 {
+		t.Fatalf("expected one update call, got %d", len(manager.updated))
+	}
+	if manager.updated[0].index != 1 {
+		t.Fatalf("expected update index 1, got %d", manager.updated[0].index)
+	}
+	if manager.updated[0].entry.Name != "warehouse" || manager.updated[0].entry.Path != "/tmp/warehouse.sqlite" {
+		t.Fatalf("unexpected update payload: %#v", manager.updated[0].entry)
+	}
+	if selector.options[1].Name != "warehouse" {
+		t.Fatalf("expected updated option in selector list, got %q", selector.options[1].Name)
+	}
+}
+
+func TestDatabaseSelector_DeleteRequiresConfirmation(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+	// Assert
+	selector := model
+	if !selector.confirmDelete.active {
+		t.Fatal("expected delete confirmation to open")
+	}
+	if len(manager.deleted) != 0 {
+		t.Fatalf("expected no delete before confirmation, got %d", len(manager.deleted))
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	selector = model
+	if len(manager.deleted) != 1 {
+		t.Fatalf("expected one delete call after confirmation, got %d", len(manager.deleted))
+	}
+	if len(selector.options) != 1 {
+		t.Fatalf("expected one option after delete, got %d", len(selector.options))
+	}
+}
+
+func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+		activePath: "/tmp/config.toml",
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.width = 120
+	model.height = 24
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if !strings.Contains(view, "/tmp/config.toml") {
+		t.Fatalf("expected active config path in view, got %q", view)
+	}
+}
+
+func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
+	current := model
+	for _, r := range text {
+		current = sendKey(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	return current
+}
+
+func sendKey(model *databaseSelectorModel, key tea.KeyMsg) *databaseSelectorModel {
+	updated, _ := model.Update(key)
+	return updated.(*databaseSelectorModel)
+}
+
+type fakeSelectorManager struct {
+	entries    []dto.ConfigDatabase
+	activePath string
+
+	listErr   error
+	createErr error
+	updateErr error
+	deleteErr error
+
+	created []dto.ConfigDatabase
+	updated []updatedEntry
+	deleted []int
+}
+
+type updatedEntry struct {
+	index int
+	entry dto.ConfigDatabase
+}
+
+func (f *fakeSelectorManager) List(_ context.Context) ([]dto.ConfigDatabase, error) {
+	if f.listErr != nil {
+		return nil, f.listErr
+	}
+	result := make([]dto.ConfigDatabase, len(f.entries))
+	copy(result, f.entries)
+	return result, nil
+}
+
+func (f *fakeSelectorManager) Create(_ context.Context, entry dto.ConfigDatabase) error {
+	if f.createErr != nil {
+		return f.createErr
+	}
+	if strings.TrimSpace(entry.Name) == "" || strings.TrimSpace(entry.Path) == "" {
+		return errors.New("invalid entry")
+	}
+	f.created = append(f.created, entry)
+	f.entries = append(f.entries, entry)
+	return nil
+}
+
+func (f *fakeSelectorManager) Update(_ context.Context, index int, entry dto.ConfigDatabase) error {
+	if f.updateErr != nil {
+		return f.updateErr
+	}
+	if index < 0 || index >= len(f.entries) {
+		return errors.New("index out of range")
+	}
+	f.updated = append(f.updated, updatedEntry{index: index, entry: entry})
+	f.entries[index] = entry
+	return nil
+}
+
+func (f *fakeSelectorManager) Delete(_ context.Context, index int) error {
+	if f.deleteErr != nil {
+		return f.deleteErr
+	}
+	if index < 0 || index >= len(f.entries) {
+		return errors.New("index out of range")
+	}
+	f.deleted = append(f.deleted, index)
+	f.entries = append(f.entries[:index], f.entries[index+1:]...)
+	return nil
+}
+
+func (f *fakeSelectorManager) ActivePath(_ context.Context) (string, error) {
+	if f.activePath == "" {
+		return "/tmp/config.toml", nil
+	}
+	return f.activePath, nil
 }
