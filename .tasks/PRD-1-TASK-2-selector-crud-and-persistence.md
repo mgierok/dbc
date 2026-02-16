@@ -8,6 +8,7 @@ Extend startup selector into a configuration management surface so users can add
 - PRD: PRD-1-database-config-management.md
 - Task ID: 2
 - Task File: PRD-1-TASK-2-selector-crud-and-persistence.md
+- PRD Requirements: FR-001, FR-002, FR-003, FR-009, FR-010, NFR-001, NFR-002, NFR-004, NFR-005
 
 ## Objective
 

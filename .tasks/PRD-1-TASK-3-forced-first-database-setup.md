@@ -8,6 +8,7 @@ Implement mandatory first-database creation when no configured entries exist, wi
 - PRD: PRD-1-database-config-management.md
 - Task ID: 3
 - Task File: PRD-1-TASK-3-forced-first-database-setup.md
+- PRD Requirements: FR-004, FR-005, NFR-001, NFR-003
 
 ## Objective
 

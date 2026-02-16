@@ -11,26 +11,28 @@ The output must:
 - avoid executing implementation work as part of this workflow.
 
 ## 2. Core Rules (Non-Negotiable)
-1. This workflow creates/refines task files only; it does not implement code.
-2. The referenced PRD is the main source of truth for scope.
-3. Task planning must also reflect current application state and current documentation.
-4. Every task must represent one clear technical objective.
-5. Every task must include a working-software checkpoint (no broken intermediate target states).
-6. Generate at least one task per PRD; most PRDs should produce multiple tasks.
-7. Task status is restricted to `READY` or `DONE` only.
-8. Parent PRD status must be `READY`; planning must not proceed when parent PRD status is missing, invalid, or `DONE`.
-9. Dependencies are optional but, when used, must be explicit using `blocked-by` and/or `blocks`.
-10. Parallel execution is allowed only for tasks with all blockers completed.
-11. Every task must explicitly reference:
+1. Use English only for all agent outputs in this workflow: clarifying questions, summaries, quality checks, and task content.
+2. This workflow creates/refines task files only; it does not implement code.
+3. The referenced PRD is the main source of truth for scope.
+4. Task planning must also reflect current application state and current documentation.
+5. Every task must represent one clear technical objective.
+6. Every task must include a working-software checkpoint (no broken intermediate target states).
+7. Generate at least one task per PRD; most PRDs should produce multiple tasks.
+8. Task status is restricted to `READY` or `DONE` only.
+9. Parent PRD status must be `READY`; planning must not proceed when parent PRD status is missing, invalid, or `DONE`.
+10. Dependencies are optional but, when used, must be explicit using `blocked-by` and/or `blocks`.
+11. Parallel execution is allowed only for tasks with all blockers completed.
+12. Every task must explicitly reference:
     - parent PRD,
     - dependency tasks (or explicit `none`).
-12. All task files must be Markdown.
-13. Do not include unresolved placeholders such as `TBD` or `TODO`.
-14. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
-15. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
-16. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
-17. Do not save task files while still in `Plan` mode.
-18. If current mode does not match required phase, stop and request mode switch before continuing.
+13. Every task must include explicit traceability to parent PRD requirement IDs (`FR-*` and/or `NFR-*`), and every parent PRD requirement must be covered by at least one task.
+14. All task files must be Markdown.
+15. Do not include unresolved placeholders such as `TBD` or `TODO`.
+16. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
+17. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
+18. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
+19. Do not save task files while still in `Plan` mode.
+20. If current mode does not match required phase, stop and request mode switch before continuing.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -42,8 +44,10 @@ Follow this sequence exactly:
    - Confirm PRD file path.
    - Confirm PRD ID from filename pattern `PRD-[prd-id]-[short-name].md`.
    - Confirm PRD contains explicit `Status`.
+   - Confirm PRD requirements are explicitly identifiable for traceability (for example `FR-*`, `NFR-*` IDs).
    - Continue only if parent PRD status is exactly `READY`.
    - If PRD status is missing, invalid, or `DONE`, stop and request PRD status correction/reopening before task drafting.
+   - If PRD requirement identifiers are missing or ambiguous, stop and request PRD correction before task drafting.
    - Load current codebase state and current documentation at a high level to avoid stale planning.
 3. Load optional supplemental references.
    - If user provided extra files (for example user stories), load them as secondary constraints.
@@ -53,6 +57,7 @@ Follow this sequence exactly:
    - Decompose PRD into minimal vertical slices.
    - Ensure each slice is independently verifiable and leaves software working.
    - Determine ordering and dependency edges.
+   - Build a requirement coverage map `FR/NFR -> TASK-*` and ensure full parent-PRD requirement coverage.
 6. Draft task files using fixed structure (Section 5).
 7. Run one internal review pass.
    - Check sequencing, dependency validity, and execution readiness.
@@ -72,6 +77,7 @@ Priority clarification topics:
 1. PRD scope boundaries that impact task count or order.
 2. Required release slices if PRD can be delivered in multiple valid sequences.
 3. Constraints that change dependency graph (for example compliance, migration windows, rollout gating).
+4. PRD requirement statements that cannot be mapped unambiguously to task boundaries.
 
 Rules:
 - Ask one focused question at a time.
@@ -101,6 +107,7 @@ Each generated task file must use these headings in this exact order:
      - `PRD`: exact PRD filename
      - `Task ID`: integer for current PRD sequence
      - `Task File`: current task filename
+     - `PRD Requirements`: explicit list of covered parent PRD requirement IDs (`FR-*` and/or `NFR-*`)
 3. `Objective`
    - One technical objective only.
 4. `Working Software Checkpoint`
@@ -132,6 +139,7 @@ Each generated task file must use these headings in this exact order:
 4. Do not create "umbrella" tasks that span unrelated subsystems.
 5. Keep task descriptions specific enough to be implemented without reinterpretation.
 6. Order tasks by dependency graph first, then by logical delivery sequence.
+7. Ensure every parent PRD requirement (`FR-*` / `NFR-*`) is covered by at least one task, with no orphan requirements.
 
 ## 7. Dependency Rules
 1. Allowed dependency relations:
@@ -174,12 +182,14 @@ When saving tasks:
 7. Every task includes verifiable acceptance criteria.
 8. Every task includes `Status` and it is either `READY` or `DONE`.
 9. Every task references the correct parent PRD.
-10. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
-11. Dependency references are valid, resolvable, and acyclic.
-12. File names follow required naming format.
-13. No task includes unresolved placeholders.
-14. Draft phase execution mode was `Plan`.
-15. Save phase execution mode was `Default`.
+10. Every task includes explicit `PRD Requirements` with valid parent-PRD requirement IDs (`FR-*` / `NFR-*`).
+11. Combined task set provides full parent-PRD requirement coverage (no orphan `FR-*` / `NFR-*`).
+12. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
+13. Dependency references are valid, resolvable, and acyclic.
+14. File names follow required naming format.
+15. No task includes unresolved placeholders.
+16. Draft phase execution mode was `Plan`.
+17. Save phase execution mode was `Default`.
 
 ## 11. Forbidden Content
 Do not include:
@@ -201,5 +211,6 @@ When running this workflow:
 7. Return concise summary:
    - generated task count,
    - ordered task list,
+   - traceability highlights (`FR/NFR -> TASK-*`),
    - dependency highlights,
    - quality gate result (`PASS`/`FAIL` per gate).

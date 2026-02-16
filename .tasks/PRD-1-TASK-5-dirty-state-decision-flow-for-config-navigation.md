@@ -8,6 +8,7 @@ Protect staged data integrity during `:config` navigation by requiring explicit 
 - PRD: PRD-1-database-config-management.md
 - Task ID: 5
 - Task File: PRD-1-TASK-5-dirty-state-decision-flow-for-config-navigation.md
+- PRD Requirements: FR-007, NFR-001, NFR-002, NFR-003, NFR-005
 
 ## Objective
 

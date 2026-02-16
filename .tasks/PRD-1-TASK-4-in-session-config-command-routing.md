@@ -8,6 +8,7 @@ Add in-session command routing so users in an active database session can invoke
 - PRD: PRD-1-database-config-management.md
 - Task ID: 4
 - Task File: PRD-1-TASK-4-in-session-config-command-routing.md
+- PRD Requirements: FR-006, NFR-001, NFR-003
 
 ## Objective
 
