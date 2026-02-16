@@ -34,6 +34,9 @@ The output must:
     - one happy-path verification scenario,
     - one negative-path verification scenario.
     Each scenario must be mapped to a specific task and an explicit test/check in that task `Verification Plan`.
+19. If the PRD is split into multiple implementation tasks and behavior spans task boundaries, include a final integration task named with `integration-hardening` scope.
+    - This task must be blocked by all behavior-delivering tasks for that PRD.
+    - This task must verify cross-task interactions and regression coverage before PRD closure.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -60,6 +63,7 @@ Follow this sequence exactly:
    - Determine ordering and dependency edges.
    - Build a requirement coverage map `FR/NFR -> TASK-*` and ensure full parent-PRD requirement coverage.
    - Build a verification coverage map `FR-* -> (happy-path task + test/check, negative-path task + test/check)`.
+   - If the feature spans multiple tasks and cross-task interactions exist, append a final `integration-hardening` task that depends on all prior behavior-delivering tasks.
 6. Draft task files using fixed structure (Section 5).
 7. Run one internal review pass.
    - Check sequencing, dependency validity, and execution readiness.
@@ -143,6 +147,7 @@ Each generated task file must use these headings in this exact order:
 5. Keep task descriptions specific enough to be implemented without reinterpretation.
 6. Order tasks by dependency graph first, then by logical delivery sequence.
 7. Ensure every parent PRD requirement (`FR-*` / `NFR-*`) is covered by at least one task, with no orphan requirements.
+8. For multi-task features with cross-task interaction risk, reserve the last task for `integration-hardening` and set dependencies so it executes after all behavior-delivering tasks.
 
 ## 7. Dependency Rules
 1. Allowed dependency relations:
@@ -188,13 +193,14 @@ When saving tasks:
 10. Every task includes explicit `PRD Requirements` with valid parent-PRD requirement IDs (`FR-*` / `NFR-*`).
 11. Combined task set provides full parent-PRD requirement coverage (no orphan `FR-*` / `NFR-*`).
 12. Every parent `FR-*` is mapped to at least one happy-path and one negative-path scenario, each linked to a specific task and explicit test/check in that task `Verification Plan`.
-13. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
-14. Dependency references are valid, resolvable, and acyclic.
-15. File names follow required naming format.
-16. `Task ID` metadata value matches `[task-id]` in filename for every task.
-17. No task includes unresolved placeholders.
-18. Draft phase execution mode was `Plan`.
-19. Save phase execution mode was `Default`.
+13. If the feature uses multiple behavior-delivering tasks with cross-task interactions, the task set includes a final `integration-hardening` task blocked by all those tasks.
+14. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
+15. Dependency references are valid, resolvable, and acyclic.
+16. File names follow required naming format.
+17. `Task ID` metadata value matches `[task-id]` in filename for every task.
+18. No task includes unresolved placeholders.
+19. Draft phase execution mode was `Plan`.
+20. Save phase execution mode was `Default`.
 
 ## 11. Forbidden Content
 Do not include:
