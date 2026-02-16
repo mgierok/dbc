@@ -52,6 +52,14 @@ Follow this sequence exactly:
 4. Validate task executability.
    - Confirm target task `Status: READY`.
    - Confirm every `blocked-by` dependency is `DONE`.
+   - Hint: to verify one task quickly without reading full file content, run:
+     ```bash
+     rg -n "^- Status:|^- blocked-by:" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md
+     ```
+   - Then verify dependency statuses for the same PRD:
+     ```bash
+     rg -n "^- Status:" .tasks/PRD-[prd-id]-TASK-*.md
+     ```
    - If not executable, stop and report exact blocker.
 5. Resolve parent PRD and branch.
    - Identify parent PRD from task metadata.
@@ -81,6 +89,10 @@ Follow this sequence exactly:
 ## 4. Task Selection Rules
 1. When selector is PRD:
    - Consider only tasks belonging to that PRD.
+   - Hint: to quickly inspect task statuses for one PRD without opening full files, run:
+     ```bash
+     rg -n "^- Task ID:|^- Status:" .tasks/PRD-[prd-id]-TASK-*.md
+     ```
    - Order by `Task ID` ascending.
    - Choose first task that satisfies executability rules.
 2. If no executable task exists:
