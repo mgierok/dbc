@@ -21,13 +21,15 @@ func main() {
 		log.Fatalf("failed to resolve config path: %v", err)
 	}
 
-	cfg, err := config.LoadFile(cfgPath)
+	configStore := config.NewStore(cfgPath)
+	listConfiguredDatabases := usecase.NewListConfiguredDatabases(configStore)
+	configuredDatabases, err := listConfiguredDatabases.Execute(context.Background())
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	options := make([]tui.DatabaseOption, len(cfg.Databases))
-	for i, database := range cfg.Databases {
+	options := make([]tui.DatabaseOption, len(configuredDatabases))
+	for i, database := range configuredDatabases {
 		options[i] = tui.DatabaseOption{
 			Name:       database.Name,
 			ConnString: database.Path,

@@ -143,7 +143,9 @@ DBC positions itself as a productivity-focused database commander for terminal u
 
 ### 7.1 Database Configuration and Access
 
-- DBC reads database entries from `~/.config/dbc/config.toml`.
+- DBC reads database entries from OS-specific default config paths:
+  - macOS and Linux: `~/.config/dbc/config.toml`
+  - Windows: `%APPDATA%\dbc\config.toml`
 - Configuration requires at least one database entry.
 - Each entry requires:
   - `name` (display name).

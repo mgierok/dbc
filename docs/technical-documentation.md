@@ -49,16 +49,21 @@ Core technical characteristics:
 ### 2.2 Local Setup
 
 1. Create local config directory:
+   - macOS/Linux:
    ```bash
    mkdir -p ~/.config/dbc
    ```
 2. Copy example config:
+   - macOS/Linux:
    ```bash
    cp docs/config.example.toml ~/.config/dbc/config.toml
    ```
-3. Edit `~/.config/dbc/config.toml` and define at least one `[[databases]]` entry with:
+3. Edit config file and define at least one `[[databases]]` entry with:
    - `name`
    - `db_path`
+   - Default paths:
+     - macOS/Linux: `~/.config/dbc/config.toml`
+     - Windows: `%APPDATA%\dbc\config.toml`
 
 ### 2.3 Run the App
 
@@ -154,8 +159,10 @@ When adding functionality:
 
 ### 5.1 Startup Flow
 
-1. `cmd/dbc/main.go` resolves config path (`~/.config/dbc/config.toml`).
-2. Config is decoded and validated.
+1. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
+   - macOS/Linux: `~/.config/dbc/config.toml`
+   - Windows: `%APPDATA%\dbc\config.toml` (fallback `%USERPROFILE%\AppData\Roaming\dbc\config.toml` when `APPDATA` is unset).
+2. Config entries are loaded through config management use case and validated by config infrastructure.
 3. Database selector UI is shown.
 4. Selected SQLite database is opened and pinged.
 5. SQLite engine and use cases are created.
