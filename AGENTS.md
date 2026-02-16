@@ -123,7 +123,6 @@ For every feature change, bug fix, or behavior-impacting refactor, execute `Red 
 Additional mandatory rules:
 
 - For bug fixes, write a regression test reproducing the bug before applying the fix.
-- If the test targets a function/type that does not exist yet, you may treat `Red` as satisfied without executing the test immediately; expected failure is implicit in this case.
 - Do not weaken assertions just to make failing behavior pass.
 - Do not skip the `Red` step unless technically impossible.
 - If `Red` is technically impossible (for example missing seam in legacy code), explicitly document why and apply test-after only as a justified exception.

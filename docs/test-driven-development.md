@@ -13,7 +13,6 @@ write a failing test, make it pass with minimal code, then refactor.
 
 1. **Red-Green-Refactor**
    - **Red**: write a test that fails for a specific behavior.
-   - If the tested function/type does not exist yet, you may assume failure without running the test immediately.
    - **Green**: write the minimal code to make it pass.
    - **Refactor**: improve design without changing behavior.
 

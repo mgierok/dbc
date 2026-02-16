@@ -349,7 +349,6 @@ This repository follows TDD expectations documented in:
 ### 8.2 Practical Test Workflow
 
 1. Write/adjust failing test for behavior change.
-   - If the target function/type does not exist yet, you may assume `Red` without running the test at this step.
 2. Implement minimal code to pass.
 3. Refactor safely while tests remain green.
 4. Run full suite:
