@@ -45,7 +45,7 @@ func NewStore(path string) *Store {
 
 func Decode(r io.Reader) (Config, error) {
 	var cfg Config
-	decoder := toml.NewDecoder(r)
+	decoder := toml.NewDecoder(r).DisallowUnknownFields()
 	if err := decoder.Decode(&cfg); err != nil {
 		return Config{}, err
 	}

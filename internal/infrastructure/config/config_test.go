@@ -74,9 +74,9 @@ db_path = "/tmp/analytics.sqlite"
 	}
 }
 
-func TestDecode_MissingDatabaseSection(t *testing.T) {
+func TestDecode_EmptyDocument(t *testing.T) {
 	// Arrange
-	input := `title = "dbc"`
+	input := ``
 
 	// Act
 	_, err := config.Decode(strings.NewReader(input))
@@ -84,6 +84,22 @@ func TestDecode_MissingDatabaseSection(t *testing.T) {
 	// Assert
 	if !errors.Is(err, config.ErrMissingDatabase) {
 		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabase, err)
+	}
+}
+
+func TestDecode_UnknownTopLevelField(t *testing.T) {
+	// Arrange
+	input := `title = "dbc"`
+
+	// Act
+	_, err := config.Decode(strings.NewReader(input))
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected malformed config error, got nil")
+	}
+	if errors.Is(err, config.ErrMissingDatabase) {
+		t.Fatalf("expected malformed config error, got empty-config error %v", err)
 	}
 }
 
@@ -112,8 +128,11 @@ db_path = "/tmp/example.sqlite"
 	_, err := config.Decode(strings.NewReader(input))
 
 	// Assert
-	if !errors.Is(err, config.ErrMissingDatabase) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabase, err)
+	if err == nil {
+		t.Fatal("expected malformed config error, got nil")
+	}
+	if errors.Is(err, config.ErrMissingDatabase) {
+		t.Fatalf("expected malformed config error, got empty-config error %v", err)
 	}
 }
 
@@ -334,6 +353,31 @@ func TestConfigStore_ListReturnsEmptyWhenConfigHasNoDatabases(t *testing.T) {
 	}
 	if len(entries) != 0 {
 		t.Fatalf("expected empty entries, got %d", len(entries))
+	}
+}
+
+func TestConfigStore_ListReturnsErrorWhenConfigUsesUnknownShape(t *testing.T) {
+	// Arrange
+	path := filepath.Join(t.TempDir(), "config.toml")
+	content := `
+[database]
+name = "legacy"
+db_path = "/tmp/legacy.sqlite"
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp config file: %v", err)
+	}
+	store := config.NewStore(path)
+
+	// Act
+	_, err := store.List(context.Background())
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected malformed config error, got nil")
+	}
+	if errors.Is(err, config.ErrMissingDatabase) {
+		t.Fatalf("expected malformed config error, got empty-config error %v", err)
 	}
 }
 
