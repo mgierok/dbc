@@ -17,8 +17,6 @@ Goal: keep product and code changes consistent, safe, and aligned with project s
 - Source of truth split:
   - Product perspective: `docs/product-documentation.md`
   - Technical perspective: `docs/technical-documentation.md`
-- `docs/brd.md` is legacy/planning context, not authoritative for current state.
-
 If any documentation conflicts with current code behavior:
 
 1. Treat current code as factual state.
