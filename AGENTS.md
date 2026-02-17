@@ -29,15 +29,15 @@ If any documentation conflicts with current code behavior:
 Before planning or coding, load only relevant sections:
 
 - Product behavior and scope:
-  - `docs/product-documentation.md#4-current-product-scope`
-  - `docs/product-documentation.md#7-functional-specification-current-state`
-  - `docs/product-documentation.md#10-known-constraints-and-non-goals`
+  - `docs/product-documentation.md#3-available-capabilities`
+  - `docs/product-documentation.md#4-functional-behavior`
+  - `docs/product-documentation.md#7-constraints-and-non-goals`
 - Technical implementation baseline:
-  - `docs/technical-documentation.md#3-project-structure`
-  - `docs/technical-documentation.md#4-architecture-guidelines`
-  - `docs/technical-documentation.md#5-runtime-flow`
-  - `docs/technical-documentation.md#8-testing-strategy-and-coverage`
-  - `docs/technical-documentation.md#9-technical-interaction-patterns`
+  - `docs/technical-documentation.md#4-components-and-responsibilities`
+  - `docs/technical-documentation.md#3-architecture-and-boundaries`
+  - `docs/technical-documentation.md#5-core-technical-mechanisms`
+  - `docs/technical-documentation.md#55-testing-strategy-and-coverage`
+  - `docs/technical-documentation.md#54-technical-interaction-patterns`
 - Deep-dive references (when needed):
   - `docs/clean-architecture-ddd.md`
   - `docs/test-driven-development.md`
@@ -268,7 +268,7 @@ Rules:
 
 ### 5.2 Architecture
 
-Use `docs/technical-documentation.md#4-architecture-guidelines` as primary architecture guide.
+Use `docs/technical-documentation.md#3-architecture-and-boundaries` as primary architecture guide.
 
 Non-negotiable summary:
 
@@ -290,7 +290,7 @@ When adding functionality:
 ### 5.3 Dependencies and Toolchain
 
 - Dependency/toolchain baseline is defined in:
-  - `docs/technical-documentation.md#7-technology-stack-and-versions`
+  - `docs/technical-documentation.md#9-technology-stack-and-versions`
   - `go.mod`
 - Adding third-party dependencies requires explicit approval.
 

@@ -1,84 +1,64 @@
 # DBC Technical Documentation
 
-## Document Control
+## 1. Table of Contents
 
-| Field | Value |
-| --- | --- |
-| Document Name | DBC Technical Documentation |
-| Audience | Junior Software Engineer (primary), all contributors |
-| Purpose | Describe how the project is built, structured, tested, and extended |
-| Status | Active |
-| Last Updated | 2026-02-16 |
-| Source of Truth Scope | Current technical state of the codebase |
-| Related product doc | `docs/product-documentation.md` |
+1. [Technical Overview](#2-technical-overview)
+2. [Architecture and Boundaries](#3-architecture-and-boundaries)
+3. [Components and Responsibilities](#4-components-and-responsibilities)
+4. [Core Technical Mechanisms](#5-core-technical-mechanisms)
+5. [Data and Interface Contracts](#6-data-and-interface-contracts)
+6. [Runtime and Operational Considerations](#7-runtime-and-operational-considerations)
+7. [Technical Decisions and Tradeoffs](#8-technical-decisions-and-tradeoffs)
+8. [Technology Stack and Versions](#9-technology-stack-and-versions)
+9. [Technical Constraints and Risks](#10-technical-constraints-and-risks)
+10. [Deep-Dive References](#11-deep-dive-references)
+11. [Cross-References to Product Documentation](#12-cross-references-to-product-documentation)
 
-## Table of Contents
-
-1. [Technical Overview](#1-technical-overview)
-2. [Runtime Entry Points and Environment Contracts](#2-runtime-entry-points-and-environment-contracts)
-3. [Project Structure](#3-project-structure)
-4. [Architecture Guidelines](#4-architecture-guidelines)
-5. [Runtime Flow](#5-runtime-flow)
-6. [Technical Decisions](#6-technical-decisions)
-7. [Technology Stack and Versions](#7-technology-stack-and-versions)
-8. [Testing Strategy and Coverage](#8-testing-strategy-and-coverage)
-9. [Technical Interaction Patterns](#9-technical-interaction-patterns)
-10. [Common Technical Constraints](#10-common-technical-constraints)
-11. [Reference Documents](#11-reference-documents)
-12. [Maintenance Policy](#12-maintenance-policy)
-13. [Cross-References to Product Documentation](#13-cross-references-to-product-documentation)
-
-## 1. Technical Overview
+## 2. Technical Overview
 
 DBC is a terminal application written in Go. It currently supports SQLite and follows Clean Architecture with DDD-style boundaries.
-
-Canonical ownership note:
-
-- This document is canonical for implementation details, architecture, runtime, and technical constraints.
-- Product behavior intent and user-facing scope are canonical in `docs/product-documentation.md`.
 
 Core technical characteristics:
 
 - Terminal UI adapter built on Bubble Tea.
 - Layered architecture with inward dependency flow.
 - Engine abstraction (`internal/application/port/engine.go`) to support future database engines.
-- SQLite implementation in infrastructure layer.
-- Staged table changes (insert/update/delete) saved in one transaction.
+- SQLite implementation in the infrastructure layer.
+- Staged table changes (insert/update/delete) persisted in one transaction.
 
-## 2. Runtime Entry Points and Environment Contracts
+Canonical ownership note:
 
-### 2.1 Runtime Entry Point
+- This document is canonical for implementation details, architecture, runtime mechanics, and technical constraints.
+- User-facing behavior and scope are canonical in `docs/product-documentation.md`.
 
-- Process entry point is `cmd/dbc/main.go`.
-- `main.go` is the composition root for:
-  - startup CLI argument parsing (`-d` / `--database`),
-  - config path resolution,
-  - selector/config-management use case wiring,
-  - database engine creation,
-  - TUI runtime startup.
+## 3. Architecture and Boundaries
 
-### 2.2 Runtime Configuration Contract
+This project follows architecture rules defined in:
 
-- Default config paths:
-  - macOS/Linux: `~/.config/dbc/config.toml`
-  - Windows: `%APPDATA%\\dbc\\config.toml`
-- Config contract requires `[[databases]]` entries with:
-  - `name`
-  - `db_path`
-- Empty config states (`missing file`, `empty file`, `databases = []`) are mapped to mandatory first-entry setup.
-- Malformed config content is treated as startup error and blocks runtime initialization.
+- `docs/clean-architecture-ddd.md`
+- `AGENTS.md`
 
-### 2.3 Runtime Lifecycle Boundaries
+### 3.1 Dependency Direction
 
-- Startup supports two paths:
-  - default selector-first path (no direct-launch argument),
-  - direct-launch path using `-d` / `--database` that validates connectivity before runtime startup.
-- Direct-launch startup resolves target identity against configured entries using normalized SQLite path comparison and reuses the first configured match in config order.
-- Direct-launch validation failure prints actionable error output and exits non-zero without selector fallback.
-- Runtime can return to selector without process restart via `ErrOpenConfigSelector`.
-- Active DB connection is explicitly closed before selector re-entry.
+Allowed direction:
 
-## 3. Project Structure
+- `interfaces` -> `application` -> `domain`
+- `infrastructure` -> `application` and `domain`
+
+Not allowed:
+
+- `domain` importing `application`, `interfaces`, or `infrastructure`
+- `application` importing `interfaces` or `infrastructure`
+- `interfaces` importing `infrastructure`
+
+### 3.2 Key Technical Boundaries
+
+- Database access is behind `application/port.Engine`.
+- Use cases depend on port interfaces, not concrete database code.
+- TUI does not access SQLite directly; it calls use cases.
+- Infrastructure provides concrete adapters (`SQLiteEngine`, config loader).
+
+## 4. Components and Responsibilities
 
 Current source layout:
 
@@ -107,40 +87,13 @@ Package responsibilities:
 - `internal/domain/model`: domain entities/value structures and domain errors.
 - `internal/domain/service`: domain-level helper logic (for example value parsing and table sorting).
 - `internal/application/usecase`: use case orchestration.
-- `internal/application/port`: interfaces (technical boundaries) that infrastructure implements.
+- `internal/application/port`: interfaces that infrastructure implements.
 - `internal/application/dto`: data structures exchanged with interface adapters.
 - `internal/interfaces/tui`: terminal adapter (input, state, rendering).
 - `internal/infrastructure/config`: config file loading and validation.
 - `internal/infrastructure/engine`: SQLite adapter implementation.
 
-## 4. Architecture Guidelines
-
-This project follows the architecture rules defined in:
-
-- `docs/clean-architecture-ddd.md`
-- `AGENTS.md` (Project Rules and layer constraints)
-
-### 4.1 Dependency Direction
-
-Allowed direction:
-
-- `interfaces` -> `application` -> `domain`
-- `infrastructure` -> `application` and `domain`
-
-Not allowed:
-
-- `domain` importing `application`, `interfaces`, or `infrastructure`
-- `application` importing `interfaces` or `infrastructure`
-- `interfaces` importing `infrastructure`
-
-### 4.2 Key Technical Boundaries
-
-- Database access is behind `application/port.Engine`.
-- Use cases depend on port interfaces, not concrete database code.
-- TUI does not access SQLite directly; it calls use cases.
-- Infrastructure provides concrete adapters (`SQLiteEngine`, config loader).
-
-## 5. Runtime Flow
+## 5. Core Technical Mechanisms
 
 ### 5.1 Startup Flow
 
@@ -157,8 +110,8 @@ Not allowed:
 4. If direct-launch argument is provided, startup attempts direct SQLite open/ping first (before selector UI):
    - startup first resolves direct-launch target against configured entries using normalized SQLite path identity,
    - when normalized match exists, startup reuses that configured entry identity (deterministic first match by config order),
-   - success: runtime starts immediately and selector is skipped for initial startup,
-   - failure: startup prints actionable failure message and exits non-zero (no selector fallback).
+   - success starts runtime immediately and skips selector for initial startup,
+   - failure prints actionable failure message and exits non-zero (no selector fallback).
 5. For selector-first path (no direct-launch argument), selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each successful mutation.
    Add/edit submit path performs use-case validation in this order: required fields -> SQLite connection check -> config store mutation.
    Active add/edit text input renders a caret (`|`) in the currently focused field.
@@ -167,7 +120,7 @@ Not allowed:
    - users can optionally add more entries in the same setup context,
    - normal browsing cannot start until at least one entry exists.
    Pressing `Esc` in this setup cancels startup and exits application loop before DB open.
-   Malformed config content (for example malformed TOML, unknown key shape, or invalid entry structure) is still treated as startup error.
+   Malformed config content (for example malformed TOML, unknown key shape, or invalid entry structure) is treated as startup error.
 7. User confirms selected database from refreshed selector list.
 8. Selected SQLite database is opened and pinged.
    Startup DB open and config-entry connection checks reuse the same infrastructure connection-open helper (`internal/infrastructure/engine.OpenSQLiteDatabase`) to keep validation behavior and errors consistent.
@@ -175,7 +128,7 @@ Not allowed:
    Runtime does not start until user selects a reachable entry or updates configuration.
 9. SQLite engine and runtime table/record use cases are created.
 10. Bubble Tea application loop starts (`tui.Run`).
-11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), the DB connection is closed and startup selector flow runs again without restarting process.
+11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), DB connection is closed and startup selector flow runs again without restarting process.
     `cmd/dbc/main.go` passes `SelectorLaunchState` (`PreferConnString` + session `AdditionalOptions`) built from in-memory startup context, and `internal/interfaces/tui/selector.go` merges those options after config-backed entries while keeping edit/delete mapped only to config indexes.
 
 ### 5.2 Main Read Flow
@@ -184,7 +137,7 @@ Not allowed:
 2. Selected table schema is loaded.
 3. Records are loaded in pages (`offset`, `limit`) with optional filter.
 4. Additional records load when selection approaches loaded tail.
-5. Command entry (`:`) is handled inside TUI model.
+5. Command entry (`:`) is handled inside the TUI model.
 6. `:config` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
    - if staged changes exist: open dirty-state decision popup with `save`, `discard`, `cancel`,
@@ -198,17 +151,123 @@ Not allowed:
 2. On save confirmation, TUI builds `model.TableChanges`.
 3. Use case validates payload (`SaveTableChanges`).
 4. Engine applies all changes in one transaction:
-   - inserts
-   - updates (skipping rows also marked for delete)
-   - deletes
+   - inserts,
+   - updates (skipping rows also marked for delete),
+   - deletes.
 5. On success:
    - default save action: staged state is cleared and records are reloaded,
-   - save triggered from dirty `:config` decision: staged state is cleared and runtime exits to selector instead of reloading records.
-6. On failure: rollback occurs and staged state remains.
+   - save from dirty `:config` decision: staged state is cleared and runtime exits to selector instead of reloading records.
+6. On failure, rollback occurs and staged state remains.
 
-## 6. Technical Decisions
+### 5.4 Technical Interaction Patterns
 
-### 6.1 SQLite-First with Engine Port
+Read interaction pattern:
+
+- TUI requests table/schema/records through application use cases.
+- Use cases call `application/port.Engine`.
+- Infrastructure engine adapter maps calls to SQLite queries.
+- Retrieved records are adapted into DTOs consumed by TUI state.
+
+Write interaction pattern:
+
+- TUI accumulates staged changes in session state.
+- Save path builds `model.TableChanges`.
+- `SaveTableChanges` validates payload and delegates persistence to the engine port.
+- SQLite adapter executes inserts/updates/deletes in one transaction.
+
+### 5.5 Testing Strategy and Coverage
+
+This repository follows TDD expectations documented in `docs/test-driven-development.md`.
+
+Current test layers:
+
+- Domain service tests: `internal/domain/service/*_test.go`
+- Application use case tests: `internal/application/usecase/*_test.go`
+- Infrastructure adapter tests:
+  - `internal/infrastructure/config/*_test.go`
+  - `internal/infrastructure/engine/*_test.go`
+- TUI behavior tests: `internal/interfaces/tui/*_test.go`
+
+Coverage boundaries:
+
+- Domain tests validate domain-level rules and helper behavior.
+- Application tests validate use-case orchestration and port contracts.
+- Infrastructure tests validate adapter behavior for config and SQLite integration.
+- TUI tests validate user-visible state transitions and input handling.
+
+Current conventions:
+
+- Arrange/Act/Assert structure is used in test bodies.
+- Tests target behavior contracts, not private implementation details.
+- Integration-like SQLite tests use in-memory databases.
+
+## 6. Data and Interface Contracts
+
+### 6.1 Runtime Entry Point and Composition Root
+
+- Process entry point is `cmd/dbc/main.go`.
+- `main.go` is the composition root for:
+  - startup CLI argument parsing (`-d` / `--database`),
+  - config path resolution,
+  - selector/config-management use case wiring,
+  - database engine creation,
+  - TUI runtime startup.
+
+### 6.2 Runtime Configuration Contract
+
+- Default config paths:
+  - macOS/Linux: `~/.config/dbc/config.toml`
+  - Windows: `%APPDATA%\\dbc\\config.toml`
+- Config contract requires `[[databases]]` entries with:
+  - `name`
+  - `db_path`
+- Empty config states (`missing file`, `empty file`, `databases = []`) are mapped to mandatory first-entry setup.
+- Malformed config content is treated as startup error and blocks runtime initialization.
+
+### 6.3 Application Port Contracts
+
+- Engine contract is defined in `internal/application/port/engine.go`.
+- Database connection validation boundary is defined in `internal/application/port/database_connection_checker.go`.
+- Use cases call ports and remain independent from concrete SQLite implementation.
+- Infrastructure adapters implement these contracts in:
+  - `internal/infrastructure/engine/sqlite_engine.go`
+  - `internal/infrastructure/engine/sqlite_connection_checker.go`
+
+### 6.4 Selector Session Contracts
+
+- Runtime-to-selector return signal is `ErrOpenConfigSelector`.
+- Selector re-entry receives `SelectorLaunchState` with:
+  - preferred connection string,
+  - session-scoped additional startup options.
+- Additional startup options are in-memory only for the active process and are merged after config-backed entries.
+
+## 7. Runtime and Operational Considerations
+
+### 7.1 Runtime Lifecycle Boundaries
+
+- Startup supports two paths:
+  - selector-first startup (no direct-launch argument),
+  - direct-launch startup (`-d` / `--database`) with connectivity validation before runtime starts.
+- Direct-launch validation failure exits non-zero without selector fallback.
+- Runtime can return to selector without process restart via `ErrOpenConfigSelector`.
+- Active DB connection is explicitly closed before selector re-entry.
+
+### 7.2 Operational Error Handling Characteristics
+
+- Invalid startup arguments terminate startup with explicit output.
+- Malformed config content blocks startup and surfaces explicit error.
+- Invalid DB target chosen in selector keeps selector active with actionable status message.
+- Save failures retain staged state to prevent unintended data-loss semantics.
+
+### 7.3 Technical Maintenance Policy
+
+- Keep this document aligned with current code paths and runtime behavior.
+- Prefer links to deep-dive references over duplicated long-form theory.
+- Keep implementation facts canonical here and reference product intent from `docs/product-documentation.md`.
+
+## 8. Technical Decisions and Tradeoffs
+
+### 8.1 SQLite-First with Engine Port
 
 Decision:
 
@@ -224,7 +283,7 @@ Where:
 - Port: `internal/application/port/engine.go`
 - SQLite adapter: `internal/infrastructure/engine/sqlite_engine.go`
 
-### 6.2 Staged Changes Before Save
+### 8.2 Staged Changes Before Save
 
 Decision:
 
@@ -241,7 +300,7 @@ Where:
 - TUI staged state: `internal/interfaces/tui/model.go`
 - Save use case: `internal/application/usecase/save_table_changes.go`
 
-### 6.3 Transactional Save per Table
+### 8.3 Transactional Save per Table
 
 Decision:
 
@@ -256,7 +315,7 @@ Where:
 
 - `internal/infrastructure/engine/sqlite_update.go`
 
-### 6.4 Strict Config Contract
+### 8.4 Strict Config Contract
 
 Decision:
 
@@ -277,7 +336,7 @@ Where:
 - `internal/application/usecase/config_management.go`
 - `internal/infrastructure/engine/sqlite_connection_checker.go`
 
-### 6.5 Operator Allowlist for Filters
+### 8.5 Operator Allowlist for Filters
 
 Decision:
 
@@ -293,16 +352,16 @@ Where:
 - Operators: `internal/infrastructure/engine/sqlite_operator.go`
 - Clause builder: `internal/infrastructure/engine/sqlite_filter.go`
 
-## 7. Technology Stack and Versions
+## 9. Technology Stack and Versions
 
 Version source: `go.mod`.
 
-### 7.1 Language and Toolchain
+### 9.1 Language and Toolchain
 
 - Go language version: `1.25.0`
 - Go toolchain: `go1.25.5`
 
-### 7.2 Direct Dependencies
+### 9.2 Direct Dependencies
 
 | Dependency | Version | Purpose |
 | --- | --- | --- |
@@ -310,11 +369,11 @@ Version source: `go.mod`.
 | `modernc.org/sqlite` | `v1.42.2` | SQLite driver |
 | `github.com/pelletier/go-toml/v2` | `v2.2.4` | TOML config parsing |
 
-### 7.3 Notes on Indirect Dependencies
+### 9.3 Notes on Indirect Dependencies
 
 - Additional packages in `go.mod` are transitive dependencies and should not be edited manually unless intentionally upgrading dependencies.
 
-### 7.4 Linting Tooling
+### 9.4 Linting Tooling
 
 - Static analysis is configured in `.golangci.yml`.
 - The project uses deterministic `golangci-lint` configuration (`linters.default: standard` with explicitly enabled additional linters).
@@ -322,87 +381,39 @@ Version source: `go.mod`.
   - `package-comments`
   - `exported`
 - `//nolint` usage is restricted:
-  - explanation is required
-  - specific linter name is required
+  - explanation is required,
+  - specific linter name is required.
 
-## 8. Testing Strategy and Coverage
+## 10. Technical Constraints and Risks
 
-This repository follows TDD expectations documented in:
+Current technical constraints:
 
-- `docs/test-driven-development.md`
-
-### 8.1 Current Test Layers
-
-- Domain service tests:
-  - `internal/domain/service/*_test.go`
-- Application use case tests:
-  - `internal/application/usecase/*_test.go`
-- Infrastructure adapter tests:
-  - `internal/infrastructure/config/*_test.go`
-  - `internal/infrastructure/engine/*_test.go`
-- TUI behavior tests:
-  - `internal/interfaces/tui/*_test.go`
-
-### 8.2 Coverage Boundaries
-
-- Domain tests validate domain-level rules and helper behavior.
-- Application tests validate use-case orchestration and port contracts.
-- Infrastructure tests validate adapter behavior for config and SQLite integration.
-- TUI tests validate user-visible state transitions and input handling.
-
-### 8.3 Current Conventions Seen in Tests
-
-- Arrange/Act/Assert structure is used in test bodies.
-- Tests target behavior contracts, not private implementation details.
-- Integration-like SQLite tests use in-memory databases.
-
-## 9. Technical Interaction Patterns
-
-### 9.1 Read Interaction Pattern
-
-- TUI requests table/schema/records through application use cases.
-- Use cases call `application/port.Engine`.
-- Infrastructure engine adapter maps calls to SQLite queries.
-- Retrieved records are adapted into DTOs consumed by TUI state.
-
-### 9.2 Write Interaction Pattern
-
-- TUI accumulates staged changes in session state.
-- Save path builds `model.TableChanges`.
-- `SaveTableChanges` validates payload and delegates persistence to engine port.
-- SQLite adapter executes inserts/updates/deletes in one transaction.
-
-## 10. Common Technical Constraints
-
-This section captures implementation constraints. For user-facing wording of constraints/non-goals, see `docs/product-documentation.md#10-known-constraints-and-non-goals`.
-
-- Only SQLite engine is implemented today.
+- Only SQLite engine is implemented.
 - Table edit/delete for persisted rows depends on primary key identity.
-- Filter pipeline currently applies one active predicate for the selected table at a time.
+- Filter pipeline applies one active predicate for the selected table at a time.
 - Missing or empty config file is tolerated at startup and mapped to mandatory first-entry setup.
 - Invalid config content still stops startup with explicit error.
 
-## 11. Reference Documents
+Operational risks and tradeoffs to verify during changes:
 
-- Architecture and DDD details:
-  - `docs/clean-architecture-ddd.md`
-- TDD principles:
-  - `docs/test-driven-development.md`
-- Product behavior source of truth:
-  - `docs/product-documentation.md`
+- Direct-launch and selector paths must keep path normalization behavior consistent.
+- Save flow must preserve transactional all-or-nothing behavior for one table.
+- Selector re-entry flow must close active DB connections before reopening selector.
 
-## 12. Maintenance Policy
+For user-visible wording of constraints and non-goals, see `docs/product-documentation.md#7-constraints-and-non-goals`.
 
-- This document is a source of truth for the technical state of the repository.
-- Keep technical statements aligned with current code paths and runtime behavior.
-- Keep wording understandable for a Junior Software Engineer.
-- Prefer links to deep-dive documents instead of duplicating long conceptual content.
-- Keep product intent in product documentation and reference it instead of restating it here.
+## 11. Deep-Dive References
 
-## 13. Cross-References to Product Documentation
+- Architecture and DDD details: `docs/clean-architecture-ddd.md`
+- TDD principles: `docs/test-driven-development.md`
+- Product behavior source of truth: `docs/product-documentation.md`
 
-- Product scope and non-goals: `docs/product-documentation.md#4-current-product-scope`, `docs/product-documentation.md#10-known-constraints-and-non-goals`
-- User journey and behavior intent: `docs/product-documentation.md#6-end-to-end-user-journey`
-- Capability-level behavior: `docs/product-documentation.md#7-functional-specification-current-state`
-- User-visible interaction contract: `docs/product-documentation.md#8-keyboard-interaction-model`
-- Safety and governance intent: `docs/product-documentation.md#9-data-safety-and-change-governance`
+## 12. Cross-References to Product Documentation
+
+- See product documentation: `docs/product-documentation.md#2-product-overview`.
+- See product documentation: `docs/product-documentation.md#3-available-capabilities`.
+- See product documentation: `docs/product-documentation.md#4-functional-behavior`.
+- See product documentation: `docs/product-documentation.md#5-user-flows`.
+- See product documentation: `docs/product-documentation.md#6-interaction-model`.
+- See product documentation: `docs/product-documentation.md#7-constraints-and-non-goals`.
+- See product documentation: `docs/product-documentation.md#8-safety-and-governance`.

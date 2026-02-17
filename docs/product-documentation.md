@@ -1,81 +1,41 @@
 # DBC Product Documentation
 
-## Document Control
+## 1. Table of Contents
 
-| Field | Value |
-| --- | --- |
-| Document Name | DBC Product Documentation |
-| Product Name | DBC (Database Commander) |
-| Audience | Junior Product Manager and Junior Software Engineer |
-| Purpose | Define the current product state from a business and user-value perspective |
-| Status | Active |
-| Last Updated | 2026-02-16 |
-| Source of Truth Scope | Current product behavior and scope (product perspective) |
-| Related technical doc | `docs/technical-documentation.md` |
+1. [Product Overview](#2-product-overview)
+2. [Available Capabilities](#3-available-capabilities)
+3. [Functional Behavior](#4-functional-behavior)
+4. [User Flows](#5-user-flows)
+5. [Interaction Model](#6-interaction-model)
+6. [Constraints and Non-Goals](#7-constraints-and-non-goals)
+7. [Safety and Governance](#8-safety-and-governance)
+8. [Glossary](#9-glossary)
+9. [Cross-References to Technical Documentation](#10-cross-references-to-technical-documentation)
 
-## Table of Contents
+## 2. Product Overview
 
-1. [Product Summary](#1-product-summary)
-2. [Positioning and Value Proposition](#2-positioning-and-value-proposition)
-3. [Target Users and Core Jobs](#3-target-users-and-core-jobs)
-4. [Current Product Scope](#4-current-product-scope)
-5. [Product Experience Principles](#5-product-experience-principles)
-6. [End-to-End User Journey](#6-end-to-end-user-journey)
-7. [Functional Specification (Current State)](#7-functional-specification-current-state)
-8. [Keyboard Interaction Model](#8-keyboard-interaction-model)
-9. [Data Safety and Change Governance](#9-data-safety-and-change-governance)
-10. [Known Constraints and Non-Goals](#10-known-constraints-and-non-goals)
-11. [Glossary](#11-glossary)
-12. [Cross-References to Technical Documentation](#12-cross-references-to-technical-documentation)
+DBC (Database Commander) is a terminal-first product for browsing and managing database content with a keyboard-centric workflow. The current product state focuses on fast data inspection and controlled data changes without leaving the command-line environment.
 
-## 1. Product Summary
+Primary user segments:
 
-DBC is a terminal-first product for browsing and managing database content with a keyboard-centric workflow. The product is designed for users who need rapid data inspection and controlled data changes without leaving the command-line environment.
+- Developers inspecting schema and records during development/debugging workflows.
+- DevOps/SRE practitioners validating operational data in terminal contexts.
+- Technical analysts comfortable with keyboard-first tooling.
+
+Core user value in current state:
+
+- Faster table and data inspection than GUI context switching.
+- Predictable keyboard workflow inspired by vim-like interaction patterns.
+- Safer change process through staged edits, explicit confirmation, and transactional save behavior.
 
 Canonical ownership note:
 
-- This document is canonical for user-facing behavior, scope, and constraints.
-- Implementation details and code-level decisions are canonical in `docs/technical-documentation.md`.
+- This document is canonical for user-visible behavior, product scope, and user-facing constraints.
+- Implementation details are canonical in `docs/technical-documentation.md`.
 
-At present, DBC supports SQLite databases and delivers two major capability groups:
+## 3. Available Capabilities
 
-- Read and inspect: database selection, table discovery, schema viewing, record browsing, and filtering.
-- Controlled write operations: staged insert/edit/delete workflows with explicit save confirmation.
-
-The product interaction model is panel-based and strongly aligned with vim-like navigation patterns.
-
-## 2. Positioning and Value Proposition
-
-### Positioning
-
-DBC positions itself as a productivity-focused database commander for terminal users who prioritize speed, keyboard flow, and safety.
-
-### Core Value Proposition
-
-- Faster table and data inspection than context-switching into GUI tools.
-- Predictable keyboard workflow inspired by familiar terminal patterns.
-- Safer change process through staged edits, explicit confirmation, and save-all-or-save-nothing behavior.
-
-## 3. Target Users and Core Jobs
-
-### Primary User Segments
-
-- Developers: inspect schema and records during development/debugging workflows.
-- DevOps/SRE practitioners: validate operational data quickly in terminal contexts.
-- Technical analysts comfortable with terminal tools: browse and filter records efficiently.
-
-### Core Jobs-to-be-Done
-
-- Select a known database quickly from a configured list.
-- Discover tables and understand schema with minimal navigation overhead.
-- Browse records in large tables without manual pagination setup.
-- Apply a focused filter to inspect a relevant subset of records.
-- Stage data corrections safely before committing changes.
-- Undo mistakes during a working session before writing to the database.
-
-## 4. Current Product Scope
-
-### In Scope (Current Product State)
+### In Scope (Current State)
 
 - SQLite database support.
 - Optional direct CLI launch for known SQLite targets via `-d` / `--database`.
@@ -100,7 +60,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - Explicit save confirmation and single-step save execution.
 - Clear status visibility for read-only vs write mode (with unsaved changes count).
 
-### Out of Scope (Current Product State)
+### Out of Scope (Current State)
 
 - Non-SQLite database engines.
 - Schema-altering operations (create/alter/drop tables, indexes, views, triggers).
@@ -109,16 +69,150 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - User and permission management.
 - Password manager integration.
 
-## 5. Product Experience Principles
+## 4. Functional Behavior
 
-- Keyboard-first by default: all primary actions are accessible from keyboard.
-- Fast orientation: panel layout keeps navigation context visible.
-- Safe-by-design editing: data changes are staged before save.
-- Explicit commitment: save requires user confirmation.
-- Visible state: status line communicates mode, view, selected table, filter, and key actions.
-- Consistent interaction language: vim-like motions and commands are reused across key contexts.
+### 4.1 Database Configuration and Access
 
-## 6. End-to-End User Journey
+- DBC reads database entries from OS-specific default config paths:
+  - macOS and Linux: `~/.config/dbc/config.toml`
+  - Windows: `%APPDATA%\dbc\config.toml`
+- Configuration requires at least one database entry.
+- Empty config state (`missing file`, `empty file`, or `databases = []`) is treated as no configured databases, so DBC opens mandatory first-entry setup before normal browsing can start.
+- Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
+- During mandatory setup, users add one required entry and can optionally add more entries before continuing.
+- During mandatory setup, `Esc` cancels startup and exits the application.
+- DBC supports optional direct-launch startup aliases:
+  - `-d <db_path>`
+  - `--database <db_path>`
+- When direct launch parameter is provided:
+  - DBC validates target connectivity before runtime starts.
+  - Before runtime opens, DBC normalizes direct-launch SQLite path identity against configured entries and reuses the configured entry when a normalized match exists.
+  - On success, DBC opens the main view directly and bypasses startup selector.
+  - On failure, DBC shows a clear startup error with corrective guidance and exits non-zero (without selector fallback).
+- When direct launch parameter is not provided, selector-first startup behavior remains unchanged.
+- Each entry requires:
+  - `name` (display name).
+  - `db_path` (SQLite connection path/string).
+- Startup selector displays entries in configuration order.
+- Startup selector shows source marker for each option: `⚙` for config-backed entries and `⌨` for direct-launch session-scoped entry (in-memory only for current process, no auto-persistence).
+- Startup selector supports in-app add/edit/delete management:
+  - Add and edit require non-empty `name` and `db_path`.
+  - Add and edit validate database target before config save.
+  - If validation fails, entry is not saved and user stays in form with an error message.
+  - Delete requires explicit confirmation.
+  - Add/edit form shows a visible caret (`|`) in the active editable field.
+- If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
+- After such startup connection error, user must select another reachable entry or edit the selected entry before main view can open.
+- Startup selector displays active configuration file path.
+- During active database session, users can open command entry with `:` and execute `:config` to return to selector/management.
+- If `:config` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
+  - `save`: persist staged changes, then open selector/management only on success.
+  - `discard`: clear staged changes, then open selector/management.
+  - `cancel`: keep current session context and preserve staged changes.
+- See technical documentation: `docs/technical-documentation.md#51-startup-flow`.
+- See technical documentation: `docs/technical-documentation.md#62-runtime-configuration-contract`.
+
+### 4.2 Main Layout and Focus Model
+
+- Layout is permanently two-panel in current state.
+- Left panel shows tables.
+- Right panel shows schema or records for the selected table.
+- Focus can be moved between panels.
+- Active panel is visually indicated.
+
+### 4.3 Table Discovery and Schema View
+
+- Table list excludes internal SQLite system tables.
+- Table list is alphabetically sorted for predictable scanning.
+- Schema view displays column name and type for selected table.
+- If no schema is available yet, product shows an empty-state message.
+
+### 4.4 Records View and Navigation
+
+- Records view shows table data for the selected table.
+- Records are fetched and displayed incrementally for continuous browsing.
+- Row selection is visible in the focused records panel.
+- Field focus mode is supported for cell-level editing navigation.
+- Record cell content is width-constrained in the UI (truncated when needed).
+
+### 4.5 Filtering
+
+- User can open a guided filter popup from main browsing contexts.
+- Filter flow is step-based:
+  - Select column.
+  - Select operator.
+  - Input value (only if operator requires one).
+- Supported operators:
+  - `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `IS NULL`, `IS NOT NULL`.
+- Exactly one filter can be active at a time for the selected table.
+- Filter is reset when switching to a different table.
+
+### 4.6 Data Operations (Insert, Edit, Delete)
+
+#### Insert
+
+- `i` stages a new record at the top of records view.
+- Prefill behavior:
+  - Column default value is prefilled when present.
+  - Nullable columns default to `NULL`.
+  - Required columns without default start as empty and must be completed before save.
+- Auto-increment fields are hidden by default for pending inserts.
+- `Ctrl+a` toggles visibility of auto-increment fields for explicit value entry.
+
+#### Edit
+
+- Existing record edits require a table with a primary key.
+- User enters field focus, then opens edit popup for selected cell.
+- Edit popup shows:
+  - Column identity and type.
+  - Nullable/not-null indicator.
+  - Value entry control.
+- Nullable fields can be explicitly set to `NULL` via shortcut.
+- Boolean and enum-like fields use option selection instead of free-text typing.
+- Validation occurs on confirm; invalid values remain in popup with error feedback.
+
+#### Delete
+
+- `d` toggles delete marker on existing selected record.
+- For pending inserts, `d` removes the pending insert immediately instead of adding delete marker.
+
+### 4.7 Staging, Undo/Redo, and Save
+
+- All writes are staged first; database is unchanged until save.
+- Undo/redo is available during the current app session for staged actions in the selected table.
+- Save flow:
+  - User presses save.
+  - Product asks for confirmation.
+  - Product applies staged insert/update/delete changes as one save operation.
+- On save success:
+  - Staged state is cleared.
+  - Records reload for current table and active filter.
+- On save failure:
+  - Staged state is retained.
+  - Error is surfaced in status line.
+- If user attempts to switch tables with unsaved changes, product requests discard confirmation.
+- If user invokes `:config` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
+
+### 4.8 Visual State Communication
+
+- Product mode indicator:
+  - `READ-ONLY` when no staged changes.
+  - `WRITE (dirty: N)` when staged changes exist.
+- Visual row markers:
+  - `[INS]` pending insert.
+  - `[DEL]` pending delete.
+- Edited cell indicator:
+  - `*` marker on edited values.
+- Status line communicates:
+  - Current mode.
+  - Current view (Schema or Records).
+  - Current table.
+  - Active filter summary.
+  - Contextual shortcut hints.
+  - Runtime status/error messages.
+- Every active editable text field in the app displays a visible caret (`|`) at the insertion point.
+
+## 5. User Flows
 
 ### Step 1: Startup and Database Selection
 
@@ -157,152 +251,18 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - User can undo/redo staged actions before save.
 - Save action requests confirmation, then applies all staged changes together.
 
-## 7. Functional Specification (Current State)
+## 6. Interaction Model
 
-### 7.1 Database Configuration and Access
+### 6.1 Product Interaction Principles
 
-- DBC reads database entries from OS-specific default config paths:
-  - macOS and Linux: `~/.config/dbc/config.toml`
-  - Windows: `%APPDATA%\dbc\config.toml`
-- Configuration requires at least one database entry.
-- Empty config state (`missing file`, `empty file`, or `databases = []`) is treated as "no configured databases", so DBC opens mandatory first-entry setup before normal browsing can start.
-- Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
-- During mandatory setup, users add one required entry and can optionally add more entries before continuing.
-- During mandatory setup, `Esc` cancels startup and exits the application.
-- DBC supports optional direct-launch startup aliases:
-  - `-d <db_path>`
-  - `--database <db_path>`
-- When direct launch parameter is provided:
-  - DBC validates target connectivity before runtime starts.
-  - Before runtime opens, DBC normalizes direct-launch SQLite path identity against configured entries and reuses the configured entry when a normalized match exists.
-  - On success, DBC opens the main view directly and bypasses startup selector.
-  - On failure, DBC shows a clear startup error with corrective guidance and exits non-zero (without selector fallback).
-- When direct launch parameter is not provided, selector-first startup behavior remains unchanged.
-- Each entry requires:
-  - `name` (display name).
-  - `db_path` (SQLite connection path/string).
-- Startup selector displays entries in configuration order.
-- Startup selector shows source marker for each option: `⚙` for config-backed entries and `⌨` for direct-launch session-scoped entry (in-memory only for current process, no auto-persistence).
-- Startup selector supports in-app add/edit/delete management:
-  - Add and edit require non-empty `name` and `db_path`.
-  - Add and edit validate database target before config save.
-  - If validation fails, entry is not saved and user stays in form with an error message.
-  - Delete requires explicit confirmation.
-  - Add/edit form shows a visible caret (`|`) in the active editable field.
-- If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
-- After such startup connection error, user must select another reachable entry or edit the selected entry before main view can open.
-- Startup selector displays active configuration file path.
-- During active database session, users can open command entry with `:` and execute `:config` to return to selector/management.
-- If `:config` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
-  - `save`: persist staged changes, then open selector/management only on success.
-  - `discard`: clear staged changes, then open selector/management.
-  - `cancel`: keep current session context and preserve staged changes.
-- Implementation details for startup/config validation flow are documented in `docs/technical-documentation.md#51-startup-flow` and `docs/technical-documentation.md#22-runtime-configuration-contract`.
+- Keyboard-first by default: all primary actions are accessible from keyboard.
+- Fast orientation: panel layout keeps navigation context visible.
+- Safe-by-design editing: data changes are staged before save.
+- Explicit commitment: save requires user confirmation.
+- Visible state: status line communicates mode, view, selected table, filter, and key actions.
+- Consistent interaction language: vim-like motions and commands are reused across key contexts.
 
-### 7.2 Main Layout and Focus Model
-
-- Layout is permanently two-panel in current state.
-- Left panel: tables.
-- Right panel: schema or records.
-- Focus can be moved between panels.
-- Active panel is visually indicated.
-
-### 7.3 Table Discovery and Schema View
-
-- Table list excludes internal SQLite system tables.
-- Table list is alphabetically sorted for predictable scanning.
-- Schema view displays column name and type for selected table.
-- If no schema is available yet, product shows an empty-state message.
-
-### 7.4 Records View and Navigation
-
-- Records view shows table data for the selected table.
-- Records are fetched and displayed incrementally for continuous browsing.
-- Row selection is visible in the focused records panel.
-- Field focus mode is supported for cell-level editing navigation.
-- Record cell content is width-constrained in the UI (truncated when needed).
-
-### 7.5 Filtering
-
-- User can open a guided filter popup from main browsing contexts.
-- Filter flow is step-based:
-  - Select column.
-  - Select operator.
-  - Input value (only if operator requires one).
-- Supported operators:
-  - `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `IS NULL`, `IS NOT NULL`.
-- Exactly one filter can be active at a time for the selected table.
-- Filter is reset when switching to a different table.
-
-### 7.6 Data Operations (Insert, Edit, Delete)
-
-#### Insert
-
-- `i` stages a new record at the top of records view.
-- Prefill behavior:
-  - Column default value is prefilled when present.
-  - Nullable columns default to `NULL`.
-  - Required columns without default start as empty and must be completed before save.
-- Auto-increment fields are hidden by default for pending inserts.
-- `Ctrl+a` toggles visibility of auto-increment fields for explicit value entry.
-
-#### Edit
-
-- Existing record edits require a table with a primary key.
-- User enters field focus, then opens edit popup for selected cell.
-- Edit popup shows:
-  - Column identity and type.
-  - Nullable/not-null indicator.
-  - Value entry control.
-- Nullable fields can be explicitly set to `NULL` via shortcut.
-- Boolean and enum-like fields use option selection instead of free-text typing.
-- Validation occurs on confirm; invalid values remain in popup with error feedback.
-
-#### Delete
-
-- `d` toggles delete marker on existing selected record.
-- Pending insert row behavior differs:
-  - `d` removes pending insert immediately (instead of marking delete).
-
-### 7.7 Staging, Undo/Redo, and Save
-
-- All writes are staged first; database is unchanged until save.
-- Undo/redo is available during the current app session for staged actions in the selected table.
-- Save flow:
-  - User presses save.
-  - Product asks for confirmation.
-  - Product applies staged insert/update/delete changes as one save operation.
-- On save success:
-  - Staged state is cleared.
-  - Records reload for current table and active filter.
-- On save failure:
-  - Staged state is retained.
-  - Error is surfaced in status line.
-- If user attempts to switch tables with unsaved changes, product requests discard confirmation.
-- If user invokes `:config` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
-
-### 7.8 Visual State Communication
-
-- Product mode indicator:
-  - `READ-ONLY` when no staged changes.
-  - `WRITE (dirty: N)` when staged changes exist.
-- Visual row markers:
-  - `[INS]` pending insert.
-  - `[DEL]` pending delete.
-- Edited cell indicator:
-  - `*` marker on edited values.
-- Status line communicates:
-  - Current mode.
-  - Current view (Schema or Records).
-  - Current table.
-  - Active filter summary.
-  - Contextual shortcut hints.
-  - Runtime status/error messages.
-- Every active editable text field in the app displays a visible caret (`|`) at the insertion point.
-
-## 8. Keyboard Interaction Model
-
-### 8.1 Global/Main Navigation
+### 6.2 Global/Main Navigation
 
 | Action | Shortcut |
 | --- | --- |
@@ -314,7 +274,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Page down/up | `Ctrl+f`, `Ctrl+b` |
 | Switch panel focus | `Ctrl+w h`, `Ctrl+w l`, `Ctrl+w w` |
 
-### 8.2 View and Record Actions
+### 6.3 View and Record Actions
 
 | Action | Shortcut |
 | --- | --- |
@@ -329,7 +289,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Save staged changes | `w` |
 | Toggle auto-increment fields (pending insert row) | `Ctrl+a` |
 
-### 8.3 Popup Interactions
+### 6.4 Popup Interactions
 
 | Context | Key Behavior |
 | --- | --- |
@@ -339,7 +299,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Dirty `:config` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 
-### 8.4 Startup Selector
+### 6.5 Startup Selector
 
 | Action | Shortcut |
 | --- | --- |
@@ -353,7 +313,26 @@ DBC positions itself as a productivity-focused database commander for terminal u
 | Delete selected entry (confirm required) | `d`, then `Enter` |
 | Selector form interaction | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel (or exit startup during mandatory first setup) |
 
-## 9. Data Safety and Change Governance
+## 7. Constraints and Non-Goals
+
+Current user-visible constraints:
+
+- Only SQLite is supported.
+- Editing/deleting existing records requires a primary key in the table.
+- Only one active filter is supported at a time.
+- There is no direct shortcut to switch from Records view back to Schema view after entering Records view.
+- No dedicated command exists to clear filter directly (filter resets on table switch or is replaced by applying a new filter).
+- Quit action does not prompt to preserve unsaved staged changes.
+
+Explicit non-goals in current state:
+
+- Schema management and administrative operations.
+- Multi-engine runtime usage.
+- Advanced analytics/reporting and BI workflows.
+
+For capability boundaries and scope classification, see Section 3.
+
+## 8. Safety and Governance
 
 - Safe default state: product starts in read-only mode.
 - Write actions are staged and reversible before save.
@@ -364,26 +343,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - Table switch with unsaved staged changes is guarded by discard confirmation.
 - `:config` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
 
-## 10. Known Constraints and Non-Goals
-
-This section is the canonical product wording for user-visible constraints and non-goals.
-
-### Current Constraints
-
-- Only SQLite is supported.
-- Editing/deleting existing records requires a primary key in the table.
-- Only one active filter is supported at a time.
-- There is no direct shortcut to switch from Records view back to Schema view after entering Records view.
-- No dedicated command exists to clear filter directly (filter resets on table switch or is replaced by applying a new filter).
-- Quit action does not prompt to preserve unsaved staged changes.
-
-### Explicit Non-Goals in Current State
-
-- Schema management and administrative operations.
-- Multi-engine runtime usage.
-- Advanced analytics/reporting and BI workflows.
-
-## 11. Glossary
+## 9. Glossary
 
 - Database Entry: named configuration item that points to a SQLite database path.
 - Table: primary unit of navigation and data operations.
@@ -395,10 +355,13 @@ This section is the canonical product wording for user-visible constraints and n
 - Staged Change: pending insert/edit/delete not yet saved to the database.
 - Dirty State: staged changes exist, and write mode with an unsaved changes count is active.
 
-## 12. Cross-References to Technical Documentation
+## 10. Cross-References to Technical Documentation
 
-- Runtime lifecycle implementation: `docs/technical-documentation.md#5-runtime-flow`
-- Layer boundaries and dependency direction: `docs/technical-documentation.md#4-architecture-guidelines`
-- Save transaction and persistence internals: `docs/technical-documentation.md#53-write-flow`
-- Engine and adapter decisions: `docs/technical-documentation.md#6-technical-decisions`
-- Test-layer coverage and technical constraints: `docs/technical-documentation.md#8-testing-strategy-and-coverage`, `docs/technical-documentation.md#10-common-technical-constraints`
+- See technical documentation: `docs/technical-documentation.md#3-architecture-and-boundaries`.
+- See technical documentation: `docs/technical-documentation.md#4-components-and-responsibilities`.
+- See technical documentation: `docs/technical-documentation.md#5-core-technical-mechanisms`.
+- See technical documentation: `docs/technical-documentation.md#51-startup-flow`.
+- See technical documentation: `docs/technical-documentation.md#53-write-flow`.
+- See technical documentation: `docs/technical-documentation.md#6-data-and-interface-contracts`.
+- See technical documentation: `docs/technical-documentation.md#8-technical-decisions-and-tradeoffs`.
+- See technical documentation: `docs/technical-documentation.md#10-technical-constraints-and-risks`.
