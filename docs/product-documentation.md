@@ -25,6 +25,7 @@
 9. [Data Safety and Change Governance](#9-data-safety-and-change-governance)
 10. [Known Constraints and Non-Goals](#10-known-constraints-and-non-goals)
 11. [Glossary](#11-glossary)
+12. [Cross-References to Technical Documentation](#12-cross-references-to-technical-documentation)
 
 ## 1. Product Summary
 
@@ -372,3 +373,11 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - Filter: active condition applied to records of selected table.
 - Staged Change: pending insert/edit/delete not yet saved to the database.
 - Dirty State: staged changes exist, and write mode with an unsaved changes count is active.
+
+## 12. Cross-References to Technical Documentation
+
+- Runtime lifecycle implementation: `docs/technical-documentation.md#5-runtime-flow`
+- Layer boundaries and dependency direction: `docs/technical-documentation.md#4-architecture-guidelines`
+- Save transaction and persistence internals: `docs/technical-documentation.md#53-write-flow`
+- Engine and adapter decisions: `docs/technical-documentation.md#6-technical-decisions`
+- Test-layer coverage and technical constraints: `docs/technical-documentation.md#8-testing-strategy-and-coverage`, `docs/technical-documentation.md#10-common-technical-constraints`

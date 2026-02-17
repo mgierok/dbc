@@ -25,6 +25,7 @@
 10. [Common Technical Constraints](#10-common-technical-constraints)
 11. [Reference Documents](#11-reference-documents)
 12. [Maintenance Policy](#12-maintenance-policy)
+13. [Cross-References to Product Documentation](#13-cross-references-to-product-documentation)
 
 ## 1. Technical Overview
 
@@ -386,3 +387,11 @@ This repository follows TDD expectations documented in:
 - Keep wording understandable for a Junior Software Engineer.
 - Prefer links to deep-dive documents instead of duplicating long conceptual content.
 - Keep product intent in product documentation and reference it instead of restating it here.
+
+## 13. Cross-References to Product Documentation
+
+- Product scope and non-goals: `docs/product-documentation.md#4-current-product-scope`, `docs/product-documentation.md#10-known-constraints-and-non-goals`
+- User journey and behavior intent: `docs/product-documentation.md#6-end-to-end-user-journey`
+- Capability-level behavior: `docs/product-documentation.md#7-functional-specification-current-state`
+- User-visible interaction contract: `docs/product-documentation.md#8-keyboard-interaction-model`
+- Safety and governance intent: `docs/product-documentation.md#9-data-safety-and-change-governance`
