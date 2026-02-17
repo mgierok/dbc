@@ -172,9 +172,8 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - Startup selector displays entries in configuration order.
 - Startup selector supports in-app add/edit/delete management:
   - Add and edit require non-empty `name` and `db_path`.
-  - Add and edit execute connection validation before config save:
-    - `db_path` must point to an existing SQLite database file.
-    - if connection validation fails, entry is not saved and user stays in form with an error message.
+  - Add and edit validate database target before config save.
+  - If validation fails, entry is not saved and user stays in form with an error message.
   - Delete requires explicit confirmation.
   - Add/edit form shows a visible caret (`|`) in the active editable field.
 - If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
@@ -185,6 +184,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - `save`: persist staged changes, then open selector/management only on success.
   - `discard`: clear staged changes, then open selector/management.
   - `cancel`: keep current session context and preserve staged changes.
+- Implementation details for startup/config validation flow are documented in `docs/technical-documentation.md#51-startup-flow` and `docs/technical-documentation.md#22-runtime-configuration-contract`.
 
 ### 7.2 Main Layout and Focus Model
 
