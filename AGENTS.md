@@ -301,6 +301,7 @@ Documentation creation and modification are skill-governed:
 - mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md`
 - product and technical documentation must stay complementary and consistent via explicit cross-references
 - documentation must describe current state only and be updated with every relevant codebase change
+- `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported databases, configuration paths/schema, CLI usage/flags, keybindings, or license details change, update `README.md` in the same change set
 - documentation must not define or describe development flow
 - all documentation references (path + anchor) must stay up to date; when section titles change, update all inbound references in the same change set
 
