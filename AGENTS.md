@@ -36,8 +36,8 @@ Before planning or coding, load only relevant sections:
   - `docs/technical-documentation.md#3-project-structure`
   - `docs/technical-documentation.md#4-architecture-guidelines`
   - `docs/technical-documentation.md#5-runtime-flow`
-  - `docs/technical-documentation.md#8-testing-strategy-and-workflow`
-  - `docs/technical-documentation.md#9-feature-delivery-guide`
+  - `docs/technical-documentation.md#8-testing-strategy-and-coverage`
+  - `docs/technical-documentation.md#9-technical-interaction-patterns`
 - Deep-dive references (when needed):
   - `docs/clean-architecture-ddd.md`
   - `docs/test-driven-development.md`
@@ -257,6 +257,16 @@ Non-negotiable summary:
 - TUI is an adapter (no direct database/business rule implementation).
 - Infrastructure implements ports; it does not drive use case logic.
 
+### 5.2.1 Architecture Rule for New Features
+
+When adding functionality:
+
+1. Start from domain model/service changes if behavior changes domain rules.
+2. Add/update use case orchestration.
+3. Extend port interfaces only when a new boundary is required.
+4. Implement infrastructure adapters for new port behavior.
+5. Connect UI adapter to use case, not to infrastructure.
+
 ### 5.3 Dependencies and Toolchain
 
 - Dependency/toolchain baseline is defined in:
@@ -272,6 +282,7 @@ Documentation creation and modification are skill-governed:
 - product and technical documentation must stay complementary and consistent via explicit cross-references
 - documentation must describe current state only and be updated with every relevant codebase change
 - documentation must not define or describe development flow
+- all documentation references (path + anchor) must stay up to date; when section titles change, update all inbound references in the same change set
 
 ## 7. Quick Reference
 

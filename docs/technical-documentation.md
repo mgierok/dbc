@@ -135,16 +135,6 @@ Not allowed:
 - TUI does not access SQLite directly; it calls use cases.
 - Infrastructure provides concrete adapters (`SQLiteEngine`, config loader).
 
-### 4.3 Architecture Rule for New Features
-
-When adding functionality:
-
-1. Start from domain model/service changes if behavior changes domain rules.
-2. Add/update use case orchestration.
-3. Extend port interfaces only when a new boundary is required.
-4. Implement infrastructure adapters for new port behavior.
-5. Connect UI adapter to use case, not to infrastructure.
-
 ## 5. Runtime Flow
 
 ### 5.1 Startup Flow
