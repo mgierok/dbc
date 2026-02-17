@@ -161,7 +161,7 @@ When adding functionality:
 
 1. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
    - macOS/Linux: `~/.config/dbc/config.toml`
-   - Windows: `%APPDATA%\dbc\config.toml` (fallback `%USERPROFILE%\AppData\Roaming\dbc\config.toml` when `APPDATA` is unset).
+   - Windows: `%APPDATA%\dbc\config.toml`
 2. Startup selector is created with config-management use cases:
    - list configured databases,
    - create/update/delete configured database entry,
