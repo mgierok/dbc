@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
@@ -43,17 +45,23 @@ func main() {
 			currentStartupOptions = options
 		}
 
-		selected, startupPath, err := resolveStartupSelection(currentStartupOptions, func() (tui.DatabaseOption, error) {
-			return tui.SelectDatabaseWithState(
-				context.Background(),
-				listConfiguredDatabases,
-				createConfiguredDatabase,
-				updateConfiguredDatabase,
-				deleteConfiguredDatabase,
-				getActiveConfigPath,
-				selectorState,
-			)
-		})
+		selected, startupPath, err := resolveStartupSelection(
+			currentStartupOptions,
+			func() ([]tui.DatabaseOption, error) {
+				return listConfiguredDatabaseOptions(context.Background(), listConfiguredDatabases)
+			},
+			func() (tui.DatabaseOption, error) {
+				return tui.SelectDatabaseWithState(
+					context.Background(),
+					listConfiguredDatabases,
+					createConfiguredDatabase,
+					updateConfiguredDatabase,
+					deleteConfiguredDatabase,
+					getActiveConfigPath,
+					selectorState,
+				)
+			},
+		)
 		if err != nil {
 			if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
 				return
@@ -139,12 +147,24 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 	return options, nil
 }
 
-func resolveStartupSelection(options startupOptions, selectDatabase func() (tui.DatabaseOption, error)) (tui.DatabaseOption, startupPath, error) {
+func resolveStartupSelection(
+	options startupOptions,
+	listConfiguredDatabases func() ([]tui.DatabaseOption, error),
+	selectDatabase func() (tui.DatabaseOption, error),
+) (tui.DatabaseOption, startupPath, error) {
 	if options.directLaunchConnString != "" {
-		return tui.DatabaseOption{
+		directLaunchSelection := tui.DatabaseOption{
 			Name:       options.directLaunchConnString,
 			ConnString: options.directLaunchConnString,
-		}, startupPathDirectLaunch, nil
+		}
+		configuredOptions, err := listConfiguredDatabases()
+		if err != nil {
+			return tui.DatabaseOption{}, startupPathDirectLaunch, err
+		}
+		if matched, ok := resolveConfiguredDirectLaunchIdentity(directLaunchSelection.ConnString, configuredOptions); ok {
+			return matched, startupPathDirectLaunch, nil
+		}
+		return directLaunchSelection, startupPathDirectLaunch, nil
 	}
 
 	selected, err := selectDatabase()
@@ -153,6 +173,64 @@ func resolveStartupSelection(options startupOptions, selectDatabase func() (tui.
 	}
 
 	return selected, startupPathSelector, nil
+}
+
+func listConfiguredDatabaseOptions(ctx context.Context, listConfiguredDatabases *usecase.ListConfiguredDatabases) ([]tui.DatabaseOption, error) {
+	entries, err := listConfiguredDatabases.Execute(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	options := make([]tui.DatabaseOption, len(entries))
+	for i, entry := range entries {
+		options[i] = tui.DatabaseOption{
+			Name:       entry.Name,
+			ConnString: entry.Path,
+		}
+	}
+	return options, nil
+}
+
+func resolveConfiguredDirectLaunchIdentity(directLaunchConnString string, configuredOptions []tui.DatabaseOption) (tui.DatabaseOption, bool) {
+	normalizedDirectLaunch := normalizeSQLiteConnectionIdentity(directLaunchConnString)
+	if normalizedDirectLaunch == "" {
+		return tui.DatabaseOption{}, false
+	}
+
+	for _, option := range configuredOptions {
+		normalizedConfigured := normalizeSQLiteConnectionIdentity(option.ConnString)
+		if normalizedConfigured == "" {
+			continue
+		}
+		if sqliteConnectionIdentityEqual(normalizedDirectLaunch, normalizedConfigured) {
+			return option, true
+		}
+	}
+
+	return tui.DatabaseOption{}, false
+}
+
+func normalizeSQLiteConnectionIdentity(connString string) string {
+	normalized := strings.TrimSpace(connString)
+	if normalized == "" {
+		return ""
+	}
+
+	normalized = filepath.Clean(normalized)
+	if !filepath.IsAbs(normalized) {
+		absPath, err := filepath.Abs(normalized)
+		if err == nil {
+			normalized = absPath
+		}
+	}
+	return normalized
+}
+
+func sqliteConnectionIdentityEqual(left string, right string) bool {
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(left, right)
+	}
+	return left == right
 }
 
 func connectSelectedDatabase(selected tui.DatabaseOption) (*sql.DB, error) {

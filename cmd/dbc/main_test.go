@@ -206,17 +206,28 @@ func TestResolveStartupSelection_UsesDirectLaunchWithoutSelectorCall(t *testing.
 
 	// Arrange
 	options := startupOptions{directLaunchConnString: "/tmp/direct.sqlite"}
+	listCalled := false
 	selectorCalled := false
 
 	// Act
-	selected, path, err := resolveStartupSelection(options, func() (tui.DatabaseOption, error) {
-		selectorCalled = true
-		return tui.DatabaseOption{}, nil
-	})
+	selected, path, err := resolveStartupSelection(
+		options,
+		func() ([]tui.DatabaseOption, error) {
+			listCalled = true
+			return []tui.DatabaseOption{}, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			selectorCalled = true
+			return tui.DatabaseOption{}, nil
+		},
+	)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if !listCalled {
+		t.Fatal("expected configured database list callback for direct-launch startup")
 	}
 	if selectorCalled {
 		t.Fatal("expected selector callback to be skipped for direct-launch startup")
@@ -234,18 +245,29 @@ func TestResolveStartupSelection_UsesSelectorWhenDirectLaunchMissing(t *testing.
 
 	// Arrange
 	options := startupOptions{}
+	listCalled := false
 	selectorCalled := false
 	expected := tui.DatabaseOption{Name: "analytics", ConnString: "/tmp/analytics.sqlite"}
 
 	// Act
-	selected, path, err := resolveStartupSelection(options, func() (tui.DatabaseOption, error) {
-		selectorCalled = true
-		return expected, nil
-	})
+	selected, path, err := resolveStartupSelection(
+		options,
+		func() ([]tui.DatabaseOption, error) {
+			listCalled = true
+			return []tui.DatabaseOption{}, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			selectorCalled = true
+			return expected, nil
+		},
+	)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if listCalled {
+		t.Fatal("expected configured database list callback to be skipped when direct-launch is missing")
 	}
 	if !selectorCalled {
 		t.Fatal("expected selector callback when direct-launch flag is not provided")
@@ -266,13 +288,124 @@ func TestResolveStartupSelection_ReturnsSelectorError(t *testing.T) {
 	expectedErr := errors.New("selector failed")
 
 	// Act
-	_, _, err := resolveStartupSelection(options, func() (tui.DatabaseOption, error) {
-		return tui.DatabaseOption{}, expectedErr
-	})
+	_, _, err := resolveStartupSelection(
+		options,
+		func() ([]tui.DatabaseOption, error) {
+			return []tui.DatabaseOption{}, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			return tui.DatabaseOption{}, expectedErr
+		},
+	)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected selector error %v, got %v", expectedErr, err)
+	}
+}
+
+func TestResolveStartupSelection_ReusesConfiguredIdentityWhenNormalizedPathsMatch(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	configured := filepath.Join(t.TempDir(), "direct.sqlite")
+	directLaunch := configured + string(os.PathSeparator) + "."
+	options := startupOptions{directLaunchConnString: directLaunch}
+	selectorCalled := false
+
+	// Act
+	selected, path, err := resolveStartupSelection(
+		options,
+		func() ([]tui.DatabaseOption, error) {
+			return []tui.DatabaseOption{
+				{Name: "local", ConnString: configured},
+			}, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			selectorCalled = true
+			return tui.DatabaseOption{}, nil
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if selectorCalled {
+		t.Fatal("expected selector callback to be skipped for direct-launch startup")
+	}
+	if path != startupPathDirectLaunch {
+		t.Fatalf("expected startup path %v, got %v", startupPathDirectLaunch, path)
+	}
+	if selected.Name != "local" {
+		t.Fatalf("expected configured identity name %q, got %q", "local", selected.Name)
+	}
+	if selected.ConnString != configured {
+		t.Fatalf("expected configured conn string %q, got %q", configured, selected.ConnString)
+	}
+}
+
+func TestResolveStartupSelection_ReturnsDirectIdentityWhenNoNormalizedConfiguredMatchExists(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	options := startupOptions{directLaunchConnString: "/tmp/direct.sqlite"}
+
+	// Act
+	selected, path, err := resolveStartupSelection(
+		options,
+		func() ([]tui.DatabaseOption, error) {
+			return []tui.DatabaseOption{
+				{Name: "local", ConnString: "/tmp/configured.sqlite"},
+			}, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			return tui.DatabaseOption{}, nil
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if path != startupPathDirectLaunch {
+		t.Fatalf("expected startup path %v, got %v", startupPathDirectLaunch, path)
+	}
+	if selected.Name != "/tmp/direct.sqlite" {
+		t.Fatalf("expected direct-launch identity name %q, got %q", "/tmp/direct.sqlite", selected.Name)
+	}
+	if selected.ConnString != "/tmp/direct.sqlite" {
+		t.Fatalf("expected direct-launch conn string %q, got %q", "/tmp/direct.sqlite", selected.ConnString)
+	}
+}
+
+func TestResolveStartupSelection_UsesFirstConfiguredIdentityForDeterministicNormalizedMatch(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	configured := filepath.Join(t.TempDir(), "direct.sqlite")
+	options := startupOptions{directLaunchConnString: configured + string(os.PathSeparator) + "."}
+
+	// Act
+	selected, _, err := resolveStartupSelection(
+		options,
+		func() ([]tui.DatabaseOption, error) {
+			return []tui.DatabaseOption{
+				{Name: "first", ConnString: configured},
+				{Name: "second", ConnString: configured + string(os.PathSeparator) + "."},
+			}, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			return tui.DatabaseOption{}, nil
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if selected.Name != "first" {
+		t.Fatalf("expected first configured identity to be selected, got %q", selected.Name)
 	}
 }
 

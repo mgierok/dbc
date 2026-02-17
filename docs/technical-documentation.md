@@ -73,6 +73,7 @@ Core technical characteristics:
 - Startup supports two paths:
   - default selector-first path (no direct-launch argument),
   - direct-launch path using `-d` / `--database` that validates connectivity before runtime startup.
+- Direct-launch startup resolves target identity against configured entries using normalized SQLite path comparison and reuses the first configured match in config order.
 - Direct-launch validation failure prints actionable error output and exits non-zero without selector fallback.
 - Runtime can return to selector without process restart via `ErrOpenConfigSelector`.
 - Active DB connection is explicitly closed before selector re-entry.
@@ -154,6 +155,8 @@ Not allowed:
    - create/update/delete configured database entry,
    - resolve active config path.
 4. If direct-launch argument is provided, startup attempts direct SQLite open/ping first (before selector UI):
+   - startup first resolves direct-launch target against configured entries using normalized SQLite path identity,
+   - when normalized match exists, startup reuses that configured entry identity (deterministic first match by config order),
    - success: runtime starts immediately and selector is skipped for initial startup,
    - failure: startup prints actionable failure message and exits non-zero (no selector fallback).
 5. For selector-first path (no direct-launch argument), selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each successful mutation.

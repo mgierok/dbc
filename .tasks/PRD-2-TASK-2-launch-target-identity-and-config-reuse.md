@@ -4,7 +4,7 @@ Define and implement normalized connection identity matching so direct launch re
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-2-cli-direct-database-launch.md
 - Task ID: 2
 - Task File: PRD-2-TASK-2-launch-target-identity-and-config-reuse.md
@@ -63,4 +63,18 @@ Direct-launch startup remains functional, and when direct target matches configu
 
 ## Completion Summary
 
-Not started.
+Implemented normalized direct-launch identity resolution in `cmd/dbc/main.go`:
+- Added deterministic SQLite path normalization helper used for identity comparison.
+- Added configured-entry lookup for direct-launch startup and reused configured identity on normalized match.
+- Kept direct-launch behavior unchanged for non-matching targets.
+- Preserved deterministic selection by reusing the first configured match in configuration order.
+
+Added regression coverage in `cmd/dbc/main_test.go` for:
+- normalized-match reuse of configured identity,
+- non-match fallback to direct identity,
+- deterministic first-match behavior when multiple normalized matches exist.
+
+Verification executed:
+- `go test ./cmd/dbc` (PASS)
+- `go test ./...` (PASS)
+- `golangci-lint run ./...` (PASS)

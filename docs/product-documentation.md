@@ -174,6 +174,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - `--database <db_path>`
 - When direct launch parameter is provided:
   - DBC validates target connectivity before runtime starts.
+  - Before runtime opens, DBC normalizes direct-launch SQLite path identity against configured entries and reuses the configured entry when a normalized match exists.
   - On success, DBC opens the main view directly and bypasses startup selector.
   - On failure, DBC shows a clear startup error with corrective guidance and exits non-zero (without selector fallback).
 - When direct launch parameter is not provided, selector-first startup behavior remains unchanged.
