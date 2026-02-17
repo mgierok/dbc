@@ -4,7 +4,7 @@ Add direct-launch CLI argument handling and startup branching so known-target se
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-2-cli-direct-database-launch.md
 - Task ID: 1
 - Task File: PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup.md
@@ -71,4 +71,18 @@ The app still supports selector-first startup when direct-launch parameter is ab
 
 ## Completion Summary
 
-Not started.
+Implemented direct-launch startup path in `cmd/dbc/main.go` with explicit parsing for `-d` and `--database`, including fail-fast handling for invalid argument usage and unsupported startup arguments.
+
+Added startup branch resolution so direct-launch selection is attempted before selector flow, while preserving selector-first behavior when no direct-launch argument is provided.
+
+Reused existing `connectSelectedDatabase`/`engine.OpenSQLiteDatabase` validation path for direct-launch connectivity checks; on direct-launch failure startup now exits non-zero with a clear, actionable error message and no selector fallback.
+
+Added/updated tests in `cmd/dbc/main_test.go` for:
+- direct-launch alias parsing (`-d`, `--database`),
+- missing-value and unsupported-argument error handling with clear messaging,
+- startup branch resolution behavior (direct-launch bypasses selector callback, selector path preserved when flag absent),
+- direct-launch failure message clarity and guidance text.
+
+Verification executed:
+- `go test ./...` (PASS)
+- `golangci-lint run ./...` (PASS)

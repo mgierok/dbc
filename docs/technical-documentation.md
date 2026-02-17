@@ -51,6 +51,7 @@ Core technical characteristics:
 
 - Process entry point is `cmd/dbc/main.go`.
 - `main.go` is the composition root for:
+  - startup CLI argument parsing (`-d` / `--database`),
   - config path resolution,
   - selector/config-management use case wiring,
   - database engine creation,
@@ -69,7 +70,10 @@ Core technical characteristics:
 
 ### 2.3 Runtime Lifecycle Boundaries
 
-- Startup is selector-first and opens main TUI only after reachable database selection.
+- Startup supports two paths:
+  - default selector-first path (no direct-launch argument),
+  - direct-launch path using `-d` / `--database` that validates connectivity before runtime startup.
+- Direct-launch validation failure prints actionable error output and exits non-zero without selector fallback.
 - Runtime can return to selector without process restart via `ErrOpenConfigSelector`.
 - Active DB connection is explicitly closed before selector re-entry.
 
@@ -139,30 +143,36 @@ Not allowed:
 
 ### 5.1 Startup Flow
 
-1. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
+1. `cmd/dbc/main.go` parses startup CLI arguments.
+   - Supported direct-launch aliases: `-d <db_path>` and `--database <db_path>`.
+   - Invalid startup arguments return clear error output and terminate startup.
+2. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
    - macOS/Linux: `~/.config/dbc/config.toml`
    - Windows: `%APPDATA%\dbc\config.toml`
-2. Startup selector is created with config-management use cases:
+3. Startup selector dependencies are created with config-management use cases:
    - list configured databases,
    - create/update/delete configured database entry,
    - resolve active config path.
-3. Selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each successful mutation.
+4. If direct-launch argument is provided, startup attempts direct SQLite open/ping first (before selector UI):
+   - success: runtime starts immediately and selector is skipped for initial startup,
+   - failure: startup prints actionable failure message and exits non-zero (no selector fallback).
+5. For selector-first path (no direct-launch argument), selector UI supports in-session config management (add/edit/delete with delete confirmation) and refreshes entries from config store after each successful mutation.
    Add/edit submit path performs use-case validation in this order: required fields -> SQLite connection check -> config store mutation.
    Active add/edit text input renders a caret (`|`) in the currently focused field.
-4. Empty config state (`missing file`, `empty file`, or `databases = []`) starts selector in mandatory first-entry setup:
+6. Empty config state (`missing file`, `empty file`, or `databases = []`) starts selector in mandatory first-entry setup:
    - first valid add is required before continue,
    - users can optionally add more entries in the same setup context,
    - normal browsing cannot start until at least one entry exists.
    Pressing `Esc` in this setup cancels startup and exits application loop before DB open.
    Malformed config content (for example malformed TOML, unknown key shape, or invalid entry structure) is still treated as startup error.
-5. User confirms selected database from refreshed selector list.
-6. Selected SQLite database is opened and pinged.
+7. User confirms selected database from refreshed selector list.
+8. Selected SQLite database is opened and pinged.
    Startup DB open and config-entry connection checks reuse the same infrastructure connection-open helper (`internal/infrastructure/engine.OpenSQLiteDatabase`) to keep validation behavior and errors consistent.
    If open/ping fails, startup loop reopens selector with status error and preferred selection set to failed connection string.
    Runtime does not start until user selects a reachable entry or updates configuration.
-7. SQLite engine and runtime table/record use cases are created.
-8. Bubble Tea application loop starts (`tui.Run`).
-9. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), the DB connection is closed and startup selector flow runs again without restarting process.
+9. SQLite engine and runtime table/record use cases are created.
+10. Bubble Tea application loop starts (`tui.Run`).
+11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), the DB connection is closed and startup selector flow runs again without restarting process.
 
 ### 5.2 Main Read Flow
 

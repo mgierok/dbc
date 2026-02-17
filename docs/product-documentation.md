@@ -78,6 +78,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
 ### In Scope (Current Product State)
 
 - SQLite database support.
+- Optional direct CLI launch for known SQLite targets via `-d` / `--database`.
 - Multi-database startup selector from local configuration.
 - In-selector configuration management for startup databases:
   - Add database entry.
@@ -121,7 +122,9 @@ DBC positions itself as a productivity-focused database commander for terminal u
 
 ### Step 1: Startup and Database Selection
 
-- User launches DBC and sees a centered database selector.
+- User launches DBC in one of two startup modes:
+  - Default: centered database selector.
+  - Direct launch: pass `-d` / `--database` with a SQLite path to bypass selector on successful validation.
 - Selector displays active config file path.
 - Each database option is presented as `Name | Connection String`.
 - User can manage entries in place (`add`, `edit`, `delete` with confirmation).
@@ -166,6 +169,14 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
 - During mandatory setup, users add one required entry and can optionally add more entries before continuing.
 - During mandatory setup, `Esc` cancels startup and exits the application.
+- DBC supports optional direct-launch startup aliases:
+  - `-d <db_path>`
+  - `--database <db_path>`
+- When direct launch parameter is provided:
+  - DBC validates target connectivity before runtime starts.
+  - On success, DBC opens the main view directly and bypasses startup selector.
+  - On failure, DBC shows a clear startup error with corrective guidance and exits non-zero (without selector fallback).
+- When direct launch parameter is not provided, selector-first startup behavior remains unchanged.
 - Each entry requires:
   - `name` (display name).
   - `db_path` (SQLite connection path/string).
