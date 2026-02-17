@@ -31,6 +31,11 @@
 
 DBC is a terminal application written in Go. It currently supports SQLite and follows Clean Architecture with DDD-style boundaries.
 
+Canonical ownership note:
+
+- This document is canonical for implementation details, architecture, runtime, and technical constraints.
+- Product behavior intent and user-facing scope are canonical in `docs/product-documentation.md`.
+
 Core technical characteristics:
 
 - Terminal UI adapter built on Bubble Tea.
@@ -364,11 +369,12 @@ This repository follows TDD expectations documented in:
 
 ## 10. Common Technical Constraints
 
+This section captures implementation constraints. For user-facing wording of constraints/non-goals, see `docs/product-documentation.md#10-known-constraints-and-non-goals`.
+
 - Only SQLite engine is implemented today.
 - Table edit/delete for persisted rows depends on primary key identity.
-- Filter supports one active condition at a time in TUI state.
-- Records view currently has no direct shortcut to return to schema view.
-- Missing or empty config file is tolerated at startup (mapped to zero configured entries and forced first-entry setup).
+- Filter pipeline currently applies one active predicate for the selected table at a time.
+- Missing or empty config file is tolerated at startup and mapped to mandatory first-entry setup.
 - Invalid config content still stops startup with explicit error.
 
 ## 11. Reference Documents

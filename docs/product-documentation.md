@@ -31,6 +31,11 @@
 
 DBC is a terminal-first product for browsing and managing database content with a keyboard-centric workflow. The product is designed for users who need rapid data inspection and controlled data changes without leaving the command-line environment.
 
+Canonical ownership note:
+
+- This document is canonical for user-facing behavior, scope, and constraints.
+- Implementation details and code-level decisions are canonical in `docs/technical-documentation.md`.
+
 At present, DBC supports SQLite databases and delivers two major capability groups:
 
 - Read and inspect: database selection, table discovery, schema viewing, record browsing, and filtering.
@@ -346,6 +351,8 @@ DBC positions itself as a productivity-focused database commander for terminal u
 - `:config` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
 
 ## 10. Known Constraints and Non-Goals
+
+This section is the canonical product wording for user-visible constraints and non-goals.
 
 ### Current Constraints
 
