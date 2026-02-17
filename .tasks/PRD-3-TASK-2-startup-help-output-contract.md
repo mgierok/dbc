@@ -4,7 +4,7 @@ Define and implement deterministic startup help output so users can discover sup
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
 - Task ID: 2
 - Task File: PRD-3-TASK-2-startup-help-output-contract.md
@@ -63,4 +63,17 @@ After this task, help output is available and stable via both help aliases with 
 
 ## Completion Summary
 
-Not started.
+- Replaced startup help placeholder with deterministic contract output in `cmd/dbc/main.go`:
+  - startup description,
+  - canonical usage line,
+  - options section documenting `-h/--help`, `-v/--version`, and `-d/--database`,
+  - examples section including direct launch and version invocation.
+- Added startup help contract tests in `cmd/dbc/main_test.go`:
+  - required help token coverage for section/content contract,
+  - alias equivalence check for `--help` and `-h` rendered output,
+  - deterministic output check across repeated invocations.
+- Verification executed and passed:
+  - `go test ./cmd/dbc`
+  - `go test ./...`
+  - `golangci-lint run ./...`
+  - CLI checks: `go run ./cmd/dbc --help` vs `go run ./cmd/dbc -h` (equivalent output, exit code `0`), repeated same-artifact help output deterministic.

@@ -443,6 +443,84 @@ func TestRunStartupDispatch_UsesRuntimeStartupWhenInformationalFlagsAreAbsent(t 
 	}
 }
 
+func TestRunStartupDispatch_HelpAliasesProduceEquivalentRenderedOutput(t *testing.T) {
+	t.Parallel()
+
+	renderHelp := func(args []string) (string, error) {
+		rendered := ""
+		err := runStartupDispatch(
+			args,
+			func(command startupInformationalCommand) error {
+				rendered = renderStartupInformationalOutput(command)
+				return nil
+			},
+			func(_ startupOptions) error {
+				t.Fatal("expected runtime startup handler to stay skipped for help dispatch")
+				return nil
+			},
+		)
+		return rendered, err
+	}
+
+	// Act
+	longHelpOutput, longErr := renderHelp([]string{"--help"})
+	shortHelpOutput, shortErr := renderHelp([]string{"-h"})
+
+	// Assert
+	if longErr != nil {
+		t.Fatalf("expected no error for --help, got %v", longErr)
+	}
+	if shortErr != nil {
+		t.Fatalf("expected no error for -h, got %v", shortErr)
+	}
+	if longHelpOutput != shortHelpOutput {
+		t.Fatalf("expected equivalent help output for aliases, got --help=%q and -h=%q", longHelpOutput, shortHelpOutput)
+	}
+}
+
+func TestRenderStartupInformationalOutput_HelpContainsRequiredContractTokens(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	helpOutput := renderStartupInformationalOutput(startupInformationalHelp)
+
+	// Assert
+	requiredTokens := []string{
+		"DBC is a terminal-first SQLite database browser.",
+		"Usage:",
+		"dbc [options]",
+		"Options:",
+		"-h, --help",
+		"-v, --version",
+		"-d, --database <sqlite-db-path>",
+		"Examples:",
+		"dbc --database ./data/app.sqlite",
+		"dbc --version",
+	}
+
+	for _, token := range requiredTokens {
+		if !strings.Contains(helpOutput, token) {
+			t.Fatalf("expected help output to include token %q, got %q", token, helpOutput)
+		}
+	}
+}
+
+func TestRenderStartupInformationalOutput_HelpIsDeterministic(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	first := renderStartupInformationalOutput(startupInformationalHelp)
+	second := renderStartupInformationalOutput(startupInformationalHelp)
+
+	// Assert
+	if first == "" {
+		t.Fatal("expected non-empty help output")
+	}
+	if first != second {
+		t.Fatalf("expected deterministic help output, got first=%q second=%q", first, second)
+	}
+}
+
 func TestResolveStartupSelection_UsesDirectLaunchWithoutSelectorCall(t *testing.T) {
 	t.Parallel()
 

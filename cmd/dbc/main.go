@@ -224,12 +224,32 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 func renderStartupInformationalOutput(command startupInformationalCommand) string {
 	switch command {
 	case startupInformationalHelp:
-		return "dbc startup help is not implemented yet."
+		return renderStartupHelpOutput()
 	case startupInformationalVersion:
 		return "dev"
 	default:
 		return ""
 	}
+}
+
+func renderStartupHelpOutput() string {
+	lines := []string{
+		"DBC is a terminal-first SQLite database browser.",
+		"",
+		"Usage:",
+		"  dbc [options]",
+		"",
+		"Options:",
+		"  -h, --help                      Show startup help and exit.",
+		"  -v, --version                   Print build version token and exit.",
+		"  -d, --database <sqlite-db-path> Launch directly with a SQLite database path.",
+		"",
+		"Examples:",
+		"  dbc --database ./data/app.sqlite",
+		"  dbc --version",
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func resolveStartupSelection(
