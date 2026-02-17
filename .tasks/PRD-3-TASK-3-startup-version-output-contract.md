@@ -4,7 +4,7 @@ Define and implement startup version introspection so users and automation can q
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
 - Task ID: 3
 - Task File: PRD-3-TASK-3-startup-version-output-contract.md
@@ -64,4 +64,25 @@ After this task, version output is available through both aliases and prints a s
 
 ## Completion Summary
 
-Not started.
+- Implemented startup version token resolution in `cmd/dbc/main.go`:
+  - `--version` / `-v` now use Go build metadata (`vcs.revision`) when available,
+  - revision token is shortened deterministically to 12 characters,
+  - fallback token remains `dev` when metadata is unavailable.
+- Kept informational dispatch contract intact by wiring version rendering through existing startup informational path.
+- Added and updated startup tests in `cmd/dbc/main_test.go` for:
+  - `--version`/`-v` output equivalence,
+  - short-hash resolution from revision metadata,
+  - deterministic `dev` fallback when metadata is missing,
+  - deterministic output for identical build metadata,
+  - single-token output contract.
+- Updated documentation to factual current behavior:
+  - `docs/product-documentation.md`,
+  - `docs/technical-documentation.md`,
+  - `README.md`.
+- Verification executed:
+  - `go test ./cmd/dbc`
+  - `go test ./...`
+  - `golangci-lint run ./...`
+  - `go run ./cmd/dbc --version` and `go run ./cmd/dbc -v` (equivalent output),
+  - `go run -buildvcs=false ./cmd/dbc --version` (`dev` fallback),
+  - built artifact repeatability check (`/tmp/dbc_task3 --version` twice with identical output).

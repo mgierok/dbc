@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"testing"
 
@@ -478,6 +479,41 @@ func TestRunStartupDispatch_HelpAliasesProduceEquivalentRenderedOutput(t *testin
 	}
 }
 
+func TestRunStartupDispatch_VersionAliasesProduceEquivalentRenderedOutput(t *testing.T) {
+	t.Parallel()
+
+	renderVersion := func(args []string) (string, error) {
+		rendered := ""
+		err := runStartupDispatch(
+			args,
+			func(command startupInformationalCommand) error {
+				rendered = renderStartupInformationalOutput(command)
+				return nil
+			},
+			func(_ startupOptions) error {
+				t.Fatal("expected runtime startup handler to stay skipped for version dispatch")
+				return nil
+			},
+		)
+		return rendered, err
+	}
+
+	// Act
+	longVersionOutput, longErr := renderVersion([]string{"--version"})
+	shortVersionOutput, shortErr := renderVersion([]string{"-v"})
+
+	// Assert
+	if longErr != nil {
+		t.Fatalf("expected no error for --version, got %v", longErr)
+	}
+	if shortErr != nil {
+		t.Fatalf("expected no error for -v, got %v", shortErr)
+	}
+	if longVersionOutput != shortVersionOutput {
+		t.Fatalf("expected equivalent version output for aliases, got --version=%q and -v=%q", longVersionOutput, shortVersionOutput)
+	}
+}
+
 func TestRenderStartupInformationalOutput_HelpContainsRequiredContractTokens(t *testing.T) {
 	t.Parallel()
 
@@ -518,6 +554,83 @@ func TestRenderStartupInformationalOutput_HelpIsDeterministic(t *testing.T) {
 	}
 	if first != second {
 		t.Fatalf("expected deterministic help output, got first=%q second=%q", first, second)
+	}
+}
+
+func TestResolveStartupVersionToken_ReturnsShortCommitHashWhenRevisionMetadataAvailable(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	buildInfo := &debug.BuildInfo{
+		Settings: []debug.BuildSetting{
+			{Key: "vcs.revision", Value: "0123456789abcdef0123456789abcdef01234567"},
+		},
+	}
+
+	// Act
+	version := resolveStartupVersionToken(func() (*debug.BuildInfo, bool) {
+		return buildInfo, true
+	})
+
+	// Assert
+	if version != "0123456789ab" {
+		t.Fatalf("expected short revision token %q, got %q", "0123456789ab", version)
+	}
+}
+
+func TestResolveStartupVersionToken_ReturnsDevWhenRevisionMetadataIsUnavailable(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	version := resolveStartupVersionToken(func() (*debug.BuildInfo, bool) {
+		return nil, false
+	})
+
+	// Assert
+	if version != "dev" {
+		t.Fatalf("expected fallback token %q, got %q", "dev", version)
+	}
+}
+
+func TestResolveStartupVersionToken_IsDeterministicForSameBuildMetadata(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	buildInfo := &debug.BuildInfo{
+		Settings: []debug.BuildSetting{
+			{Key: "vcs.revision", Value: "abcdef0123456789abcdef0123456789abcdef01"},
+		},
+	}
+
+	readBuildInfo := func() (*debug.BuildInfo, bool) {
+		return buildInfo, true
+	}
+
+	// Act
+	first := resolveStartupVersionToken(readBuildInfo)
+	second := resolveStartupVersionToken(readBuildInfo)
+
+	// Assert
+	if first == "" {
+		t.Fatal("expected non-empty version token")
+	}
+	if first != second {
+		t.Fatalf("expected deterministic version token, got first=%q second=%q", first, second)
+	}
+}
+
+func TestRenderStartupInformationalOutput_VersionIsSingleToken(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	versionOutput := renderStartupInformationalOutput(startupInformationalVersion)
+
+	// Assert
+	if len(strings.Fields(versionOutput)) != 1 {
+		t.Fatalf("expected single-token version output, got %q", versionOutput)
+	}
+	if strings.TrimSpace(versionOutput) != versionOutput {
+		t.Fatalf("expected trimmed version token, got %q", versionOutput)
 	}
 }
 

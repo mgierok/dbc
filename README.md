@@ -62,6 +62,7 @@ dbc -h
 dbc --version
 dbc -v
 ```
+`--version` / `-v` prints a single token: short commit hash when build revision metadata exists, otherwise `dev`.
 
 Run direct launch (skip selector when validation succeeds):
 ```bash

@@ -100,6 +100,7 @@ Package responsibilities:
 1. `cmd/dbc/main.go` parses startup CLI arguments.
    - Supported direct-launch aliases: `-d <db_path>` and `--database <db_path>`.
    - Supported informational aliases: `-h` / `--help` and `-v` / `--version`.
+   - Version informational rendering resolves `vcs.revision` from Go build metadata and emits a short hash token; when metadata is unavailable it emits `dev`.
    - `runStartupDispatch` short-circuits startup for informational aliases before config-path resolution or DB initialization.
    - Informational and direct-launch aliases are mutually exclusive in one startup invocation.
    - Invalid startup arguments return clear error output and terminate startup.

@@ -90,6 +90,9 @@ Canonical ownership note:
   - `--help`
   - `-v`
   - `--version`
+- `--version` / `-v` prints one stdout token:
+  - short commit hash when build revision metadata is present,
+  - `dev` when revision metadata is unavailable.
 - Informational startup aliases short-circuit startup before config and database initialization work begins.
 - Informational aliases cannot be combined with direct-launch aliases in one startup invocation.
 - When direct launch parameter is provided:

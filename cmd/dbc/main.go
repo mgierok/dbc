@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
@@ -140,6 +141,11 @@ const (
 	startupInformationalVersion
 )
 
+const (
+	startupVersionFallbackToken   = "dev"
+	startupVersionShortHashLength = 12
+)
+
 type startupOptions struct {
 	directLaunchConnString string
 	informationalCommand   startupInformationalCommand
@@ -226,10 +232,43 @@ func renderStartupInformationalOutput(command startupInformationalCommand) strin
 	case startupInformationalHelp:
 		return renderStartupHelpOutput()
 	case startupInformationalVersion:
-		return "dev"
+		return resolveStartupVersionToken(debug.ReadBuildInfo)
 	default:
 		return ""
 	}
+}
+
+func resolveStartupVersionToken(readBuildInfo func() (*debug.BuildInfo, bool)) string {
+	if readBuildInfo == nil {
+		return startupVersionFallbackToken
+	}
+
+	buildInfo, ok := readBuildInfo()
+	if !ok || buildInfo == nil {
+		return startupVersionFallbackToken
+	}
+
+	for _, setting := range buildInfo.Settings {
+		if setting.Key != "vcs.revision" {
+			continue
+		}
+
+		revisionFields := strings.Fields(setting.Value)
+		if len(revisionFields) == 0 {
+			return startupVersionFallbackToken
+		}
+
+		return shortRevisionToken(revisionFields[0])
+	}
+
+	return startupVersionFallbackToken
+}
+
+func shortRevisionToken(revision string) string {
+	if len(revision) <= startupVersionShortHashLength {
+		return revision
+	}
+	return revision[:startupVersionShortHashLength]
 }
 
 func renderStartupHelpOutput() string {
