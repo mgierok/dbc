@@ -38,6 +38,7 @@ Canonical ownership note:
 ### In Scope (Current State)
 
 - SQLite database support.
+- Startup informational flags via `-h` / `--help` and `-v` / `--version`.
 - Optional direct CLI launch for known SQLite targets via `-d` / `--database`.
 - Multi-database startup selector from local configuration.
 - In-selector configuration management for startup databases:
@@ -84,6 +85,13 @@ Canonical ownership note:
 - DBC supports optional direct-launch startup aliases:
   - `-d <db_path>`
   - `--database <db_path>`
+- DBC supports optional startup informational aliases:
+  - `-h`
+  - `--help`
+  - `-v`
+  - `--version`
+- Informational startup aliases short-circuit startup before config and database initialization work begins.
+- Informational aliases cannot be combined with direct-launch aliases in one startup invocation.
 - When direct launch parameter is provided:
   - DBC validates target connectivity before runtime starts.
   - Before runtime opens, DBC normalizes direct-launch SQLite path identity against configured entries and reuses the configured entry when a normalized match exists.
@@ -216,7 +224,8 @@ Canonical ownership note:
 
 ### Step 1: Startup and Database Selection
 
-- User launches DBC in one of two startup modes:
+- User launches DBC in one of three startup modes:
+  - Informational mode: `-h` / `--help` or `-v` / `--version`; startup returns informational output and exits without opening selector or database.
   - Default: centered database selector.
   - Direct launch: pass `-d` / `--database` with a SQLite path to bypass selector on successful validation.
 - Selector displays active config file path.

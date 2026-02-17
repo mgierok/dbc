@@ -55,6 +55,14 @@ Run selector-first startup:
 dbc
 ```
 
+Run informational startup flags (returns immediately without opening selector/database):
+```bash
+dbc --help
+dbc -h
+dbc --version
+dbc -v
+```
+
 Run direct launch (skip selector when validation succeeds):
 ```bash
 dbc -d /absolute/path/to/database.sqlite

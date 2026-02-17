@@ -99,6 +99,9 @@ Package responsibilities:
 
 1. `cmd/dbc/main.go` parses startup CLI arguments.
    - Supported direct-launch aliases: `-d <db_path>` and `--database <db_path>`.
+   - Supported informational aliases: `-h` / `--help` and `-v` / `--version`.
+   - `runStartupDispatch` short-circuits startup for informational aliases before config-path resolution or DB initialization.
+   - Informational and direct-launch aliases are mutually exclusive in one startup invocation.
    - Invalid startup arguments return clear error output and terminate startup.
 2. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
    - macOS/Linux: `~/.config/dbc/config.toml`
@@ -207,7 +210,8 @@ Current conventions:
 
 - Process entry point is `cmd/dbc/main.go`.
 - `main.go` is the composition root for:
-  - startup CLI argument parsing (`-d` / `--database`),
+  - startup CLI argument parsing (`-d` / `--database`, `-h` / `--help`, `-v` / `--version`),
+  - informational startup dispatch before runtime initialization,
   - config path resolution,
   - selector/config-management use case wiring,
   - database engine creation,

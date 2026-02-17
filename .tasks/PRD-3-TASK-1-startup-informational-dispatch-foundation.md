@@ -4,7 +4,7 @@ Establish startup informational-flag dispatch for help/version requests so `dbc`
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
 - Task ID: 1
 - Task File: PRD-3-TASK-1-startup-informational-dispatch-foundation.md
@@ -64,4 +64,30 @@ After this task, selector-first startup and direct-launch startup still work as 
 
 ## Completion Summary
 
-Not started.
+- Added informational startup parsing and dispatch foundation in `cmd/dbc/main.go`:
+  - recognized `-h`/`--help` and `-v`/`--version`,
+  - enforced deterministic conflict rules:
+    - repeated logical informational aliases are rejected,
+    - help/version combination is rejected,
+    - informational and direct-launch flags in one invocation are rejected,
+  - introduced `runStartupDispatch` so informational paths return before config-path resolution and runtime/DB initialization.
+- Added informational command rendering placeholders for dispatch wiring:
+  - help path emits temporary startup-help placeholder text,
+  - version path emits `dev` token placeholder.
+- Added/updated tests in `cmd/dbc/main_test.go` for:
+  - informational alias parsing,
+  - repeated logical alias rejection,
+  - mixed informational/direct-launch rejection,
+  - mixed help/version rejection,
+  - dispatch no-side-effect behavior (informational handler called, runtime startup handler skipped).
+- Updated documentation to reflect current factual startup behavior:
+  - `docs/product-documentation.md`,
+  - `docs/technical-documentation.md`,
+  - `README.md`.
+- Verification executed:
+  - `go test ./cmd/dbc` passed during Red/Green cycle.
+  - Full-project validation passed:
+    - `go test ./...`
+    - `golangci-lint run ./...`
+- Downstream note:
+  - Task 2 and Task 3 should replace placeholder informational outputs with final help/version contracts while reusing the dispatch foundation.

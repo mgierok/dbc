@@ -18,12 +18,24 @@ import (
 )
 
 func main() {
-	options, err := parseStartupOptions(os.Args[1:])
+	err := runStartupDispatch(
+		os.Args[1:],
+		func(command startupInformationalCommand) error {
+			_, err := fmt.Fprintln(os.Stdout, renderStartupInformationalOutput(command))
+			return err
+		},
+		func(options startupOptions) error {
+			runRuntimeStartup(options)
+			return nil
+		},
+	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid startup arguments: %v\n", err)
 		os.Exit(1)
 	}
+}
 
+func runRuntimeStartup(options startupOptions) {
 	cfgPath, err := config.DefaultPath()
 	if err != nil {
 		log.Fatalf("failed to resolve config path: %v", err)
@@ -120,18 +132,73 @@ const (
 	startupPathDirectLaunch
 )
 
+type startupInformationalCommand int
+
+const (
+	startupInformationalNone startupInformationalCommand = iota
+	startupInformationalHelp
+	startupInformationalVersion
+)
+
 type startupOptions struct {
 	directLaunchConnString string
+	informationalCommand   startupInformationalCommand
+}
+
+func runStartupDispatch(
+	args []string,
+	handleInformational func(startupInformationalCommand) error,
+	runRuntime func(startupOptions) error,
+) error {
+	options, err := parseStartupOptions(args)
+	if err != nil {
+		return err
+	}
+
+	if options.informationalCommand != startupInformationalNone {
+		return handleInformational(options.informationalCommand)
+	}
+
+	return runRuntime(options)
 }
 
 func parseStartupOptions(args []string) (startupOptions, error) {
 	options := startupOptions{}
+	var helpFlagCount int
+	var versionFlagCount int
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
+		case "-h", "--help":
+			if options.directLaunchConnString != "" {
+				return startupOptions{}, errors.New("informational flag cannot be combined with -d/--database in the same startup invocation")
+			}
+			helpFlagCount++
+			if helpFlagCount > 1 {
+				return startupOptions{}, errors.New("help flag was provided more than once; use exactly one of -h or --help")
+			}
+			if options.informationalCommand == startupInformationalVersion {
+				return startupOptions{}, errors.New("help and version informational flags cannot be combined in the same startup invocation")
+			}
+			options.informationalCommand = startupInformationalHelp
+		case "-v", "--version":
+			if options.directLaunchConnString != "" {
+				return startupOptions{}, errors.New("informational flag cannot be combined with -d/--database in the same startup invocation")
+			}
+			versionFlagCount++
+			if versionFlagCount > 1 {
+				return startupOptions{}, errors.New("version flag was provided more than once; use exactly one of -v or --version")
+			}
+			if options.informationalCommand == startupInformationalHelp {
+				return startupOptions{}, errors.New("help and version informational flags cannot be combined in the same startup invocation")
+			}
+			options.informationalCommand = startupInformationalVersion
 		case "-d", "--database":
 			if options.directLaunchConnString != "" {
 				return startupOptions{}, errors.New("direct-launch parameter was provided more than once; use exactly one of -d or --database")
+			}
+			if options.informationalCommand != startupInformationalNone {
+				return startupOptions{}, errors.New("informational flag cannot be combined with -d/--database in the same startup invocation")
 			}
 			if i+1 >= len(args) {
 				return startupOptions{}, errors.New("missing value for -d/--database; usage: dbc -d <sqlite-db-path>")
@@ -145,13 +212,24 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 			i++
 		default:
 			return startupOptions{}, fmt.Errorf(
-				"unsupported startup argument %q; supported direct-launch options: -d <sqlite-db-path> or --database <sqlite-db-path>",
+				"unsupported startup argument %q; supported options: -d <sqlite-db-path>, --database <sqlite-db-path>, -h/--help, -v/--version",
 				args[i],
 			)
 		}
 	}
 
 	return options, nil
+}
+
+func renderStartupInformationalOutput(command startupInformationalCommand) string {
+	switch command {
+	case startupInformationalHelp:
+		return "dbc startup help is not implemented yet."
+	case startupInformationalVersion:
+		return "dev"
+	default:
+		return ""
+	}
 }
 
 func resolveStartupSelection(
