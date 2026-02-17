@@ -10,6 +10,7 @@
 | Status | Active |
 | Last Updated | 2026-02-16 |
 | Source of Truth Scope | Current technical state of the codebase |
+| Related product doc | `docs/product-documentation.md` |
 
 ## Table of Contents
 

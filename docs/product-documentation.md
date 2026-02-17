@@ -11,6 +11,7 @@
 | Status | Active |
 | Last Updated | 2026-02-16 |
 | Source of Truth Scope | Current product behavior and scope (product perspective) |
+| Related technical doc | `docs/technical-documentation.md` |
 
 ## Table of Contents
 
