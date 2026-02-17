@@ -66,6 +66,26 @@ Explicitly invoke skill `write-commit-messages` when at least one of these situa
 
 When this skill is invoked, generate commit messages in Conventional Commits format and use the changed files/diff as primary context.
 
+### 3.3 Mandatory Documentation Skill Invocation
+
+Explicitly invoke skill `write-documentation` when at least one of these situations is true:
+
+- creating new product documentation
+- creating new technical documentation
+- modifying existing product documentation
+- modifying existing technical documentation
+- standardizing or restructuring documentation format/sections
+- reviewing consistency, complementarity, or cross-references between product and technical documentation
+- implementing any codebase change that affects documented behavior, scope, architecture, runtime, interfaces, or constraints
+
+When this skill is invoked:
+
+- follow `.agents/skills/write-documentation/SKILL.md` as the primary writing procedure
+- document only the current factual application state
+- update impacted documentation in the same change set as code changes
+- do not define or describe development flow in product or technical documentation
+- use `docs/` as default documentation root unless user/project rules explicitly define another path
+
 ## 4. Agent Workflow Standard
 
 ### 4.1 Planning
@@ -246,37 +266,12 @@ Non-negotiable summary:
 
 ## 6. Documentation Policy
 
-### 6.1 Product Documentation
+Documentation creation and modification are skill-governed:
 
-`docs/product-documentation.md` must be updated for every change affecting:
-
-- product behavior
-- feature scope
-- user workflows
-- UX constraints or shortcuts
-- product terminology
-
-Writing standard:
-
-- understandable for Junior Product Manager and Junior Software Engineer
-- clear, plain language
-- no unnecessary technical internals (except product-level specs, e.g., SQLite support)
-
-### 6.2 Technical Documentation
-
-`docs/technical-documentation.md` must be updated for every change affecting:
-
-- architecture and boundaries
-- technical decisions
-- runtime flow
-- dependencies/toolchain versions
-- test strategy or engineering workflow
-
-Writing standard:
-
-- understandable for Junior Software Engineer
-- practical, implementation-oriented, and code-aligned
-- link to deep-dive docs instead of duplicating long conceptual content
+- mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md`
+- product and technical documentation must stay complementary and consistent via explicit cross-references
+- documentation must describe current state only and be updated with every relevant codebase change
+- documentation must not define or describe development flow
 
 ## 7. Quick Reference
 
