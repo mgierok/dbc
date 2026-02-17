@@ -34,7 +34,10 @@ The output must:
    - set task `Status` to `DONE`,
    - fill `Completion Summary` with concrete delivered changes and important follow-up context.
 11. Commit completed task changes.
-12. If technical/process issues are discovered and they can be prevented by AGENTS instructions, append concrete proposal(s) to `lessons-learned.md` in repository root as numbered list items.
+12. Run mandatory lessons-learned harvest before final reporting:
+   - check execution/user-feedback triggers: user correction/pushback, aborted/repeated turn, verification failure with rework, ambiguity clarification, documentation consistency issue,
+   - if any trigger exists, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item,
+   - if no trigger exists, explicitly report `LESSONS LEARNED: no qualifying trigger`.
 13. Set parent PRD `Status` to `DONE` only when both are true:
     - no other task in the same PRD remains in `READY`,
     - parent PRD final acceptance matrix has passed (all required rows marked `PASS`).
@@ -104,8 +107,10 @@ Follow this sequence exactly:
 8. Finalize task state.
    - Update task file: set `Status: DONE`.
    - Replace `Completion Summary` with factual delivery summary.
-9. Capture reusable process lessons.
-   - If applicable, append instruction proposals to `lessons-learned.md` as numbered list items.
+9. Capture reusable process lessons (mandatory scan).
+   - Review the trigger set from Section 2, rule 12.
+   - If at least one trigger occurred, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item.
+   - If no trigger occurred, record `LESSONS LEARNED: no qualifying trigger` in final report.
 10. Commit.
     - Create one commit containing task implementation and task-state update.
 11. Finalize PRD state.
@@ -168,7 +173,9 @@ Follow this sequence exactly:
 6. Task status was updated to `DONE` with non-empty `Completion Summary`.
 7. Implementation was committed.
 8. If PRD status changed, that change was committed separately.
-9. `lessons-learned.md` entries were appended as numbered list items when instruction-worthy issues were discovered.
+9. Mandatory lessons-learned scan was executed and outcome was reported.
+   - If triggers occurred, `lessons-learned.md` was updated with at least one numbered prevention rule.
+   - If no triggers occurred, final report contains `LESSONS LEARNED: no qualifying trigger`.
 10. Parent PRD status was set to `DONE` when no sibling task remained `READY`.
 10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and final acceptance matrix rows were all `PASS`.
 
@@ -184,3 +191,4 @@ When running this workflow, return concise output with:
 7. Optional PRD-status commit hash (when PRD status changed).
 8. Whether parent PRD was moved to `DONE` or why not.
 9. Final acceptance matrix result used for PRD closure decision.
+10. Lessons-learned harvest outcome (entries added or `LESSONS LEARNED: no qualifying trigger`).

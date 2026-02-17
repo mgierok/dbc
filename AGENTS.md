@@ -238,6 +238,26 @@ After each completed implementation, report:
 
 Keep this report short and concrete so a junior engineer can quickly review and validate the result.
 
+### 4.4.2 Mandatory Lessons-Learned Harvest
+
+After each completed implementation, run a short retrospective scan focused on reusable process improvements.
+
+Use these triggers:
+
+- user correction, pushback, or repeated clarification on the same topic
+- aborted/rewound turn caused by avoidable execution or communication issue
+- failed verification that required rework
+- avoidable ambiguity discovered during implementation
+- documentation consistency issue discovered during implementation/review
+
+Rules:
+
+1. If at least one trigger occurred, append at least one numbered entry to `lessons-learned.md`.
+2. Each entry must be concrete and prevention-oriented, in this format:
+   - `When [context/trigger], [required rule/change], so that [expected prevention result].`
+3. Do not add vague notes; entries must be actionable and testable in future tasks.
+4. If no trigger occurred, state that explicitly in the completion report (`LESSONS LEARNED: no qualifying trigger`).
+
 ## 5. Engineering Guardrails
 
 ### 5.1 Language and Style
@@ -290,4 +310,5 @@ Documentation creation and modification are skill-governed:
 - Technical source of truth: `docs/technical-documentation.md`
 - Architecture deep dive: `docs/clean-architecture-ddd.md`
 - TDD deep dive: `docs/test-driven-development.md`
+- Lessons learned log: `lessons-learned.md`
 - Run/setup basics: `README.md`
