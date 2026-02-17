@@ -1,1 +1,2 @@
 1. For terminal-first CLI apps (including Homebrew-installed binaries), do not assume macOS `~/Library/Application Support` as default config location; confirm CLI convention (`~/.config/...`) with product intent before implementation.
+2. When updating both `docs/product-documentation.md` and `docs/technical-documentation.md`, keep a strict split: put user-visible behavior only in product docs and implementation mechanics only in technical docs; never duplicate the same requirement text across both files—instead keep one canonical statement and add a cross-reference.
