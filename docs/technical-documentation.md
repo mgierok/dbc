@@ -14,14 +14,14 @@
 ## Table of Contents
 
 1. [Technical Overview](#1-technical-overview)
-2. [Quick Start for Contributors](#2-quick-start-for-contributors)
+2. [Runtime Entry Points and Environment Contracts](#2-runtime-entry-points-and-environment-contracts)
 3. [Project Structure](#3-project-structure)
 4. [Architecture Guidelines](#4-architecture-guidelines)
 5. [Runtime Flow](#5-runtime-flow)
 6. [Technical Decisions](#6-technical-decisions)
 7. [Technology Stack and Versions](#7-technology-stack-and-versions)
-8. [Testing Strategy and Workflow](#8-testing-strategy-and-workflow)
-9. [Feature Delivery Guide](#9-feature-delivery-guide)
+8. [Testing Strategy and Coverage](#8-testing-strategy-and-coverage)
+9. [Technical Interaction Patterns](#9-technical-interaction-patterns)
 10. [Common Technical Constraints](#10-common-technical-constraints)
 11. [Reference Documents](#11-reference-documents)
 12. [Maintenance Policy](#12-maintenance-policy)
@@ -38,50 +38,33 @@ Core technical characteristics:
 - SQLite implementation in infrastructure layer.
 - Staged table changes (insert/update/delete) saved in one transaction.
 
-## 2. Quick Start for Contributors
+## 2. Runtime Entry Points and Environment Contracts
 
-### 2.1 Prerequisites
+### 2.1 Runtime Entry Point
 
-- Go toolchain compatible with this repository:
-  - `go` directive: `1.25.0`
-  - preferred toolchain: `go1.25.5`
+- Process entry point is `cmd/dbc/main.go`.
+- `main.go` is the composition root for:
+  - config path resolution,
+  - selector/config-management use case wiring,
+  - database engine creation,
+  - TUI runtime startup.
 
-### 2.2 Local Setup
+### 2.2 Runtime Configuration Contract
 
-1. Create local config directory:
-   - macOS/Linux:
-   ```bash
-   mkdir -p ~/.config/dbc
-   ```
-2. Copy example config:
-   - macOS/Linux:
-   ```bash
-   cp docs/config.example.toml ~/.config/dbc/config.toml
-   ```
-3. Edit config file and define at least one `[[databases]]` entry with:
-   - `name`
-   - `db_path`
-   - Default paths:
-     - macOS/Linux: `~/.config/dbc/config.toml`
-     - Windows: `%APPDATA%\dbc\config.toml`
+- Default config paths:
+  - macOS/Linux: `~/.config/dbc/config.toml`
+  - Windows: `%APPDATA%\\dbc\\config.toml`
+- Config contract requires `[[databases]]` entries with:
+  - `name`
+  - `db_path`
+- Empty config states (`missing file`, `empty file`, `databases = []`) are mapped to mandatory first-entry setup.
+- Malformed config content is treated as startup error and blocks runtime initialization.
 
-### 2.3 Run the App
+### 2.3 Runtime Lifecycle Boundaries
 
-```bash
-go run ./cmd/dbc
-```
-
-### 2.4 Run Tests
-
-```bash
-go test ./...
-```
-
-### 2.5 Run Linter
-
-```bash
-golangci-lint run ./...
-```
+- Startup is selector-first and opens main TUI only after reachable database selection.
+- Runtime can return to selector without process restart via `ErrOpenConfigSelector`.
+- Active DB connection is explicitly closed before selector re-entry.
 
 ## 3. Project Structure
 
@@ -331,7 +314,7 @@ Version source: `go.mod`.
   - explanation is required
   - specific linter name is required
 
-## 8. Testing Strategy and Workflow
+## 8. Testing Strategy and Coverage
 
 This repository follows TDD expectations documented in:
 
@@ -349,19 +332,12 @@ This repository follows TDD expectations documented in:
 - TUI behavior tests:
   - `internal/interfaces/tui/*_test.go`
 
-### 8.2 Practical Test Workflow
+### 8.2 Coverage Boundaries
 
-1. Write/adjust failing test for behavior change.
-2. Implement minimal code to pass.
-3. Refactor safely while tests remain green.
-4. Run full suite:
-   ```bash
-   go test ./...
-   ```
-5. Run static checks:
-   ```bash
-   golangci-lint run ./...
-   ```
+- Domain tests validate domain-level rules and helper behavior.
+- Application tests validate use-case orchestration and port contracts.
+- Infrastructure tests validate adapter behavior for config and SQLite integration.
+- TUI tests validate user-visible state transitions and input handling.
 
 ### 8.3 Current Conventions Seen in Tests
 
@@ -369,40 +345,21 @@ This repository follows TDD expectations documented in:
 - Tests target behavior contracts, not private implementation details.
 - Integration-like SQLite tests use in-memory databases.
 
-## 9. Feature Delivery Guide
+## 9. Technical Interaction Patterns
 
-This is a practical checklist for adding a feature correctly.
+### 9.1 Read Interaction Pattern
 
-### 9.1 Step-by-Step
+- TUI requests table/schema/records through application use cases.
+- Use cases call `application/port.Engine`.
+- Infrastructure engine adapter maps calls to SQLite queries.
+- Retrieved records are adapted into DTOs consumed by TUI state.
 
-1. Confirm product behavior in `docs/product-documentation.md`.
-2. Define technical boundary impact:
-   - domain model/service?
-   - use case?
-   - port/interface?
-   - infrastructure adapter?
-   - TUI adapter?
-3. Add or update tests first (TDD cycle).
-4. Implement changes by layer, respecting dependency direction.
-5. Run `go test ./...`.
-6. Update documentation:
-   - `docs/product-documentation.md` for product behavior changes.
-   - `docs/technical-documentation.md` for technical changes.
-7. Verify naming consistency and terminology.
+### 9.2 Write Interaction Pattern
 
-### 9.2 Typical Change Patterns
-
-- New read capability:
-  - extend engine port if needed
-  - implement adapter in SQLite engine
-  - add/update use case and DTO mapping
-  - expose via TUI model/view
-
-- New write capability:
-  - update domain change models if needed
-  - validate in use case
-  - apply in transactional SQLite update path
-  - reflect staged state behavior in TUI
+- TUI accumulates staged changes in session state.
+- Save path builds `model.TableChanges`.
+- `SaveTableChanges` validates payload and delegates persistence to engine port.
+- SQLite adapter executes inserts/updates/deletes in one transaction.
 
 ## 10. Common Technical Constraints
 
@@ -417,22 +374,15 @@ This is a practical checklist for adding a feature correctly.
 
 - Architecture and DDD details:
   - `docs/clean-architecture-ddd.md`
-- TDD principles and workflow:
+- TDD principles:
   - `docs/test-driven-development.md`
 - Product behavior source of truth:
   - `docs/product-documentation.md`
-- Contributor rules:
-  - `AGENTS.md`
 
 ## 12. Maintenance Policy
 
 - This document is a source of truth for the technical state of the repository.
-- Update this document with every codebase change that affects:
-  - architecture
-  - boundaries/interfaces
-  - dependency versions
-  - runtime flow
-  - testing workflow
-  - development conventions
+- Keep technical statements aligned with current code paths and runtime behavior.
 - Keep wording understandable for a Junior Software Engineer.
 - Prefer links to deep-dive documents instead of duplicating long conceptual content.
+- Keep product intent in product documentation and reference it instead of restating it here.
