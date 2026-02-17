@@ -561,6 +561,178 @@ func TestDatabaseSelector_IgnoresMissingPreferredConnString(t *testing.T) {
 	}
 }
 
+func TestDatabaseSelector_AppendsSessionScopedAdditionalOptions(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if len(model.options) != 2 {
+		t.Fatalf("expected two options with one session-scoped entry, got %d", len(model.options))
+	}
+	if model.options[0].Source != DatabaseOptionSourceConfig {
+		t.Fatalf("expected first option to be config-backed, got %q", model.options[0].Source)
+	}
+	if model.options[1].Source != DatabaseOptionSourceCLI {
+		t.Fatalf("expected second option to be CLI session entry, got %q", model.options[1].Source)
+	}
+}
+
+func TestDatabaseSelector_AdditionalOptionsSurviveRefresh(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	if err := model.refreshOptions(); err != nil {
+		t.Fatalf("expected refresh without error, got %v", err)
+	}
+
+	// Assert
+	if len(model.options) != 2 {
+		t.Fatalf("expected additional session option to survive refresh, got %d options", len(model.options))
+	}
+	if model.options[1].Source != DatabaseOptionSourceCLI {
+		t.Fatalf("expected refreshed session option source %q, got %q", DatabaseOptionSourceCLI, model.options[1].Source)
+	}
+}
+
+func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	lines := strings.Join(model.optionLines(), "\n")
+
+	// Assert
+	if !strings.Contains(lines, "⚙ local | /tmp/local.sqlite") {
+		t.Fatalf("expected config marker in option lines, got %q", lines)
+	}
+	if !strings.Contains(lines, "⌨ /tmp/direct.sqlite | /tmp/direct.sqlite") {
+		t.Fatalf("expected CLI marker in option lines, got %q", lines)
+	}
+}
+
+func TestDatabaseSelector_EditIsUnavailableForSessionScopedCLIEntry(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.selected = 1
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+
+	// Assert
+	if model.mode != selectorModeBrowse {
+		t.Fatalf("expected browse mode to stay active, got %v", model.mode)
+	}
+	if !strings.Contains(strings.ToLower(model.statusMessage), "cannot be edited") {
+		t.Fatalf("expected edit-block status message, got %q", model.statusMessage)
+	}
+	if len(manager.updated) != 0 {
+		t.Fatalf("expected no update calls for CLI session entry, got %d", len(manager.updated))
+	}
+}
+
+func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.selected = 1
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+	// Assert
+	if model.mode != selectorModeBrowse {
+		t.Fatalf("expected browse mode to stay active, got %v", model.mode)
+	}
+	if !strings.Contains(strings.ToLower(model.statusMessage), "cannot be deleted") {
+		t.Fatalf("expected delete-block status message, got %q", model.statusMessage)
+	}
+	if len(manager.deleted) != 0 {
+		t.Fatalf("expected no delete calls for CLI session entry, got %d", len(manager.deleted))
+	}
+}
+
 func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
 	current := model
 	for _, r := range text {

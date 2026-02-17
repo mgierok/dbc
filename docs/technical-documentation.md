@@ -176,6 +176,7 @@ Not allowed:
 9. SQLite engine and runtime table/record use cases are created.
 10. Bubble Tea application loop starts (`tui.Run`).
 11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), the DB connection is closed and startup selector flow runs again without restarting process.
+    `cmd/dbc/main.go` passes `SelectorLaunchState` (`PreferConnString` + session `AdditionalOptions`) built from in-memory startup context, and `internal/interfaces/tui/selector.go` merges those options after config-backed entries while keeping edit/delete mapped only to config indexes.
 
 ### 5.2 Main Read Flow
 

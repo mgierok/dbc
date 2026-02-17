@@ -343,6 +343,9 @@ func TestResolveStartupSelection_ReusesConfiguredIdentityWhenNormalizedPathsMatc
 	if selected.ConnString != configured {
 		t.Fatalf("expected configured conn string %q, got %q", configured, selected.ConnString)
 	}
+	if selected.Source != tui.DatabaseOptionSourceConfig {
+		t.Fatalf("expected configured source %q, got %q", tui.DatabaseOptionSourceConfig, selected.Source)
+	}
 }
 
 func TestResolveStartupSelection_ReturnsDirectIdentityWhenNoNormalizedConfiguredMatchExists(t *testing.T) {
@@ -377,6 +380,9 @@ func TestResolveStartupSelection_ReturnsDirectIdentityWhenNoNormalizedConfigured
 	if selected.ConnString != "/tmp/direct.sqlite" {
 		t.Fatalf("expected direct-launch conn string %q, got %q", "/tmp/direct.sqlite", selected.ConnString)
 	}
+	if selected.Source != tui.DatabaseOptionSourceCLI {
+		t.Fatalf("expected direct-launch source %q, got %q", tui.DatabaseOptionSourceCLI, selected.Source)
+	}
 }
 
 func TestResolveStartupSelection_UsesFirstConfiguredIdentityForDeterministicNormalizedMatch(t *testing.T) {
@@ -407,6 +413,9 @@ func TestResolveStartupSelection_UsesFirstConfiguredIdentityForDeterministicNorm
 	if selected.Name != "first" {
 		t.Fatalf("expected first configured identity to be selected, got %q", selected.Name)
 	}
+	if selected.Source != tui.DatabaseOptionSourceConfig {
+		t.Fatalf("expected configured source %q, got %q", tui.DatabaseOptionSourceConfig, selected.Source)
+	}
 }
 
 func TestBuildDirectLaunchFailureMessage_ContainsReasonAndGuidance(t *testing.T) {
@@ -421,5 +430,75 @@ func TestBuildDirectLaunchFailureMessage_ContainsReasonAndGuidance(t *testing.T)
 	}
 	if !strings.Contains(message, "retry with -d/--database") {
 		t.Fatalf("expected corrective guidance in message, got %q", message)
+	}
+}
+
+func TestTrackSessionScopedDirectLaunchOption_AddsDirectCLISelection(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	var existing []tui.DatabaseOption
+	selected := tui.DatabaseOption{
+		Name:       "/tmp/direct.sqlite",
+		ConnString: "/tmp/direct.sqlite",
+		Source:     tui.DatabaseOptionSourceCLI,
+	}
+
+	// Act
+	updated := trackSessionScopedDirectLaunchOption(existing, startupPathDirectLaunch, selected)
+
+	// Assert
+	if len(updated) != 1 {
+		t.Fatalf("expected one session-scoped option, got %d", len(updated))
+	}
+	if updated[0].ConnString != "/tmp/direct.sqlite" {
+		t.Fatalf("expected session option conn string %q, got %q", "/tmp/direct.sqlite", updated[0].ConnString)
+	}
+}
+
+func TestTrackSessionScopedDirectLaunchOption_SkipsConfiguredMatchReuse(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	var existing []tui.DatabaseOption
+	selected := tui.DatabaseOption{
+		Name:       "local",
+		ConnString: "/tmp/local.sqlite",
+		Source:     tui.DatabaseOptionSourceConfig,
+	}
+
+	// Act
+	updated := trackSessionScopedDirectLaunchOption(existing, startupPathDirectLaunch, selected)
+
+	// Assert
+	if len(updated) != 0 {
+		t.Fatalf("expected no session option for configured identity reuse, got %d", len(updated))
+	}
+}
+
+func TestTrackSessionScopedDirectLaunchOption_DeduplicatesNormalizedIdentity(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	basePath := filepath.Join(t.TempDir(), "direct.sqlite")
+	existing := []tui.DatabaseOption{
+		{
+			Name:       basePath,
+			ConnString: basePath,
+			Source:     tui.DatabaseOptionSourceCLI,
+		},
+	}
+	selected := tui.DatabaseOption{
+		Name:       basePath + string(os.PathSeparator) + ".",
+		ConnString: basePath + string(os.PathSeparator) + ".",
+		Source:     tui.DatabaseOptionSourceCLI,
+	}
+
+	// Act
+	updated := trackSessionScopedDirectLaunchOption(existing, startupPathDirectLaunch, selected)
+
+	// Assert
+	if len(updated) != 1 {
+		t.Fatalf("expected one deduplicated session option, got %d", len(updated))
 	}
 }

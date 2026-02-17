@@ -4,7 +4,7 @@ Ensure direct-launched sessions preserve `:config` switching behavior and expose
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-2-cli-direct-database-launch.md
 - Task ID: 3
 - Task File: PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch.md
@@ -75,4 +75,16 @@ Users can direct-launch, work normally, invoke `:config`, and switch safely, whi
 
 ## Completion Summary
 
-Not started.
+Implemented session-scoped selector entry support for direct-launch flow without config persistence side effects.
+
+Delivered changes:
+- Extended selector launch contract with `AdditionalOptions` and source-aware option model (`config` vs `CLI session`).
+- Added in-memory session tracking in `cmd/dbc/main.go` to carry direct-launch temporary option across `:config` selector re-entry only when startup used non-config direct identity.
+- Added selector rendering markers for all options (`⚙` config, `⌨` CLI session).
+- Kept config mutations scoped to config-backed entries only; CLI session entries are selectable but blocked for edit/delete.
+- Preserved existing dirty `:config` decision flow (`save` / `discard` / `cancel`) without behavioral regression.
+
+Verification executed:
+- `go test ./cmd/dbc ./internal/interfaces/tui` (PASS)
+- `go test ./...` (PASS)
+- `golangci-lint run ./...` (PASS)

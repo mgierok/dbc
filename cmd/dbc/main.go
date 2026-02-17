@@ -37,6 +37,7 @@ func main() {
 	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(configStore)
 	getActiveConfigPath := usecase.NewGetActiveConfigPath(configStore)
 	selectorState := tui.SelectorLaunchState{}
+	sessionScopedOptions := []tui.DatabaseOption{}
 	directLaunchPending := options.directLaunchConnString != ""
 
 	for {
@@ -68,6 +69,7 @@ func main() {
 			}
 			log.Fatalf("failed to select database: %v", err)
 		}
+		sessionScopedOptions = trackSessionScopedDirectLaunchOption(sessionScopedOptions, startupPath, selected)
 		directLaunchPending = false
 
 		db, err := connectSelectedDatabase(selected)
@@ -78,8 +80,9 @@ func main() {
 			}
 
 			selectorState = tui.SelectorLaunchState{
-				StatusMessage:    buildConnectionFailureStatus(selected, err.Error()),
-				PreferConnString: selected.ConnString,
+				StatusMessage:     buildConnectionFailureStatus(selected, err.Error()),
+				PreferConnString:  selected.ConnString,
+				AdditionalOptions: cloneDatabaseOptions(sessionScopedOptions),
 			}
 			continue
 		}
@@ -97,6 +100,10 @@ func main() {
 			log.Printf("failed to close database: %v", closeErr)
 		}
 		if errors.Is(runErr, tui.ErrOpenConfigSelector) {
+			selectorState = tui.SelectorLaunchState{
+				PreferConnString:  selected.ConnString,
+				AdditionalOptions: cloneDatabaseOptions(sessionScopedOptions),
+			}
 			continue
 		}
 		if runErr != nil {
@@ -156,12 +163,14 @@ func resolveStartupSelection(
 		directLaunchSelection := tui.DatabaseOption{
 			Name:       options.directLaunchConnString,
 			ConnString: options.directLaunchConnString,
+			Source:     tui.DatabaseOptionSourceCLI,
 		}
 		configuredOptions, err := listConfiguredDatabases()
 		if err != nil {
 			return tui.DatabaseOption{}, startupPathDirectLaunch, err
 		}
 		if matched, ok := resolveConfiguredDirectLaunchIdentity(directLaunchSelection.ConnString, configuredOptions); ok {
+			matched.Source = tui.DatabaseOptionSourceConfig
 			return matched, startupPathDirectLaunch, nil
 		}
 		return directLaunchSelection, startupPathDirectLaunch, nil
@@ -186,6 +195,7 @@ func listConfiguredDatabaseOptions(ctx context.Context, listConfiguredDatabases 
 		options[i] = tui.DatabaseOption{
 			Name:       entry.Name,
 			ConnString: entry.Path,
+			Source:     tui.DatabaseOptionSourceConfig,
 		}
 	}
 	return options, nil
@@ -251,4 +261,37 @@ func buildDirectLaunchFailureMessage(connString, reason string) string {
 		connString,
 		reason,
 	)
+}
+
+func trackSessionScopedDirectLaunchOption(existing []tui.DatabaseOption, selectedStartupPath startupPath, selected tui.DatabaseOption) []tui.DatabaseOption {
+	if selectedStartupPath != startupPathDirectLaunch || selected.Source != tui.DatabaseOptionSourceCLI {
+		return existing
+	}
+
+	normalizedSelected := normalizeSQLiteConnectionIdentity(selected.ConnString)
+	if normalizedSelected == "" {
+		return existing
+	}
+	for _, option := range existing {
+		normalizedExisting := normalizeSQLiteConnectionIdentity(option.ConnString)
+		if normalizedExisting == "" {
+			continue
+		}
+		if sqliteConnectionIdentityEqual(normalizedExisting, normalizedSelected) {
+			return existing
+		}
+	}
+
+	sessionOption := selected
+	sessionOption.Source = tui.DatabaseOptionSourceCLI
+	return append(existing, sessionOption)
+}
+
+func cloneDatabaseOptions(options []tui.DatabaseOption) []tui.DatabaseOption {
+	if len(options) == 0 {
+		return nil
+	}
+	cloned := make([]tui.DatabaseOption, len(options))
+	copy(cloned, options)
+	return cloned
 }

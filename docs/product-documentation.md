@@ -182,6 +182,7 @@ DBC positions itself as a productivity-focused database commander for terminal u
   - `name` (display name).
   - `db_path` (SQLite connection path/string).
 - Startup selector displays entries in configuration order.
+- Startup selector shows source marker for each option: `⚙` for config-backed entries and `⌨` for direct-launch session-scoped entry (in-memory only for current process, no auto-persistence).
 - Startup selector supports in-app add/edit/delete management:
   - Add and edit require non-empty `name` and `db_path`.
   - Add and edit validate database target before config save.

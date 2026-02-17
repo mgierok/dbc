@@ -17,14 +17,25 @@ var (
 	ErrDatabaseSelectionUnfinished = errors.New("database selection not confirmed")
 )
 
+type DatabaseOptionSource string
+
+const (
+	DatabaseOptionSourceConfig DatabaseOptionSource = "config"
+	DatabaseOptionSourceCLI    DatabaseOptionSource = "cli"
+)
+
 type DatabaseOption struct {
 	Name       string
 	ConnString string
+	Source     DatabaseOptionSource
+
+	managerIndex int
 }
 
 type SelectorLaunchState struct {
-	StatusMessage    string
-	PreferConnString string
+	StatusMessage     string
+	PreferConnString  string
+	AdditionalOptions []DatabaseOption
 }
 
 type selectorManager interface {
@@ -88,8 +99,9 @@ type selectorForm struct {
 }
 
 type selectorDeleteConfirm struct {
-	active bool
-	index  int
+	active       bool
+	optionIndex  int
+	managerIndex int
 }
 
 type databaseSelectorModel struct {
@@ -110,7 +122,9 @@ type databaseSelectorModel struct {
 	activeConfigPath string
 	statusMessage    string
 
-	requiresFirstEntry bool
+	launchAdditionalOptions []DatabaseOption
+	configOptionCount       int
+	requiresFirstEntry      bool
 }
 
 func SelectDatabase(
@@ -186,9 +200,10 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, laun
 		state = launchState[0]
 	}
 	model := &databaseSelectorModel{
-		ctx:     ctx,
-		manager: manager,
-		mode:    selectorModeBrowse,
+		ctx:                     ctx,
+		manager:                 manager,
+		mode:                    selectorModeBrowse,
+		launchAdditionalOptions: normalizeAdditionalOptions(state.AdditionalOptions),
 	}
 	if err := model.refreshOptions(); err != nil {
 		return nil, err
@@ -226,14 +241,17 @@ func (m *databaseSelectorModel) refreshOptions() error {
 	if err != nil {
 		return err
 	}
-	options := make([]DatabaseOption, len(entries))
+	configOptions := make([]DatabaseOption, len(entries))
 	for i, entry := range entries {
-		options[i] = DatabaseOption{
-			Name:       entry.Name,
-			ConnString: entry.Path,
+		configOptions[i] = DatabaseOption{
+			Name:         entry.Name,
+			ConnString:   entry.Path,
+			Source:       DatabaseOptionSourceConfig,
+			managerIndex: i,
 		}
 	}
-	m.options = options
+	m.configOptionCount = len(configOptions)
+	m.options = mergeConfigAndAdditionalOptions(configOptions, m.launchAdditionalOptions)
 	if len(m.options) == 0 {
 		m.selected = 0
 		return nil
@@ -475,7 +493,7 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 func (m *databaseSelectorModel) optionLines() []string {
 	items := make([]string, len(m.options))
 	for i, option := range m.options {
-		items[i] = fmt.Sprintf("%s | %s", option.Name, option.ConnString)
+		items[i] = fmt.Sprintf("%s %s | %s", option.marker(), option.Name, option.ConnString)
 	}
 	return items
 }
@@ -523,9 +541,13 @@ func (m *databaseSelectorModel) openEditForm() {
 		return
 	}
 	selected := m.options[m.selected]
+	if !selected.isConfigBacked() {
+		m.statusMessage = "CLI session entry cannot be edited"
+		return
+	}
 	m.mode = selectorModeEdit
 	m.form = selectorForm{
-		editIndex:   m.selected,
+		editIndex:   selected.managerIndex,
 		activeField: selectorInputName,
 		nameValue:   selected.Name,
 		pathValue:   selected.ConnString,
@@ -537,10 +559,16 @@ func (m *databaseSelectorModel) openDeleteConfirmation() {
 		m.statusMessage = "No database selected to delete"
 		return
 	}
+	selected := m.options[m.selected]
+	if !selected.isConfigBacked() {
+		m.statusMessage = "CLI session entry cannot be deleted"
+		return
+	}
 	m.mode = selectorModeConfirmDelete
 	m.confirmDelete = selectorDeleteConfirm{
-		active: true,
-		index:  m.selected,
+		active:       true,
+		optionIndex:  m.selected,
+		managerIndex: selected.managerIndex,
 	}
 }
 
@@ -594,14 +622,15 @@ func (m *databaseSelectorModel) handleDeleteConfirmationKey(msg tea.KeyMsg) (tea
 		m.statusMessage = "Delete canceled"
 		return m, nil
 	case "enter":
-		index := m.confirmDelete.index
-		if index < 0 || index >= len(m.options) {
+		optionIndex := m.confirmDelete.optionIndex
+		managerIndex := m.confirmDelete.managerIndex
+		if optionIndex < 0 || optionIndex >= len(m.options) || managerIndex < 0 {
 			m.mode = selectorModeBrowse
 			m.confirmDelete = selectorDeleteConfirm{}
 			m.statusMessage = "Invalid selection for delete"
 			return m, nil
 		}
-		if err := m.manager.Delete(m.ctx, index); err != nil {
+		if err := m.manager.Delete(m.ctx, managerIndex); err != nil {
 			m.mode = selectorModeBrowse
 			m.confirmDelete = selectorDeleteConfirm{}
 			m.statusMessage = "Delete failed: " + err.Error()
@@ -662,7 +691,7 @@ func (m *databaseSelectorModel) submitForm() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if previousMode == selectorModeAdd && len(m.options) > 0 {
-		m.selected = len(m.options) - 1
+		m.selected = m.configOptionCount - 1
 		if m.requiresFirstEntry {
 			m.statusMessage = "Database added. Press Enter to continue or a to add another"
 			return m, nil
@@ -670,8 +699,8 @@ func (m *databaseSelectorModel) submitForm() (tea.Model, tea.Cmd) {
 		m.statusMessage = "Database added"
 		return m, nil
 	}
-	if previousMode == selectorModeEdit && len(m.options) > 0 {
-		m.selected = clamp(previousEditIndex, 0, len(m.options)-1)
+	if previousMode == selectorModeEdit && m.configOptionCount > 0 {
+		m.selected = clamp(previousEditIndex, 0, m.configOptionCount-1)
 		m.statusMessage = "Database updated"
 	}
 	return m, nil
@@ -703,6 +732,7 @@ func (m *databaseSelectorModel) contextLines() []string {
 	} else {
 		lines = append(lines, "j/k navigate | Enter select | a add | e edit | d delete")
 		lines = append(lines, "Esc cancel | q quit")
+		lines = append(lines, "Legend: ⚙ config | ⌨ CLI session")
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		lines = append(lines, "Status: "+m.statusMessage)
@@ -754,13 +784,13 @@ func (m *databaseSelectorModel) deleteConfirmationLines() []string {
 	if m.mode != selectorModeConfirmDelete {
 		return nil
 	}
-	if m.confirmDelete.index < 0 || m.confirmDelete.index >= len(m.options) {
+	if m.confirmDelete.optionIndex < 0 || m.confirmDelete.optionIndex >= len(m.options) {
 		return []string{
 			"Cannot delete: invalid selection.",
 			"Press Esc to return.",
 		}
 	}
-	selected := m.options[m.confirmDelete.index]
+	selected := m.options[m.confirmDelete.optionIndex]
 	return []string{
 		"Delete database entry?",
 		"",
@@ -768,4 +798,84 @@ func (m *databaseSelectorModel) deleteConfirmationLines() []string {
 		"",
 		"Enter confirm delete | Esc cancel",
 	}
+}
+
+func (o DatabaseOption) source() DatabaseOptionSource {
+	if o.Source == DatabaseOptionSourceCLI {
+		return DatabaseOptionSourceCLI
+	}
+	return DatabaseOptionSourceConfig
+}
+
+func (o DatabaseOption) marker() string {
+	if o.source() == DatabaseOptionSourceCLI {
+		return "⌨"
+	}
+	return "⚙"
+}
+
+func (o DatabaseOption) isConfigBacked() bool {
+	return o.source() == DatabaseOptionSourceConfig && o.managerIndex >= 0
+}
+
+func normalizeAdditionalOptions(options []DatabaseOption) []DatabaseOption {
+	if len(options) == 0 {
+		return nil
+	}
+
+	normalized := make([]DatabaseOption, 0, len(options))
+	seen := make(map[string]struct{}, len(options))
+	for _, option := range options {
+		connString := strings.TrimSpace(option.ConnString)
+		if connString == "" {
+			continue
+		}
+		if _, exists := seen[connString]; exists {
+			continue
+		}
+		seen[connString] = struct{}{}
+
+		name := strings.TrimSpace(option.Name)
+		if name == "" {
+			name = connString
+		}
+		normalized = append(normalized, DatabaseOption{
+			Name:         name,
+			ConnString:   connString,
+			Source:       DatabaseOptionSourceCLI,
+			managerIndex: -1,
+		})
+	}
+	return normalized
+}
+
+func mergeConfigAndAdditionalOptions(configOptions []DatabaseOption, additionalOptions []DatabaseOption) []DatabaseOption {
+	if len(additionalOptions) == 0 {
+		return configOptions
+	}
+
+	merged := make([]DatabaseOption, 0, len(configOptions)+len(additionalOptions))
+	merged = append(merged, configOptions...)
+
+	seen := make(map[string]struct{}, len(configOptions)+len(additionalOptions))
+	for _, option := range configOptions {
+		key := strings.TrimSpace(option.ConnString)
+		if key == "" {
+			continue
+		}
+		seen[key] = struct{}{}
+	}
+
+	for _, option := range additionalOptions {
+		key := strings.TrimSpace(option.ConnString)
+		if key != "" {
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+		}
+		merged = append(merged, option)
+	}
+
+	return merged
 }
