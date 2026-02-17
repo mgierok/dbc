@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
-
-	_ "modernc.org/sqlite"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/infrastructure/config"
@@ -80,34 +77,7 @@ func main() {
 }
 
 func connectSelectedDatabase(selected tui.DatabaseOption) (*sql.DB, error) {
-	info, err := os.Stat(selected.ConnString)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("database file does not exist: %s", selected.ConnString)
-		}
-		return nil, fmt.Errorf("check database path: %w", err)
-	}
-	if info.IsDir() {
-		return nil, fmt.Errorf("database path points to a directory: %s", selected.ConnString)
-	}
-
-	db, err := sql.Open("sqlite", selected.ConnString)
-	if err != nil {
-		return nil, fmt.Errorf("open database: %w", err)
-	}
-
-	pingErr := db.Ping()
-	if pingErr == nil {
-		return db, nil
-	}
-	closeErr := db.Close()
-	if closeErr != nil {
-		return nil, errors.Join(
-			fmt.Errorf("ping database: %w", pingErr),
-			fmt.Errorf("close database after ping failure: %w", closeErr),
-		)
-	}
-	return nil, fmt.Errorf("ping database: %w", pingErr)
+	return engine.OpenSQLiteDatabase(context.Background(), selected.ConnString)
 }
 
 func buildConnectionFailureStatus(selected tui.DatabaseOption, reason string) string {

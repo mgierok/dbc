@@ -177,6 +177,7 @@ When adding functionality:
    Malformed config content (for example malformed TOML, unknown key shape, or invalid entry structure) is still treated as startup error.
 5. User confirms selected database from refreshed selector list.
 6. Selected SQLite database is opened and pinged.
+   Startup DB open and config-entry connection checks reuse the same infrastructure connection-open helper (`internal/infrastructure/engine.OpenSQLiteDatabase`) to keep validation behavior and errors consistent.
    If open/ping fails, startup loop reopens selector with status error and preferred selection set to failed connection string.
    Runtime does not start until user selects a reachable entry or updates configuration.
 7. SQLite engine and runtime table/record use cases are created.
