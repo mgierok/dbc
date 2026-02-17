@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Use this template for product-facing documentation. Product documentation defines user value, behavior, scope, and constraints.
+Use this template for product-facing documentation. Product documentation defines available capabilities, user-visible behavior, constraints, and user flows.
 
 Do:
 
-- explain what the product does and why it exists
-- describe user workflows and expected behavior
-- define in-scope and out-of-scope boundaries
+- describe available capabilities and user-visible behavior
+- describe user workflows and interaction expectations
+- define constraints and non-goals from the user perspective
 
 Do not:
 
@@ -23,68 +23,59 @@ Do not:
 - Describe the current state only, not planned implementation work.
 - Keep the document updated with every product-impacting code change.
 
-## Recommended Markdown Structure
+## Mandatory Markdown Structure (Strict)
 
 ```markdown
 # Product Documentation Title
 
-## Document Control
-- Owner:
-- Status:
-- Last updated:
-- Related technical doc:
+## 1. Table of Contents
 
-## Table of Contents
+## 2. Product Overview
+- What the application does for users.
+- Core user value in current state.
 
-## 1. Product Summary
-- What the product capability is.
-- Why it matters.
+## 3. Available Capabilities
+- What users can do today.
+- Capability boundaries in current state.
 
-## 2. Problem Statement and Value Proposition
-- User problem.
-- Product value.
+## 4. Functional Behavior
+- User-visible behavior rules.
+- States, outcomes, and error behavior visible to users.
 
-## 3. Target Users and Core Jobs
-- User segments.
-- Jobs-to-be-done.
+## 5. User Flows
+- Main user journeys.
+- Alternative/error journeys when relevant.
 
-## 4. Current Product Scope
-### In Scope
-### Out of Scope
+## 6. Interaction Model
+- Primary interaction patterns and controls.
+- Navigation and state transitions visible to users.
 
-## 5. Experience Principles
-- UX rules and interaction expectations.
-
-## 6. End-to-End User Journey
-- Main workflow steps.
-- Alternate/error paths where relevant.
-
-## 7. Functional Specification
-- Capability-by-capability behavior.
-- Input/output expectations.
-- User-visible states.
-
-## 8. Interaction Model
-- Key actions, shortcuts, UI state transitions.
-
-## 9. Data Safety and Governance
-- User-facing safety constraints and confirmations.
-
-## 10. Constraints and Non-Goals
-- Current limits.
+## 7. Constraints and Non-Goals
+- User-visible limits.
 - Explicit non-goals.
 
-## 11. Glossary
-- Shared terms and definitions.
+## 8. Safety and Governance
+- User-facing safety rules and confirmations.
+- Behavioral guardrails that affect user actions.
 
-## 12. Cross-References to Technical Documentation
+## 9. Glossary
+- Shared user/product terms.
+
+## 10. Cross-References to Technical Documentation
 - Link to relevant implementation sections.
 ```
+
+Structure rule:
+
+- Keep all sections in the exact order shown above.
+- Do not remove, merge, or reorder sections.
+- If a section has no applicable content, write `Not applicable in current state.`.
 
 ## Section Ownership Boundaries
 
 - Keep implementation details out unless they change product behavior.
 - If implementation detail is needed for context, summarize in one sentence and link to technical documentation.
+- Do not expect one-to-one section mapping with technical documentation; the technical document may organize content by mechanisms and architecture rather than user flows.
 - Do not include development workflow instructions.
 
 ## Cross-Reference Pattern

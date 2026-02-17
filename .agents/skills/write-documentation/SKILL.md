@@ -14,9 +14,16 @@ Produce clear, structured, and complementary product and technical documentation
 - Separate intent first:
   - Product documentation explains what and why from a product perspective.
   - Technical documentation explains how from an implementation perspective.
+- Treat product and technical documentation as different artifacts with different goals:
+  - product doc focuses on user-visible behavior, available capabilities, constraints, and user flows,
+  - technical doc focuses on architecture, mechanisms, contracts, and engineering decisions (including cross-cutting topics not tied to one specific user flow).
 - Document only the current, factual application state.
 - Update impacted documentation in the same change set as every codebase change.
-- Keep content complementary, not duplicated; prefer explicit links to counterpart sections.
+- Keep content complementary, not duplicated; use explicit cross-references instead of repeating the same requirement text.
+- Treat template structures as strict contracts:
+  - keep required section headings and order exactly as defined in the template,
+  - do not remove, merge, or reorder required sections,
+  - if a required section has no current content, write `Not applicable in current state.`.
 - Use a structured Markdown format with numbered H2 sections and stable heading hierarchy.
 - Default documentation root to `docs/`.
 - Allow location override when the user or project defines a different documentation root.
@@ -41,12 +48,16 @@ Produce clear, structured, and complementary product and technical documentation
    - `references/product-documentation-template.md` for product changes,
    - `references/technical-documentation-template.md` for technical changes.
 4. Draft or update only the sections impacted by the request.
-5. Add explicit cross-references instead of duplicating content:
-   - product -> technical for implementation details,
-   - technical -> product for behavior/scope intent.
-6. Ensure no development-flow guidance is introduced.
-7. Run `references/documentation-coherence-checklist.md` before finalizing.
-8. Return a short completion report with:
+5. Add targeted cross-references instead of duplicated text:
+   - product -> technical when implementation detail is needed for context,
+   - technical -> product when user-facing behavior/scope context is needed.
+   - do not require direct mapping of every product flow/feature to one technical section.
+6. Enforce strict template structure:
+   - verify headings/order match the selected template exactly,
+   - fill non-applicable sections with `Not applicable in current state.` instead of deleting them.
+7. Ensure no development-flow guidance is introduced.
+8. Run `references/documentation-coherence-checklist.md` before finalizing.
+9. Return a short completion report with:
    - `CHANGES MADE`
    - `THINGS NOT TOUCHED`
    - `RISKS / VERIFY`
@@ -58,14 +69,16 @@ Produce clear, structured, and complementary product and technical documentation
   - Avoid deep implementation details unless they directly affect product behavior.
 - Technical documentation:
   - Prioritize architecture, runtime flow, interfaces, technical decisions, and constraints.
+  - Document cross-cutting technical mechanisms even when they are not directly tied to a single user flow or feature section.
   - Avoid restating product rationale; reference product sections where needed.
 
 ## Output Rules
 
 - Preserve existing section numbering and anchors when updating existing files.
 - Prefer additive, localized edits over full rewrites.
-- If required section data is unknown, mark as `TBD` and call it out in `RISKS / VERIFY`.
+- If required section data is unknown, write `Not applicable in current state.` and call it out in `RISKS / VERIFY`.
 - Keep terminology consistent across product and technical documents.
+- Follow strict template section order for all template-governed documentation updates.
 - Do not add sections that describe development flow.
 
 ## Troubleshooting
@@ -76,7 +89,7 @@ Produce clear, structured, and complementary product and technical documentation
   - Treat product document as source for behavior intent and technical document as source for implementation details.
   - Resolve by editing both sides or linking to one canonical section.
 - Duplicate text across documents:
-  - Keep the most appropriate canonical version and replace duplication with explicit links.
+  - Keep the most appropriate canonical version and replace duplication with concise context plus explicit links.
 
 ## References
 

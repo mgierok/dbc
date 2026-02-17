@@ -25,14 +25,16 @@ Use this checklist before finalizing product and/or technical documentation upda
 
 ## 5. Traceability
 
-- Each major product capability maps to at least one technical implementation section.
-- Each major technical flow maps back to a product behavior or scope section.
+- Traceability links are present where they improve understanding and navigation.
+- Do not force one-to-one mapping between product flows/features and technical sections.
+- Technical documentation may contain cross-cutting sections that do not map directly to a single product flow.
+- Product documentation remains centered on capabilities/behavior/flows; technical documentation remains centered on architecture/mechanisms/contracts.
 
 ## 6. Change Integrity
 
-- Updated sections have coherent metadata (status/updated date if used by project convention).
 - Existing anchors and section numbering remain stable unless intentionally changed.
 - Documentation reflects current code behavior after this change set.
+- Section headings and order match the strict template contract.
 
 ## 7. No Development Flow Content
 
@@ -42,7 +44,7 @@ Use this checklist before finalizing product and/or technical documentation upda
 ## 8. Quality Gate
 
 - Markdown hierarchy is valid and readable.
-- Unknowns are marked as `TBD` with follow-up notes in the completion report.
+- Unknown or non-applicable required sections are explicitly filled with `Not applicable in current state.` and noted in the completion report.
 - Completion report includes:
   - `CHANGES MADE`
   - `THINGS NOT TOUCHED`
@@ -55,3 +57,5 @@ Use this checklist before finalizing product and/or technical documentation upda
 | --- | --- | --- | --- |
 | {path}#{product-anchor} | {path}#{technical-anchor} | Implements / Constrains / Depends on | ... |
 ```
+
+Use this matrix only when a direct mapping is helpful for the current change; it is not a mandatory artifact.
