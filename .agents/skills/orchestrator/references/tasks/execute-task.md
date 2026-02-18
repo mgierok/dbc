@@ -34,6 +34,7 @@ The output must:
    - set task `Status` to `DONE`,
    - fill `Completion Summary` with concrete delivered changes and important follow-up context.
 11. Commit completed task changes.
+    - Task implementation commit message must include parent PRD ID reference (for example `PRD-3`).
 12. Run mandatory lessons-learned harvest before final reporting:
    - check execution/user-feedback triggers: user correction/pushback, aborted/repeated turn, verification failure with rework, ambiguity clarification, documentation consistency issue,
    - if any trigger exists, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item,
@@ -113,6 +114,7 @@ Follow this sequence exactly:
    - If no trigger occurred, record `LESSONS LEARNED: no qualifying trigger` in final report.
 10. Commit.
     - Create one commit containing task implementation and task-state update.
+    - Commit message must include parent PRD ID reference (for example `PRD-3`).
 11. Finalize PRD state.
    - Inspect sibling tasks for same PRD.
    - Hint: to quickly check whether any sibling task is still `READY`, run:
@@ -160,7 +162,7 @@ Follow this sequence exactly:
    - key implementation outcomes,
    - tests/checks executed,
    - decisions relevant for downstream tasks.
-4. Commit message should reflect executed task intent and scope.
+4. Commit message should reflect executed task intent and scope, and must include parent PRD ID reference (for example `PRD-3`).
 5. If PRD status is changed to `DONE`, commit that status update in a separate commit from task implementation.
 
 ## 7. Quality Gates (All Must Pass)
@@ -172,11 +174,11 @@ Follow this sequence exactly:
 5. Verification followed task `Verification Plan` and passed.
 6. Task status was updated to `DONE` with non-empty `Completion Summary`.
 7. Implementation was committed.
+   - Task implementation commit message included parent PRD ID reference (for example `PRD-3`).
 8. If PRD status changed, that change was committed separately.
 9. Mandatory lessons-learned scan was executed and outcome was reported.
    - If triggers occurred, `lessons-learned.md` was updated with at least one numbered prevention rule.
    - If no triggers occurred, final report contains `LESSONS LEARNED: no qualifying trigger`.
-10. Parent PRD status was set to `DONE` when no sibling task remained `READY`.
 10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and final acceptance matrix rows were all `PASS`.
 
 ## 8. Agent Output Contract
