@@ -20,7 +20,10 @@ The output must:
 7. Generate at least one task per PRD; most PRDs should produce multiple tasks.
 8. Task status is restricted to `READY` or `DONE` only.
 9. Parent PRD status must be `READY`; planning must not proceed when parent PRD status is missing, invalid, or `DONE`.
-10. Every task must include explicit `blocked-by` and `blocks` fields; use `none` when no dependency exists.
+10. Every task must include explicit `blocked-by` and `blocks` fields.
+    - Allowed value format per field:
+      - `none`, or
+      - one or more Markdown links to task files separated by comma+space.
 11. Parallel execution is allowed only for tasks with all blockers completed.
 12. Every task must explicitly reference:
     - parent PRD,
@@ -147,8 +150,8 @@ Rules:
    - Include project validation requirement as final criterion.
 9. `Dependencies`
    - Must include:
-     - `blocked-by`: explicit task file links or `none`
-     - `blocks`: explicit task file links or `none`
+     - `blocked-by`: `none` or Markdown links separated by comma+space
+     - `blocks`: `none` or Markdown links separated by comma+space
    - Dependency entries must be Markdown links to `.tasks` files (optionally with task ID label).
    - Example:
      - `[PRD-12-TASK-1-config-foundation](.tasks/PRD-12-TASK-1-config-foundation.md)`
@@ -173,10 +176,11 @@ Rules:
    - `blocks`: tasks that depend on current task.
 2. Dependency graph must be acyclic.
 3. If no dependency exists, write `none`.
-4. Every dependency reference must point to an existing task file for the same PRD.
-5. Every dependency reference must be an explicit Markdown link to `.tasks/PRD-[prd-id]-TASK-[task-id]-[short-task-name].md`.
-6. If task ID is additionally shown, it must match the linked filename.
-7. Sequential execution is default; parallel execution is allowed only when all `blocked-by` tasks are `DONE`.
+4. If multiple dependencies exist in one field, use comma+space separated Markdown links on the same line.
+5. Dependency references must be Markdown links to `.tasks/PRD-[prd-id]-TASK-[task-id]-[short-task-name].md`.
+6. Every dependency reference must point to an existing task file for the same PRD.
+7. If task ID is additionally shown, it must match the linked filename.
+8. Sequential execution is default; parallel execution is allowed only when all `blocked-by` tasks are `DONE`.
 
 ## 8. Status Lifecycle Rules
 1. Allowed statuses:

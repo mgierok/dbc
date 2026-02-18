@@ -66,6 +66,10 @@ Follow this sequence exactly:
 4. Validate task executability.
    - Confirm target task `Status: READY`.
    - Confirm every `blocked-by` dependency is `DONE`.
+   - Parse `blocked-by` value as either:
+     - `none`, or
+     - comma+space separated Markdown links to `.tasks` files.
+   - If `blocked-by` uses any other format, stop and report invalid dependency format.
    - Hint: to verify one task quickly without reading full file content, run:
      ```bash
      rg -n "^- Status:|^- blocked-by:" .tasks/PRD-[prd-id]-TASK-[task-id]-*.md

@@ -43,6 +43,11 @@
 - blocked-by: none
 - blocks: none
 
+Format rule:
+- Use `none` when there is no dependency.
+- When there are dependencies, use Markdown links separated by comma+space on the same line.
+- Example: `- blocked-by: [PRD-12-TASK-1-config-foundation](.tasks/PRD-12-TASK-1-config-foundation.md), [PRD-12-TASK-2-schema-migration](.tasks/PRD-12-TASK-2-schema-migration.md)`
+
 ## Completion Summary
 
 Not started
