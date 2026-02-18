@@ -28,6 +28,7 @@ The PRD must be:
 16. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
 17. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
 18. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
+19. Use `../templates/prd-template.md` as the single source of truth for PRD file structure; do not infer structure from existing files in `.tasks`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -55,7 +56,10 @@ Follow this sequence exactly:
    - If a critical item cannot be resolved, do not produce final PRD. Ask a direct decision question and wait for answer.
 5. Publish `Answer Summary`.
    - List confirmed answers and assumptions.
-6. Draft the PRD using the fixed structure (Section 5).
+6. Draft the PRD from template `../templates/prd-template.md`.
+   - Instantiate template structure first.
+   - Keep heading names and order exactly as in the template.
+   - Fill every section with feature-specific content.
    - Set `Status` in `Metadata` to exactly `READY`.
 7. Run one review loop.
    - Ask for focused feedback on scope, metrics, non-goals, and residual risks.
@@ -118,24 +122,14 @@ Rules:
 - Send only one question per message.
 - Do not send question `N+1` before processing the answer to question `N`.
 
-## 5. Fixed PRD Structure (Must Be Exact)
-Use these headings in this exact order:
+## 5. Fixed PRD Template (Must Be Exact)
+Use `../templates/prd-template.md` as the authoritative PRD structure.
 
-1. `Overview`
-2. `Metadata`
-3. `Problem Statement`
-4. `Current State (As-Is)`
-5. `Target State After Release (To-Be)`
-6. `Business Rationale and Strategic Fit`
-7. `Goals`
-8. `Non-Goals`
-9. `Scope (In Scope / Out of Scope)`
-10. `Functional Requirements`
-11. `Non-Functional Product Requirements`
-12. `Success Metrics and Release Criteria`
-13. `Risks and Dependencies`
-14. `State & Failure Matrix`
-15. `Assumptions`
+Rules:
+1. Keep template heading names and heading order unchanged.
+2. Fill every template section with concrete content for the current feature.
+3. Do not add extra sections unless explicitly required by this task specification.
+4. Do not inspect existing `.tasks/PRD-*.md` files to infer structure.
 
 ## 6. Section Rules (Authoring Guide)
 1. `Overview`
@@ -250,6 +244,8 @@ Use these headings in this exact order:
    - Clarification, drafting, and draft quality checks were executed in `Plan` mode.
 20. Save mode compliance
    - Final PRD file save was executed only in `Default` mode.
+21. Template compliance
+   - Final PRD preserves heading names and order from `../templates/prd-template.md`.
 
 ## 8. Anti-Patterns (Reject and Revise)
 Reject the draft if any of these appear:
@@ -267,6 +263,7 @@ Reject the draft if any of these appear:
 11. Metrics measurable only after release with no execution-phase proxy metric.
 12. Metric definitions without a concrete execution-phase evidence artifact.
 13. Baseline placeholders such as `Not measured`, `Unknown`, or `N/A`.
+14. PRD structure inferred from existing `.tasks/PRD-*.md` files instead of using `../templates/prd-template.md`.
 
 ## 9. Forbidden Content
 Do not include:

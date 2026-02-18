@@ -53,6 +53,19 @@ These rules apply to all orchestrator workflows unless a task file defines a str
 3. Do not allow unresolved placeholders (`TBD`, `TODO`) in final saved artifacts.
 4. End each workflow with concise quality gate results (`PASS`/`FAIL` per gate).
 
+## Shared Templates
+
+Use these templates as the only source of truth for target file structure:
+
+- PRD template: `references/templates/prd-template.md`
+- Task template: `references/templates/task-template.md`
+
+Rules:
+
+1. When creating PRDs or tasks, instantiate the proper template and fill all required sections.
+2. Do not infer structure by inspecting existing files in `.tasks`.
+3. If structure changes are needed, update the corresponding template and the related task specification in the same change.
+
 ## Extending This Skill
 
 1. Add each new workflow as a separate file in `references/tasks/`.

@@ -43,6 +43,7 @@ The output must:
 23. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
 24. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
 25. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
+26. Use `../templates/task-template.md` as the single source of truth for task file structure; do not infer structure from existing files in `.tasks`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -75,7 +76,10 @@ Follow this sequence exactly:
    - Build a metric checkpoint map `M* -> (task + evidence artifact + execution-phase threshold/check)`.
    - If a parent metric is post-release by nature, add delivery-phase proxy checkpoints mapped to tasks and release decision use.
    - If the feature spans multiple tasks and cross-task interactions exist, append a final `integration-hardening` task that depends on all prior behavior-delivering tasks.
-6. Draft task files using fixed structure (Section 5).
+6. Draft task files from template `../templates/task-template.md`.
+   - Instantiate template structure for each task first.
+   - Keep heading names and heading order exactly as in the template.
+   - Fill all required metadata and content fields for each task.
 7. Run one internal review pass.
    - Check sequencing, dependency validity, and execution readiness.
 8. Run draft quality pre-checks for gates that do not require file-save phase evidence.
@@ -102,19 +106,14 @@ Rules:
 - Provide clear options when possible.
 - Do not generate final task files while critical unknowns remain unresolved.
 
-## 5. Fixed Task File Structure (Must Be Exact)
-Each generated task file must use these headings in this exact order:
+## 5. Fixed Task Template (Must Be Exact)
+Use `../templates/task-template.md` as the authoritative task file structure.
 
-1. `Overview`
-2. `Metadata`
-3. `Objective`
-4. `Working Software Checkpoint`
-5. `Technical Scope`
-6. `Implementation Plan`
-7. `Verification Plan`
-8. `Acceptance Criteria`
-9. `Dependencies`
-10. `Completion Summary`
+Rules:
+1. Keep template heading names and heading order unchanged.
+2. Fill every template section with concrete task-specific content.
+3. Do not add extra sections unless explicitly required by this task specification.
+4. Do not inspect existing `.tasks/PRD-*-TASK-*.md` files to infer structure.
 
 ### 5.1 Section Rules
 1. `Overview`
@@ -202,7 +201,7 @@ When saving tasks:
 ## 10. Quality Gates (All Must Pass Before Final Output)
 1. At least one task is generated for the PRD.
 2. Parent PRD contains explicit valid `Status` and it is exactly `READY`.
-3. Every task file follows the exact structure from Section 5.
+3. Every task file follows the template structure from `../templates/task-template.md` and Section 5.1 rules.
 4. Every task has exactly one technical objective.
 5. Every task has a working-software checkpoint.
 6. Every task has explicit `In Scope` and `Out of Scope`.
@@ -225,6 +224,8 @@ When saving tasks:
 23. Draft phase execution mode was `Plan`.
 24. Save phase execution mode was `Default`.
 25. Every mapped metric checkpoint uses `Completion Summary` of the same task file as the evidence source artifact.
+26. Template compliance
+   - Every generated task preserves heading names and order from `../templates/task-template.md`.
 
 ## 11. Forbidden Content
 Do not include:
