@@ -61,8 +61,11 @@ Produce clear, structured, and complementary documentation in Markdown only for 
    - verify headings/order match the selected template exactly,
    - fill non-applicable sections with `Not applicable in current state.` instead of deleting them.
 7. Ensure no development-flow guidance is introduced.
-8. Run `references/documentation-coherence-checklist.md` before finalizing.
-9. Return a short completion report with:
+8. Validate cross-reference links and anchors changed in this task:
+   - ensure link targets exist in current target documents,
+   - fix stale anchors introduced by section title changes.
+9. Run `references/documentation-coherence-checklist.md` before finalizing.
+10. Return a short completion report with:
    - `CHANGES MADE`
    - `THINGS NOT TOUCHED`
    - `RISKS / VERIFY`
