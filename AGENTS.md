@@ -68,21 +68,21 @@ When this skill is invoked, generate commit messages in Conventional Commits for
 
 Explicitly invoke skill `write-documentation` when at least one of these situations is true:
 
-- creating new product documentation
-- creating new technical documentation
-- modifying existing product documentation
-- modifying existing technical documentation
-- standardizing or restructuring documentation format/sections
-- reviewing consistency, complementarity, or cross-references between product and technical documentation
-- implementing any codebase change that affects documented behavior, scope, architecture, runtime, interfaces, or constraints
+- creating `docs/product-documentation.md`
+- creating `docs/technical-documentation.md`
+- modifying `docs/product-documentation.md`
+- modifying `docs/technical-documentation.md`
+- reviewing consistency, complementarity, or cross-references between `docs/product-documentation.md` and `docs/technical-documentation.md`
+- implementing any codebase change that affects documented behavior, scope, architecture, runtime, interfaces, or constraints reflected in `docs/product-documentation.md` and/or `docs/technical-documentation.md`
 
 When this skill is invoked:
 
 - follow `.agents/skills/write-documentation/SKILL.md` as the primary writing procedure
+- limit scope strictly to `docs/product-documentation.md` and `docs/technical-documentation.md`
 - document only the current factual application state
 - update impacted documentation in the same change set as code changes
 - do not define or describe development flow in product or technical documentation
-- use `docs/` as default documentation root unless user/project rules explicitly define another path
+- do not use this skill for `README.md` or any other documentation file outside the two files above
 
 ## 4. Agent Workflow Standard
 
@@ -296,7 +296,7 @@ When adding functionality:
 
 Documentation creation and modification are skill-governed:
 
-- mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md`
+- mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`
 - product and technical documentation must stay complementary and consistent via explicit cross-references
 - documentation must describe current state only and be updated with every relevant codebase change
 - `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, update `README.md` in the same change set

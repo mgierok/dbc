@@ -1,16 +1,20 @@
 ---
 name: write-documentation
-description: Create and update product documentation and technical documentation in structured Markdown with a clear split of responsibilities, explicit cross-references, and no unnecessary duplication. Use when asked to write, revise, standardize, or reorganize product docs, technical docs, doc templates, documentation rules, or consistency between product and technical documentation. Trigger on requests like "update docs", "write product documentation", "write technical documentation", "create documentation template", "zaktualizuj dokumentacje", "uzupelnij dokumentacje produktowa", or "uzupelnij dokumentacje techniczna".
+description: Create and update only `docs/product-documentation.md` and `docs/technical-documentation.md` in structured Markdown with a clear split of responsibilities, explicit cross-references, and no unnecessary duplication. Use only when requests create or modify these two files, or review consistency between them.
 ---
 
 # Write Documentation
 
 ## Goal
 
-Produce clear, structured, and complementary product and technical documentation in Markdown.
+Produce clear, structured, and complementary documentation in Markdown only for `docs/product-documentation.md` and `docs/technical-documentation.md`.
 
 ## Critical Rules
 
+- Allowed targets are strict and exclusive:
+  - `docs/product-documentation.md`
+  - `docs/technical-documentation.md`
+  - Do not use this skill for `README.md` or any other file.
 - Separate intent first:
   - Product documentation explains what and why from a product perspective.
   - Technical documentation explains how from an implementation perspective.
@@ -29,8 +33,6 @@ Produce clear, structured, and complementary product and technical documentation
   - do not remove, merge, or reorder required sections,
   - if a required section has no current content, write `Not applicable in current state.`.
 - Use a structured Markdown format with numbered H2 sections and stable heading hierarchy.
-- Default documentation root to `docs/`.
-- Allow location override when the user or project defines a different documentation root.
 - Keep wording explicit, plain, and audience-appropriate:
   - Product docs: understandable for product and junior engineering audiences.
   - Technical docs: practical and implementation-oriented for engineering audiences.
@@ -41,11 +43,9 @@ Produce clear, structured, and complementary product and technical documentation
 
 1. Classify the request:
    - `product`, `technical`, or `both`.
-2. Resolve documentation root in this order:
-   - explicit user path,
-   - documented project convention,
-   - existing documentation location,
-   - fallback `docs/`.
+2. Resolve target files from the strict allowlist:
+   - product target: `docs/product-documentation.md`,
+   - technical target: `docs/technical-documentation.md`.
 3. Load only required context:
    - existing target documents,
    - style/policy files relevant to documentation governance,
@@ -88,7 +88,7 @@ Produce clear, structured, and complementary product and technical documentation
 ## Troubleshooting
 
 - Missing counterpart document:
-  - Create a minimal scaffold from the relevant template and add cross-reference placeholders.
+  - Create only the missing allowlisted file (`docs/product-documentation.md` or `docs/technical-documentation.md`) from the relevant template and add cross-reference placeholders.
 - Conflicting statements between product and technical docs:
   - Treat product document as source for behavior intent and technical document as source for implementation details.
   - Resolve by editing both sides or linking to one canonical section.
