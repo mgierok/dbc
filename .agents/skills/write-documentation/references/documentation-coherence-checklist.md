@@ -43,10 +43,6 @@ Use this checklist before finalizing product and/or technical documentation upda
 ## 8. Quality Gate
 
 - Markdown hierarchy is valid and readable.
-- Completion report includes:
-  - `CHANGES MADE`
-  - `THINGS NOT TOUCHED`
-  - `RISKS / VERIFY`
 
 ## Optional Traceability Matrix Template
 
