@@ -13,9 +13,9 @@ The output must:
 1. Apply shared baseline rules from `../../SKILL.md` section `Shared Workflow Baseline`.
 2. This workflow executes exactly one task; do not execute multiple tasks in one run.
 3. Execution mode must be `Default`; if mode is not `Default`, stop and request mode switch.
-4. Input must identify either:
-   - one explicit task file, or
-   - one explicit PRD file.
+4. Input selector rules:
+   - input may identify one explicit task file, one explicit PRD file, or both,
+   - if both are provided and inconsistent, stop and ask for one focused selector clarification.
 5. If input is PRD-only, select the first executable task for that PRD.
 6. A task is executable only if:
    - task `Status` is exactly `READY`, and
@@ -51,8 +51,10 @@ Follow this sequence exactly:
    - Verify current mode is `Default`.
    - If mode is not `Default`, stop and request mode switch.
 2. Validate input selector.
-   - Accept exactly one selector: explicit task file or explicit PRD file.
+   - Accept explicit task selector, explicit PRD selector, or both.
    - If neither is provided, ask for one focused clarification.
+   - If both are provided and the task belongs to the selected PRD, proceed with the explicit task file.
+   - If both are provided and inconsistent, stop and ask the user to select one authoritative selector.
 3. Resolve execution target.
    - If task file is provided, use it as target.
    - If PRD file is provided, enumerate its tasks in deterministic order (`Task ID` ascending) and pick first executable task.
