@@ -1,1 +1,0 @@
-1. When writing shell-based verification commands that include Markdown backticks or SQLite pragma fields with reserved names, quote literals and identifiers explicitly before first run, so that avoidable script failures do not interrupt verification flow.
