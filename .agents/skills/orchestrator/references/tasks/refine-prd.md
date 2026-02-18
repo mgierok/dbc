@@ -41,6 +41,8 @@ The output must:
 21. Each mapped metric must have an execution-phase measurement checkpoint in task `Verification Plan` that is measurable before PRD closure.
 22. For post-release outcome metrics, define at least one delivery-phase proxy checkpoint used for go/no-go decisions.
 23. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
+24. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
+25. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -138,7 +140,7 @@ Each generated task file must use these headings in this exact order:
    - Explicit checks to prove task completion.
    - For every mapped `PRD Metrics` item, include one execution-phase metric checkpoint with:
      - metric ID,
-     - evidence source artifact,
+     - evidence source artifact (must reference this task file `Completion Summary`),
      - threshold or expected value for the current phase,
      - check procedure.
 8. `Acceptance Criteria`
@@ -154,6 +156,7 @@ Each generated task file must use these headings in this exact order:
 10. `Completion Summary`
     - If `Status: READY`, set to: `Not started`.
     - If `Status: DONE`, provide concrete summary of delivered work and decisions important for follow-up tasks.
+    - If task maps `PRD Metrics`, include metric evidence entries for each mapped metric with observed result and threshold pass/fail.
 
 ## 6. Task Splitting and Ordering Rules
 1. Prefer small, single-purpose tasks that can be completed in one focused implementation iteration.
@@ -221,6 +224,7 @@ When saving tasks:
 22. No task includes unresolved placeholders.
 23. Draft phase execution mode was `Plan`.
 24. Save phase execution mode was `Default`.
+25. Every mapped metric checkpoint uses `Completion Summary` of the same task file as the evidence source artifact.
 
 ## 11. Forbidden Content
 Do not include:
