@@ -14,7 +14,7 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 1. Identify user intent.
 2. Match intent to one task file in `references/tasks/`.
 3. If multiple tasks could match, ask one focused disambiguation question.
-4. Load only the matched task file and execute it literally.
+4. Load the matched task file first, then load only the resources explicitly required by that task file (for example templates or referenced `.tasks` artifacts), and execute it literally.
 
 ## Available Tasks
 
