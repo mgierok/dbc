@@ -4,7 +4,7 @@ Run final integration hardening for PRD-3 to verify cross-task interactions and 
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
 - Task ID: 6
 - Task File: PRD-3-TASK-6-integration-hardening.md
@@ -76,4 +76,18 @@ After this task, startup remains usable across selector-first and direct-launch 
 
 ## Completion Summary
 
-Not started.
+- Executed integration-hardening verification without adding new persistent integration test files to the codebase.
+- Ran startup cross-flow integrity test bundle in `cmd/dbc` (ad hoc selection of existing integration-relevant scenarios), covering:
+  - informational short-circuit behavior vs runtime startup path,
+  - help/version alias behavior and mixed-flag validation failures,
+  - usage-error (`2`) vs runtime-failure (`1`) classification boundary,
+  - direct-launch and selector-first startup continuity checks.
+- Validated startup documentation consistency against PRD-3 FR-008 by checking:
+  - standards references exist in product and technical docs (`docs/cli-parameter-and-output-standards.md`),
+  - startup informational alias and exit-code semantics are documented,
+  - canonical standards placeholder template text is not duplicated in product/technical docs.
+- Full project verification passed:
+  - `go test ./cmd/dbc -run 'TestRunStartupDispatch_(UsesInformationalHandlerWithoutRuntimeStartup|UsesRuntimeStartupWhenInformationalFlagsAreAbsent|HelpAliasesProduceEquivalentRenderedOutput|VersionAliasesProduceEquivalentRenderedOutput)|TestClassifyStartupFailure_MapsUsageErrorsToExitCodeTwoWithUsageContract|TestClassifyStartupFailure_MapsRuntimeErrorsToExitCodeOne|TestParseStartupOptions_ReturnsErrorForRepeatedLogicalInformationalAliases|TestParseStartupOptions_ReturnsErrorForMixedInformationalAndDirectLaunchFlags|TestParseStartupOptions_ReturnsErrorForMixedInformationalFlags|TestResolveStartupSelection_(UsesDirectLaunchWithoutSelectorCall|UsesSelectorWhenDirectLaunchMissing|ReusesConfiguredIdentityWhenNormalizedPathsMatch|UsesFirstConfiguredIdentityForDeterministicNormalizedMatch)'` (PASS)
+  - `go test ./...` (PASS)
+  - `golangci-lint run ./...` (PASS)
+- PRD-3 closure readiness: all PRD-3 tasks are now `DONE`; parent PRD status can be closed after acceptance matrix evidence is confirmed in PRD file.
