@@ -38,7 +38,7 @@ Produce clear, structured, and complementary documentation in Markdown only for 
   - Product docs: understandable for product and junior engineering audiences.
   - Technical docs: practical and implementation-oriented for engineering audiences.
 - Do not define or describe development flow (for example contributor workflow, feature delivery steps, branch strategy, PR process).
-- If scope is ambiguous and affects behavior or interfaces, ask one focused question with exactly three options.
+- If scope is ambiguous and affects behavior or interfaces, ask one focused question; when options help, provide 2-3 options with clear tradeoffs.
 
 ## Workflow
 
