@@ -4,7 +4,7 @@ Run final integration hardening across fixture, startup playbooks, and manual sc
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-4-agent-testability-tmp-startup-fixture.md
 - Task ID: 4
 - Task File: PRD-4-TASK-4-integration-hardening.md
@@ -70,4 +70,30 @@ After this task, documented workflows remain executable, existing startup behavi
 
 ## Completion Summary
 
-Not started.
+Completed deliverables:
+
+1. Cross-task integration consistency check passed across Task 1-3 outputs and `docs/test-fixture.md`:
+   - canonical fixture path `docs/test.db` is consistently referenced,
+   - startup playbook variants are complete (`variant_sections=3`, `specific_behavior_sections=3`, `when_to_use_sections=3`),
+   - manual scenario remains explicitly bound to `Variant 1: Direct Launch via -d`.
+2. Startup regression verification re-run across required paths:
+   - `-d` startup:
+     - happy: `go test ./cmd/dbc -run 'TestResolveStartupSelection_UsesDirectLaunchWithoutSelectorCall|TestConnectSelectedDatabase_ReturnsDatabaseForExistingReachableConnection'` passed.
+     - negative: `HOME="$TMP_HOME" go run ./cmd/dbc -d "$TMP_ROOT/missing.db"` exited with `1` and emitted expected direct-launch guidance (`Cannot start DBC with direct launch target ... retry with -d/--database`).
+   - config-file startup:
+     - happy: selector/config path behavior remained green via `go test ./cmd/dbc -run 'TestResolveStartupSelection_UsesSelectorWhenDirectLaunchMissing'` and `go test ./internal/interfaces/tui -run 'TestDatabaseSelector_ViewShowsActiveConfigPath|TestDatabaseSelector_EnterSelects'`.
+     - negative: malformed config startup check (`name = "fixture` without closing quote) exited with `1` and emitted expected parse failure (`toml: basic strings cannot have new lines`).
+   - no-parameter startup:
+     - happy/selector-first path remained green via `go test ./cmd/dbc -run 'TestResolveStartupSelection_UsesSelectorWhenDirectLaunchMissing'`.
+     - missing-config mandatory-setup behavior remained green via `go test ./internal/interfaces/tui -run 'TestDatabaseSelector_EmptyConfigStartsInForcedSetupForm|TestDatabaseSelector_ForcedSetupEscCancelsStartup'`.
+3. NFR-003 and release hardening check passed:
+   - no runtime/startup behavior expansion was introduced in this task; verification confirmed existing startup contracts still match `docs/product-documentation.md` and `docs/technical-documentation.md`.
+
+Metric checkpoint:
+
+- M4 PASS: startup regression count is `0` across direct-launch, config-driven, and no-parameter verification paths.
+
+Project validation:
+
+- `golangci-lint run ./...` -> `0 issues.`
+- `go test ./...` -> pass for all packages.
