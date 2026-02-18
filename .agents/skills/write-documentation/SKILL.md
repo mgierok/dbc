@@ -31,8 +31,7 @@ Produce clear, structured, and complementary documentation in Markdown only for 
   - when updating wording, remove stale duplicates in the same change set.
 - Treat template structures as strict contracts:
   - keep required section headings and order exactly as defined in the template,
-  - do not remove, merge, or reorder required sections,
-  - if a required section has no current content, write `Not applicable in current state.`.
+  - do not remove, merge, or reorder required sections.
 - Use a structured Markdown format with numbered H2 sections and stable heading hierarchy.
 - Keep wording explicit, plain, and audience-appropriate:
   - Product docs: understandable for product and junior engineering audiences.
@@ -58,8 +57,7 @@ Produce clear, structured, and complementary documentation in Markdown only for 
    - technical -> product when user-facing behavior/scope context is needed.
    - do not require direct mapping of every product flow/feature to one technical section.
 6. Enforce strict template structure:
-   - verify headings/order match the selected template exactly,
-   - fill non-applicable sections with `Not applicable in current state.` instead of deleting them.
+   - verify headings/order match the selected template exactly.
 7. Ensure no development-flow guidance is introduced.
 8. Validate cross-reference links and anchors changed in this task:
    - ensure link targets exist in current target documents,
@@ -85,7 +83,6 @@ Produce clear, structured, and complementary documentation in Markdown only for 
 - Preserve existing section numbering and anchors when updating existing files.
 - For existing files, keep current numbering/anchors unless an explicit migration task requests structural alignment to the template.
 - Prefer additive, localized edits over full rewrites.
-- If required section data is unknown, write `Not applicable in current state.` and call it out in `RISKS / VERIFY`.
 - Keep terminology consistent across product and technical documents.
 - Follow strict template section order for all template-governed documentation updates.
 - Do not add sections that describe development flow.

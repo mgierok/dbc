@@ -44,7 +44,6 @@ Use this checklist before finalizing product and/or technical documentation upda
 ## 8. Quality Gate
 
 - Markdown hierarchy is valid and readable.
-- Unknown or non-applicable required sections are explicitly filled with `Not applicable in current state.` and noted in the completion report.
 - Completion report includes:
   - `CHANGES MADE`
   - `THINGS NOT TOUCHED`
