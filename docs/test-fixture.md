@@ -1,216 +1,74 @@
-# Test Fixture Contract
+# Test Fixture
 
-## Canonical Fixture
+## Test Database
 
-- Canonical local fixture database path: `docs/test.db`.
-- This fixture is the default dataset for local/manual validation and agent-assisted checks in PRD-4 workflows.
+- Fixture source file: `scripts/test.db`.
+- Scope: local/manual test runs for startup and navigation scenarios.
+- Domain modeled by fixture: `customers`, `categories`, `products`, `orders`, `order_items`.
 
-## Relation Map
+## Database Structure
 
-The fixture models a compact order domain with explicit foreign keys:
+### Tables
 
-- `customers` (`id` PK)
-- `categories` (`id` PK)
-- `products` (`id` PK, `category_id` FK -> `categories.id`)
-- `orders` (`id` PK, `customer_id` FK -> `customers.id`)
-- `order_items` (`id` PK, `order_id` FK -> `orders.id`, `product_id` FK -> `products.id`, unique pair `order_id + product_id`)
+- `customers`
+  - `id` (PK), `email` (UNIQUE, NOT NULL), `full_name` (NOT NULL, CHECK), `phone` (NULLable), `loyalty_points` (DEFAULT `0`), `is_active` (DEFAULT `1`, CHECK), `created_at` (DEFAULT timestamp).
+- `categories`
+  - `id` (PK), `name` (UNIQUE, NOT NULL), `description` (NOT NULL, DEFAULT `''`, CHECK length).
+- `products`
+  - `id` (PK), `sku` (UNIQUE, NOT NULL), `name` (NOT NULL), `category_id` (FK), `price_cents` (CHECK), `notes` (NULLable), `weight_kg` (`REAL`), `metadata` (`BLOB`), `is_discontinued` (DEFAULT `0`, CHECK).
+- `orders`
+  - `id` (PK), `customer_id` (FK), `status` (NOT NULL, enum-like CHECK), `placed_at` (NULLable), `note` (NOT NULL, DEFAULT `''`), `total_cents` (DEFAULT `0`, CHECK).
+- `order_items`
+  - `id` (PK), `order_id` (FK with `ON DELETE CASCADE`), `product_id` (FK), `quantity` (CHECK), `unit_price_cents` (CHECK), `discount_percent` (`REAL`), UNIQUE(`order_id`, `product_id`).
+
+## Table Relationships
+
+- `products.category_id` -> `categories.id`
+- `orders.customer_id` -> `customers.id`
+- `order_items.order_id` -> `orders.id` (`ON DELETE CASCADE`)
+- `order_items.product_id` -> `products.id`
 
 ## Edge-Case Coverage Contract
-
-Required categories and where they are represented:
 
 | Category | Fixture Evidence |
 | --- | --- |
 | `null` | `customers.phone` (`id=1`), `products.notes` (`id=3`), `orders.placed_at` (`id=2`) |
-| `default` | `orders.note` default `''` (omitted on inserts), `customers.loyalty_points` default `0` |
+| `default` | `orders.note` default `''`, `customers.loyalty_points` default `0` |
 | `not-null` | `customers.email`, `products.name`, `orders.status`, `order_items.quantity` |
 | `unique` | `customers.email`, `categories.name`, `products.sku`, `order_items(order_id, product_id)` |
 | `foreign-key` | `products.category_id`, `orders.customer_id`, `order_items.order_id`, `order_items.product_id` |
-| `check` | non-negative cents/points, enum-like `orders.status`, boolean-like flags (`is_active`, `is_discontinued`) |
-| `empty values` | empty string in `customers.phone` (`id=2`) and `categories.description` (`id=2`) |
+| `check` | non-negative points/cents, `orders.status` enum-like check, boolean-like `is_active`/`is_discontinued` |
+| `empty values` | `customers.phone` (`id=2`), `categories.description` (`id=2`) |
 | `long values` | long text in `products.notes` (`id=5`) |
-| `varied SQLite types` | `INTEGER`, `REAL`, `TEXT`, `BLOB`, and `NULL` values across tables |
+| `varied SQLite types` | `INTEGER`, `REAL`, `TEXT`, `BLOB`, `NULL` |
 
-## Small-Fixture Thresholds
+## Startup Scripts
 
-PRD-4 limits for this fixture:
+Run from repository root.
 
-- File size: `<= 1 MiB`
-- Total rows across all tables: `<= 300`
-- Max rows per table: `<= 120`
+| Script | Run | Use When |
+| --- | --- | --- |
+| [`scripts/start-direct-launch.sh`](../scripts/start-direct-launch.sh) | `bash scripts/start-direct-launch.sh` | You want immediate runtime start with `-d` and no selector step. |
+| [`scripts/start-selector-from-config.sh`](../scripts/start-selector-from-config.sh) | `bash scripts/start-selector-from-config.sh` | You want selector startup backed by a valid temporary config file. |
+| [`scripts/start-without-database.sh`](../scripts/start-without-database.sh) | `bash scripts/start-without-database.sh` | You want startup without `-d` and without configured databases (mandatory first-entry setup). |
 
-## Verification Commands
+### Output and Cleanup
 
-```bash
-# FK integrity
-sqlite3 docs/test.db "PRAGMA foreign_keys=ON; PRAGMA foreign_key_check;"
+- Every startup script prints `TMP_ROOT=...`.
+- `scripts/start-without-database.sh` additionally prints `TMP_DB=...` for follow-up tests.
+- Cleanup command:
+  - Script: [`scripts/cleanup-temp-environment.sh`](../scripts/cleanup-temp-environment.sh)
+  - Run: `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
 
-# Per-table row counts
-sqlite3 docs/test.db "
-SELECT 'customers', COUNT(*) FROM customers
-UNION ALL SELECT 'categories', COUNT(*) FROM categories
-UNION ALL SELECT 'products', COUNT(*) FROM products
-UNION ALL SELECT 'orders', COUNT(*) FROM orders
-UNION ALL SELECT 'order_items', COUNT(*) FROM order_items;
-"
+## Example Test Scenario
 
-# Fixture file size (bytes)
-wc -c docs/test.db
-```
+Goal: verify direct-launch startup against fixture database.
 
-## Tmp Startup Playbooks
-
-Run all commands from repository root.
-
-### Shared Tmp Bootstrap
-
-```bash
-TMP_ROOT="$(mktemp -d)"
-TMP_HOME="$TMP_ROOT/home"
-TMP_DB="$TMP_ROOT/test.db"
-DBC_BIN="$TMP_ROOT/dbc"
-
-mkdir -p "$TMP_HOME/.config/dbc"
-cp docs/test.db "$TMP_DB"
-go build -o "$DBC_BIN" ./cmd/dbc
-```
-
-### Variant 1: Direct Launch via `-d`
-
-Specific behavior:
-
-- Startup validates the provided SQLite path before runtime starts.
-- On success, runtime opens directly and startup selector is bypassed.
-- On failure, startup exits non-zero with direct-launch guidance (no selector fallback).
-
-When to use:
-
-- Fast local smoke checks against a known fixture path.
-- Agent-driven runs where selector interaction is intentionally skipped.
-
-Executable commands:
-
-```bash
-# Happy path: direct launch into fixture, then press q in the app
-HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_DB"
-
-# Negative path: invalid direct-launch target should fail with startup guidance
-HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_ROOT/missing.db"
-```
-
-### Variant 2: Startup via Config File
-
-Specific behavior:
-
-- Startup reads config-backed entries from `$HOME/.config/dbc/config.toml`.
-- Without `-d`, selector-first startup is used and config entries are available for selection.
-- Malformed config content is treated as startup error and blocks runtime initialization.
-
-When to use:
-
-- Validation of standard operator flow where startup is driven by persisted config.
-- Reproducing selector-based startup behavior with deterministic tmp inputs.
-
-Executable commands:
-
-```bash
-# Happy path: valid tmp config + selector-first startup, then press q in selector
-cat > "$TMP_HOME/.config/dbc/config.toml" <<EOF
-[[databases]]
-name = "fixture"
-db_path = "$TMP_DB"
-EOF
-HOME="$TMP_HOME" "$DBC_BIN"
-
-# Negative path: malformed config should fail during startup
-cat > "$TMP_HOME/.config/dbc/config.toml" <<'EOF'
-[[databases]]
-name = "fixture
-db_path = "/tmp/fixture.db"
-EOF
-HOME="$TMP_HOME" "$DBC_BIN"
-```
-
-### Variant 3: Startup Without Database Parameter
-
-Specific behavior:
-
-- Startup is selector-first whenever no `-d`/`--database` argument is provided.
-- With valid tmp config, selector can open configured entries and continue to runtime.
-- With missing config, startup enters mandatory first-entry setup; user must add an entry or cancel (`Esc`) to recover.
-
-When to use:
-
-- Validating default startup behavior expected by first-time and selector-driven sessions.
-- Reproducing no-parameter startup recovery path for empty/missing config environments.
-
-Executable commands:
-
-```bash
-# Happy path: no parameter with valid config present, then Enter + q
-cat > "$TMP_HOME/.config/dbc/config.toml" <<EOF
-[[databases]]
-name = "fixture"
-db_path = "$TMP_DB"
-EOF
-HOME="$TMP_HOME" "$DBC_BIN"
-
-# Negative path: intentionally missing config triggers mandatory first-entry setup; Esc cancels startup
-rm -f "$TMP_HOME/.config/dbc/config.toml"
-HOME="$TMP_HOME" "$DBC_BIN"
-```
-
-## Manual Scenario (PRD-4 Task 3)
-
-Startup method binding:
-
-- This scenario uses `Variant 1: Direct Launch via -d`.
-
-Preconditions:
-
-- Run `Shared Tmp Bootstrap` once from this document.
-
-Execution steps and expected observations:
-
-1. Start DBC with direct launch:
-   - Command: `HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_DB"`
-   - Expected observation:
-     - Startup goes directly to main view (no selector-first screen).
-     - Left panel table list includes: `categories`, `customers`, `order_items`, `orders`, `products`.
-2. Navigate to `customers` records:
-   - Keys: `j`, then `Enter`
-   - Expected observation:
-     - Right panel switches to `Records`.
-     - `customers` rows include emails:
-       - `alice@example.com`
-       - `bob@example.com`
-       - `charlie@example.com`
-3. Exit:
-   - Key: `q`
-   - Expected observation: process exits cleanly (status `0`) and terminal returns to shell prompt.
-
-Pass/fail criteria:
-
-- PASS: every expected observation in steps 1-3 is satisfied in one continuous run.
-- FAIL: any expected observation is missing or mismatched.
-
-Failure reporting notes:
-
-- Record:
-  - executed startup command,
-  - failing step number,
-  - observed output/screen state,
-  - expected output/screen state,
-  - whether rerun reproduced the same mismatch.
-
-Rerun notes:
-
-- Re-run `Shared Tmp Bootstrap` before each retry.
-- Keep startup method fixed (`-d`) and fixture source fixed (`docs/test.db`).
-- Use `Tmp Cleanup` after each run to avoid cross-run residue.
-
-### Tmp Cleanup
-
-```bash
-rm -rf "$TMP_ROOT"
-```
+1. Run `bash scripts/start-direct-launch.sh`.
+2. Confirm app opens directly in main view (no selector).
+3. Confirm table list contains: `categories`, `customers`, `order_items`, `orders`, `products`.
+4. Press `j`, then `Enter` to open `customers` records.
+5. Confirm rows include: `alice@example.com`, `bob@example.com`, `charlie@example.com`.
+6. Press `q` to exit.
+7. Run cleanup using printed `TMP_ROOT`:
+   - `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
