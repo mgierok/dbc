@@ -27,6 +27,7 @@ The PRD must be:
 15. If a business outcome metric is naturally post-release, add at least one proxy metric measurable during task execution and use it as release decision input.
 16. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
 17. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
+18. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -286,6 +287,7 @@ When saving the generated PRD:
 2. Save in `.tasks`.
 3. Use filename format `PRD-[prd-id]-[short-name].md`.
 4. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
+   - For this step, inspect filenames only; do not open or parse prior PRD content.
    - Hint: list only PRD files (exclude task files) before choosing the next ID:
      ```bash
      rg --files .tasks | rg "^\\.tasks/PRD-[0-9]+-" | rg -v -- "-TASK-" | sort -V
