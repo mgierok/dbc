@@ -23,6 +23,10 @@ The PRD must be:
 11. Every PRD must include a `Metadata` section with `Status` set to exactly `READY`.
 12. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
 13. This workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
+14. Define only metrics that are operationally measurable during task execution or release validation, using evidence available in the delivery process.
+15. If a business outcome metric is naturally post-release, add at least one proxy metric measurable during task execution and use it as release decision input.
+16. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
+17. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -88,6 +92,8 @@ Prioritize uncertainties that have the biggest impact on scope, business value, 
 6. Success criteria
    - Which metric, baseline, target, and time window define success?
    - What is the minimum acceptable release criterion?
+   - How will each metric be measured during task execution or release validation?
+   - What concrete evidence artifact proves the metric value?
 7. Risks and dependencies
    - What risks could block value delivery?
    - What dependencies exist (teams, process, legal, data)?
@@ -164,6 +170,10 @@ Use these headings in this exact order:
 12. `Success Metrics and Release Criteria`
    - Use quantified metrics and minimum pass criteria.
    - For each metric include: baseline, target, measurement window, and measurement method.
+   - Every metric must be measurable during task execution or release validation.
+   - If a metric is inherently post-release, include at least one execution-phase proxy metric with a threshold that supports go/no-go decisions.
+   - Baseline values must be concrete; placeholders like `Not measured`, `Unknown`, `N/A`, or `TBD` are forbidden.
+   - `Measurement method` must name the concrete evidence artifact and collection procedure used during execution.
    - Include:
      - one `Primary Outcome Metric`,
      - 1-3 `Leading Indicators`,
@@ -218,6 +228,10 @@ Use these headings in this exact order:
 13. Metric quality
    - Every success metric includes baseline, target, measurement window, and method.
    - Metrics include one primary outcome metric, leading indicators, and guardrail metric.
+   - Every metric is measurable during task execution or release validation.
+   - If a metric is post-release by nature, at least one execution-phase proxy metric with threshold exists.
+   - No metric baseline uses placeholders like `Not measured`, `Unknown`, `N/A`, or `TBD`.
+   - Every metric has a concrete execution-phase evidence artifact and collection procedure.
 14. Constraint integrity
    - Final PRD contains no `TBD`.
    - Every previously unknown critical constraint is resolved as a confirmed decision or explicit out-of-scope item.
@@ -249,6 +263,9 @@ Reject the draft if any of these appear:
 8. Vanity metrics without decision value.
 9. Scope definition without explicit trade-offs.
 10. Any violation of Section 2 rules `8-10` (for example `TBD`, `Open Questions`, unresolved decision placeholders).
+11. Metrics measurable only after release with no execution-phase proxy metric.
+12. Metric definitions without a concrete execution-phase evidence artifact.
+13. Baseline placeholders such as `Not measured`, `Unknown`, or `N/A`.
 
 ## 9. Forbidden Content
 Do not include:

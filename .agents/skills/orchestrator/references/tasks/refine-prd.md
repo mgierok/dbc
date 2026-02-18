@@ -37,6 +37,10 @@ The output must:
 19. If the PRD is split into multiple implementation tasks and behavior spans task boundaries, include a final integration task named with `integration-hardening` scope.
     - This task must be blocked by all behavior-delivering tasks for that PRD.
     - This task must verify cross-task interactions and regression coverage before PRD closure.
+20. Every parent PRD metric in `Success Metrics and Release Criteria` must be mapped to at least one task.
+21. Each mapped metric must have an execution-phase measurement checkpoint in task `Verification Plan` that is measurable before PRD closure.
+22. For post-release outcome metrics, define at least one delivery-phase proxy checkpoint used for go/no-go decisions.
+23. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -49,9 +53,11 @@ Follow this sequence exactly:
    - Confirm PRD ID from filename pattern `PRD-[prd-id]-[short-name].md`.
    - Confirm PRD contains explicit `Status`.
    - Confirm PRD requirements are explicitly identifiable for traceability (for example `FR-*`, `NFR-*` IDs).
+   - Confirm PRD metrics are explicitly identifiable for traceability (for example `M1`, `M2`, `M3`).
    - Continue only if parent PRD status is exactly `READY`.
    - If PRD status is missing, invalid, or `DONE`, stop and request PRD status correction/reopening before task drafting.
    - If PRD requirement identifiers are missing or ambiguous, stop and request PRD correction before task drafting.
+   - If PRD metric identifiers are missing or ambiguous, stop and request PRD correction before task drafting.
    - Load current codebase state and current documentation at a high level to avoid stale planning.
 3. Load optional supplemental references.
    - If user provided extra files (for example user stories), load them as secondary constraints.
@@ -62,7 +68,10 @@ Follow this sequence exactly:
    - Ensure each slice is independently verifiable and leaves software working.
    - Determine ordering and dependency edges.
    - Build a requirement coverage map `FR/NFR -> TASK-*` and ensure full parent-PRD requirement coverage.
+   - Build a metric coverage map `M* -> TASK-*` and ensure full parent-PRD metric coverage.
    - Build a verification coverage map `FR-* -> (happy-path task + test/check, negative-path task + test/check)`.
+   - Build a metric checkpoint map `M* -> (task + evidence artifact + execution-phase threshold/check)`.
+   - If a parent metric is post-release by nature, add delivery-phase proxy checkpoints mapped to tasks and release decision use.
    - If the feature spans multiple tasks and cross-task interactions exist, append a final `integration-hardening` task that depends on all prior behavior-delivering tasks.
 6. Draft task files using fixed structure (Section 5).
 7. Run one internal review pass.
@@ -84,6 +93,7 @@ Priority clarification topics:
 2. Required release slices if PRD can be delivered in multiple valid sequences.
 3. Constraints that change dependency graph (for example compliance, migration windows, rollout gating).
 4. PRD requirement statements that cannot be mapped unambiguously to task boundaries.
+5. PRD metric statements that cannot be measured during execution or mapped to explicit task checkpoints.
 
 Rules:
 - Ask one focused question at a time.
@@ -115,6 +125,7 @@ Each generated task file must use these headings in this exact order:
      - `Task File`: current task filename
      - `Task ID` must match `[task-id]` segment in `Task File` filename.
      - `PRD Requirements`: explicit list of covered parent PRD requirement IDs (`FR-*` and/or `NFR-*`)
+     - `PRD Metrics`: explicit list of covered parent PRD metric IDs (`M*`) or `none` when the task does not carry metric checkpoints
 3. `Objective`
    - One technical objective only.
 4. `Working Software Checkpoint`
@@ -125,6 +136,11 @@ Each generated task file must use these headings in this exact order:
    - Ordered, concrete execution steps for this task only.
 7. `Verification Plan`
    - Explicit checks to prove task completion.
+   - For every mapped `PRD Metrics` item, include one execution-phase metric checkpoint with:
+     - metric ID,
+     - evidence source artifact,
+     - threshold or expected value for the current phase,
+     - check procedure.
 8. `Acceptance Criteria`
    - Observable and testable outcomes only.
    - Include project validation requirement as final criterion.
@@ -193,14 +209,18 @@ When saving tasks:
 10. Every task includes explicit `PRD Requirements` with valid parent-PRD requirement IDs (`FR-*` / `NFR-*`).
 11. Combined task set provides full parent-PRD requirement coverage (no orphan `FR-*` / `NFR-*`).
 12. Every parent `FR-*` is mapped to at least one happy-path and one negative-path scenario, each linked to a specific task and explicit test/check in that task `Verification Plan`.
-13. If the feature uses multiple behavior-delivering tasks with cross-task interactions, the task set includes a final `integration-hardening` task blocked by all those tasks.
-14. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
-15. Dependency references are valid, resolvable, and acyclic.
-16. File names follow required naming format.
-17. `Task ID` metadata value matches `[task-id]` in filename for every task.
-18. No task includes unresolved placeholders.
-19. Draft phase execution mode was `Plan`.
-20. Save phase execution mode was `Default`.
+13. Every parent PRD metric is mapped to at least one task (`M* -> TASK-*`) with no orphan metrics.
+14. Every mapped metric has an execution-phase checkpoint in a task `Verification Plan`, including explicit evidence source artifact and threshold or expected value.
+15. If a parent metric is post-release by nature, at least one delivery-phase proxy checkpoint is defined and mapped to task(s) for release decision support.
+16. No metric mapping or checkpoint includes placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`).
+17. If the feature uses multiple behavior-delivering tasks with cross-task interactions, the task set includes a final `integration-hardening` task blocked by all those tasks.
+18. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
+19. Dependency references are valid, resolvable, and acyclic.
+20. File names follow required naming format.
+21. `Task ID` metadata value matches `[task-id]` in filename for every task.
+22. No task includes unresolved placeholders.
+23. Draft phase execution mode was `Plan`.
+24. Save phase execution mode was `Default`.
 
 ## 11. Forbidden Content
 Do not include:
@@ -222,6 +242,6 @@ When running this workflow:
 7. Return concise summary:
    - generated task count,
    - ordered task list,
-   - traceability highlights (`FR/NFR -> TASK-*`),
+   - traceability highlights (`FR/NFR/M -> TASK-*`),
    - dependency highlights,
    - quality gate result (`PASS`/`FAIL` per gate).
