@@ -40,7 +40,7 @@ Follow this sequence exactly:
    - Restate the feature in one sentence.
    - Identify missing information.
 3. Run mandatory clarification.
-   - Start with 3-5 highest-impact questions.
+   - Start with an initial round of 3-5 highest-impact questions.
    - Ask one question at a time (single-question mode).
    - Wait for the answer before asking the next question.
    - For each question provide exactly four options:
@@ -48,7 +48,7 @@ Follow this sequence exactly:
      - `D`: `Other: <User-defined answer>`.
    - If the answer is unclear, ask one follow-up clarification before moving on.
    - If two consecutive answers are still ambiguous, pause and ask one explicit decision question with trade-offs.
-   - After the initial 3-5 questions, run additional targeted questions if needed to resolve remaining critical unknowns.
+   - After the initial 3-5 questions, ask additional targeted questions whenever critical unknowns or ambiguities remain.
    - Do not move to final PRD output while any critical unknown remains unresolved.
 4. Handle incomplete information.
    - Continue with an `Assumptions` section for non-critical items only.
@@ -76,7 +76,7 @@ Follow this sequence exactly:
 
 ## 4. Clarifying Questions
 
-### 4.1 Question Pool (Start with 3-5, then continue if needed)
+### 4.1 Question Pool (Initial 3-5, then continue until clear)
 Prioritize uncertainties that have the biggest impact on scope, business value, or success measurement, then ask follow-up questions until all critical unknowns are resolved.
 
 1. Problem and context
@@ -219,7 +219,7 @@ Rules:
    - Questions were asked one by one and answered before proceeding.
 12. Clarification prioritization
    - Initial clarification round has 3-5 questions focused on highest-impact uncertainty.
-   - Additional targeted questions are allowed and required when needed to resolve critical unknowns.
+   - Additional targeted questions beyond the initial round are required when critical unknowns or ambiguities remain.
 13. Metric quality
    - Every success metric includes baseline, target, measurement window, and method.
    - Metrics include one primary outcome metric, leading indicators, and guardrail metric.
