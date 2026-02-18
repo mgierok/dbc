@@ -110,13 +110,8 @@ Rules:
 - Do not generate final task files while critical unknowns remain unresolved.
 
 ## 5. Fixed Task Template (Must Be Exact)
-Use `../templates/task-template.md` as the authoritative task file structure.
-
-Rules:
-1. Keep template heading names and heading order unchanged.
-2. Fill every template section with concrete task-specific content.
-3. Do not add extra sections unless explicitly required by this task specification.
-4. Do not inspect existing `.tasks/PRD-*-TASK-*.md` files to infer structure.
+Apply Section 2 rule 26 as the single template contract.
+During drafting, instantiate the template first, keep heading names/order unchanged, and fill all sections with concrete task-specific content.
 
 ### 5.1 Section Rules
 1. `Overview`

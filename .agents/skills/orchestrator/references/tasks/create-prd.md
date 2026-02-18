@@ -123,13 +123,8 @@ Rules:
 - Do not send question `N+1` before processing the answer to question `N`.
 
 ## 5. Fixed PRD Template (Must Be Exact)
-Use `../templates/prd-template.md` as the authoritative PRD structure.
-
-Rules:
-1. Keep template heading names and heading order unchanged.
-2. Fill every template section with concrete content for the current feature.
-3. Do not add extra sections unless explicitly required by this task specification.
-4. Do not inspect existing `.tasks/PRD-*.md` files to infer structure.
+Apply Section 2 rule 19 as the single template contract.
+During drafting, instantiate the template first, keep heading names/order unchanged, and fill all sections with feature-specific content.
 
 ## 6. Section Rules (Authoring Guide)
 1. `Overview`
@@ -263,7 +258,7 @@ Reject the draft if any of these appear:
 11. Metrics measurable only after release with no execution-phase proxy metric.
 12. Metric definitions without a concrete execution-phase evidence artifact.
 13. Baseline placeholders such as `Not measured`, `Unknown`, or `N/A`.
-14. PRD structure inferred from existing `.tasks/PRD-*.md` files instead of using `../templates/prd-template.md`.
+14. Any violation of the template contract defined in Section 2 rule 19.
 
 ## 9. Forbidden Content
 Do not include:
