@@ -103,7 +103,9 @@ Package responsibilities:
    - Version informational rendering resolves `vcs.revision` from Go build metadata and emits a short hash token; when metadata is unavailable it emits `dev`.
    - `runStartupDispatch` short-circuits startup for informational aliases before config-path resolution or DB initialization.
    - Informational and direct-launch aliases are mutually exclusive in one startup invocation.
-   - Invalid startup arguments return clear error output and terminate startup.
+   - Invalid startup usage and argument-validation failures are classified as usage errors and mapped to exit code `2`.
+   - Usage failures emit deterministic stderr guidance in `Error` -> `Hint` -> `Usage` format.
+   - Non-usage startup/runtime failures are mapped to exit code `1`.
 2. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
    - macOS/Linux: `~/.config/dbc/config.toml`
    - Windows: `%APPDATA%\dbc\config.toml`
@@ -134,6 +136,7 @@ Package responsibilities:
 10. Bubble Tea application loop starts (`tui.Run`).
 11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), DB connection is closed and startup selector flow runs again without restarting process.
     `cmd/dbc/main.go` passes `SelectorLaunchState` (`PreferConnString` + session `AdditionalOptions`) built from in-memory startup context, and `internal/interfaces/tui/selector.go` merges those options after config-backed entries while keeping edit/delete mapped only to config indexes.
+    Startup CLI contract details in this flow align with `docs/cli-parameter-and-output-standards.md` (input-error format, help discoverability, and exit-code mapping).
 
 ### 5.2 Main Read Flow
 
@@ -259,7 +262,8 @@ Current conventions:
 
 ### 7.2 Operational Error Handling Characteristics
 
-- Invalid startup arguments terminate startup with explicit output.
+- Startup usage/argument-validation failures terminate with exit code `2` and deterministic guidance output.
+- Startup runtime/operational failures terminate with exit code `1`.
 - Malformed config content blocks startup and surfaces explicit error.
 - Invalid DB target chosen in selector keeps selector active with actionable status message.
 - Save failures retain staged state to prevent unintended data-loss semantics.

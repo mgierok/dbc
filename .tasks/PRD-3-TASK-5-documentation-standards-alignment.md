@@ -4,7 +4,7 @@ Align user-facing and technical documentation with startup CLI help/version and 
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
 - Task ID: 5
 - Task File: PRD-3-TASK-5-documentation-standards-alignment.md
@@ -62,4 +62,12 @@ After this task, documentation matches shipped startup behavior and users can re
 
 ## Completion Summary
 
-Not started.
+- Updated startup CLI behavior documentation in:
+  - `docs/product-documentation.md` (startup behavior now explicitly documents usage-error/runtime exit-code mapping and references startup CLI standards),
+  - `docs/technical-documentation.md` (startup flow and operational error handling now document usage/runtime exit-code classification and reference startup CLI standards).
+- Verified standards-reference coverage for startup sections (`docs/cli-parameter-and-output-standards.md`) and preserved non-duplicative wording by adding concise references instead of copying standards prose.
+- Preserved direct-launch startup guidance and selector-first behavior statements with no contradictory changes.
+- Reviewed `README.md` startup guidance and left it unchanged because current content is still behavior-accurate and user requested to skip non-essential README wording changes.
+- Verification executed and passed:
+  - `go test ./...`
+  - `golangci-lint run ./...`

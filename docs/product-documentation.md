@@ -95,6 +95,8 @@ Canonical ownership note:
   - `dev` when revision metadata is unavailable.
 - Informational startup aliases short-circuit startup before config and database initialization work begins.
 - Informational aliases cannot be combined with direct-launch aliases in one startup invocation.
+- Invalid startup usage and argument-validation failures exit with code `2` and show actionable guidance (`Error`, `Hint`, `Usage`).
+- Startup runtime/operational failures keep exit code `1`.
 - When direct launch parameter is provided:
   - DBC validates target connectivity before runtime starts.
   - Before runtime opens, DBC normalizes direct-launch SQLite path identity against configured entries and reuses the configured entry when a normalized match exists.
@@ -120,6 +122,7 @@ Canonical ownership note:
   - `save`: persist staged changes, then open selector/management only on success.
   - `discard`: clear staged changes, then open selector/management.
   - `cancel`: keep current session context and preserve staged changes.
+- Startup CLI behavior in this section follows `docs/cli-parameter-and-output-standards.md` for help/discoverability, argument-validation feedback, and exit-code mapping.
 - See technical documentation: `docs/technical-documentation.md#51-startup-flow`.
 - See technical documentation: `docs/technical-documentation.md#62-runtime-configuration-contract`.
 
