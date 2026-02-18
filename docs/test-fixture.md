@@ -160,6 +160,55 @@ rm -f "$TMP_HOME/.config/dbc/config.toml"
 HOME="$TMP_HOME" "$DBC_BIN"
 ```
 
+## Manual Scenario (PRD-4 Task 3)
+
+Startup method binding:
+
+- This scenario uses `Variant 1: Direct Launch via -d`.
+
+Preconditions:
+
+- Run `Shared Tmp Bootstrap` once from this document.
+
+Execution steps and expected observations:
+
+1. Start DBC with direct launch:
+   - Command: `HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_DB"`
+   - Expected observation:
+     - Startup goes directly to main view (no selector-first screen).
+     - Left panel table list includes: `categories`, `customers`, `order_items`, `orders`, `products`.
+2. Navigate to `customers` records:
+   - Keys: `j`, then `Enter`
+   - Expected observation:
+     - Right panel switches to `Records`.
+     - `customers` rows include emails:
+       - `alice@example.com`
+       - `bob@example.com`
+       - `charlie@example.com`
+3. Exit:
+   - Key: `q`
+   - Expected observation: process exits cleanly (status `0`) and terminal returns to shell prompt.
+
+Pass/fail criteria:
+
+- PASS: every expected observation in steps 1-3 is satisfied in one continuous run.
+- FAIL: any expected observation is missing or mismatched.
+
+Failure reporting notes:
+
+- Record:
+  - executed startup command,
+  - failing step number,
+  - observed output/screen state,
+  - expected output/screen state,
+  - whether rerun reproduced the same mismatch.
+
+Rerun notes:
+
+- Re-run `Shared Tmp Bootstrap` before each retry.
+- Keep startup method fixed (`-d`) and fixture source fixed (`docs/test.db`).
+- Use `Tmp Cleanup` after each run to avoid cross-run residue.
+
 ### Tmp Cleanup
 
 ```bash

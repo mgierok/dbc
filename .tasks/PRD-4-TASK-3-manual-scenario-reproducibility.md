@@ -4,7 +4,7 @@ Define one standardized manual validation scenario tied to the canonical fixture
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-4-agent-testability-tmp-startup-fixture.md
 - Task ID: 3
 - Task File: PRD-4-TASK-3-manual-scenario-reproducibility.md
@@ -69,4 +69,31 @@ After this task, application behavior remains unchanged, and a reusable manual s
 
 ## Completion Summary
 
-Not started.
+Completed deliverables:
+
+1. Updated `docs/test-fixture.md` with one standardized manual validation scenario bound to startup `Variant 1: Direct Launch via -d`.
+2. Added deterministic execution contract for the scenario:
+   - precondition reference to `Shared Tmp Bootstrap`,
+   - ordered step list,
+   - explicit expected observations,
+   - explicit pass/fail criteria,
+   - actionable failure-reporting and rerun notes.
+
+Verification evidence (FR/NFR + M3):
+
+- FR-009:
+  - happy: executed `HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_DB"` in tmp context; observed direct main-view startup with fixture table list (`categories`, `customers`, `order_items`, `orders`, `products`), then `j` + `Enter` switched to `customers` records view showing rows for `alice@example.com`, `bob@example.com`, `charlie@example.com`; `q` exited with status `0`.
+  - negative: intentionally altered one expected observation (`dave@example.com` instead of `charlie@example.com`) in scenario validation check; validation failed as expected (`actual_emails=alice@example.com|bob@example.com|charlie@example.com`).
+- NFR-001:
+  - scenario run used only instructions documented in `docs/test-fixture.md` (`Shared Tmp Bootstrap` + scenario steps) without hidden setup steps.
+- NFR-004:
+  - scenario command path (`HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_DB"`) executed copy-paste without manual rewriting.
+
+Metric checkpoint:
+
+- M3 PASS: one standardized manual scenario was executed end-to-end with expected outcomes and explicit failure-mode validation.
+
+Project validation:
+
+- `golangci-lint run ./...` -> `0 issues.`
+- `go test ./...` -> pass for all packages.
