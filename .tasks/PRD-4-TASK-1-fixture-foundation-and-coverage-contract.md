@@ -4,7 +4,7 @@ Create the canonical repository fixture database and its explicit coverage contr
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-4-agent-testability-tmp-startup-fixture.md
 - Task ID: 1
 - Task File: PRD-4-TASK-1-fixture-foundation-and-coverage-contract.md
@@ -73,4 +73,36 @@ After this task, the application startup and runtime behavior remain unchanged, 
 
 ## Completion Summary
 
-Not started.
+Completed deliverables:
+
+1. Added canonical fixture database file `docs/test.db` with deterministic relational seed data across:
+   - `customers`, `categories`, `products`, `orders`, `order_items`.
+2. Added fixture contract documentation in `docs/test-fixture.md`, including:
+   - canonical fixture identification (`docs/test.db`),
+   - relation map,
+   - edge-case coverage matrix,
+   - explicit small-fixture thresholds (`<= 1 MiB`, `<= 300` total rows, `<= 120` rows per table).
+
+Verification evidence (FR + M2):
+
+- FR-001:
+  - happy: `docs/test.db` exists and is documented as canonical fixture in `docs/test-fixture.md`.
+  - negative: missing-path check against `docs/test-db-does-not-exist.db` failed as expected.
+- FR-002:
+  - happy: `PRAGMA foreign_key_check;` returned no violations.
+  - negative: intentionally invalid relation expectation mismatch was detected (expected `1` orphan, actual `0`).
+- FR-003:
+  - happy: checklist passed for `null`, `default`, `not-null`, `unique`, `foreign-key`, `check`, `empty values`, `long values`, and varied SQLite types.
+  - negative: intentionally strict long-value expectation (`length(notes) >= 500`) failed as expected.
+- FR-004:
+  - happy: thresholds passed (`docs/test.db` size `40960` bytes, total rows `18`, max rows per table `5`).
+  - negative: stricter temporary total-row limit (`<= 10`) failed as expected.
+
+Project validation:
+
+- `golangci-lint run ./...` -> `0 issues.`
+- `go test ./...` -> pass for all packages.
+
+Metric checkpoint:
+
+- M2 PASS: all required fixture coverage categories and threshold checks passed with explicit verification evidence above.
