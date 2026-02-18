@@ -20,6 +20,10 @@ Produce clear, structured, and complementary product and technical documentation
 - Document only the current, factual application state.
 - Update impacted documentation in the same change set as every codebase change.
 - Keep content complementary, not duplicated; use explicit cross-references instead of repeating the same requirement text.
+- Prevent instruction redundancy inside documentation specs:
+  - define each normative rule once in its canonical section and reference it elsewhere,
+  - avoid repeating the same constraint across `Critical Rules`, `Workflow`, `Output Rules`, and `Troubleshooting`,
+  - when updating wording, remove stale duplicates in the same change set.
 - Treat template structures as strict contracts:
   - keep required section headings and order exactly as defined in the template,
   - do not remove, merge, or reorder required sections,
