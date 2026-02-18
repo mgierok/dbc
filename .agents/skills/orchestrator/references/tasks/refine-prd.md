@@ -28,7 +28,7 @@ The output must:
 13. Every task must include explicit traceability to parent PRD requirement IDs (`FR-*` and/or `NFR-*`), and every parent PRD requirement must be covered by at least one task.
 14. All task files must be Markdown.
 15. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
-16. This task specification is project-agnostic and must not depend on repository-specific architecture assumptions.
+16. This task specification is repository-aware and must align task planning with repository-specific architecture assumptions, tooling, and constraints.
 17. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
 18. For every parent `FR-*`, plan at least:
     - one happy-path verification scenario,
