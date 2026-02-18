@@ -286,6 +286,16 @@ When saving the generated PRD:
 2. Save in `.tasks`.
 3. Use filename format `PRD-[prd-id]-[short-name].md`.
 4. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
+   - Hint: list only PRD files (exclude task files) before choosing the next ID:
+     ```bash
+     rg --files .tasks | rg "^\\.tasks/PRD-[0-9]+-" | rg -v -- "-TASK-" | sort -V
+     ```
+   - Hint: to print the next numeric PRD ID directly:
+     ```bash
+     last_id="$(rg --files .tasks | rg "^\\.tasks/PRD-[0-9]+-" | rg -v -- "-TASK-" | sed -E 's#\\.tasks/PRD-([0-9]+)-.*#\\1#' | sort -n | tail -1)"
+     if [ -z "$last_id" ]; then last_id=0; fi
+     echo "$((last_id + 1))"
+     ```
 5. Use a short, meaningful `[short-name]`.
 6. Use kebab-case for `[short-name]`.
 
