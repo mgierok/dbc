@@ -31,8 +31,9 @@ func main() {
 		},
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid startup arguments: %v\n", err)
-		os.Exit(1)
+		failure := classifyStartupFailure(err)
+		fmt.Fprintln(os.Stderr, failure.stderrOutput)
+		os.Exit(failure.exitCode)
 	}
 }
 
@@ -144,11 +145,62 @@ const (
 const (
 	startupVersionFallbackToken   = "dev"
 	startupVersionShortHashLength = 12
+	startupExitCodeRuntimeFailure = 1
+	startupExitCodeInvalidUsage   = 2
 )
 
 type startupOptions struct {
 	directLaunchConnString string
 	informationalCommand   startupInformationalCommand
+}
+
+type startupFailure struct {
+	exitCode     int
+	stderrOutput string
+}
+
+type startupUsageError struct {
+	message string
+}
+
+func (e startupUsageError) Error() string {
+	return e.message
+}
+
+func newStartupUsageError(message string) error {
+	return startupUsageError{message: message}
+}
+
+func newStartupUsageErrorf(format string, args ...any) error {
+	return startupUsageError{message: fmt.Sprintf(format, args...)}
+}
+
+func classifyStartupFailure(err error) startupFailure {
+	var usageErr startupUsageError
+	if errors.As(err, &usageErr) {
+		return startupFailure{
+			exitCode:     startupExitCodeInvalidUsage,
+			stderrOutput: renderStartupUsageFailureOutput(usageErr),
+		}
+	}
+
+	return startupFailure{
+		exitCode:     startupExitCodeRuntimeFailure,
+		stderrOutput: fmt.Sprintf("Startup error: %v", err),
+	}
+}
+
+func renderStartupUsageFailureOutput(err error) string {
+	detail := strings.TrimSpace(err.Error())
+	detail = strings.TrimSuffix(detail, ".")
+
+	lines := []string{
+		"Error: invalid startup arguments.",
+		fmt.Sprintf("Hint: %s. Run 'dbc --help' for full startup usage.", detail),
+		"Usage: dbc [options].",
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func runStartupDispatch(
@@ -177,47 +229,47 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 		switch args[i] {
 		case "-h", "--help":
 			if options.directLaunchConnString != "" {
-				return startupOptions{}, errors.New("informational flag cannot be combined with -d/--database in the same startup invocation")
+				return startupOptions{}, newStartupUsageError("informational flag cannot be combined with -d/--database in the same startup invocation")
 			}
 			helpFlagCount++
 			if helpFlagCount > 1 {
-				return startupOptions{}, errors.New("help flag was provided more than once; use exactly one of -h or --help")
+				return startupOptions{}, newStartupUsageError("help flag was provided more than once; use exactly one of -h or --help")
 			}
 			if options.informationalCommand == startupInformationalVersion {
-				return startupOptions{}, errors.New("help and version informational flags cannot be combined in the same startup invocation")
+				return startupOptions{}, newStartupUsageError("help and version informational flags cannot be combined in the same startup invocation")
 			}
 			options.informationalCommand = startupInformationalHelp
 		case "-v", "--version":
 			if options.directLaunchConnString != "" {
-				return startupOptions{}, errors.New("informational flag cannot be combined with -d/--database in the same startup invocation")
+				return startupOptions{}, newStartupUsageError("informational flag cannot be combined with -d/--database in the same startup invocation")
 			}
 			versionFlagCount++
 			if versionFlagCount > 1 {
-				return startupOptions{}, errors.New("version flag was provided more than once; use exactly one of -v or --version")
+				return startupOptions{}, newStartupUsageError("version flag was provided more than once; use exactly one of -v or --version")
 			}
 			if options.informationalCommand == startupInformationalHelp {
-				return startupOptions{}, errors.New("help and version informational flags cannot be combined in the same startup invocation")
+				return startupOptions{}, newStartupUsageError("help and version informational flags cannot be combined in the same startup invocation")
 			}
 			options.informationalCommand = startupInformationalVersion
 		case "-d", "--database":
 			if options.directLaunchConnString != "" {
-				return startupOptions{}, errors.New("direct-launch parameter was provided more than once; use exactly one of -d or --database")
+				return startupOptions{}, newStartupUsageError("direct-launch parameter was provided more than once; use exactly one of -d or --database")
 			}
 			if options.informationalCommand != startupInformationalNone {
-				return startupOptions{}, errors.New("informational flag cannot be combined with -d/--database in the same startup invocation")
+				return startupOptions{}, newStartupUsageError("informational flag cannot be combined with -d/--database in the same startup invocation")
 			}
 			if i+1 >= len(args) {
-				return startupOptions{}, errors.New("missing value for -d/--database; usage: dbc -d <sqlite-db-path>")
+				return startupOptions{}, newStartupUsageError("missing value for -d/--database; usage: dbc -d <sqlite-db-path>")
 			}
 			next := strings.TrimSpace(args[i+1])
 			if next == "" {
-				return startupOptions{}, errors.New("empty value for -d/--database; provide a non-empty SQLite database path")
+				return startupOptions{}, newStartupUsageError("empty value for -d/--database; provide a non-empty SQLite database path")
 			}
 
 			options.directLaunchConnString = next
 			i++
 		default:
-			return startupOptions{}, fmt.Errorf(
+			return startupOptions{}, newStartupUsageErrorf(
 				"unsupported startup argument %q; supported options: -d <sqlite-db-path>, --database <sqlite-db-path>, -h/--help, -v/--version",
 				args[i],
 			)

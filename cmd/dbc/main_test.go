@@ -341,6 +341,96 @@ func TestParseStartupOptions_ReturnsErrorForUnsupportedArgument(t *testing.T) {
 	}
 }
 
+func TestParseStartupOptions_ReturnsUsageErrorTypeForValidationFailures(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "unsupported argument",
+			args: []string{"--unknown"},
+		},
+		{
+			name: "missing value",
+			args: []string{"--database"},
+		},
+		{
+			name: "mixed informational and direct launch",
+			args: []string{"--help", "--database", "/tmp/direct.sqlite"},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Act
+			_, err := parseStartupOptions(tc.args)
+
+			// Assert
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			var usageErr startupUsageError
+			if !errors.As(err, &usageErr) {
+				t.Fatalf("expected startupUsageError type, got %T", err)
+			}
+		})
+	}
+}
+
+func TestClassifyStartupFailure_MapsUsageErrorsToExitCodeTwoWithUsageContract(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	err := startupUsageError{message: "unsupported startup argument \"--bad\""}
+
+	// Act
+	failure := classifyStartupFailure(err)
+
+	// Assert
+	if failure.exitCode != 2 {
+		t.Fatalf("expected exit code 2 for usage error, got %d", failure.exitCode)
+	}
+	requiredTokens := []string{
+		"Error:",
+		"Hint:",
+		"Usage:",
+		"dbc [options]",
+		"dbc --help",
+	}
+	for _, token := range requiredTokens {
+		if !strings.Contains(failure.stderrOutput, token) {
+			t.Fatalf("expected usage contract token %q in output %q", token, failure.stderrOutput)
+		}
+	}
+}
+
+func TestClassifyStartupFailure_MapsRuntimeErrorsToExitCodeOne(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	err := errors.New("stdout write failed")
+
+	// Act
+	failure := classifyStartupFailure(err)
+
+	// Assert
+	if failure.exitCode != 1 {
+		t.Fatalf("expected exit code 1 for runtime failure, got %d", failure.exitCode)
+	}
+	if !strings.Contains(failure.stderrOutput, "Startup error:") {
+		t.Fatalf("expected runtime error prefix, got %q", failure.stderrOutput)
+	}
+	if !strings.Contains(failure.stderrOutput, "stdout write failed") {
+		t.Fatalf("expected runtime error details, got %q", failure.stderrOutput)
+	}
+}
+
 func TestRunStartupDispatch_UsesInformationalHandlerWithoutRuntimeStartup(t *testing.T) {
 	t.Parallel()
 

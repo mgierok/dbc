@@ -4,7 +4,7 @@ Standardize startup failure signaling so usage errors and runtime failures are c
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
 - Task ID: 4
 - Task File: PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization.md
@@ -64,4 +64,21 @@ After this task, startup users receive consistent actionable guidance on invalid
 
 ## Completion Summary
 
-Not started.
+- Implemented startup failure classification in `cmd/dbc/main.go` with explicit separation of:
+  - usage/argument-validation failures -> exit code `2`,
+  - runtime/operational failures -> exit code `1`.
+- Introduced `startupUsageError` for startup argument/validation parse paths and routed all parse validation failures through this type.
+- Added standardized usage-error output contract for startup argument failures:
+  - `Error: ...`
+  - `Hint: ...` (with corrective guidance and `dbc --help` reference)
+  - `Usage: dbc [options].`
+- Added/updated startup tests in `cmd/dbc/main_test.go` to cover:
+  - usage-error type classification for representative invalid startup scenarios,
+  - exit-code partitioning (`2` usage, `1` runtime),
+  - usage-error message contract tokens and actionable guidance.
+- Verification executed:
+  - `go test ./cmd/dbc -run "(ParseStartupOptions|ClassifyStartupFailure|RunStartupDispatch)"` passed.
+  - `go test ./...` passed.
+  - `golangci-lint run ./...` passed (`0 issues`).
+- Downstream context for next tasks:
+  - Task 5 can align documentation language to the implemented startup usage-error contract and exit-code semantics without changing this behavior.
