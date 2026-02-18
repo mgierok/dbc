@@ -7,7 +7,7 @@ We will know this is true when startup-playbook and fixture-coverage release tar
 
 # Metadata
 
-- Status: READY
+- Status: DONE
 
 # Problem Statement
 
