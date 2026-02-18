@@ -66,6 +66,15 @@ Rules:
 2. Do not infer structure by inspecting existing files in `.tasks`.
 3. If structure changes are needed, update the corresponding template and the related task specification in the same change.
 
+## Redundancy Guardrail
+
+Prevent instruction bloat and duplication across workflow files:
+
+1. Define each normative rule once in the most authoritative location, then reference it from other sections instead of repeating full text.
+2. Keep mode, placeholder, and template constraints in one canonical place per workflow and avoid restating them in `Core Rules`, `Workflow`, `Quality Gates`, and `Forbidden Content` simultaneously.
+3. Keep command snippets centralized in `references/commands.md` and reference hints by ID (`Hxxx`) with explicit usage context.
+4. During updates, remove or rewrite stale duplicates in the same change set so old and new wording cannot drift.
+
 ## Extending This Skill
 
 1. Add each new workflow as a separate file in `references/tasks/`.
