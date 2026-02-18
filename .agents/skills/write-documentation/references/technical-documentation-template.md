@@ -82,7 +82,6 @@ Structure rule:
 - Keep product rationale short and link to product documentation for user-value context.
 - Keep implementation facts canonical in technical documentation.
 - Do not force one-to-one mapping to product sections; structure by technical concerns when that improves maintainability.
-- Do not include development workflow instructions.
 
 ## Cross-Reference Pattern
 

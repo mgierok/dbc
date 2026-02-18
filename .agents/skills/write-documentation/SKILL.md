@@ -85,7 +85,6 @@ Produce clear, structured, and complementary documentation in Markdown only for 
 - Prefer additive, localized edits over full rewrites.
 - Keep terminology consistent across product and technical documents.
 - Follow strict template section order for all template-governed documentation updates.
-- Do not add sections that describe development flow.
 
 ## Troubleshooting
 

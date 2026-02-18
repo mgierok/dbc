@@ -76,7 +76,6 @@ Structure rule:
 - Keep implementation details out unless they change product behavior.
 - If implementation detail is needed for context, summarize in one sentence and link to technical documentation.
 - Do not expect one-to-one section mapping with technical documentation; the technical document may organize content by mechanisms and architecture rather than user flows.
-- Do not include development workflow instructions.
 
 ## Cross-Reference Pattern
 
