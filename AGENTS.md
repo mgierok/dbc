@@ -299,9 +299,31 @@ Documentation creation and modification are skill-governed:
 - mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md`
 - product and technical documentation must stay complementary and consistent via explicit cross-references
 - documentation must describe current state only and be updated with every relevant codebase change
-- `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported databases, configuration paths/schema, CLI usage/flags, keybindings, or license details change, update `README.md` in the same change set
+- `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, update `README.md` in the same change set
 - documentation must not define or describe development flow
 - all documentation references (path + anchor) must stay up to date; when section titles change, update all inbound references in the same change set
+
+### 6.1 README Purpose, Audience, and Writing Rules
+
+- Purpose: `README.md` is the primary end-user guide for installing, launching, and operating the CLI in everyday use.
+- Intended audience: technical users/operators of the application (including first-time users) who are generally familiar with terminal and CLI tooling.
+- Form of expression:
+  - concise, task-oriented, and actionable,
+  - plain user language focused on "what to run" and "what happens",
+  - command examples that are copy-paste ready,
+  - minimal internal jargon and no implementation-deep narrative.
+- `README.md` should include:
+  - installation and setup prerequisites,
+  - one primary installation path unless additional paths are explicitly required,
+  - supported database scope,
+  - core startup usage examples (`dbc` and `dbc -d <sqlite-db-path>`),
+  - a `Keyboard Controls and Commands` section covering keybindings and command-mode commands (for example `:config`),
+  - license pointer.
+- `README.md` should not include:
+  - architecture internals, dependency-direction rules, or package-level design details,
+  - standards-heavy normative contracts duplicated from internal docs,
+  - PRD/task lifecycle content, acceptance matrices, or implementation checkpoints,
+  - contributor workflow/process guidance (branching, PR flow, delivery steps).
 
 ## 7. Quick Reference
 

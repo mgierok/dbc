@@ -1,1 +1,0 @@
-1. When a documentation task spans `README.md` and internal docs, confirm audience intent early and keep `README.md` strictly end-user focused, so standards-heavy contract details stay in product/technical documentation and avoid rework.
