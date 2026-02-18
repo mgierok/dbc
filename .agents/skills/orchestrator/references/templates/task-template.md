@@ -38,7 +38,7 @@
 ## Acceptance Criteria
 
 1.
-2. Project validation requirement: affected tests and checks pass (`go test ./...`, `golangci-lint run ./...`).
+2. Project validation requirement: affected tests and quality checks pass for the changed scope.
 
 ## Dependencies
 
