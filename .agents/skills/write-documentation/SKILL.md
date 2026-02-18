@@ -22,6 +22,7 @@ Produce clear, structured, and complementary documentation in Markdown only for 
   - product doc focuses on user-visible behavior, available capabilities, constraints, and user flows,
   - technical doc focuses on architecture, mechanisms, contracts, and engineering decisions (including cross-cutting topics not tied to one specific user flow).
 - Document only the current, factual application state.
+- If documentation conflicts with current code behavior, treat code as factual source and update documentation accordingly in the same change set.
 - Update impacted documentation in the same change set as every codebase change.
 - Keep content complementary, not duplicated; use explicit cross-references instead of repeating the same requirement text.
 - Prevent instruction redundancy inside documentation specs:
