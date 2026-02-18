@@ -41,7 +41,7 @@ The output must:
    - if no trigger exists, explicitly report `LESSONS LEARNED: no qualifying trigger`.
 13. Set parent PRD `Status` to `DONE` only when both are true:
     - no other task in the same PRD remains in `READY`,
-    - parent PRD final acceptance matrix has passed (all required rows marked `PASS`).
+    - parent PRD `Release Criteria` are satisfied with explicit evidence from `DONE` task `Completion Summary` entries.
     If either condition is not met, keep parent PRD open and report the exact blocker.
 
 ## 3. Required Workflow (Execution Order)
@@ -122,9 +122,9 @@ Follow this sequence exactly:
      rg -n "^- Status: READY$" .tasks/PRD-[prd-id]-TASK-*.md
      ```
    - Use when: deciding whether parent PRD can be moved to `DONE`.
-   - Validate final acceptance matrix status in the parent PRD and confirm all required rows are `PASS`.
-   - If none has `Status: READY` and matrix status is fully `PASS`, set parent PRD `Status: DONE`.
-   - Otherwise keep parent PRD `Status` unchanged and report blocking rows or missing matrix evidence.
+   - Validate parent PRD `Release Criteria` and confirm they are satisfied by explicit evidence in `DONE` task `Completion Summary` entries.
+   - If none has `Status: READY` and release criteria evidence is sufficient, set parent PRD `Status: DONE`.
+   - Otherwise keep parent PRD `Status` unchanged and report unmet release criteria or missing evidence.
 12. Commit PRD status change separately.
     - If parent PRD status changed in step 11, create a separate commit containing only PRD status update.
 13. Publish concise completion report.
@@ -179,7 +179,7 @@ Follow this sequence exactly:
 9. Mandatory lessons-learned scan was executed and outcome was reported.
    - If triggers occurred, `lessons-learned.md` was updated with at least one numbered prevention rule.
    - If no triggers occurred, final report contains `LESSONS LEARNED: no qualifying trigger`.
-10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and final acceptance matrix rows were all `PASS`.
+10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and parent PRD `Release Criteria` were satisfied with explicit evidence.
 
 ## 8. Agent Output Contract
 When running this workflow, return concise output with:
@@ -192,5 +192,5 @@ When running this workflow, return concise output with:
 6. Task commit hash.
 7. Optional PRD-status commit hash (when PRD status changed).
 8. Whether parent PRD was moved to `DONE` or why not.
-9. Final acceptance matrix result used for PRD closure decision.
+9. Release criteria evidence result used for PRD closure decision.
 10. Lessons-learned harvest outcome (entries added or `LESSONS LEARNED: no qualifying trigger`).
