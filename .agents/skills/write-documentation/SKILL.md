@@ -29,9 +29,6 @@ Produce clear, structured, and complementary documentation in Markdown only for 
   - define each normative rule once in its canonical section and reference it elsewhere,
   - avoid repeating the same constraint across `Critical Rules`, `Workflow`, `Output Rules`, and `Troubleshooting`,
   - when updating wording, remove stale duplicates in the same change set.
-- Treat template structures as strict contracts:
-  - keep required section headings and order exactly as defined in the template,
-  - do not remove, merge, or reorder required sections.
 - Use a structured Markdown format with numbered H2 sections and stable heading hierarchy.
 - Keep wording explicit, plain, and audience-appropriate:
   - Product docs: understandable for product and junior engineering audiences.
@@ -56,8 +53,7 @@ Produce clear, structured, and complementary documentation in Markdown only for 
    - product -> technical when implementation detail is needed for context,
    - technical -> product when user-facing behavior/scope context is needed.
    - do not require direct mapping of every product flow/feature to one technical section.
-6. Enforce strict template structure:
-   - verify headings/order match the selected template exactly.
+6. Apply section-structure requirements defined in the selected template file.
 7. Ensure no development-flow guidance is introduced.
 8. Validate cross-reference links and anchors changed in this task:
    - ensure link targets exist in current target documents,
@@ -84,7 +80,6 @@ Produce clear, structured, and complementary documentation in Markdown only for 
 - For existing files, keep current numbering/anchors unless an explicit migration task requests structural alignment to the template.
 - Prefer additive, localized edits over full rewrites.
 - Keep terminology consistent across product and technical documents.
-- Follow strict template section order for all template-governed documentation updates.
 
 ## Troubleshooting
 

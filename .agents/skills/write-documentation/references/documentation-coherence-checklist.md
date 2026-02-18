@@ -34,7 +34,6 @@ Use this checklist before finalizing product and/or technical documentation upda
 
 - Existing anchors and section numbering remain stable unless intentionally changed.
 - Documentation reflects current code behavior after this change set.
-- Section headings and order match the strict template contract.
 
 ## 7. No Development Flow Content
 
