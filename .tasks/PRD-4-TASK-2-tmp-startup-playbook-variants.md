@@ -4,7 +4,7 @@ Document deterministic tmp-environment startup playbooks for the three required 
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-4-agent-testability-tmp-startup-fixture.md
 - Task ID: 2
 - Task File: PRD-4-TASK-2-tmp-startup-playbook-variants.md
@@ -74,4 +74,39 @@ After this task, startup behavior is unchanged, and users can execute copy-paste
 
 ## Completion Summary
 
-Not started.
+Completed deliverables:
+
+1. Updated `docs/test-fixture.md` with deterministic tmp startup playbooks for all required variants:
+   - direct launch via `-d`,
+   - config-file startup,
+   - startup without database parameter.
+2. Added shared tmp bootstrap and cleanup flow using:
+   - `TMP_ROOT`, `TMP_HOME`, `TMP_DB`,
+   - temporary compiled binary (`go build -o "$DBC_BIN" ./cmd/dbc`).
+3. Added executable command listings for each variant (happy + negative checks), plus required:
+   - `Specific behavior` notes,
+   - `When to use` scenarios.
+
+Verification evidence (FR + M1):
+
+- FR-005:
+  - happy: `HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_DB"` opened runtime directly (main view with fixture tables including `categories`, `customers`, `orders`) and exited with status `0` after `q`.
+  - negative: `HOME="$TMP_HOME" "$DBC_BIN" -d "$TMP_ROOT/missing.db"` failed with direct-launch guidance (`Cannot start DBC with direct launch target ...`) and exited with status `1`.
+- FR-006:
+  - happy: with valid `"$TMP_HOME/.config/dbc/config.toml"`, `HOME="$TMP_HOME" "$DBC_BIN"` opened selector-first startup, showing tmp config path and `fixture` option, then exited cleanly with status `0`.
+  - negative: malformed config (`name = "fixture` without closing quote) failed at startup with `toml: basic strings cannot have new lines` and exited with status `1`.
+- FR-007:
+  - happy: with valid config and no `-d`, `HOME="$TMP_HOME" "$DBC_BIN"` opened selector-first startup; pressing `Enter` launched runtime to the main fixture view and exited with status `0`.
+  - negative: with intentionally missing config file, `HOME="$TMP_HOME" "$DBC_BIN"` opened mandatory first-entry setup (`Add database` form with `Name`/`Path`), and `Esc` provided recovery by canceling startup with status `0`.
+- FR-008:
+  - happy: section-completeness check on `docs/test-fixture.md` returned `happy_specific=3` and `happy_when_to_use=3`.
+  - negative: simulated removal of one `When to use:` subsection reduced count to `2`, and completeness check failed as expected.
+
+Metric checkpoint:
+
+- M1 PASS: all `3/3` required startup variants are documented with executable flows and validated with recorded happy/negative outcomes.
+
+Project validation:
+
+- `golangci-lint run ./...` -> `0 issues.`
+- `go test ./...` -> pass for all packages.
