@@ -80,6 +80,7 @@ Produce clear, structured, and complementary documentation in Markdown only for 
 ## Output Rules
 
 - Preserve existing section numbering and anchors when updating existing files.
+- For existing files, keep current numbering/anchors unless an explicit migration task requests structural alignment to the template.
 - Prefer additive, localized edits over full rewrites.
 - If required section data is unknown, write `Not applicable in current state.` and call it out in `RISKS / VERIFY`.
 - Keep terminology consistent across product and technical documents.
