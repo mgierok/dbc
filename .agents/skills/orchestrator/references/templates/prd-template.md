@@ -1,3 +1,5 @@
+> Template note: replace all placeholders before save. Final PRD must not contain `TBD`, `TODO`, `Open Questions`, or unresolved decision placeholders.
+
 # Overview
 
 We believe that [change] for [target segment] will [business/user outcome].

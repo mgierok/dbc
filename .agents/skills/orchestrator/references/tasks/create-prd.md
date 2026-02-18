@@ -17,17 +17,17 @@ The PRD must be:
 5. The goal is to produce one final PRD file; clarification and validation artifacts are allowed only to define and validate that PRD. Do not start implementation planning or execution.
 6. If non-critical information is missing, capture it in `Assumptions` with confidence level.
 7. Do not invent unknown constraints.
-8. Do not finalize the PRD with any `TBD` values.
-9. Do not include an `Open Questions` section or unresolved decision placeholders.
-10. Continue clarification until all critical unknowns are resolved into explicit decisions or explicit scope exclusions.
-11. Every PRD must include a `Metadata` section with `Status` set to exactly `READY`.
-12. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
-13. Define only metrics that are operationally measurable during task execution or release validation, using evidence available in the delivery process.
-14. If a business outcome metric is naturally post-release, add at least one proxy metric measurable during task execution and use it as release decision input.
-15. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
-16. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
-17. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
-18. Use `../templates/prd-template.md` as the single source of truth for PRD file structure; do not infer structure from existing files in `.tasks`.
+8. Constraint integrity policy:
+   - Final PRD must not contain unresolved placeholders (`TBD`, `TODO`), `Open Questions`, or unresolved decision placeholders.
+   - Continue clarification until all critical unknowns are resolved into explicit decisions or explicit scope exclusions.
+9. Every PRD must include a `Metadata` section with `Status` set to exactly `READY`.
+10. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
+11. Define only metrics that are operationally measurable during task execution or release validation, using evidence available in the delivery process.
+12. If a business outcome metric is naturally post-release, add at least one proxy metric measurable during task execution and use it as release decision input.
+13. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
+14. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
+15. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
+16. Use `../templates/prd-template.md` as the single source of truth for PRD file structure; do not infer structure from existing files in `.tasks`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -222,7 +222,7 @@ During drafting, instantiate the template first, keep heading names/order unchan
    - No metric baseline uses placeholders like `Not measured`, `Unknown`, `N/A`, or `TBD`.
    - Every metric has a concrete execution-phase evidence artifact and collection procedure.
 14. Constraint integrity
-   - Final PRD contains no `TBD`.
+   - Section 2 rule `8` (constraint integrity policy) is fully satisfied.
    - Every previously unknown critical constraint is resolved as a confirmed decision or explicit out-of-scope item.
 15. Consistency
    - Goals, scope, requirements, and metrics do not contradict each other.
@@ -251,7 +251,7 @@ Reject the draft if any of these appear:
 7. Solution-first framing without clear problem evidence.
 8. Vanity metrics without decision value.
 9. Scope definition without explicit trade-offs.
-10. Any violation of Section 2 rules `8-10` (for example `TBD`, `Open Questions`, unresolved decision placeholders).
+10. Any violation of Section 2 rule `8` (constraint integrity policy).
 11. Metrics measurable only after release with no execution-phase proxy metric.
 12. Metric definitions without a concrete execution-phase evidence artifact.
 13. Baseline placeholders such as `Not measured`, `Unknown`, or `N/A`.
@@ -267,7 +267,7 @@ Do not include:
 - user stories section,
 - timeline or milestones section,
 - change log/history section,
-- unresolved placeholders (see Section 2 rules `8-10`).
+- unresolved placeholders or unresolved decisions (see Section 2 rule `8`).
 
 ## 10. File Output Rules
 When saving the generated PRD:

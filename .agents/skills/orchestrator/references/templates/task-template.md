@@ -1,3 +1,5 @@
+> Template note: replace all placeholders before save. Final task files must not contain unresolved placeholders (`TBD`, `TODO`, `to be defined`).
+
 # Overview
 
 ## Metadata
