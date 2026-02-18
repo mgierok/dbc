@@ -32,21 +32,20 @@ The output must:
 14. All task files must be Markdown.
 15. If supplemental material is provided (for example user stories), treat it as additive guidance and never as replacement for PRD truth.
 16. This task specification is repository-aware and must align task planning with repository-specific architecture assumptions, tooling, and constraints.
-17. This workflow is two-phase: draft tasks in `Plan` mode, save task files in `Default` mode.
-18. For every parent `FR-*`, plan at least:
+17. For every parent `FR-*`, plan at least:
     - one happy-path verification scenario,
     - one negative-path verification scenario.
     Each scenario must be mapped to a specific task and an explicit test/check in that task `Verification Plan`.
-19. If the PRD is split into multiple implementation tasks and behavior spans task boundaries, include a final integration task named with `integration-hardening` scope.
+18. If the PRD is split into multiple implementation tasks and behavior spans task boundaries, include a final integration task named with `integration-hardening` scope.
     - This task must be blocked by all behavior-delivering tasks for that PRD.
     - This task must verify cross-task interactions and regression coverage before PRD closure.
-20. Every parent PRD metric in `Success Metrics and Release Criteria` must be mapped to at least one task.
-21. Each mapped metric must have an execution-phase measurement checkpoint in task `Verification Plan` that is measurable before PRD closure.
-22. For post-release outcome metrics, define at least one delivery-phase proxy checkpoint used for go/no-go decisions.
-23. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
-24. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
-25. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
-26. Use `../templates/task-template.md` as the single source of truth for task file structure; do not infer structure from existing files in `.tasks`.
+19. Every parent PRD metric in `Success Metrics and Release Criteria` must be mapped to at least one task.
+20. Each mapped metric must have an execution-phase measurement checkpoint in task `Verification Plan` that is measurable before PRD closure.
+21. For post-release outcome metrics, define at least one delivery-phase proxy checkpoint used for go/no-go decisions.
+22. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
+23. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
+24. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
+25. Use `../templates/task-template.md` as the single source of truth for task file structure; do not infer structure from existing files in `.tasks`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -188,14 +187,13 @@ During drafting, instantiate the template first, keep heading names/order unchan
 ## 9. File Output Rules
 When saving tasks:
 
-1. Save only in `Default` mode; if current mode is `Plan`, stop and request switch to `Default`.
-2. Save in `.tasks`.
-3. Use filename format:
+1. Save in `.tasks`.
+2. Use filename format:
    - `PRD-[prd-id]-TASK-[task-id]-[short-task-name].md`
-4. `prd-id` must match parent PRD ID.
-5. `task-id` must be sequential from `1` to `N` within that PRD.
-6. Use kebab-case for `[short-task-name]`.
-7. Each task file must contain explicit PRD reference and explicit linked dependency references in content.
+3. `prd-id` must match parent PRD ID.
+4. `task-id` must be sequential from `1` to `N` within that PRD.
+5. Use kebab-case for `[short-task-name]`.
+6. Each task file must contain explicit PRD reference and explicit linked dependency references in content.
 
 ## 10. Quality Gates (All Must Pass Before Final Output)
 1. At least one task is generated for the PRD.
@@ -220,10 +218,10 @@ When saving tasks:
 20. File names follow required naming format.
 21. `Task ID` metadata value matches `[task-id]` in filename for every task.
 22. No task includes unresolved placeholders.
-23. Draft phase execution mode was `Plan`.
-24. Save phase execution mode was `Default`.
-25. Every mapped metric checkpoint uses `Completion Summary` of the same task file as the evidence source artifact.
-26. Template compliance
+23. Mode compliance
+   - Draft phase execution mode was `Plan`, and save phase execution mode was `Default`.
+24. Every mapped metric checkpoint uses `Completion Summary` of the same task file as the evidence source artifact.
+25. Template compliance
    - Every generated task preserves heading names and order from `../templates/task-template.md`.
 
 ## 11. Forbidden Content

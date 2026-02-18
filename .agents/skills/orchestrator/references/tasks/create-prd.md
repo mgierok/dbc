@@ -22,13 +22,12 @@ The PRD must be:
 10. Continue clarification until all critical unknowns are resolved into explicit decisions or explicit scope exclusions.
 11. Every PRD must include a `Metadata` section with `Status` set to exactly `READY`.
 12. Do not include additional metadata blocks, user stories, timeline, milestones, or change log.
-13. This workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
-14. Define only metrics that are operationally measurable during task execution or release validation, using evidence available in the delivery process.
-15. If a business outcome metric is naturally post-release, add at least one proxy metric measurable during task execution and use it as release decision input.
-16. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
-17. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
-18. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
-19. Use `../templates/prd-template.md` as the single source of truth for PRD file structure; do not infer structure from existing files in `.tasks`.
+13. Define only metrics that are operationally measurable during task execution or release validation, using evidence available in the delivery process.
+14. If a business outcome metric is naturally post-release, add at least one proxy metric measurable during task execution and use it as release decision input.
+15. Baselines must be concrete and measurable now; placeholders like `Not measured`, `Unknown`, `N/A`, or qualitative-only baselines are forbidden.
+16. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
+17. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
+18. Use `../templates/prd-template.md` as the single source of truth for PRD file structure; do not infer structure from existing files in `.tasks`.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -235,11 +234,9 @@ During drafting, instantiate the template first, keep heading names/order unchan
    - Focused feedback was requested on scope, metrics, non-goals, and residual risks.
 18. File output compliance
    - Final PRD is saved in `.tasks` as `PRD-[prd-id]-[short-name].md` with next numeric `prd-id`.
-19. Draft mode compliance
-   - Clarification, drafting, and draft quality checks were executed in `Plan` mode.
-20. Save mode compliance
-   - Final PRD file save was executed only in `Default` mode.
-21. Template compliance
+19. Mode compliance
+   - Clarification, drafting, and draft quality checks were executed in `Plan`, and final file save was executed only in `Default`.
+20. Template compliance
    - Final PRD preserves heading names and order from `../templates/prd-template.md`.
 
 ## 8. Anti-Patterns (Reject and Revise)
@@ -275,10 +272,9 @@ Do not include:
 ## 10. File Output Rules
 When saving the generated PRD:
 
-1. Save only in `Default` mode; if current mode is `Plan`, stop and request switch to `Default`.
-2. Save in `.tasks`.
-3. Use filename format `PRD-[prd-id]-[short-name].md`.
-4. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
+1. Save in `.tasks`.
+2. Use filename format `PRD-[prd-id]-[short-name].md`.
+3. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
    - For this step, inspect filenames only; do not open or parse prior PRD content.
    - Hint: list only PRD files (exclude task files) before choosing the next ID:
      ```bash
@@ -290,8 +286,8 @@ When saving the generated PRD:
      if [ -z "$last_id" ]; then last_id=0; fi
      echo "$((last_id + 1))"
      ```
-5. Use a short, meaningful `[short-name]`.
-6. Use kebab-case for `[short-name]`.
+4. Use a short, meaningful `[short-name]`.
+5. Use kebab-case for `[short-name]`.
 
 ## 11. Agent Output Contract
 When generating a PRD, follow this output flow:

@@ -12,34 +12,33 @@ The output must:
 ## 2. Core Rules (Non-Negotiable)
 1. Apply shared baseline rules from `../../SKILL.md` section `Shared Workflow Baseline`.
 2. This workflow executes exactly one task; do not execute multiple tasks in one run.
-3. Execution mode must be `Default`; if mode is not `Default`, stop and request mode switch.
-4. Input selector rules:
+3. Input selector rules:
    - input may identify one explicit task file, one explicit PRD file, or both,
    - if both are provided and inconsistent, stop and ask for one focused selector clarification.
-5. If input is PRD-only, select the first executable task for that PRD.
-6. A task is executable only if:
+4. If input is PRD-only, select the first executable task for that PRD.
+5. A task is executable only if:
    - task `Status` is exactly `READY`, and
    - all tasks listed in `blocked-by` are `DONE`.
-7. Execute work on branch derived from PRD filename:
+6. Execute work on branch derived from PRD filename:
    - branch name must equal lowercase PRD filename stem (`prd-[prd-id]-[short-name]`),
    - if branch does not exist, create it from local `main` and checkout to it,
    - do not pull/sync automatically unless user explicitly requests it.
-8. Required knowledge sources for implementation:
+7. Required knowledge sources for implementation:
    - selected task content,
    - completion summaries from dependency tasks,
    - parent PRD content,
    - current codebase state and current documentation.
-9. Verification must be executed according to selected task `Verification Plan`.
-10. After successful implementation:
+8. Verification must be executed according to selected task `Verification Plan`.
+9. After successful implementation:
    - set task `Status` to `DONE`,
    - fill `Completion Summary` with concrete delivered changes and important follow-up context.
-11. Commit completed task changes.
+10. Commit completed task changes.
     - Task implementation commit message must include parent PRD ID reference (for example `PRD-3`).
-12. Run mandatory lessons-learned harvest before final reporting:
+11. Run mandatory lessons-learned harvest before final reporting:
    - check execution/user-feedback triggers: user correction/pushback, aborted/repeated turn, verification failure with rework, ambiguity clarification, documentation consistency issue,
    - if any trigger exists, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item,
    - if no trigger exists, explicitly report `LESSONS LEARNED: no qualifying trigger`.
-13. Set parent PRD `Status` to `DONE` only when both are true:
+12. Set parent PRD `Status` to `DONE` only when both are true:
     - no other task in the same PRD remains in `READY`,
     - parent PRD `Release Criteria` are satisfied with explicit evidence from `DONE` task `Completion Summary` entries.
     If either condition is not met, keep parent PRD open and report the exact blocker.
