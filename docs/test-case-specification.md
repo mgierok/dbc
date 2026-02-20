@@ -70,6 +70,10 @@ Run all commands from repository root.
   LAST_NNN="$(rg --files test-cases 2>/dev/null | rg -o 'TC-[0-9]{3,}' | sed 's/TC-//' | sort -n | tail -1)"
   printf 'TC-%03d\n' "$((10#${LAST_NNN:-0}+1))"
   ```
+- Hint to locate a test case by number quickly:
+  ```bash
+  ID=007; rg --files -g "TC-${ID}-*.md" test-cases 2>/dev/null
+  ```
 - Do not use generic names such as `test1.md`, `scenario.md`, `case.md`.
 
 ### 2. Required Startup Script Binding

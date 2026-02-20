@@ -140,7 +140,7 @@ Execution and quality rules for TDD are defined in `docs/test-driven-development
 
 Repository-enforced TDD guardrails:
 
-- For bug fixes, you MUST add a regression test that reproduces the bug before applying the fix.
+- For bug fixes, you MUST add a regression unit test that reproduces the bug before applying the fix.
 - You MUST NOT weaken assertions only to make failing behavior pass.
 - You MUST NOT skip the `Red` step unless technically impossible; if impossible, you MUST document the reason and treat test-after as an explicit exception.
 
@@ -183,7 +183,7 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
     - linter for full repository scope (`golangci-lint run ./...`)
     - tests for full repository scope (`go test ./...`)
 - If tests cannot run, you MUST explicitly report why.
-- When running full regression tests, the agent MUST execute them based on `docs/test-case-specification.md` as the normative execution contract for scope, scenario rules, and suite result criteria.
+- When running full regression tests or a single test case, the agent MUST execute them based on `docs/test-case-specification.md` as the normative execution contract for scope, scenario rules, and suite/test-case result criteria.
 
 ### 4.3.1 Goal-Driven Verification
 
