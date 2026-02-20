@@ -5,9 +5,11 @@
 This document defines the fixture assets and the mandatory format for behavior-oriented test cases.
 It applies to tests covering:
 
-- layout behavior,
-- in-app navigation,
-- user interaction with the TUI.
+- user journeys,
+- user interaction with the TUI,
+- critical runtime paths.
+
+The target use of these cases is regression testing for startup and runtime behaviors.
 
 Every test case must be a separate Markdown file and must follow the template in `docs/test-case-template.md`.
 
@@ -95,6 +97,15 @@ Every test case must define all elements below explicitly:
 - subject under test (what behavior is being tested),
 - expected result (single, observable behavior contract),
 - pass/fail criteria mapped to explicit assertions.
+- Each case must contribute to regression coverage of at least one area from this set:
+  - user journey,
+  - TUI behavior,
+  - critical path.
+- The full `test-cases/` suite must collectively cover all three areas above.
+- A single test case may cover one, two, or all three areas.
+- Prefer expanded scenarios with multiple context-relevant assertions instead of single-assertion scenarios split into separate files.
+- Repeating an assertion across scenarios is allowed only when that assertion is necessary in the context of the scenario under test.
+- Repeated assertions must not be used as a reason to create a new scenario.
 
 Each step must contain:
 
