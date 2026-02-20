@@ -80,9 +80,6 @@ When this skill is invoked:
 - follow `.agents/skills/write-documentation/SKILL.md` as the primary writing procedure
 - limit scope strictly to `docs/product-documentation.md` and `docs/technical-documentation.md`
 - document only the current factual application state
-- update impacted documentation in the same change set as code changes
-- do not define or describe development flow in product or technical documentation
-- do not use this skill for `README.md` or any other documentation file outside the two files above
 
 ## 4. Agent Workflow Standard
 
@@ -127,7 +124,6 @@ Quick examples:
 - Respect architecture boundaries and dependency direction.
 - Prefer interface-driven changes through application ports.
 - Do not bypass use cases from interface adapters.
-- Use TDD as default for behavior changes: add/update the relevant failing test before implementation.
 - If any requirement, product behavior, or technical decision is unclear, ask the user before implementing assumptions.
 
 ### 4.2.1 Mandatory TDD Execution Rules
@@ -223,7 +219,6 @@ A task is complete when:
 - code change is implemented
 - required tests are added/updated according to TDD rules (or exception is explicitly documented)
 - tests pass (or limitation is explicitly documented)
-- impacted documentation is updated
 - naming and terminology remain consistent
 
 ### 4.4.1 Mandatory Completion Report
