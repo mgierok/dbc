@@ -151,7 +151,7 @@ Apply minimum-change rules:
 
 - Prefer the simplest solution that satisfies requirements.
 - Do not add speculative abstractions, configurability, or extensibility that were not requested.
-- When asked to add a new instruction, first verify whether the intent can be covered by extending or generalizing an existing instruction; add a new instruction only when no safe merge is possible.
+- When asked to add or change instructions/rules, first verify whether the intent can be covered by extending, generalizing, or refactoring an existing instruction; add a new instruction only when no safe merge is possible; this applies to all governance artifacts, including `AGENTS.md` and `.agents/skills/**` definitions (`SKILL.md` and `references/*`).
 - Keep changes surgical; every changed line must map directly to task intent.
 - Do not refactor adjacent or orthogonal code unless explicitly requested.
 - If unrelated issues are discovered, report them separately instead of changing them.
