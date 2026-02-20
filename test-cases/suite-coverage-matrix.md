@@ -1,20 +1,5 @@
 # Suite Coverage Matrix
 
-## Purpose
-
-Define mandatory Functional Behavior mapping and traceability from Product Documentation references to scenarios and assertions.
-
-## Coverage Review Rules
-
-1. Coverage review is `FAIL` when a mapped reference is not a Markdown link to a subsection under `docs/product-documentation.md#4-functional-behavior`.
-2. Coverage review is `FAIL` when any row has empty `Scenario IDs`.
-3. Coverage review is `FAIL` when any row has empty `Assertion IDs`.
-4. Coverage review is `FAIL` when a listed scenario ID does not resolve to an existing `test-cases/TC-*.md` file.
-5. Mapping completeness is `PASS` only when every tracked Functional Behavior reference has non-empty scenario and assertion mappings.
-6. Ownership/purity is `FAIL` when a scenario does not declare exactly one Functional Behavior reference or assertion rows contain mixed references.
-
-## Functional Behavior Mapping Matrix
-
 | Functional Behavior Reference | Scenario IDs | Assertion IDs | Mapping Completeness (`PASS`/`FAIL`) | Ownership / Purity (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | `[4.1 Database Configuration and Access](../docs/product-documentation.md#41-database-configuration-and-access)` | `TC-001` | `TC-001:A1,A2,A3` | `PASS` | `PASS` | `test-cases/TC-001-direct-launch-opens-main-view.md` |
@@ -25,10 +10,3 @@ Define mandatory Functional Behavior mapping and traceability from Product Docum
 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `TC-005` | `TC-005:A1,A2,A3,A4,A5,A6,A7,A8,A9,A10` | `PASS` | `PASS` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md` |
 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `TC-006` | `TC-006:A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11` | `PASS` | `PASS` | `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
 | `[4.8 Visual State Communication](../docs/product-documentation.md#48-visual-state-communication)` | `TC-008` | `TC-008:A1,A2,A3,A4,A5,A6` | `PASS` | `PASS` | `test-cases/TC-008-visual-state-indicators-remain-visible-during-staged-changes.md` |
-
-## Baseline Conclusion
-
-- Mapping completeness (areas `4.1` to `4.4`): `PASS` (`4/4` scoped references mapped with scenario and assertion IDs).
-- Ownership/purity (areas `4.1` to `4.4`): `PASS` (`4/4` scoped references mapped to area-pure scenarios).
-- Mapping completeness (areas `4.1` to `4.8`): `PASS` (`8/8` references mapped with scenario and assertion IDs).
-- Ownership/purity (areas `4.1` to `4.8`): `PASS` (`8/8` references mapped to area-pure scenarios).

@@ -108,8 +108,12 @@ The following files are mandatory and must remain synchronized:
 Coverage matrix contract:
 
 - Must map Functional Behavior reference -> scenario IDs -> assertion IDs.
+- `test-cases/suite-coverage-matrix.md` stores only factual mapping data (no local instructions, rules, or conclusions).
 - For each Product Documentation Functional Behavior subsection in active coverage scope, both `Scenario IDs` and `Assertion IDs` must be non-empty.
+- Every mapped reference must be a Markdown link to one subsection under `docs/product-documentation.md#4-functional-behavior`.
+- Every listed scenario ID must resolve to an existing `test-cases/TC-*.md` file.
 - Missing scenario mapping or missing assertion mapping is an audit `FAIL`.
+- Invalid reference links or unresolved scenario IDs are an audit `FAIL`.
 
 Cross-artifact mismatch contract:
 
@@ -134,3 +138,5 @@ Cross-artifact mismatch contract:
 
 - Template file: `docs/test-case-template.md`
 - All new test cases must be created by copying this file and filling placeholders.
+- Suite coverage matrix template file: `docs/test-case-suite-coverage-matrix-template.md`
+- `test-cases/suite-coverage-matrix.md` must follow `docs/test-case-suite-coverage-matrix-template.md`.
