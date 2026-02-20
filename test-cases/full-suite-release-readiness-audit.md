@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Scenario set: `TC-001` through `TC-006` in `test-cases/`
+- Scenario set: `TC-001` through `TC-008` in `test-cases/`
 - Governance artifacts:
   - `test-cases/suite-coverage-matrix.md`
   - `test-cases/scenario-structure-and-metadata-checklist.md`
@@ -39,8 +39,9 @@ Result is `FAIL` when at least one of these is true:
 | Scoped assertion purity (`TC-001` to `TC-004`) | Assertion references in `TC-001` to `TC-004` match each scenario metadata reference. | `PASS` |
 | Scoped ownership compliance (`TC-005` to `TC-006`) | `TC-005` and `TC-006` each now declare exactly one Functional Behavior reference (`4.6` and `4.7`). | `PASS` |
 | Scoped assertion purity (`TC-005` to `TC-006`) | Assertion references in `TC-005` and `TC-006` match each scenario metadata reference. | `PASS` |
-| Full-suite ownership compliance | `TC-001` to `TC-006` all declare exactly one Functional Behavior reference. | `PASS` |
+| Full-suite ownership compliance | `TC-001` to `TC-008` all declare exactly one Functional Behavior reference. | `PASS` |
 | Full-suite assertion purity | Assertion references in all active scenarios match each scenario metadata reference. | `PASS` |
+| Full-suite Functional Behavior coverage (`4.1` to `4.8`) | Coverage matrix maps every area to non-empty scenario and assertion IDs. | `PASS` |
 | Binary result determinism | Current scenarios use binary `PASS`/`FAIL` outcomes. | `PASS` |
 
 ## Expand-First Coverage Addition Evidence
@@ -53,12 +54,14 @@ Result is `FAIL` when at least one of these is true:
 | `REF-004` | `Expanded Existing TC` | `TC-004` | `none` | Refactored existing `TC-004` to area-pure `4.4` records/navigation assertions. | `1` | `1` | `PASS` |
 | `REF-005` | `Expanded Existing TC` | `TC-005` | `none` | Refactored existing `TC-005` to area-pure `4.6` insert/edit/delete ownership with deterministic operation assertions. | `1` | `1` | `PASS` |
 | `REF-006` | `Expanded Existing TC` | `TC-006` | `none` | Refactored existing `TC-006` to area-pure `4.7` staging lifecycle, undo/redo, and dirty-decision assertions. | `1` | `1` | `PASS` |
+| `REF-007` | `New TC` | `none` | `TC-007` | Added dedicated area-pure filtering scenario (`4.5`) after expand-first completion for `TC-001` to `TC-006`; new scenario was required to preserve one-area purity and keep filter-flow assertions readable. | `0` | `1` | `PASS` |
+| `REF-008` | `New TC` | `none` | `TC-008` | Added dedicated area-pure visual-state scenario (`4.8`) after expand-first completion for `TC-001` to `TC-006`; new scenario was required to preserve one-area purity and keep visual-indicator checks focused. | `0` | `1` | `PASS` |
 
 ### Expand-First Ratio Formula
 
 - Expanded-first adherence ratio = `sum(Expanded Numerator) / sum(Total Denominator)` for rows with denominator `1`.
 - If denominator sum is `0`, ratio is `N/A` for the snapshot and readiness is evaluated on contract availability.
-- Current ratio after current expansion evidence rows: `6/6 = 100%` (`PASS` against M3 threshold).
+- Current ratio after current expansion evidence rows: `6/8 = 75%` (`PASS` against M3 threshold `>=70%`).
 
 ## Determinism Violation Checkpoint
 
@@ -72,4 +75,4 @@ Result is `FAIL` when at least one of these is true:
 - Governance contract readiness: `PASS`
 - Scenario conformance readiness: `PASS`
 - Go/No-Go: `NO-GO`
-- Rationale: Ownership and purity conformance now pass for `TC-001` to `TC-006`, but release remains blocked by missing Functional Behavior coverage for areas `4.5` and `4.8`.
+- Rationale: Ownership, purity, and area coverage conformance now pass for `TC-001` to `TC-008`; final release decision remains pending dedicated integration-hardening closure in TASK-05.

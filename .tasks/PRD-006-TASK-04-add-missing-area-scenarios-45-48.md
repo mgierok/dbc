@@ -4,7 +4,7 @@ This task closes uncovered Functional Behavior areas by adding only the minimum 
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-006-functional-behavior-grouped-test-case-coverage.md
 - Task ID: 04
 - Task File: PRD-006-TASK-04-add-missing-area-scenarios-45-48.md
@@ -89,4 +89,22 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Added new area-pure scenarios:
+  - `test-cases/TC-007-filter-core-flow-applies-and-resets-on-table-switch.md` for Functional Behavior area `4.5` (filter flow: column selection, operator selection, value input for required operator, apply effect, single-active replacement behavior, and reset on table switch).
+  - `test-cases/TC-008-visual-state-indicators-remain-visible-during-staged-changes.md` for Functional Behavior area `4.8` (mode indicator, status line context, edited-cell marker `*`, and row markers `[INS]` / `[DEL]`).
+- Updated governance/traceability artifacts:
+  - `test-cases/suite-coverage-matrix.md` now maps `4.5 -> TC-007` and `4.8 -> TC-008` with assertion IDs and `PASS` ownership/purity completeness, producing full `4.1` to `4.8` mapping.
+  - `test-cases/full-suite-release-readiness-audit.md` now includes `TC-001` to `TC-008` scope, `REF-007`/`REF-008` expand-first evidence entries, and recomputed ratio.
+- Verification evidence:
+  - FR-001/FR-002 checks passed for `TC-007` and `TC-008`: metadata `Functional Behavior Reference` count is `1` in each file, and assertion-reference mismatch count is `0` (area-pure assertions only).
+  - FR-004 check passed: matrix rows `4.1` to `4.8` each contain non-empty scenario and assertion mappings, all marked `PASS`.
+  - FR-006 check passed: `TC-007` assertions validate column/operator/value flow, filter apply effect, and reset-on-table-switch behavior.
+  - FR-009 check passed: `TC-008` assertions validate required visual indicators (`READ-ONLY` / `WRITE (dirty: N)`, status line context, `[INS]`, `[DEL]`, `*` marker).
+  - FR-010 check passed: matrix and release-readiness artifacts were updated in one synchronized change with new scenario IDs/assertion mappings.
+- Metric checkpoints:
+  - M2 result: `8/8` Functional Behavior areas mapped with assertion-level traceability (`PASS`).
+  - M3 result: expand-first adherence ratio recomputed to `6/8 = 75%` (`PASS`, threshold `>=70%`).
+- Project quality gates:
+  - `gofmt`: no changed Go files.
+  - `golangci-lint run ./...`: passed (`0 issues`).
+  - `go test ./...`: passed.
