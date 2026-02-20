@@ -120,6 +120,13 @@ Cross-artifact mismatch contract:
 - Any mismatch between template fields, specification fields, and checklist rules is an audit `FAIL`.
 - Any startup command used by scenarios but missing from startup scripts catalog is an audit `FAIL`.
 
+Governance maintenance workflow:
+
+- For every new or modified `TC-*` scenario, update `test-cases/suite-coverage-matrix.md`.
+- For every new or modified `TC-*` scenario, execute structure/metadata and determinism governance checks.
+- Governance evidence must stay concrete and include scenario IDs, assertion IDs, and exact file paths.
+- Suite-level governance status is `PASS` only when coverage mapping and per-scenario governance checks are all `PASS`.
+
 ### 8. Deterministic Result Rule
 
 - Allowed assertion and final-result values are only `PASS` or `FAIL`.
