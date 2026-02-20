@@ -1,0 +1,1 @@
+1. When executing work items linked to PRD/TASK artifacts, keep implementation docs and governance artifacts free of PRD/TASK references unless explicitly requested, so that operational documentation remains reusable and context-agnostic.
