@@ -4,7 +4,7 @@ This task defines regression scenarios for save-failure handling and dirty-state
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-005-full-quality-regression-scenarios.md
 - Task ID: 04
 - Task File: PRD-005-TASK-04-save-and-navigation-dirty-state-scenarios.md
@@ -79,4 +79,25 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+Delivered save and dirty-navigation scenario coverage artifacts:
+
+- Added `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md` for save failure/recovery behavior, including retained staged state after failed save and successful corrected retry.
+- Added `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` for dirty-state `:config` decision behavior across `cancel`, `discard`, and `save` outcomes.
+- Updated `test-cases/suite-coverage-matrix.md` to map `save` and `navigation` journey areas to the new scenarios and mark both areas as `PASS` with explicit failure/recovery scenario IDs.
+
+Verification executed against this task verification plan:
+
+- FR-001: coverage matrix now maps both required areas (`save: TC-005`, `navigation: TC-006`) and sets both coverage statuses to `PASS`; negative-path unmapped conditions are no longer present.
+- FR-002: each new scenario metadata block contains exactly one startup script and one startup command from the approved startup script catalog.
+- FR-003: both scenario files include required heading order (`## 1` through `## 7`) and required metadata fields/table structures from the template contract.
+- FR-004: all step rows in `TC-005` and `TC-006` maintain one action, one expected outcome, and one assertion ID mapping.
+- FR-005: assertion result fields and final scenario result fields are deterministic and binary (`PASS`/`FAIL`) with no third-state outcomes.
+- FR-006: explicit failure/recovery behavior is covered for both target journeys:
+  - save: failure on constraint-violating staged edit followed by in-session correction and successful save,
+  - navigation: guarded dirty-state decision flow with deterministic `cancel`, `discard`, and `save` outcomes.
+- FR-008: scenario-level result contract remains binary, and final `PASS` is consistent with all listed assertions marked `PASS`.
+- Metric checkpoints: none (`PRD Metrics: none`).
+
+Downstream decision context:
+
+- Parent PRD remains open because `PRD-005-TASK-05-integration-hardening` is still `READY` and must complete full-suite integration hardening before PRD closure.
