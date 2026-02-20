@@ -103,7 +103,6 @@ The following files are mandatory and must remain synchronized:
 - `test-cases/suite-coverage-matrix.md`
 - `test-cases/scenario-structure-and-metadata-checklist.md`
 - `test-cases/deterministic-result-audit-checklist.md`
-- `test-cases/full-suite-release-readiness-audit.md`
 
 Coverage matrix contract:
 
@@ -126,15 +125,24 @@ Governance maintenance workflow:
 - For every new or modified `TC-*` scenario, execute structure/metadata and determinism governance checks.
 - Governance evidence must stay concrete and include scenario IDs, assertion IDs, and exact file paths.
 - Suite-level governance status is `PASS` only when coverage mapping and per-scenario governance checks are all `PASS`.
+- Governance checks must be displayed after execution and must not be persisted as `test-cases/*audit*.md` snapshots.
 
-### 8. Deterministic Result Rule
+### 8. Execution Result Output Contract
+
+- Result outputs must be displayed immediately after each single test-case execution and after each full-suite execution.
+- Result outputs are display-only; do not create or maintain persistent release-readiness result files in `test-cases/`.
+- Single-case and suite output format must follow `docs/test-case-execution-output-template.md`.
+- Output values remain binary:
+  - assertion/test/suite results: `PASS` or `FAIL` only.
+
+### 9. Deterministic Result Rule
 
 - Allowed assertion and final-result values are only `PASS` or `FAIL`.
 - Final `PASS` is valid only when all assertions are `PASS`.
 - Any unmet precondition, blocked execution, or failed expectation must produce final `FAIL` with reason.
 - No third state (`SKIPPED`, `UNKNOWN`, `PARTIAL`) is allowed.
 
-### 9. Strict Structure Rule
+### 10. Strict Structure Rule
 
 - Section order/headings from `docs/test-case-template.md` are mandatory.
 - Required fields/columns in template tables cannot be removed.
@@ -147,3 +155,4 @@ Governance maintenance workflow:
 - All new test cases must be created by copying this file and filling placeholders.
 - Suite coverage matrix template file: `docs/test-case-suite-coverage-matrix-template.md`
 - `test-cases/suite-coverage-matrix.md` must follow `docs/test-case-suite-coverage-matrix-template.md`.
+- Execution output template file: `docs/test-case-execution-output-template.md`
