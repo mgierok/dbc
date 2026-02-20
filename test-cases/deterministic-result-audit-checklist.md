@@ -35,24 +35,24 @@ Audit result is `FAIL` when at least one of the following is true:
 - assertion reference does not match scenario metadata reference,
 - `Violation Count` field is missing or not numeric.
 
-## Baseline Audit (`TC-001`)
+## Full-Suite Audit (`TC-001` to `TC-008`)
 
 | Check ID | Check | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- |
-| D1 | Assertion results are binary (`PASS`/`FAIL`) only. | `PASS` | `A1`, `A2`, `A3` all use `PASS`. |
-| D2 | Final test result is binary (`PASS`/`FAIL`) only. | `PASS` | `Final Result` uses `Test Result: PASS`. |
-| D3 | Final `PASS` is consistent with assertion results. | `PASS` | All listed assertions are `PASS`; final result is `PASS`. |
-| D4 | No ambiguous or third-state outcomes appear. | `PASS` | No `SKIPPED`, `UNKNOWN`, `PARTIAL`, or equivalent wording. |
-| D5 | Scenario metadata declares exactly one Functional Behavior reference. | `PASS` | Metadata includes one `Functional Behavior Reference` row targeting Product section `4.1`. |
-| D6 | Assertion rows declare Functional Behavior reference values. | `PASS` | Every assertion row includes one `Functional Behavior Reference` value. |
-| D7 | Assertion references match scenario metadata reference. | `PASS` | All assertion references are identical to metadata reference. |
+| D1 | Assertion results are binary (`PASS`/`FAIL`) only. | `PASS` | `52/52` assertion rows use only `PASS` or `FAIL`; non-binary assertion result count is `0`. |
+| D2 | Final test result is binary (`PASS`/`FAIL`) only. | `PASS` | `8/8` scenarios contain `- Test Result: PASS` or `- Test Result: FAIL`; non-binary final-result count is `0`. |
+| D3 | Final `PASS` is consistent with assertion results. | `PASS` | Final `PASS` count is `8`; assertion `FAIL` count is `0`; no scenario has contradictory final-result state. |
+| D4 | No ambiguous or third-state outcomes appear. | `PASS` | No `SKIPPED`, `UNKNOWN`, or `PARTIAL` marker is present in active scenario files. |
+| D5 | Scenario metadata declares exactly one Functional Behavior reference. | `PASS` | `8/8` scenarios contain exactly one metadata `Functional Behavior Reference` row. |
+| D6 | Assertion rows declare Functional Behavior reference values. | `PASS` | `52/52` assertion rows include one Functional Behavior reference value. |
+| D7 | Assertion references match scenario metadata reference. | `PASS` | Per-scenario Functional Behavior anchor uniqueness is `1` for each active scenario (`TC-001` to `TC-008`). |
 
-## Violation Count (Baseline)
+## Violation Count (Full Suite)
 
 - Violation Count: `0`
 - Violations: `none`
 
-## Baseline Determinism Result
+## Full-Suite Determinism Result
 
 - Result: `PASS`
-- Reason: Binary result determinism and Functional Behavior ownership-purity requirements both pass for sampled scenario `TC-001`.
+- Reason: Binary result determinism and Functional Behavior ownership-purity requirements pass across all active scenarios.

@@ -31,18 +31,17 @@ Result is `FAIL` when at least one of these is true:
 | Informational startup coverage readiness | Startup scripts catalog contains informational startup binding command. | `docs/test-case-specification.md` startup scripts catalog + `scripts/start-informational.sh` | `PASS` |
 | Cross-artifact mismatch fail policy | Cross-artifact mismatch fail triggers are explicitly defined. | `Cross-Artifact Consistency Rules` section in this file | `PASS` |
 
-## Current Suite Baseline Under Updated Governance
+## Full-Suite Integration Audit Results
 
 | Check | Observed | Result (`PASS`/`FAIL`) |
 | --- | --- | --- |
-| Scoped ownership compliance (`TC-001` to `TC-004`) | `TC-001` to `TC-004` each declare exactly one Functional Behavior reference (`4.1` to `4.4`). | `PASS` |
-| Scoped assertion purity (`TC-001` to `TC-004`) | Assertion references in `TC-001` to `TC-004` match each scenario metadata reference. | `PASS` |
-| Scoped ownership compliance (`TC-005` to `TC-006`) | `TC-005` and `TC-006` each now declare exactly one Functional Behavior reference (`4.6` and `4.7`). | `PASS` |
-| Scoped assertion purity (`TC-005` to `TC-006`) | Assertion references in `TC-005` and `TC-006` match each scenario metadata reference. | `PASS` |
-| Full-suite ownership compliance | `TC-001` to `TC-008` all declare exactly one Functional Behavior reference. | `PASS` |
-| Full-suite assertion purity | Assertion references in all active scenarios match each scenario metadata reference. | `PASS` |
-| Full-suite Functional Behavior coverage (`4.1` to `4.8`) | Coverage matrix maps every area to non-empty scenario and assertion IDs. | `PASS` |
-| Binary result determinism | Current scenarios use binary `PASS`/`FAIL` outcomes. | `PASS` |
+| Ownership metadata compliance (`FR-001`) | All active scenarios (`TC-001` to `TC-008`) contain exactly one metadata `Functional Behavior Reference` row (`8/8`). | `PASS` |
+| Assertion purity compliance (`FR-002`) | Every scenario resolves to one Functional Behavior anchor only (`unique anchor count = 1` for each file), with `52/52` assertion rows carrying matching reference links. | `PASS` |
+| Startup script binding contract | Scenario startup scripts are within specification catalog (`start-direct-launch.sh`, `start-selector-from-config.sh`, `start-informational.sh`) with no unknown script usage. | `PASS` |
+| Required structure and headings contract | Required headings `## 1` through `## 7` are present for all active scenarios (`8/8` per heading). | `PASS` |
+| Deterministic binary outcomes | `52` assertion rows are binary `PASS/FAIL`; `8` final results are binary and `PASS`; no third-state markers detected. | `PASS` |
+| Functional Behavior matrix completeness (`FR-004`) | `test-cases/suite-coverage-matrix.md` contains `8` rows (`4.1` to `4.8`), all with completeness/purity marked `PASS`. | `PASS` |
+| Governance artifact synchronization (`FR-010`) | Matrix, structure checklist, determinism checklist, and this release audit all reference active scenario set `TC-001` to `TC-008` and aligned contracts. | `PASS` |
 
 ## Expand-First Coverage Addition Evidence
 
@@ -67,12 +66,49 @@ Result is `FAIL` when at least one of these is true:
 
 - Violation Count Source: `test-cases/deterministic-result-audit-checklist.md`
 - Required threshold: `0`
-- Current observed baseline value: `0` (sampled baseline audit for `TC-001`).
+- Current observed full-suite value: `0` (`TC-001` to `TC-008`).
 - Gate rule: any non-zero value forces `FAIL`.
 
-## Release Decision (Current Snapshot)
+## Requirements Closure (`FR`/`NFR`)
+
+| Requirement ID | Closure Evidence | Result (`PASS`/`FAIL`) |
+| --- | --- | --- |
+| `FR-001` | Ownership audit across all active scenarios reports exactly one metadata Functional Behavior reference per file (`8/8`). | `PASS` |
+| `FR-002` | Assertion purity audit reports no cross-area reference drift and no metadata/assertion mismatch across `52` assertion rows. | `PASS` |
+| `FR-003` | Expand-first evidence table contains `REF-001` to `REF-008`, with new scenarios (`TC-007`, `TC-008`) added only after refactor-first sequence and explicit rationale. | `PASS` |
+| `FR-004` | Coverage matrix maps all Functional Behavior areas `4.1` through `4.8` with non-empty scenario/assertion IDs and `PASS` status. | `PASS` |
+| `FR-005` | `TC-001` validates informational startup behavior through approved `scripts/start-informational.sh` binding with deterministic `help`/`version` assertions (`A1` to `A3`). | `PASS` |
+| `FR-006` | `TC-007` covers filter flow sequence (column/operator/value), apply behavior, one-active replacement, and table-switch reset (`A1` to `A7`). | `PASS` |
+| `FR-007` | `TC-005` deterministically covers insert/edit/delete operation behavior, including pending-row removal semantics (`A1` to `A10`). | `PASS` |
+| `FR-008` | `TC-006` deterministically covers staged lifecycle with undo/redo and dirty `:config` decisions (`cancel`, `save`, `discard`) (`A1` to `A11`). | `PASS` |
+| `FR-009` | `TC-008` verifies required visual communication markers (`READ-ONLY`, `WRITE (dirty: N)`, `*`, `[INS]`, `[DEL]`) and status-line context (`A1` to `A6`). | `PASS` |
+| `FR-010` | Governance artifacts remain synchronized and include active scenario ownership/traceability evidence with no stale mapping. | `PASS` |
+| `NFR-001` | All active scenarios remain reproducible via repository startup scripts and fixture-backed startup flows. | `PASS` |
+| `NFR-002` | Scenario metadata ownership is unambiguous (`1` Functional Behavior reference per file). | `PASS` |
+| `NFR-003` | Traceability remains auditable via Functional Behavior matrix area -> scenario -> assertion mapping. | `PASS` |
+| `NFR-004` | Readability guardrail maintained: `6/8` additions delivered via expansion, and `2/8` new scenarios include explicit readability/purity rationale. | `PASS` |
+
+## Metrics Closure (`M1` to `M4`)
+
+| Metric | Threshold | Final Evidence | Result (`PASS`/`FAIL`) |
+| --- | --- | --- | --- |
+| `M1` | `100%` ownership compliance | `8/8 = 100%` scenarios pass one-area ownership contract. | `PASS` |
+| `M2` | `100%` area coverage (`8/8`) | Coverage matrix reports `8/8` Functional Behavior areas mapped with assertion traceability. | `PASS` |
+| `M3` | `>=70%` expand-first adherence | Expand-first ratio = `6/8 = 75%`. | `PASS` |
+| `M4` | `0` determinism integrity violations | Full-suite determinism violation count = `0`. | `PASS` |
+
+## Release Criteria Closure
+
+| Release Criterion | Evidence | Result (`PASS`/`FAIL`) |
+| --- | --- | --- |
+| `M1` to `M4` meet target thresholds | `M1=100%`, `M2=8/8`, `M3=75%`, `M4=0`. | `PASS` |
+| Every area `4.1` to `4.8` has mapped scenario assertions | Coverage matrix rows `4.1` to `4.8` each contain non-empty scenario and assertion IDs. | `PASS` |
+| Every active scenario passes ownership and determinism audits | Ownership/purity/determinism checks pass for `TC-001` to `TC-008`. | `PASS` |
+| Governance artifacts are synchronized with no unresolved violations | Cross-artifact checks pass for matrix + checklists + release audit. | `PASS` |
+
+## Release Decision (Final Snapshot)
 
 - Governance contract readiness: `PASS`
 - Scenario conformance readiness: `PASS`
-- Go/No-Go: `NO-GO`
-- Rationale: Ownership, purity, and area coverage conformance now pass for `TC-001` to `TC-008`; final release decision remains pending dedicated integration-hardening closure in TASK-05.
+- Go/No-Go: `GO`
+- Rationale: All PRD-006 FR/NFR requirements and metric thresholds are closed with deterministic full-suite evidence, and release criteria are fully satisfied.

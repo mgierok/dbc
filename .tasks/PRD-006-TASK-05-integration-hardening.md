@@ -4,7 +4,7 @@ This final task integrates all PRD-006 outputs and produces full requirement, me
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-006-functional-behavior-grouped-test-case-coverage.md
 - Task ID: 05
 - Task File: PRD-006-TASK-05-integration-hardening.md
@@ -104,4 +104,28 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Completed full-suite integration hardening for active scenario set `TC-001` to `TC-008` and synchronized governance evidence artifacts:
+  - `test-cases/full-suite-release-readiness-audit.md`
+  - `test-cases/scenario-structure-and-metadata-checklist.md`
+  - `test-cases/deterministic-result-audit-checklist.md`
+- Verification closure evidence:
+  - FR-001/FR-002 ownership and purity checks passed: `8/8` scenarios with exactly one metadata Functional Behavior reference, and `52/52` assertion rows with matching area references.
+  - FR-003 expand-first check passed: evidence rows `REF-001` to `REF-008` with explicit rationale for `TC-007` and `TC-008` new-scenario additions.
+  - FR-004 coverage check passed: matrix rows `4.1` to `4.8` mapped with non-empty scenario/assertion IDs and `PASS` ownership/purity.
+  - FR-005 check passed: informational startup behavior validated in `TC-001` via approved `scripts/start-informational.sh` binding and deterministic `help`/`version` assertions.
+  - FR-006 check passed: `TC-007` deterministically covers filter flow, one-active replacement, and reset-on-table-switch behavior.
+  - FR-007 check passed: `TC-005` deterministically covers insert/edit/delete operation behavior.
+  - FR-008 check passed: `TC-006` deterministically covers staging lifecycle with undo/redo and dirty `:config` decisions (`cancel`, `save`, `discard`).
+  - FR-009 check passed: `TC-008` validates required visual state indicators (`READ-ONLY`, `WRITE (dirty: N)`, `*`, `[INS]`, `[DEL]`) and status-line context.
+  - FR-010 check passed: governance artifacts remain synchronized with active scenario set and traceability mappings.
+- Metric closure:
+  - M1: `8/8 = 100%` ownership compliance (`PASS`).
+  - M2: `8/8` Functional Behavior area coverage completeness (`PASS`).
+  - M3: expand-first adherence ratio `6/8 = 75%` (`PASS`, threshold `>=70%`).
+  - M4: determinism integrity violations `0` (`PASS`).
+- Release decision outcome:
+  - Final release-readiness decision in `test-cases/full-suite-release-readiness-audit.md` is `GO`.
+- Project quality gates:
+  - `gofmt`: no changed Go files.
+  - `golangci-lint run ./...`: passed (`0 issues`).
+  - `go test ./...`: passed.

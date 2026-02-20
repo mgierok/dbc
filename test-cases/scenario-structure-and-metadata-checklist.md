@@ -45,19 +45,19 @@ Checklist result is `FAIL` when at least one of the following is true:
 - assertion rows use mixed Functional Behavior references,
 - assertion rows use Functional Behavior reference different from metadata.
 
-## Baseline Audit (`TC-001`)
+## Full-Suite Audit (`TC-001` to `TC-008`)
 
 | Check ID | Check | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- |
-| C1 | Exactly one startup script is declared. | `PASS` | Metadata has one `Startup Script` row with `scripts/start-informational.sh`. |
-| C2 | Exactly one startup command is declared. | `PASS` | Metadata has one `Startup Command` row with `bash scripts/start-informational.sh <help\|version>`. |
-| C3 | Exactly one Functional Behavior reference is declared. | `PASS` | Metadata has one `Functional Behavior Reference` row mapped to Product Functional Behavior section `4.1`. |
-| C4 | Metadata field set matches allowed set exactly. | `PASS` | Metadata includes only `Case ID`, `Functional Behavior Reference`, `Startup Script`, and `Startup Command`. |
-| C5 | Required headings exist in required order. | `PASS` | `TC-001` includes sections `1` through `7` in template order. |
-| C6 | Required table columns are present. | `PASS` | Assertions table includes `Functional Behavior Reference`, `Pass Criteria`, `Result`, and `Evidence` columns. |
-| C7 | Assertion Functional Behavior references match metadata reference. | `PASS` | Every `TC-001` assertion row references the same `4.1` link used in metadata. |
+| C1 | Exactly one startup script is declared. | `PASS` | `8/8` scenarios contain exactly one metadata `Startup Script` row. |
+| C2 | Exactly one startup command is declared. | `PASS` | `8/8` scenarios contain exactly one metadata `Startup Command` row. |
+| C3 | Exactly one Functional Behavior reference is declared. | `PASS` | `8/8` scenarios contain exactly one metadata `Functional Behavior Reference` row. |
+| C4 | Metadata field set matches allowed set exactly. | `PASS` | Each scenario metadata table contains `6` table rows (header + separator + 4 allowed data rows only). |
+| C5 | Required headings exist in required order. | `PASS` | Required headings `## 1` through `## 7` are present in all active scenarios (`8/8` per heading). |
+| C6 | Required table columns are present. | `PASS` | Assertions table header and test-step header are present in all active scenarios (`8/8`). |
+| C7 | Assertion Functional Behavior references match metadata reference. | `PASS` | All scenarios pass one-area ownership/purity checks with no metadata/assertion reference mismatch. |
 
-## Baseline Checklist Result
+## Full-Suite Checklist Result
 
 - Result: `PASS`
-- Reason: `TC-001` now satisfies startup binding, one-reference ownership, template structure, and assertion-reference equality rules.
+- Reason: Active scenario set satisfies startup binding, one-reference ownership, template structure, and assertion-reference equality rules.
