@@ -102,6 +102,7 @@ Every test case must define all elements below explicitly:
   - TUI behavior,
   - critical path.
 - The full `test-cases/` suite must collectively cover all three areas above.
+- The full `test-cases/` suite must include explicit failure and user-visible recovery coverage for every critical journey in scope.
 - A single test case may cover one, two, or all three areas.
 - Prefer expanded scenarios with multiple context-relevant assertions instead of single-assertion scenarios split into separate files.
 - Repeating an assertion across scenarios is allowed only when that assertion is necessary in the context of the scenario under test.
