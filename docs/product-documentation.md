@@ -38,6 +38,7 @@ Canonical ownership note:
 ### In Scope (Current State)
 
 - SQLite database support.
+- Supported operating systems: macOS, Linux, and Windows.
 - Startup informational flags via `-h` / `--help` and `-v` / `--version`.
 - Optional direct CLI launch for known SQLite targets via `-d` / `--database`.
 - Multi-database startup selector from local configuration.
@@ -74,9 +75,7 @@ Canonical ownership note:
 
 ### 4.1 Database Configuration and Access
 
-- DBC reads database entries from OS-specific default config paths:
-  - macOS and Linux: `~/.config/dbc/config.toml`
-  - Windows: `%APPDATA%\dbc\config.toml`
+- DBC reads database entries from the active system configuration location.
 - Startup requires at least one configured database entry.
 - Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing.
 - Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
