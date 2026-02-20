@@ -299,7 +299,9 @@ Documentation creation and modification are skill-governed:
 
 - mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`
 - product and technical documentation must stay complementary and consistent via explicit cross-references
-- documentation must describe current state only and be updated with every relevant codebase change
+- documentation must describe current factual state only, stay aligned with code/runtime behavior, and be updated with every relevant codebase change
+- prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs
+- documentation maintenance/meta-guidance belongs in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`
 - `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, update `README.md` in the same change set
 - documentation must not define or describe development flow
 - whenever any file is renamed or moved, update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts

@@ -268,12 +268,6 @@ Current conventions:
 - Invalid DB target chosen in selector keeps selector active with actionable status message.
 - Save failures retain staged state to prevent unintended data-loss semantics.
 
-### 7.3 Technical Maintenance Policy
-
-- Keep this document aligned with current code paths and runtime behavior.
-- Prefer links to deep-dive references over duplicated long-form theory.
-- Keep implementation facts canonical here and reference product intent from `docs/product-documentation.md`.
-
 ## 8. Technical Decisions and Tradeoffs
 
 ### 8.1 SQLite-First with Engine Port
