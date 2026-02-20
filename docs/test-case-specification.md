@@ -58,14 +58,14 @@ Run all commands from repository root.
 
 ### 1. File Placement and Naming
 
-- Default location: `docs/test-cases/`.
+- Default location: `test-cases/`.
 - Each case is one file in Markdown format (`.md`).
 - Filename must be descriptive and scenario-specific.
 - Filename must start with `TC-<NNN>`.
 - Use pattern: `TC-<NNN>-<behavior>-<expected-result>.md`.
 - Hint to get next number quickly (without opening/scanning test content):
   ```bash
-  LAST_NNN="$(rg --files docs/test-cases 2>/dev/null | rg -o 'TC-[0-9]{3,}' | sed 's/TC-//' | sort -n | tail -1)"
+  LAST_NNN="$(rg --files test-cases 2>/dev/null | rg -o 'TC-[0-9]{3,}' | sed 's/TC-//' | sort -n | tail -1)"
   printf 'TC-%03d\n' "$((10#${LAST_NNN:-0}+1))"
   ```
 - Do not use generic names such as `test1.md`, `scenario.md`, `case.md`.
