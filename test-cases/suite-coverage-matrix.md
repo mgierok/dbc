@@ -22,8 +22,8 @@ Define mandatory journey-area coverage mapping and deterministic pass/fail cover
 
 | Journey Area | Scenario IDs | Failure/Recovery Required | Failure/Recovery Scenario IDs | Coverage Status (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| startup | `TC-001` | Yes | `none` | `PASS` | `test-cases/TC-001-direct-launch-opens-main-view.md` |
-| selector/config | `none` | Yes | `none` | `FAIL` | No mapped selector/config scenario yet. |
+| startup | `TC-001, TC-002` | Yes | `TC-002` | `PASS` | `test-cases/TC-001-direct-launch-opens-main-view.md`, `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md` |
+| selector/config | `TC-002, TC-003` | Yes | `TC-002, TC-003` | `PASS` | `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md`, `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md` |
 | runtime/TUI | `none` | Yes | `none` | `FAIL` | No mapped runtime/TUI scenario yet. |
 | save | `none` | Yes | `none` | `FAIL` | No mapped save scenario yet. |
 | navigation | `none` | Yes | `none` | `FAIL` | No mapped navigation scenario yet. |
@@ -31,4 +31,4 @@ Define mandatory journey-area coverage mapping and deterministic pass/fail cover
 ## Current Baseline Conclusion
 
 - Coverage review result: `FAIL`
-- Reason: Required journey areas `selector/config`, `runtime/TUI`, `save`, and `navigation` are currently unmapped.
+- Reason: Required journey areas `runtime/TUI`, `save`, and `navigation` are currently unmapped.

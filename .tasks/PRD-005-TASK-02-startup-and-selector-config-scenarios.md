@@ -4,7 +4,7 @@ This task delivers manual regression scenarios for startup and selector/config m
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-005-full-quality-regression-scenarios.md
 - Task ID: 02
 - Task File: PRD-005-TASK-02-startup-and-selector-config-scenarios.md
@@ -77,4 +77,24 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+Delivered startup and selector/config scenario coverage artifacts:
+
+- Added `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md` for empty-config startup gating plus failure/recovery through invalid-first-entry rejection and corrected add flow.
+- Added `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md` for selector edit validation failure/recovery (invalid path blocked, corrected path accepted, runtime continuation).
+- Updated `test-cases/suite-coverage-matrix.md` to map startup and selector/config journey areas to new `TC-*` files and explicit failure/recovery scenario IDs.
+
+Verification executed against this task verification plan:
+
+- FR-001: startup and selector/config journey areas are now mapped in coverage matrix (`startup: TC-001, TC-002`; `selector/config: TC-002, TC-003`); negative-path unmapped failure condition no longer applies to these two areas.
+- FR-002: each new scenario metadata block contains exactly one startup script and one startup command from approved startup catalog.
+- FR-003: new scenarios keep required section heading set/order (`1` through `7`) and required metadata/table fields from template.
+- FR-004: every test-step row in new scenarios contains one action, one expected outcome, and one assertion ID.
+- FR-006: failure/recovery coverage exists for both required journeys:
+  - startup: `TC-002` (empty config + invalid first add rejected, correction path documented),
+  - selector/config: `TC-003` (invalid edit save rejected, correction path documented).
+- FR-007: scenarios include multiple contextual assertions per flow (not fragmented single-assert files) and cover full path from startup context to runtime/exit.
+- Metric checkpoints: none (`PRD Metrics: none`).
+
+Downstream decision context:
+
+- Full-suite coverage remains intentionally open for `runtime/TUI`, `save`, and `navigation` and is expected to be closed by subsequent PRD-005 tasks.
