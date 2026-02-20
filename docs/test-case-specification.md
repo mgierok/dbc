@@ -144,9 +144,7 @@ Governance maintenance workflow:
 - Final `PASS` is valid only when all assertions are `PASS`.
 - Any unmet precondition, blocked execution, or failed expectation must produce final `FAIL` with reason.
 - No third state (`SKIPPED`, `UNKNOWN`, `PARTIAL`) is allowed.
-- Scenario metadata must include exactly one `Functional Behavior Reference`.
-- Every assertion row must include exactly one `Functional Behavior Reference`.
-- Every assertion `Functional Behavior Reference` must match scenario metadata `Functional Behavior Reference`.
+- `Functional Behavior Reference` cardinality/purity rules are defined in Section 3 and are normative for deterministic checks.
 
 Violation Count contract:
 
@@ -161,9 +159,7 @@ Deterministic `FAIL` triggers:
 - final `PASS` is declared while at least one assertion is not `PASS`,
 - final `FAIL` omits failure reason/context,
 - ambiguous language prevents binary resolution,
-- scenario metadata has zero or multiple `Functional Behavior Reference` values,
-- assertion rows have zero/multiple or mixed `Functional Behavior Reference` values,
-- assertion reference does not match scenario metadata reference,
+- any violation of Section 3 `Functional Behavior Ownership Contract`,
 - `Violation Count` is missing or not numeric.
 
 ### 10. Strict Structure Rule
@@ -174,8 +170,7 @@ Deterministic `FAIL` triggers:
 - Full consistency between this document and the template is mandatory.
 - Structure/metadata conformance checks must verify:
   - exactly one startup script binding and exactly one startup command,
-  - exactly one metadata `Functional Behavior Reference`,
-  - assertion-level `Functional Behavior Reference` purity and equality with metadata reference.
+  - Section 3 `Functional Behavior Ownership Contract`.
 
 Structure/metadata conformance `FAIL` triggers:
 
@@ -183,14 +178,10 @@ Structure/metadata conformance `FAIL` triggers:
 - a scenario has more than one startup script binding,
 - a scenario has zero startup commands,
 - a scenario has more than one startup commands,
-- a scenario has zero `Functional Behavior Reference` metadata fields,
-- a scenario has more than one `Functional Behavior Reference` metadata fields,
-- `Functional Behavior Reference` is not a Markdown reference to one subsection under `docs/product-documentation.md#4-functional-behavior`,
 - any required heading from `docs/test-case/template.md` is missing,
 - required headings from `docs/test-case/template.md` are out of order,
 - a required metadata field or required table column from `docs/test-case/template.md` is missing,
-- assertion rows use mixed Functional Behavior references,
-- assertion rows use Functional Behavior reference different from metadata.
+- any violation of Section 3 `Functional Behavior Ownership Contract`.
 
 ## Canonical Template
 
