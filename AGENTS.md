@@ -24,21 +24,21 @@ If any documentation conflicts with current code behavior:
 
 ## 3. Mandatory Context Loading
 
-Before planning or coding, load only relevant sections:
+Before planning or coding, always load both full source-of-truth documents:
 
-- Product behavior and scope:
-  - `docs/product-documentation.md#3-available-capabilities`
-  - `docs/product-documentation.md#4-functional-behavior`
-  - `docs/product-documentation.md#7-constraints-and-non-goals`
-- Technical implementation baseline:
-  - `docs/technical-documentation.md#4-components-and-responsibilities`
-  - `docs/technical-documentation.md#3-architecture-and-boundaries`
-  - `docs/technical-documentation.md#5-core-technical-mechanisms`
-  - `docs/technical-documentation.md#55-testing-strategy-and-coverage`
-  - `docs/technical-documentation.md#54-technical-interaction-patterns`
-- Deep-dive references (when needed):
-  - `docs/clean-architecture-ddd.md`
-  - `docs/test-driven-development.md`
+- `docs/product-documentation.md`
+- `docs/technical-documentation.md`
+
+Deep-dive references are loaded only when task complexity requires normative detail:
+
+- `docs/clean-architecture-ddd.md`:
+  - when introducing or changing architecture boundaries,
+  - when changing dependency direction or package responsibilities,
+  - when adding features that require new ports/adapters or cross-layer orchestration.
+- `docs/test-driven-development.md`:
+  - when implementing behavior changes (feature/bug fix/refactor with behavior impact),
+  - when designing or updating test strategy/coverage,
+  - when deciding Red-Green-Refactor execution details for non-trivial changes.
 
 ### 3.1 Mandatory Unit-Test Skill Reference Loading
 
