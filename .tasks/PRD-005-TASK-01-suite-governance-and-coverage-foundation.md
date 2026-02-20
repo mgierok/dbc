@@ -4,7 +4,7 @@ This task establishes the governance and evidence foundation for PRD-005 so ever
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-005-full-quality-regression-scenarios.md
 - Task ID: 01
 - Task File: PRD-005-TASK-01-suite-governance-and-coverage-foundation.md
@@ -76,4 +76,21 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+Delivered governance foundation artifacts in `test-cases/`:
+
+- Added `test-cases/suite-coverage-matrix.md` with required journey areas (`startup`, `selector/config`, `runtime/TUI`, `save`, `navigation`), scenario mapping columns, and deterministic PASS/FAIL coverage rules.
+- Added `test-cases/scenario-structure-and-metadata-checklist.md` aligned to `docs/test-case-template.md` and `docs/test-case-specification.md`, including explicit fail triggers for startup binding and required section/metadata violations.
+- Added `test-cases/deterministic-result-audit-checklist.md` defining binary-only assertion/final-result policy (`PASS`/`FAIL`) and explicit fail triggers for ambiguous or third-state outcomes.
+- Added `test-cases/governance-baseline-audit-tc-001.md` with baseline audit results for `TC-001` and downstream usage notes for evidence updates.
+
+Verification executed against this task verification plan:
+
+- FR-001: coverage matrix contains all required journey areas and mapping columns; negative-path fail condition is explicitly defined when a required area is unmapped.
+- FR-002: checklist enforces exactly one startup script and command; negative-path fail conditions cover zero/multiple bindings.
+- FR-003: checklist enforces required heading order and required metadata/column presence; negative-path fail conditions are defined for missing sections/fields.
+- FR-005: determinism checklist enforces binary-only outcomes and explicit fail triggers for ambiguous/third-state results.
+- M3 checkpoint: governance checks were run against `TC-001`; all required checks are evaluable with deterministic pass/fail outcomes (coverage audit FAIL by design at baseline, structure/metadata PASS, determinism PASS).
+
+Downstream decision context:
+
+- Coverage completeness remains intentionally open at this stage and is expected to be closed by subsequent scenario tasks that map `selector/config`, `runtime/TUI`, `save`, and `navigation`.
