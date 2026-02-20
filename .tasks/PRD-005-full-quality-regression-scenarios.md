@@ -5,7 +5,7 @@ We will know this is true when all required regression coverage and quality metr
 
 # Metadata
 
-- Status: READY
+- Status: DONE
 
 # Problem Statement
 
