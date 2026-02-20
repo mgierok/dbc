@@ -110,6 +110,8 @@ Every test case must define all elements below explicitly:
 - Suite-level coverage matrix is mandatory for regression execution and review.
 - The coverage matrix must map each `TC-*` case ID to covered areas (`user journey`, `TUI behavior`, `critical path`) and mark whether failure/recovery validation is present where relevant.
 - The coverage matrix must be included in execution evidence and used to confirm full-suite coverage before release decision.
+- During regression suite execution, each `TC-*` test case must be assigned to a separate agent (one agent executes exactly one test case in a given run).
+- Suite-level aggregation must combine results from all assigned agents and preserve per-case evidence for auditability.
 
 Each step must contain:
 
