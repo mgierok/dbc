@@ -11,25 +11,31 @@ This file defines operating instructions for AI coding agents (for example Codex
 
 Goal: keep product and code changes consistent, safe, and aligned with project standards.
 
+### 1.1 Normative Keywords
+
+- `MUST` / `MUST NOT`: absolute requirement.
+- `SHOULD` / `SHOULD NOT`: strong default; deviations require explicit justification.
+- `MAY`: optional action based on context.
+
 ## 2. Scope and Priority
 
-- This file applies to the whole repository (project root level).
+- This file MUST be treated as applying to the whole repository (project root level).
 - Source of truth split:
   - Product perspective: `docs/product-documentation.md`
   - Technical perspective: `docs/technical-documentation.md`
 If any documentation conflicts with current code behavior:
 
-1. Treat current code as factual state.
-2. Update the relevant documentation in the same change set.
+1. You MUST treat current code as factual state.
+2. You MUST update the relevant documentation in the same change set.
 
 ## 3. Mandatory Context Loading
 
-Before planning or coding, always load both full source-of-truth documents:
+Before planning or coding, the agent MUST load both full source-of-truth documents:
 
 - `docs/product-documentation.md`
 - `docs/technical-documentation.md`
 
-Deep-dive references are loaded only when task complexity requires normative detail:
+Deep-dive references SHOULD be loaded only when task complexity requires normative detail:
 
 - `docs/clean-architecture-ddd.md`:
   - when introducing or changing architecture boundaries,
@@ -42,7 +48,7 @@ Deep-dive references are loaded only when task complexity requires normative det
 
 ### 3.1 Mandatory Unit-Test Skill Reference Loading
 
-Explicitly load `.agents/skills/create-unit-tests/references/unit-testing-guide.md` before implementation when at least one of these situations is true:
+You MUST explicitly load `.agents/skills/create-unit-tests/references/unit-testing-guide.md` before implementation when at least one of these situations is true:
 
 - creating new unit tests
 - modifying existing unit tests
@@ -51,22 +57,22 @@ Explicitly load `.agents/skills/create-unit-tests/references/unit-testing-guide.
 - reviewing unit-test quality, scope, or structure
 - designing unit-test cases for changed behavior
 
-Do not skip this reference for unit-test work, regardless of language, framework, or methodology (`TDD`, `BDD`, or test-after).
+You MUST NOT skip this reference for unit-test work, regardless of language, framework, or methodology (`TDD`, `BDD`, or test-after).
 
 ### 3.2 Mandatory Commit-Message Skill Invocation
 
-Explicitly invoke skill `write-commit-messages` when at least one of these situations is true:
+You MUST explicitly invoke skill `write-commit-messages` when at least one of these situations is true:
 
 - user asks to create/propose/write a commit message
 - user asks to run `commit` without providing a message
 - user asks to improve or validate an existing commit message
 - user asks to classify commit type/scope according to Conventional Commits
 
-When this skill is invoked, generate commit messages in Conventional Commits format and use the changed files/diff as primary context.
+When this skill is invoked, commit messages MUST use Conventional Commits format and SHOULD use the changed files/diff as primary context.
 
 ### 3.3 Mandatory Documentation Skill Invocation
 
-Explicitly invoke skill `write-documentation` when at least one of these situations is true:
+You MUST explicitly invoke skill `write-documentation` when at least one of these situations is true:
 
 - creating `docs/product-documentation.md`
 - creating `docs/technical-documentation.md`
@@ -77,15 +83,15 @@ Explicitly invoke skill `write-documentation` when at least one of these situati
 
 When this skill is invoked:
 
-- follow `.agents/skills/write-documentation/SKILL.md` as the primary writing procedure
-- limit scope strictly to `docs/product-documentation.md` and `docs/technical-documentation.md`
-- document only the current factual application state
+- you MUST follow `.agents/skills/write-documentation/SKILL.md` as the primary writing procedure
+- you MUST limit scope strictly to `docs/product-documentation.md` and `docs/technical-documentation.md`
+- you MUST document only the current factual application state
 
 ## 4. Agent Workflow Standard
 
 ### 4.1 Planning
 
-For each task:
+For each task, the agent MUST:
 
 1. Define expected product outcome (what changes for the user).
 2. Map affected layers/packages.
@@ -94,7 +100,7 @@ For each task:
 
 ### 4.1.1 Assumptions and Ambiguity Protocol
 
-For any non-trivial task, state assumptions before coding.
+For any non-trivial task, the agent MUST state assumptions before coding.
 
 Use this format:
 
@@ -103,15 +109,15 @@ Use this format:
 `2. ...`
 `-> Confirm or correct before I proceed.`
 
-If requirements are ambiguous or inconsistent, follow this flow:
+If requirements are ambiguous or inconsistent, the agent MUST follow this flow:
 
 1. Stop.
 2. Name the exact conflict.
 3. Ask one focused clarifying question or present two options with tradeoffs.
 4. Wait for user decision before continuing.
 
-Wait for user decision when ambiguity affects behavior, architecture boundaries, data safety, or public interfaces.
-You may proceed without waiting only for low-risk mechanical work (for example naming, formatting, or obvious local cleanup), but still state assumptions.
+The agent MUST wait for user decision when ambiguity affects behavior, architecture boundaries, data safety, or public interfaces.
+The agent MAY proceed without waiting only for low-risk mechanical work (for example naming, formatting, or obvious local cleanup), but MUST still state assumptions.
 
 Quick examples:
 
@@ -120,34 +126,34 @@ Quick examples:
 
 ### 4.2 Implementation
 
-- Keep changes minimal and scoped to task intent.
-- Respect architecture boundaries and dependency direction.
-- Prefer interface-driven changes through application ports.
-- Do not bypass use cases from interface adapters.
-- If any requirement, product behavior, or technical decision is unclear, ask the user before implementing assumptions.
+- Changes MUST stay minimal and scoped to task intent.
+- The implementation MUST respect architecture boundaries and dependency direction.
+- The implementation SHOULD prefer interface-driven changes through application ports.
+- Interface adapters MUST NOT bypass use cases.
+- If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
 
 ### 4.2.1 Mandatory TDD Execution Rules
 
-TDD is mandatory for every feature change, bug fix, and behavior-impacting refactor.
+TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
 
-Execution and quality rules for TDD are defined in `docs/test-driven-development.md` and are normative for implementation work in this repository.
+Execution and quality rules for TDD are defined in `docs/test-driven-development.md` and MUST be treated as normative for implementation work in this repository.
 
 Repository-enforced TDD guardrails:
 
-- For bug fixes, add a regression test that reproduces the bug before applying the fix.
-- Do not weaken assertions only to make failing behavior pass.
-- Do not skip the `Red` step unless technically impossible; if impossible, document the reason and treat test-after as an explicit exception.
+- For bug fixes, you MUST add a regression test that reproduces the bug before applying the fix.
+- You MUST NOT weaken assertions only to make failing behavior pass.
+- You MUST NOT skip the `Red` step unless technically impossible; if impossible, you MUST document the reason and treat test-after as an explicit exception.
 
 ### 4.2.2 Simplicity and Scope Discipline (Mandatory)
 
 Apply minimum-change rules:
 
-- Prefer the simplest solution that satisfies requirements.
-- Do not add speculative abstractions, configurability, or extensibility that were not requested.
-- When asked to add or change instructions/rules, first verify whether the intent can be covered by extending, generalizing, or refactoring an existing instruction; add a new instruction only when no safe merge is possible; this applies to all governance artifacts, including `AGENTS.md` and `.agents/skills/**` definitions (`SKILL.md` and `references/*`).
-- Keep changes surgical; every changed line must map directly to task intent.
-- Do not refactor adjacent or orthogonal code unless explicitly requested.
-- If unrelated issues are discovered, report them separately instead of changing them.
+- The implementation SHOULD prefer the simplest solution that satisfies requirements.
+- You MUST NOT add speculative abstractions, configurability, or extensibility that were not requested.
+- When asked to add or change instructions/rules, you MUST first verify whether the intent can be covered by extending, generalizing, or refactoring an existing instruction; you MUST add a new instruction only when no safe merge is possible; this applies to all governance artifacts, including `AGENTS.md` and `.agents/skills/**` definitions (`SKILL.md` and `references/*`).
+- Changes MUST stay surgical; every changed line MUST map directly to task intent.
+- You MUST NOT refactor adjacent or orthogonal code unless explicitly requested.
+- If unrelated issues are discovered, you MUST report them separately instead of changing them.
 
 Quick examples:
 
@@ -158,11 +164,11 @@ Quick examples:
 
 When a proposed direction has a clear technical downside:
 
-- push back directly and explain the concrete risk
-- propose a safer or simpler alternative
-- proceed with the user's choice after the risk is made explicit
+- you MUST push back directly and explain the concrete risk
+- you SHOULD propose a safer or simpler alternative
+- you MUST proceed with the user's choice after the risk is made explicit
 
-For multi-step tasks, include short checkpoints in this format:
+For multi-step tasks, the agent MUST include short checkpoints in this format:
 
 - `STEP`: what will be done now
 - `VERIFY`: how success will be checked
@@ -171,69 +177,69 @@ For multi-step tasks, include short checkpoints in this format:
 ### 4.3 Verification
 
 - Apply quality gates for code changes:
-  - during iteration, you may run formatter/linter/tests for affected scope to speed up feedback
-  - before finalizing, always run:
+  - during iteration, you MAY run formatter/linter/tests for affected scope to speed up feedback
+  - before finalizing, you MUST run:
     - formatter for changed Go code (`gofmt`)
     - linter for full repository scope (`golangci-lint run ./...`)
     - tests for full repository scope (`go test ./...`)
-- If tests cannot run, explicitly report why.
+- If tests cannot run, you MUST explicitly report why.
 
 ### 4.3.1 Goal-Driven Verification
 
-Before coding, define clear success criteria that can be verified:
+Before coding, the agent SHOULD define clear success criteria that can be verified:
 
 - bug fix: add failing regression test first, then make it pass
 - new behavior: cover happy path, edge cases, and error path
 - refactor: verify no behavior change with tests before and after
 - optimization: implement obviously-correct baseline first, then optimize while preserving behavior
 
-Avoid vague goals like "make it better" or "improve code quality" without measurable checks.
+The agent MUST avoid vague goals like "make it better" or "improve code quality" without measurable checks.
 
 ### 4.3.2 Lint and Safety Prevention Rules
 
-For every code change, apply the following non-negotiable rules:
+For every code change, the agent MUST apply the following non-negotiable rules:
 
 1. No new lint debt:
-   - Do not introduce new lint violations.
-   - Before finalizing, run `golangci-lint run ./...` and keep it clean.
+   - You MUST NOT introduce new lint violations.
+   - Before finalizing, you MUST run `golangci-lint run ./...` and keep it clean.
 2. Resource closing discipline:
-   - Do not use unchecked `defer x.Close()` in production code.
-   - Handle `Close()` errors explicitly or justify a deliberate ignore.
+   - You MUST NOT use unchecked `defer x.Close()` in production code.
+   - You MUST handle `Close()` errors explicitly or justify a deliberate ignore.
 3. SQL safety:
-   - Do not build runtime SQL using unvalidated string interpolation.
-   - Use placeholders for values.
-   - For dynamic identifiers (table/column names), use strict allowlist and/or safe identifier quoting.
+   - You MUST NOT build runtime SQL using unvalidated string interpolation.
+   - You MUST use placeholders for values.
+   - For dynamic identifiers (table/column names), you MUST use strict allowlist and/or safe identifier quoting.
 4. Security findings policy:
-   - Do not disable security linters globally to silence findings.
-   - If an exception is required, apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
-   - Every local linter exception requires explicit user approval each time (no blanket pre-approval).
+   - You MUST NOT disable security linters globally to silence findings.
+   - If an exception is required, you MUST apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
+   - Every local linter exception MUST have explicit user approval each time (no blanket pre-approval).
 5. Mandatory verification evidence in completion report:
-   - Include `golangci-lint run ./...` result.
-   - Include `go test ./...` result.
-   - List any accepted local exceptions (`#nosec` / `nolint`) with rationale.
+   - You MUST include `golangci-lint run ./...` result.
+   - You MUST include `go test ./...` result.
+   - You MUST list any accepted local exceptions (`#nosec` / `nolint`) with rationale.
 
 ### 4.4 Completion
 
-A task is complete when:
+A task is complete only when all conditions below are met:
 
 - code change is implemented
 - required tests are added/updated according to TDD rules (or exception is explicitly documented)
 - tests pass (or limitation is explicitly documented)
-- naming and terminology remain consistent
+- naming and terminology remains consistent
 
 ### 4.4.1 Mandatory Completion Report
 
-After each completed implementation, report:
+After each completed implementation, the agent MUST report:
 
 - `CHANGES MADE`: file-level summary of what changed and why
 - `THINGS NOT TOUCHED`: areas intentionally left unchanged
 - `RISKS / VERIFY`: potential regressions and additional checks to run
 
-Keep this report short and concrete so a junior engineer can quickly review and validate the result.
+The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.
 
 ### 4.4.2 Mandatory Lessons-Learned Harvest
 
-After each completed implementation, run a short retrospective scan focused on reusable process improvements.
+After each completed implementation, the agent MUST run a short retrospective scan focused on reusable process improvements.
 
 Use these triggers:
 
@@ -245,35 +251,35 @@ Use these triggers:
 
 Rules:
 
-1. If at least one trigger occurred, propose at least one numbered lesson entry and ask the user whether each proposed lesson should be saved or skipped before writing to `lessons-learned.md`.
-2. Each entry must be concrete and prevention-oriented, in this format:
+1. If at least one trigger occurred, the agent MUST propose at least one numbered lesson entry and MUST ask the user whether each proposed lesson should be saved or skipped before writing to `lessons-learned.md`.
+2. Each entry MUST be concrete and prevention-oriented, in this format:
    - `When [context/trigger], [required rule/change], so that [expected prevention result].`
-3. Prefer generalized lessons that apply across similar tasks; avoid overly case-specific wording unless specificity is required for prevention value.
-4. Do not add vague notes; entries must be actionable and testable in future tasks.
-5. If no trigger occurred, state that explicitly in the completion report (`LESSONS LEARNED: no qualifying trigger`).
+3. The agent SHOULD prefer generalized lessons that apply across similar tasks and SHOULD avoid overly case-specific wording unless specificity is required for prevention value.
+4. The agent MUST NOT add vague notes; entries MUST be actionable and testable in future tasks.
+5. If no trigger occurred, the agent MUST state that explicitly in the completion report (`LESSONS LEARNED: no qualifying trigger`).
 
 ## 5. Engineering Guardrails
 
 ### 5.1 Language and Style
 
-- Use English for identifiers and internal technical documentation.
-- Write idiomatic Go.
-- Keep functions focused and explicit in error handling.
+- The agent MUST use English for identifiers and internal technical documentation.
+- The agent MUST write idiomatic Go.
+- The agent SHOULD keep functions focused and explicit in error handling.
 
 ### 5.2 Architecture
 
-Use `docs/technical-documentation.md#3-architecture-and-boundaries` as primary architecture guide.
+The agent MUST use `docs/technical-documentation.md#3-architecture-and-boundaries` as the primary architecture guide.
 
 Non-negotiable summary:
 
-- Dependencies point inward.
-- Domain must stay isolated from outer layers.
-- TUI is an adapter (no direct database/business rule implementation).
-- Infrastructure implements ports; it does not drive use case logic.
+- Dependencies MUST point inward.
+- Domain MUST stay isolated from outer layers.
+- TUI MUST remain an adapter (no direct database/business rule implementation).
+- Infrastructure MUST implement ports and MUST NOT drive use case logic.
 
 ### 5.2.1 Architecture Rule for New Features
 
-When adding functionality:
+When adding functionality, the agent MUST follow this order:
 
 1. Start from domain model/service changes if behavior changes domain rules.
 2. Add/update use case orchestration.
@@ -283,24 +289,24 @@ When adding functionality:
 
 ### 5.3 Dependencies and Toolchain
 
-- Dependency/toolchain baseline is defined in:
+- Dependency/toolchain baseline MUST be taken from:
   - `docs/technical-documentation.md#9-technology-stack-and-versions`
   - `go.mod`
-- Adding third-party dependencies requires explicit approval.
+- Adding third-party dependencies MUST have explicit approval.
 
 ## 6. Documentation Policy
 
-Documentation creation and modification are skill-governed:
+Documentation creation and modification MUST be skill-governed:
 
-- mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`
-- product and technical documentation must stay complementary and consistent without mandatory cross-document links
-- documentation must describe current factual state only, stay aligned with code/runtime behavior, and be updated with every relevant codebase change
-- prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs
-- documentation maintenance/meta-guidance belongs in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`
-- `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, update `README.md` in the same change set
-- documentation must not define or describe development flow
-- whenever any file is renamed or moved, update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts
-- whenever Markdown headings are changed (title or numeric prefix), update inbound heading references across the repository in the same change set
+- Mandatory procedure and structure MUST come from `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`.
+- Product and technical documentation MUST stay complementary and consistent without mandatory cross-document links.
+- Documentation MUST describe current factual state only, MUST stay aligned with code/runtime behavior, and MUST be updated with every relevant codebase change.
+- The agent SHOULD prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs.
+- Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
+- `README.md` MUST be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, the agent MUST update `README.md` in the same change set.
+- Documentation MUST NOT define or describe development flow.
+- Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
+- Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
 ### 6.1 README Purpose, Audience, and Writing Rules
 
