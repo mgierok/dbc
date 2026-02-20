@@ -5,7 +5,7 @@ We will know this is true when every scoped Functional Behavior area is covered 
 
 # Metadata
 
-- Status: READY
+- Status: DONE
 
 # Problem Statement
 
