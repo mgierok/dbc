@@ -248,11 +248,12 @@ Use these triggers:
 
 Rules:
 
-1. If at least one trigger occurred, append at least one numbered entry to `lessons-learned.md`.
+1. If at least one trigger occurred, propose at least one numbered lesson entry and ask the user whether each proposed lesson should be saved or skipped before writing to `lessons-learned.md`.
 2. Each entry must be concrete and prevention-oriented, in this format:
    - `When [context/trigger], [required rule/change], so that [expected prevention result].`
-3. Do not add vague notes; entries must be actionable and testable in future tasks.
-4. If no trigger occurred, state that explicitly in the completion report (`LESSONS LEARNED: no qualifying trigger`).
+3. Prefer generalized lessons that apply across similar tasks; avoid overly case-specific wording unless specificity is required for prevention value.
+4. Do not add vague notes; entries must be actionable and testable in future tasks.
+5. If no trigger occurred, state that explicitly in the completion report (`LESSONS LEARNED: no qualifying trigger`).
 
 ## 5. Engineering Guardrails
 
