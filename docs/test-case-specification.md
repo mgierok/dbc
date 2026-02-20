@@ -114,6 +114,9 @@ Each step must contain:
 - The section order and headings from `docs/test-case-template.md` are mandatory.
 - Required fields in template tables cannot be removed.
 - Additional notes are allowed only in dedicated `Notes` fields.
+- `docs/test-case-template.md` is an integral, normative part of this specification.
+- Full consistency between this document and the template is mandatory.
+- If any inconsistency is found, this specification is the parent document and has priority; the template must be updated to match it in the same change set.
 
 ## Canonical Template
 
