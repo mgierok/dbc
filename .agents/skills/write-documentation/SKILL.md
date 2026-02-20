@@ -3,96 +3,73 @@ name: write-documentation
 description: Create and update only `docs/product-documentation.md` and `docs/technical-documentation.md` in structured Markdown with a clear split of responsibilities, explicit cross-references, and no unnecessary duplication. Use only when requests create or modify these two files, or review consistency between them.
 ---
 
-# Write Documentation
+# Write Documentation (Orchestrator)
 
-## Goal
+## Role
 
-Produce clear, structured, and complementary documentation in Markdown only for `docs/product-documentation.md` and `docs/technical-documentation.md`.
+Orchestrate documentation tasks for two allowlisted targets only:
 
-## Critical Rules
+- `docs/product-documentation.md`
+- `docs/technical-documentation.md`
 
-- Allowed targets are strict and exclusive:
-  - `docs/product-documentation.md`
-  - `docs/technical-documentation.md`
-  - Do not use this skill for `README.md` or any other file.
-- Separate intent first:
-  - Product documentation explains what and why from a product perspective.
-  - Technical documentation explains how from an implementation perspective.
-- Treat product and technical documentation as different artifacts with different goals:
-  - product doc focuses on user-visible behavior, available capabilities, constraints, and user flows,
-  - technical doc focuses on architecture, mechanisms, contracts, and engineering decisions (including cross-cutting topics not tied to one specific user flow).
-- Document only the current, factual application state.
-- If documentation conflicts with current code behavior, treat code as factual source and update documentation accordingly in the same change set.
-- Update impacted documentation in the same change set as every codebase change.
-- Keep content complementary, not duplicated; use explicit cross-references instead of repeating the same requirement text.
-- Prevent instruction redundancy inside documentation specs:
-  - define each normative rule once in its canonical section and reference it elsewhere,
-  - avoid repeating the same constraint across `Critical Rules`, `Workflow`, `Output Rules`, and `Troubleshooting`,
-  - when updating wording, remove stale duplicates in the same change set.
-- Use a structured Markdown format with numbered H2 sections and stable heading hierarchy.
-- Keep wording explicit, plain, and audience-appropriate:
-  - Product docs: understandable for product and junior engineering audiences.
-  - Technical docs: practical and implementation-oriented for engineering audiences.
-- Do not define or describe development flow (for example contributor workflow, feature delivery steps, branch strategy, PR process).
-- If scope is ambiguous and affects behavior or interfaces, ask one focused question; when options help, provide 2-3 options with clear tradeoffs.
+Do not use this skill for `README.md` or any other file.
 
-## Workflow
+## Progressive Disclosure
 
-1. Classify the request:
-   - `product`, `technical`, or `both`.
-2. Resolve target files from the strict allowlist:
-   - product target: `docs/product-documentation.md`,
-   - technical target: `docs/technical-documentation.md`.
-3. Load only required context:
-   - existing target documents,
-   - style/policy files relevant to documentation governance,
-   - `references/product-documentation-template.md` for product changes,
-   - `references/technical-documentation-template.md` for technical changes.
-4. Draft or update only the sections impacted by the request.
-5. Add targeted cross-references instead of duplicated text:
-   - product -> technical when implementation detail is needed for context,
-   - technical -> product when user-facing behavior/scope context is needed.
-   - do not require direct mapping of every product flow/feature to one technical section.
-6. Apply section-structure requirements defined in the selected template file.
-7. Ensure no development-flow guidance is introduced.
-8. Validate cross-reference links and anchors changed in this task:
-   - ensure link targets exist in current target documents,
-   - fix stale anchors introduced by section title changes.
-9. Run `references/documentation-coherence-checklist.md` before finalizing.
-10. Return a short completion report with:
+Load only references required for the selected pass:
+
+- Product pass:
+  - `references/product-documentation-rules.md`
+  - `references/product-documentation-template.md`
+- Technical pass:
+  - `references/technical-documentation-rules.md`
+  - `references/technical-documentation-template.md`
+- Always before finalizing:
+  - `references/documentation-coherence-checklist.md`
+
+## Orchestration Workflow
+
+1. Classify request scope as `product`, `technical`, or `both`.
+2. Resolve target files from the allowlist only.
+3. Execute exactly one pass at a time:
+   - If scope is `product`, run Product Pass only.
+   - If scope is `technical`, run Technical Pass only.
+   - If scope is `both`, run Product Pass first, then Technical Pass.
+4. Never update product and technical documentation in the same execution step.
+5. Run `references/documentation-coherence-checklist.md` after all requested passes are complete.
+6. Return completion report with:
    - `CHANGES MADE`
    - `THINGS NOT TOUCHED`
    - `RISKS / VERIFY`
 
-## Writing Rules by Document Type
+## Product Pass
 
-- Product documentation:
-  - Prioritize behavior, user value, scope, UX flows, and constraints.
-  - Avoid deep implementation details unless they directly affect product behavior.
-- Technical documentation:
-  - Prioritize architecture, runtime flow, interfaces, technical decisions, and constraints.
-  - Document cross-cutting technical mechanisms even when they are not directly tied to a single user flow or feature section.
-  - Avoid restating product rationale; reference product sections where needed.
+1. Load:
+   - `references/product-documentation-rules.md`
+   - `references/product-documentation-template.md`
+2. Update `docs/product-documentation.md` only.
+3. Follow the rules file as normative guidance and use the template as structural contract.
 
-## Output Rules
+## Technical Pass
 
-- Preserve existing section numbering and anchors when updating existing files.
-- For existing files, keep current numbering/anchors unless an explicit migration task requests structural alignment to the template.
-- Prefer additive, localized edits over full rewrites.
-- Keep terminology consistent across product and technical documents.
+1. Load:
+   - `references/technical-documentation-rules.md`
+   - `references/technical-documentation-template.md`
+2. Update `docs/technical-documentation.md` only.
+3. Follow the rules file as normative guidance and use the template as structural contract.
 
-## Troubleshooting
+## Guardrails
 
-- Missing counterpart document:
-  - Create only the missing allowlisted file (`docs/product-documentation.md` or `docs/technical-documentation.md`) from the relevant template and add cross-reference placeholders.
-- Conflicting statements between product and technical docs:
-  - Treat product document as source for behavior intent and technical document as source for implementation details.
-  - Resolve by editing both sides or linking to one canonical section.
-- Duplicate text across documents:
-  - Keep the most appropriate canonical version and replace duplication with concise context plus explicit links.
+- Document only current factual state.
+- If docs conflict with code behavior, update docs to match code in the same change set.
+- Do not add development workflow/process guidance.
+- Preserve existing numbering/anchors unless structural migration is explicitly requested.
+- If ambiguity affects behavior, interfaces, or architecture boundaries, ask one focused clarification question before writing.
 
-## References
+## Reference Index
 
-- Use `references/product-documentation-template.md` for product structure and writing boundaries.
-- Use `references/technical-documentation-template.md` for technical structure and writing boundaries.
-- Use `references/documentation-coherence-checklist.md` to verify consistency and complementarity.
+- `references/product-documentation-rules.md`
+- `references/technical-documentation-rules.md`
+- `references/product-documentation-template.md`
+- `references/technical-documentation-template.md`
+- `references/documentation-coherence-checklist.md`
