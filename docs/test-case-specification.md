@@ -102,7 +102,6 @@ The following files are mandatory and must remain synchronized:
 
 - `test-cases/suite-coverage-matrix.md`
 - `test-cases/scenario-structure-and-metadata-checklist.md`
-- `test-cases/deterministic-result-audit-checklist.md`
 
 Coverage matrix contract:
 
@@ -141,6 +140,27 @@ Governance maintenance workflow:
 - Final `PASS` is valid only when all assertions are `PASS`.
 - Any unmet precondition, blocked execution, or failed expectation must produce final `FAIL` with reason.
 - No third state (`SKIPPED`, `UNKNOWN`, `PARTIAL`) is allowed.
+- Scenario metadata must include exactly one `Functional Behavior Reference`.
+- Every assertion row must include exactly one `Functional Behavior Reference`.
+- Every assertion `Functional Behavior Reference` must match scenario metadata `Functional Behavior Reference`.
+
+Violation Count contract:
+
+- Each execution output (single or suite) must include explicit integer `Violation Count`.
+- Any `Violation Count > 0` forces result `FAIL`.
+- `Violation Count = 0` is required for result `PASS`.
+
+Deterministic `FAIL` triggers:
+
+- assertion result includes a value other than `PASS` or `FAIL`,
+- final `Test Result` includes a value other than `PASS` or `FAIL`,
+- final `PASS` is declared while at least one assertion is not `PASS`,
+- final `FAIL` omits failure reason/context,
+- ambiguous language prevents binary resolution,
+- scenario metadata has zero or multiple `Functional Behavior Reference` values,
+- assertion rows have zero/multiple or mixed `Functional Behavior Reference` values,
+- assertion reference does not match scenario metadata reference,
+- `Violation Count` is missing or not numeric.
 
 ### 10. Strict Structure Rule
 
