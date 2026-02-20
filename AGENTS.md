@@ -308,27 +308,10 @@ Documentation creation and modification MUST be skill-governed:
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
-### 6.1 README Purpose, Audience, and Writing Rules
+### 6.1 README Policy
 
-- Purpose: `README.md` is the primary end-user guide for installing, launching, and operating the CLI in everyday use.
-- Intended audience: technical users/operators of the application (including first-time users) who are generally familiar with terminal and CLI tooling.
-- Form of expression:
-  - concise, task-oriented, and actionable,
-  - plain user language focused on "what to run" and "what happens",
-  - command examples that are copy-paste ready,
-  - minimal internal jargon and no implementation-deep narrative.
-- `README.md` should include:
-  - installation and setup prerequisites,
-  - one primary installation path unless additional paths are explicitly required,
-  - supported database scope,
-  - core startup usage examples (`dbc` and `dbc -d <sqlite-db-path>`),
-  - a `Keyboard Controls and Commands` section covering keybindings and command-mode commands (for example `:config`),
-  - license pointer.
-- `README.md` should not include:
-  - architecture internals, dependency-direction rules, or package-level design details,
-  - standards-heavy normative contracts duplicated from internal docs,
-  - PRD/task lifecycle content, acceptance matrices, or implementation checkpoints,
-  - contributor workflow/process guidance (branching, PR flow, delivery steps).
+- Detailed README writing rules MUST be taken from `docs/readme-guidelines.md`.
+- When README-related conditions from Section 6 apply, the agent MUST update `README.md` in the same change set and MUST follow `docs/readme-guidelines.md`.
 
 ## 7. Quick Reference
 
@@ -338,3 +321,4 @@ Documentation creation and modification MUST be skill-governed:
 - TDD deep dive: `docs/test-driven-development.md`
 - Lessons learned log: `lessons-learned.md`
 - Run/setup basics: `README.md`
+- README writing rules: `docs/readme-guidelines.md`
