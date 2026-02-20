@@ -32,6 +32,3 @@
 
 ## 9. Glossary
 - Shared user/product terms.
-
-## 10. Cross-References to Technical Documentation
-- Link to relevant implementation sections.

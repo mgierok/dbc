@@ -12,7 +12,6 @@
 8. [Technology Stack and Versions](#9-technology-stack-and-versions)
 9. [Technical Constraints and Risks](#10-technical-constraints-and-risks)
 10. [Deep-Dive References](#11-deep-dive-references)
-11. [Cross-References to Product Documentation](#12-cross-references-to-product-documentation)
 
 ## 2. Technical Overview
 
@@ -29,7 +28,6 @@ Core technical characteristics:
 Canonical ownership note:
 
 - This document is canonical for implementation details, architecture, runtime mechanics, and technical constraints.
-- User-facing behavior and scope are canonical in `docs/product-documentation.md`.
 
 ## 3. Architecture and Boundaries
 
@@ -403,20 +401,7 @@ Operational risks and tradeoffs to verify during changes:
 - Save flow must preserve transactional all-or-nothing behavior for one table.
 - Selector re-entry flow must close active DB connections before reopening selector.
 
-For user-visible wording of constraints and non-goals, see `docs/product-documentation.md#7-constraints-and-non-goals`.
-
 ## 11. Deep-Dive References
 
 - Architecture and DDD details: `docs/clean-architecture-ddd.md`
 - TDD principles: `docs/test-driven-development.md`
-- Product behavior source of truth: `docs/product-documentation.md`
-
-## 12. Cross-References to Product Documentation
-
-- See product documentation: `docs/product-documentation.md#2-product-overview`.
-- See product documentation: `docs/product-documentation.md#3-available-capabilities`.
-- See product documentation: `docs/product-documentation.md#4-functional-behavior`.
-- See product documentation: `docs/product-documentation.md#5-user-flows`.
-- See product documentation: `docs/product-documentation.md#6-interaction-model`.
-- See product documentation: `docs/product-documentation.md#7-constraints-and-non-goals`.
-- See product documentation: `docs/product-documentation.md#8-safety-and-governance`.

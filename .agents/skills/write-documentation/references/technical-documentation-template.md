@@ -37,6 +37,3 @@
 ## 11. Deep-Dive References
 - Architecture deep dives.
 - Testing deep dives.
-
-## 12. Cross-References to Product Documentation
-- Link to behavior/scope source sections.

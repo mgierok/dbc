@@ -1,6 +1,6 @@
 ---
 name: write-documentation
-description: Create and update only `docs/product-documentation.md` and `docs/technical-documentation.md` in structured Markdown with a clear split of responsibilities, explicit cross-references, and no unnecessary duplication. Use only when requests create or modify these two files, or review consistency between them.
+description: Create and update only `docs/product-documentation.md` and `docs/technical-documentation.md` in structured Markdown with a clear split of responsibilities and no unnecessary duplication. Use only when requests create or modify these two files, or review consistency between them.
 ---
 
 # Write Documentation (Orchestrator)

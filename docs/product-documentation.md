@@ -10,7 +10,6 @@
 6. [Constraints and Non-Goals](#7-constraints-and-non-goals)
 7. [Safety and Governance](#8-safety-and-governance)
 8. [Glossary](#9-glossary)
-9. [Cross-References to Technical Documentation](#10-cross-references-to-technical-documentation)
 
 ## 2. Product Overview
 
@@ -31,7 +30,6 @@ Core user value in current state:
 Canonical ownership note:
 
 - This document is canonical for user-visible behavior, product scope, and user-facing constraints.
-- Implementation details are canonical in `docs/technical-documentation.md`.
 
 ## 3. Available Capabilities
 
@@ -115,8 +113,6 @@ Canonical ownership note:
   - `discard`: clear staged changes, then open selector/management.
   - `cancel`: keep current session context and preserve staged changes.
 - Startup CLI behavior in this section follows `docs/cli-parameter-and-output-standards.md` for help/discoverability, argument-validation feedback, and exit-code mapping.
-- See technical documentation: `docs/technical-documentation.md#51-startup-flow`.
-- See technical documentation: `docs/technical-documentation.md#62-runtime-configuration-contract`.
 
 ### 4.2 Main Layout and Focus Model
 
@@ -361,14 +357,3 @@ For capability boundaries and scope classification, see Section 3.
 - Filter: active condition applied to records of selected table.
 - Staged Change: pending insert/edit/delete not yet saved to the database.
 - Dirty State: staged changes exist, and write mode with an unsaved changes count is active.
-
-## 10. Cross-References to Technical Documentation
-
-- See technical documentation: `docs/technical-documentation.md#3-architecture-and-boundaries`.
-- See technical documentation: `docs/technical-documentation.md#4-components-and-responsibilities`.
-- See technical documentation: `docs/technical-documentation.md#5-core-technical-mechanisms`.
-- See technical documentation: `docs/technical-documentation.md#51-startup-flow`.
-- See technical documentation: `docs/technical-documentation.md#53-write-flow`.
-- See technical documentation: `docs/technical-documentation.md#6-data-and-interface-contracts`.
-- See technical documentation: `docs/technical-documentation.md#8-technical-decisions-and-tradeoffs`.
-- See technical documentation: `docs/technical-documentation.md#10-technical-constraints-and-risks`.

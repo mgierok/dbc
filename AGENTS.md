@@ -72,7 +72,7 @@ Explicitly invoke skill `write-documentation` when at least one of these situati
 - creating `docs/technical-documentation.md`
 - modifying `docs/product-documentation.md`
 - modifying `docs/technical-documentation.md`
-- reviewing consistency, complementarity, or cross-references between `docs/product-documentation.md` and `docs/technical-documentation.md`
+- reviewing consistency or complementarity between `docs/product-documentation.md` and `docs/technical-documentation.md`
 - implementing any codebase change that affects documented behavior, scope, architecture, runtime, interfaces, or constraints reflected in `docs/product-documentation.md` and/or `docs/technical-documentation.md`
 
 When this skill is invoked:
@@ -298,7 +298,7 @@ When adding functionality:
 Documentation creation and modification are skill-governed:
 
 - mandatory procedure and structure: `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`
-- product and technical documentation must stay complementary and consistent via explicit cross-references
+- product and technical documentation must stay complementary and consistent without mandatory cross-document links
 - documentation must describe current factual state only, stay aligned with code/runtime behavior, and be updated with every relevant codebase change
 - prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs
 - documentation maintenance/meta-guidance belongs in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`

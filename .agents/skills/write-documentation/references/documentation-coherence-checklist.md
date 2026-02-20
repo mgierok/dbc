@@ -25,7 +25,7 @@ Use this checklist before finalizing product and/or technical documentation upda
 
 ## 5. Traceability
 
-- Traceability links are present where they improve understanding and navigation.
+- Traceability is clear from section structure and terminology, without mandatory cross-document links.
 - Do not force one-to-one mapping between product flows/features and technical sections.
 - Technical documentation may contain cross-cutting sections that do not map directly to a single product flow.
 - Product documentation remains centered on capabilities/behavior/flows; technical documentation remains centered on architecture/mechanisms/contracts.
@@ -46,10 +46,4 @@ Use this checklist before finalizing product and/or technical documentation upda
 
 ## Optional Traceability Matrix Template
 
-```markdown
-| Product Section | Technical Section | Relationship | Notes |
-| --- | --- | --- | --- |
-| {path}#{product-anchor} | {path}#{technical-anchor} | Implements / Constrains / Depends on | ... |
-```
-
-Use this matrix only when a direct mapping is helpful for the current change; it is not a mandatory artifact.
+Traceability matrix is intentionally omitted in this skill variant to avoid introducing cross-document link requirements.
