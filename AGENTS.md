@@ -132,18 +132,15 @@ Quick examples:
 
 ### 4.2.1 Mandatory TDD Execution Rules
 
-For every feature change, bug fix, or behavior-impacting refactor, execute `Red -> Green -> Refactor`:
+TDD is mandatory for every feature change, bug fix, and behavior-impacting refactor.
 
-1. `Red`: add or update a test that fails for the target behavior.
-2. `Green`: implement the minimal production change required to pass.
-3. `Refactor`: improve code/test structure while keeping tests green.
+Execution and quality rules for TDD are defined in `docs/test-driven-development.md` and are normative for implementation work in this repository.
 
-Additional mandatory rules:
+Repository-enforced TDD guardrails:
 
-- For bug fixes, write a regression test reproducing the bug before applying the fix.
-- Do not weaken assertions just to make failing behavior pass.
-- Do not skip the `Red` step unless technically impossible.
-- If `Red` is technically impossible (for example missing seam in legacy code), explicitly document why and apply test-after only as a justified exception.
+- For bug fixes, add a regression test that reproduces the bug before applying the fix.
+- Do not weaken assertions only to make failing behavior pass.
+- Do not skip the `Red` step unless technically impossible; if impossible, document the reason and treat test-after as an explicit exception.
 
 ### 4.2.2 Simplicity and Scope Discipline (Mandatory)
 
