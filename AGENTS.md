@@ -301,7 +301,8 @@ Documentation creation and modification are skill-governed:
 - documentation must describe current state only and be updated with every relevant codebase change
 - `README.md` must be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, update `README.md` in the same change set
 - documentation must not define or describe development flow
-- all documentation references (path + anchor) must stay up to date; when section titles change, update all inbound references in the same change set
+- whenever any file is renamed or moved, update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts
+- whenever Markdown headings are changed (title or numeric prefix), update inbound heading references across the repository in the same change set
 
 ### 6.1 README Purpose, Audience, and Writing Rules
 
