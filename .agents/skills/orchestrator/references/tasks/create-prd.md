@@ -28,6 +28,9 @@ The PRD must be:
 14. Every metric must name a concrete evidence source artifact (for example CI job result, test report, checklist audit, scripted usability run) that can be produced during execution.
 15. Do not scan or use content from previous PRD files while creating a new PRD; previous PRDs may be used only to determine the next numeric `prd-id`.
 16. Use `../templates/prd-template.md` as the single source of truth for PRD file structure; do not infer structure from existing files in `.tasks`.
+17. Consistency contract for referenced template:
+   - Full consistency is mandatory between this task specification and `../templates/prd-template.md`.
+   - If this specification changes template expectations, update the template in the same change set.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:

@@ -46,6 +46,9 @@ The output must:
 23. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
 24. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
 25. Use `../templates/task-template.md` as the single source of truth for task file structure; do not infer structure from existing files in `.tasks`.
+26. Consistency contract for referenced template:
+    - Full consistency is mandatory between this task specification and `../templates/task-template.md`.
+    - If this specification changes template expectations, update the template in the same change set.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
