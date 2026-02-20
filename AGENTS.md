@@ -175,9 +175,11 @@ For multi-step tasks, include short checkpoints in this format:
 ### 4.3 Verification
 
 - Apply quality gates for code changes:
-  - run formatter for changed code (for Go: `gofmt`)
-  - run linter for affected scope (for Go: `golangci-lint run`)
-  - run tests; for feature/code changes run `go test ./...`
+  - during iteration, you may run formatter/linter/tests for affected scope to speed up feedback
+  - before finalizing, always run:
+    - formatter for changed Go code (`gofmt`)
+    - linter for full repository scope (`golangci-lint run ./...`)
+    - tests for full repository scope (`go test ./...`)
 - If tests cannot run, explicitly report why.
 
 ### 4.3.1 Goal-Driven Verification
