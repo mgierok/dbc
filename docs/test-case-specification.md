@@ -101,7 +101,6 @@ Assertions table must contain:
 The following files are mandatory and must remain synchronized:
 
 - `test-cases/suite-coverage-matrix.md`
-- `test-cases/scenario-structure-and-metadata-checklist.md`
 
 Coverage matrix contract:
 
@@ -115,7 +114,7 @@ Coverage matrix contract:
 
 Cross-artifact mismatch contract:
 
-- Any mismatch between template fields, specification fields, and checklist rules is an audit `FAIL`.
+- Any mismatch between template fields and this specification is an audit `FAIL`.
 - Any startup command used by scenarios but missing from startup scripts catalog is an audit `FAIL`.
 
 Governance maintenance workflow:
@@ -168,6 +167,25 @@ Deterministic `FAIL` triggers:
 - Required fields/columns in template tables cannot be removed.
 - Additional notes are allowed only in the dedicated `Notes` field.
 - Full consistency between this document and the template is mandatory.
+- Structure/metadata conformance checks must verify:
+  - exactly one startup script binding and exactly one startup command,
+  - exactly one metadata `Functional Behavior Reference`,
+  - assertion-level `Functional Behavior Reference` purity and equality with metadata reference.
+
+Structure/metadata conformance `FAIL` triggers:
+
+- a scenario has zero startup script bindings,
+- a scenario has more than one startup script binding,
+- a scenario has zero startup commands,
+- a scenario has more than one startup commands,
+- a scenario has zero `Functional Behavior Reference` metadata fields,
+- a scenario has more than one `Functional Behavior Reference` metadata fields,
+- `Functional Behavior Reference` is not a Markdown reference to one subsection under `docs/product-documentation.md#4-functional-behavior`,
+- any required heading from `docs/test-case-template.md` is missing,
+- required headings from `docs/test-case-template.md` are out of order,
+- a required metadata field or required table column from `docs/test-case-template.md` is missing,
+- assertion rows use mixed Functional Behavior references,
+- assertion rows use Functional Behavior reference different from metadata.
 
 ## Canonical Template
 
