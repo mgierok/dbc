@@ -107,6 +107,9 @@ Every test case must define all elements below explicitly:
 - Prefer expanded scenarios with multiple context-relevant assertions instead of single-assertion scenarios split into separate files.
 - Repeating an assertion across scenarios is allowed only when that assertion is necessary in the context of the scenario under test.
 - Repeated assertions must not be used as a reason to create a new scenario.
+- Suite-level coverage matrix is mandatory for regression execution and review.
+- The coverage matrix must map each `TC-*` case ID to covered areas (`user journey`, `TUI behavior`, `critical path`) and mark whether failure/recovery validation is present where relevant.
+- The coverage matrix must be included in execution evidence and used to confirm full-suite coverage before release decision.
 
 Each step must contain:
 
