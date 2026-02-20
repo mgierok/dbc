@@ -45,16 +45,16 @@ Result is `FAIL` when at least one of these is true:
 
 | Coverage Change ID | Delivery Method (`Expanded Existing TC` \| `New TC`) | Expanded Scenario IDs | New Scenario IDs | Expand-First Evidence | Counts Toward Expanded Numerator (`0/1`) | Counts Toward Total Denominator (`0/1`) | Result (`PASS`/`FAIL`) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `TASK-02-001` | `Expanded Existing TC` | `TC-001` | `none` | Refactored existing `TC-001` to area-pure `4.1` with informational startup script binding (`help`/`version`). | `1` | `1` | `PASS` |
-| `TASK-02-002` | `Expanded Existing TC` | `TC-002` | `none` | Refactored existing `TC-002` to area-pure `4.2` layout/focus ownership assertions. | `1` | `1` | `PASS` |
-| `TASK-02-003` | `Expanded Existing TC` | `TC-003` | `none` | Refactored existing `TC-003` to area-pure `4.3` table discovery and schema assertions. | `1` | `1` | `PASS` |
-| `TASK-02-004` | `Expanded Existing TC` | `TC-004` | `none` | Refactored existing `TC-004` to area-pure `4.4` records/navigation assertions. | `1` | `1` | `PASS` |
+| `REF-001` | `Expanded Existing TC` | `TC-001` | `none` | Refactored existing `TC-001` to area-pure `4.1` with informational startup script binding (`help`/`version`). | `1` | `1` | `PASS` |
+| `REF-002` | `Expanded Existing TC` | `TC-002` | `none` | Refactored existing `TC-002` to area-pure `4.2` layout/focus ownership assertions. | `1` | `1` | `PASS` |
+| `REF-003` | `Expanded Existing TC` | `TC-003` | `none` | Refactored existing `TC-003` to area-pure `4.3` table discovery and schema assertions. | `1` | `1` | `PASS` |
+| `REF-004` | `Expanded Existing TC` | `TC-004` | `none` | Refactored existing `TC-004` to area-pure `4.4` records/navigation assertions. | `1` | `1` | `PASS` |
 
 ### Expand-First Ratio Formula
 
 - Expanded-first adherence ratio = `sum(Expanded Numerator) / sum(Total Denominator)` for rows with denominator `1`.
 - If denominator sum is `0`, ratio is `N/A` for the snapshot and readiness is evaluated on contract availability.
-- Current ratio after TASK-02 evidence rows: `4/4 = 100%` (`PASS` against M3 threshold).
+- Current ratio after current expansion evidence rows: `4/4 = 100%` (`PASS` against M3 threshold).
 
 ## Determinism Violation Checkpoint
 
