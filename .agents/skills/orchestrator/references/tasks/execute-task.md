@@ -20,7 +20,7 @@ The output must:
    - task `Status` is exactly `READY`, and
    - all tasks listed in `blocked-by` are `DONE`.
 6. Execute work on branch derived from PRD filename:
-   - branch name must equal lowercase PRD filename stem (`prd-[prd-id]-[short-name]`),
+   - branch name must equal lowercase PRD filename stem (`prd-[prd-id]-[short-name]`, where `[prd-id]` is three digits),
    - if branch does not exist, create it from local `main` and checkout to it,
    - do not pull/sync automatically unless user explicitly requests it.
 7. Required knowledge sources for implementation:
@@ -33,7 +33,7 @@ The output must:
    - set task `Status` to `DONE`,
    - fill `Completion Summary` with concrete delivered changes and important follow-up context.
 10. Commit completed task changes.
-    - Task implementation commit message must include parent PRD ID reference (for example `PRD-3`).
+    - Task implementation commit message must include parent PRD ID reference (for example `PRD-003`).
 11. Run mandatory lessons-learned harvest before final reporting:
    - check execution/user-feedback triggers: user correction/pushback, aborted/repeated turn, verification failure with rework, ambiguity clarification, documentation consistency issue,
    - if any trigger exists, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item,
@@ -71,7 +71,7 @@ Follow this sequence exactly:
 5. Resolve parent PRD and branch.
    - Identify parent PRD from task metadata.
    - Use hint `H006` from `../commands.md` when selector input is a task file and branch source PRD must be resolved quickly.
-   - Derive branch name from PRD filename stem and convert to lowercase (`prd-[prd-id]-[short-name]`).
+   - Derive branch name from PRD filename stem and convert to lowercase (`prd-[prd-id]-[short-name]`, where `[prd-id]` is three digits).
    - If branch exists, checkout it.
    - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
 6. Execute selected task implementation.
@@ -90,7 +90,7 @@ Follow this sequence exactly:
    - If no trigger occurred, record `LESSONS LEARNED: no qualifying trigger` in final report.
 10. Commit.
     - Create one commit containing task implementation and task-state update.
-    - Commit message must include parent PRD ID reference (for example `PRD-3`).
+    - Commit message must include parent PRD ID reference (for example `PRD-003`).
 11. Finalize PRD state.
    - Inspect sibling tasks for same PRD.
    - Use hint `H009` from `../commands.md` when deciding whether parent PRD can be moved to `DONE`.
@@ -116,7 +116,7 @@ Follow this sequence exactly:
 ## 5. Branch Rules
 1. Parent branch naming source is PRD filename, not task filename.
 2. Branch name format must be PRD stem:
-   - `prd-[prd-id]-[short-name]`
+   - `prd-[prd-id]-[short-name]` where `[prd-id]` is three digits.
 3. Creation flow when missing:
    - checkout `main`,
    - create and checkout target branch from current local `main` state,
@@ -130,7 +130,7 @@ Follow this sequence exactly:
    - key implementation outcomes,
    - tests/checks executed,
    - decisions relevant for downstream tasks.
-4. Commit message should reflect executed task intent and scope, and must include parent PRD ID reference (for example `PRD-3`).
+4. Commit message should reflect executed task intent and scope, and must include parent PRD ID reference (for example `PRD-003`).
 5. If PRD status is changed to `DONE`, commit that status update in a separate commit from task implementation.
 
 ## 7. Quality Gates (All Must Pass)
@@ -142,7 +142,7 @@ Follow this sequence exactly:
 5. Verification followed task `Verification Plan` and passed.
 6. Task status was updated to `DONE` with non-empty `Completion Summary`.
 7. Implementation was committed.
-   - Task implementation commit message included parent PRD ID reference (for example `PRD-3`).
+   - Task implementation commit message included parent PRD ID reference (for example `PRD-003`).
 8. If PRD status changed, that change was committed separately.
 9. Mandatory lessons-learned scan was executed and outcome was reported.
    - If triggers occurred, `lessons-learned.md` was updated with at least one numbered prevention rule.

@@ -5,9 +5,9 @@ Protect staged data integrity during `:config` navigation by requiring explicit 
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-1-database-config-management.md
-- Task ID: 5
-- Task File: PRD-1-TASK-5-dirty-state-decision-flow-for-config-navigation.md
+- PRD: PRD-001-database-config-management.md
+- Task ID: 05
+- Task File: PRD-001-TASK-05-dirty-state-decision-flow-for-config-navigation.md
 - PRD Requirements: FR-007, NFR-001, NFR-002, NFR-003, NFR-005
 
 ## Objective
@@ -61,7 +61,7 @@ Add mandatory tri-option dirty-state prompt (`save`, `discard`, `cancel`) before
 
 ## Dependencies
 
-- blocked-by: [PRD-1-TASK-4-in-session-config-command-routing](.tasks/PRD-1-TASK-4-in-session-config-command-routing.md)
+- blocked-by: [PRD-001-TASK-04-in-session-config-command-routing](.tasks/PRD-001-TASK-04-in-session-config-command-routing.md)
 - blocks: none
 
 ## Completion Summary

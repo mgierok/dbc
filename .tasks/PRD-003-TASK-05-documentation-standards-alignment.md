@@ -5,9 +5,9 @@ Align user-facing and technical documentation with startup CLI help/version and 
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
-- Task ID: 5
-- Task File: PRD-3-TASK-5-documentation-standards-alignment.md
+- PRD: PRD-003-cli-help-version-and-startup-cli-standards.md
+- Task ID: 05
+- Task File: PRD-003-TASK-05-documentation-standards-alignment.md
 - PRD Requirements: FR-008, NFR-004
 
 ## Objective
@@ -29,13 +29,13 @@ After this task, documentation matches shipped startup behavior and users can re
 
 ### Out of Scope
 
-- Broad documentation restructuring unrelated to PRD-3 behavior.
+- Broad documentation restructuring unrelated to PRD-003 behavior.
 - Introducing new standards not already defined in `docs/cli-parameter-and-output-standards.md`.
 - Non-startup documentation cleanup unrelated to scoped changes.
 
 ## Implementation Plan
 
-1. Identify startup behavior sections in `README.md`, `docs/product-documentation.md`, and `docs/technical-documentation.md` affected by PRD-3.
+1. Identify startup behavior sections in `README.md`, `docs/product-documentation.md`, and `docs/technical-documentation.md` affected by PRD-003.
 2. Update behavior statements for help/version contracts, informational short-circuit semantics, and exit-code mapping.
 3. Add explicit cross-references to `docs/cli-parameter-and-output-standards.md` without duplicating standards text.
 4. Verify terminology consistency across product and technical documents.
@@ -57,8 +57,8 @@ After this task, documentation matches shipped startup behavior and users can re
 
 ## Dependencies
 
-- blocked-by: [PRD-3-TASK-2-startup-help-output-contract](.tasks/PRD-3-TASK-2-startup-help-output-contract.md), [PRD-3-TASK-3-startup-version-output-contract](.tasks/PRD-3-TASK-3-startup-version-output-contract.md), [PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization](.tasks/PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization.md)
-- blocks: [PRD-3-TASK-6-integration-hardening](.tasks/PRD-3-TASK-6-integration-hardening.md)
+- blocked-by: [PRD-003-TASK-02-startup-help-output-contract](.tasks/PRD-003-TASK-02-startup-help-output-contract.md), [PRD-003-TASK-03-startup-version-output-contract](.tasks/PRD-003-TASK-03-startup-version-output-contract.md), [PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization](.tasks/PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization.md)
+- blocks: [PRD-003-TASK-06-integration-hardening](.tasks/PRD-003-TASK-06-integration-hardening.md)
 
 ## Completion Summary
 

@@ -5,9 +5,9 @@ Standardize startup failure signaling so usage errors and runtime failures are c
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
-- Task ID: 4
-- Task File: PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization.md
+- PRD: PRD-003-cli-help-version-and-startup-cli-standards.md
+- Task ID: 04
+- Task File: PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization.md
 - PRD Requirements: FR-006, FR-007, NFR-002, NFR-004
 
 ## Objective
@@ -59,8 +59,8 @@ After this task, startup users receive consistent actionable guidance on invalid
 
 ## Dependencies
 
-- blocked-by: [PRD-3-TASK-1-startup-informational-dispatch-foundation](.tasks/PRD-3-TASK-1-startup-informational-dispatch-foundation.md)
-- blocks: [PRD-3-TASK-5-documentation-standards-alignment](.tasks/PRD-3-TASK-5-documentation-standards-alignment.md), [PRD-3-TASK-6-integration-hardening](.tasks/PRD-3-TASK-6-integration-hardening.md)
+- blocked-by: [PRD-003-TASK-01-startup-informational-dispatch-foundation](.tasks/PRD-003-TASK-01-startup-informational-dispatch-foundation.md)
+- blocks: [PRD-003-TASK-05-documentation-standards-alignment](.tasks/PRD-003-TASK-05-documentation-standards-alignment.md), [PRD-003-TASK-06-integration-hardening](.tasks/PRD-003-TASK-06-integration-hardening.md)
 
 ## Completion Summary
 

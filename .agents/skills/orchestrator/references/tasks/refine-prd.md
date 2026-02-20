@@ -55,7 +55,7 @@ Follow this sequence exactly:
    - If mode is not `Plan`, do not continue; ask for switch to `Plan` mode.
 2. Validate inputs.
    - Confirm PRD file path.
-   - Confirm PRD ID from filename pattern `PRD-[prd-id]-[short-name].md`.
+   - Confirm PRD ID from filename pattern `PRD-[prd-id]-[short-name].md` where `[prd-id]` is three digits.
    - Confirm PRD contains explicit `Status`.
    - Confirm PRD requirements are explicitly identifiable for traceability (for example `FR-*`, `NFR-*` IDs).
    - Confirm PRD metrics are explicitly identifiable for traceability (for example `M1`, `M2`, `M3`).
@@ -119,9 +119,9 @@ During drafting, instantiate the template first, keep heading names/order unchan
    - Must include:
      - `Status`: `READY` or `DONE`
      - `PRD`: exact PRD filename
-     - `Task ID`: integer for current PRD sequence
+     - `Task ID`: two-digit identifier for current PRD sequence (`01`, `02`, ...)
      - `Task File`: current task filename
-     - `Task ID` must match `[task-id]` segment in `Task File` filename.
+     - `Task ID` must match two-digit `[task-id]` segment in `Task File` filename.
      - `PRD Requirements`: explicit list of covered parent PRD requirement IDs (`FR-*` and/or `NFR-*`)
      - `PRD Metrics`: explicit list of covered parent PRD metric IDs (`M*`) or `none` when the task does not carry metric checkpoints
 3. `Objective`
@@ -148,7 +148,7 @@ During drafting, instantiate the template first, keep heading names/order unchan
      - `blocks`: `none` or Markdown links separated by comma+space
    - Dependency entries must be Markdown links to `.tasks` files (optionally with task ID label).
    - Example:
-     - `[PRD-12-TASK-1-config-foundation](.tasks/PRD-12-TASK-1-config-foundation.md)`
+     - `[PRD-012-TASK-01-config-foundation](.tasks/PRD-012-TASK-01-config-foundation.md)`
 10. `Completion Summary`
     - If `Status: READY`, set to: `Not started`.
     - If `Status: DONE`, provide concrete summary of delivered work and decisions important for follow-up tasks.
@@ -171,7 +171,7 @@ During drafting, instantiate the template first, keep heading names/order unchan
 2. Dependency graph must be acyclic.
 3. If no dependency exists, write `none`.
 4. If multiple dependencies exist in one field, use comma+space separated Markdown links on the same line.
-5. Dependency references must be Markdown links to `.tasks/PRD-[prd-id]-TASK-[task-id]-[short-task-name].md`.
+5. Dependency references must be Markdown links to `.tasks/PRD-[prd-id]-TASK-[task-id]-[short-task-name].md` with padded IDs (`[prd-id]` = 3 digits, `[task-id]` = 2 digits).
 6. Every dependency reference must point to an existing task file for the same PRD.
 7. If task ID is additionally shown, it must match the linked filename.
 8. Sequential execution is default; parallel execution is allowed only when all `blocked-by` tasks are `DONE`.
@@ -191,7 +191,7 @@ When saving tasks:
 2. Use filename format:
    - `PRD-[prd-id]-TASK-[task-id]-[short-task-name].md`
 3. `prd-id` must match parent PRD ID.
-4. `task-id` must be sequential from `1` to `N` within that PRD.
+4. `task-id` must be sequential from `01` to `NN` within that PRD and remain two-digit zero-padded.
 5. Use kebab-case for `[short-task-name]`.
 6. Each task file must contain explicit PRD reference and explicit linked dependency references in content.
 

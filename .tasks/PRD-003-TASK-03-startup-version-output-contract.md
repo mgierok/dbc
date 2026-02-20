@@ -5,9 +5,9 @@ Define and implement startup version introspection so users and automation can q
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
-- Task ID: 3
-- Task File: PRD-3-TASK-3-startup-version-output-contract.md
+- PRD: PRD-003-cli-help-version-and-startup-cli-standards.md
+- Task ID: 03
+- Task File: PRD-003-TASK-03-startup-version-output-contract.md
 - PRD Requirements: FR-003, FR-004, NFR-001, NFR-003
 
 ## Objective
@@ -59,8 +59,8 @@ After this task, version output is available through both aliases and prints a s
 
 ## Dependencies
 
-- blocked-by: [PRD-3-TASK-1-startup-informational-dispatch-foundation](.tasks/PRD-3-TASK-1-startup-informational-dispatch-foundation.md)
-- blocks: [PRD-3-TASK-5-documentation-standards-alignment](.tasks/PRD-3-TASK-5-documentation-standards-alignment.md), [PRD-3-TASK-6-integration-hardening](.tasks/PRD-3-TASK-6-integration-hardening.md)
+- blocked-by: [PRD-003-TASK-01-startup-informational-dispatch-foundation](.tasks/PRD-003-TASK-01-startup-informational-dispatch-foundation.md)
+- blocks: [PRD-003-TASK-05-documentation-standards-alignment](.tasks/PRD-003-TASK-05-documentation-standards-alignment.md), [PRD-003-TASK-06-integration-hardening](.tasks/PRD-003-TASK-06-integration-hardening.md)
 
 ## Completion Summary
 

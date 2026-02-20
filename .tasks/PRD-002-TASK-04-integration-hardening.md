@@ -5,9 +5,9 @@ Run end-to-end integration hardening for selector-first and direct-launch startu
 ## Metadata
 
 - Status: READY
-- PRD: PRD-2-cli-direct-database-launch.md
-- Task ID: 4
-- Task File: PRD-2-TASK-4-integration-hardening.md
+- PRD: PRD-002-cli-direct-database-launch.md
+- Task ID: 04
+- Task File: PRD-002-TASK-04-integration-hardening.md
 - PRD Requirements: FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, NFR-001, NFR-002, NFR-003, NFR-004, NFR-005
 
 ## Objective
@@ -26,12 +26,12 @@ Software remains fully usable through both startup paths with no regressions in 
 - Validate cross-task interactions and regression safety.
 - Validate direct-launch failure behavior, messaging clarity, and non-zero exit behavior.
 - Validate temporary-entry lifecycle and non-persistence behavior end-to-end.
-- Validate final requirement coverage evidence for PRD-2.
+- Validate final requirement coverage evidence for PRD-002.
 
 ### Out of Scope
 
-- New feature additions beyond PRD-2 requirements.
-- Architectural refactors unrelated to PRD-2 behavior.
+- New feature additions beyond PRD-002 requirements.
+- Architectural refactors unrelated to PRD-002 behavior.
 
 ## Implementation Plan
 
@@ -64,16 +64,16 @@ Software remains fully usable through both startup paths with no regressions in 
 
 ## Acceptance Criteria
 
-- Integrated evidence exists for all PRD-2 functional requirements and non-functional requirements.
+- Integrated evidence exists for all PRD-002 functional requirements and non-functional requirements.
 - Selector-first and direct-launch modes are behaviorally coherent and regression-safe.
 - Selector source markers are unified and unambiguous (`⚙` config, `⌨` CLI).
-- Temporary-entry lifecycle and dedup behavior meet PRD-2 expectations.
+- Temporary-entry lifecycle and dedup behavior meet PRD-002 expectations.
 - No unintended config persistence incidents are observed in integrated scenarios.
 - Project validation requirement: full verification commands pass (`go test ./...`, `golangci-lint run ./...`).
 
 ## Dependencies
 
-- blocked-by: [PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup](.tasks/PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup.md), [PRD-2-TASK-2-launch-target-identity-and-config-reuse](.tasks/PRD-2-TASK-2-launch-target-identity-and-config-reuse.md), [PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch](.tasks/PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch.md)
+- blocked-by: [PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup](.tasks/PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup.md), [PRD-002-TASK-02-launch-target-identity-and-config-reuse](.tasks/PRD-002-TASK-02-launch-target-identity-and-config-reuse.md), [PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch](.tasks/PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch.md)
 - blocks: none
 
 ## Completion Summary

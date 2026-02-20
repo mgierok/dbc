@@ -1,18 +1,18 @@
 # Overview
 
-Run final integration hardening for PRD-3 to verify cross-task interactions and regression safety across startup informational flags, direct-launch behavior, selector-first behavior, and documentation consistency.
+Run final integration hardening for PRD-003 to verify cross-task interactions and regression safety across startup informational flags, direct-launch behavior, selector-first behavior, and documentation consistency.
 
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
-- Task ID: 6
-- Task File: PRD-3-TASK-6-integration-hardening.md
+- PRD: PRD-003-cli-help-version-and-startup-cli-standards.md
+- Task ID: 06
+- Task File: PRD-003-TASK-06-integration-hardening.md
 - PRD Requirements: FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, NFR-001, NFR-002, NFR-003, NFR-004
 
 ## Objective
 
-Validate integrated startup CLI behavior and regression coverage before PRD-3 closure.
+Validate integrated startup CLI behavior and regression coverage before PRD-003 closure.
 
 ## Working Software Checkpoint
 
@@ -29,7 +29,7 @@ After this task, startup remains usable across selector-first and direct-launch 
 
 ### Out of Scope
 
-- New startup feature additions beyond PRD-3 requirements.
+- New startup feature additions beyond PRD-003 requirements.
 - Architectural refactors unrelated to startup CLI standards scope.
 
 ## Implementation Plan
@@ -38,7 +38,7 @@ After this task, startup remains usable across selector-first and direct-launch 
 2. Validate behavior when informational and non-informational inputs intersect, including expected precedence and failure handling.
 3. Execute full regression checks for direct-launch continuity and selector-first continuity.
 4. Validate documentation and implementation consistency for startup contracts.
-5. Produce requirement-level closure evidence for PRD-3.
+5. Produce requirement-level closure evidence for PRD-003.
 
 ## Verification Plan
 
@@ -63,15 +63,15 @@ After this task, startup remains usable across selector-first and direct-launch 
 
 ## Acceptance Criteria
 
-- Integrated evidence exists for all PRD-3 functional and non-functional requirements.
+- Integrated evidence exists for all PRD-003 functional and non-functional requirements.
 - Startup informational behavior, direct-launch flow, and selector-first flow remain coherent under combined scenarios.
-- Regression coverage confirms no loss of existing startup value while introducing PRD-3 contracts.
+- Regression coverage confirms no loss of existing startup value while introducing PRD-003 contracts.
 - Documentation and implementation are aligned for startup CLI standards behavior.
 - Project validation requirement: full verification commands pass (`go test ./...`, `golangci-lint run ./...`).
 
 ## Dependencies
 
-- blocked-by: [PRD-3-TASK-2-startup-help-output-contract](.tasks/PRD-3-TASK-2-startup-help-output-contract.md), [PRD-3-TASK-3-startup-version-output-contract](.tasks/PRD-3-TASK-3-startup-version-output-contract.md), [PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization](.tasks/PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization.md), [PRD-3-TASK-5-documentation-standards-alignment](.tasks/PRD-3-TASK-5-documentation-standards-alignment.md)
+- blocked-by: [PRD-003-TASK-02-startup-help-output-contract](.tasks/PRD-003-TASK-02-startup-help-output-contract.md), [PRD-003-TASK-03-startup-version-output-contract](.tasks/PRD-003-TASK-03-startup-version-output-contract.md), [PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization](.tasks/PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization.md), [PRD-003-TASK-05-documentation-standards-alignment](.tasks/PRD-003-TASK-05-documentation-standards-alignment.md)
 - blocks: none
 
 ## Completion Summary
@@ -82,7 +82,7 @@ After this task, startup remains usable across selector-first and direct-launch 
   - help/version alias behavior and mixed-flag validation failures,
   - usage-error (`2`) vs runtime-failure (`1`) classification boundary,
   - direct-launch and selector-first startup continuity checks.
-- Validated startup documentation consistency against PRD-3 FR-008 by checking:
+- Validated startup documentation consistency against PRD-003 FR-008 by checking:
   - standards references exist in product and technical docs (`docs/cli-parameter-and-output-standards.md`),
   - startup informational alias and exit-code semantics are documented,
   - canonical standards placeholder template text is not duplicated in product/technical docs.
@@ -90,4 +90,4 @@ After this task, startup remains usable across selector-first and direct-launch 
   - `go test ./cmd/dbc -run 'TestRunStartupDispatch_(UsesInformationalHandlerWithoutRuntimeStartup|UsesRuntimeStartupWhenInformationalFlagsAreAbsent|HelpAliasesProduceEquivalentRenderedOutput|VersionAliasesProduceEquivalentRenderedOutput)|TestClassifyStartupFailure_MapsUsageErrorsToExitCodeTwoWithUsageContract|TestClassifyStartupFailure_MapsRuntimeErrorsToExitCodeOne|TestParseStartupOptions_ReturnsErrorForRepeatedLogicalInformationalAliases|TestParseStartupOptions_ReturnsErrorForMixedInformationalAndDirectLaunchFlags|TestParseStartupOptions_ReturnsErrorForMixedInformationalFlags|TestResolveStartupSelection_(UsesDirectLaunchWithoutSelectorCall|UsesSelectorWhenDirectLaunchMissing|ReusesConfiguredIdentityWhenNormalizedPathsMatch|UsesFirstConfiguredIdentityForDeterministicNormalizedMatch)'` (PASS)
   - `go test ./...` (PASS)
   - `golangci-lint run ./...` (PASS)
-- PRD-3 closure readiness: all PRD-3 tasks are now `DONE`; parent PRD status can be closed after acceptance matrix evidence is confirmed in PRD file.
+- PRD-003 closure readiness: all PRD-003 tasks are now `DONE`; parent PRD status can be closed after acceptance matrix evidence is confirmed in PRD file.

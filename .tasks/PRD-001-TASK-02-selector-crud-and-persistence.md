@@ -5,9 +5,9 @@ Extend startup selector into a configuration management surface so users can add
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-1-database-config-management.md
-- Task ID: 2
-- Task File: PRD-1-TASK-2-selector-crud-and-persistence.md
+- PRD: PRD-001-database-config-management.md
+- Task ID: 02
+- Task File: PRD-001-TASK-02-selector-crud-and-persistence.md
 - PRD Requirements: FR-001, FR-002, FR-003, FR-009, FR-010, NFR-001, NFR-002, NFR-004, NFR-005
 
 ## Objective
@@ -57,8 +57,8 @@ Users can still select and open a database from startup selector, and now can ma
 
 ## Dependencies
 
-- blocked-by: [PRD-1-TASK-1-config-management-foundation](.tasks/PRD-1-TASK-1-config-management-foundation.md)
-- blocks: [PRD-1-TASK-3-forced-first-database-setup](.tasks/PRD-1-TASK-3-forced-first-database-setup.md), [PRD-1-TASK-4-in-session-config-command-routing](.tasks/PRD-1-TASK-4-in-session-config-command-routing.md)
+- blocked-by: [PRD-001-TASK-01-config-management-foundation](.tasks/PRD-001-TASK-01-config-management-foundation.md)
+- blocks: [PRD-001-TASK-03-forced-first-database-setup](.tasks/PRD-001-TASK-03-forced-first-database-setup.md), [PRD-001-TASK-04-in-session-config-command-routing](.tasks/PRD-001-TASK-04-in-session-config-command-routing.md)
 
 ## Completion Summary
 

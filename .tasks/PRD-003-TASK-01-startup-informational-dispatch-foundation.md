@@ -5,9 +5,9 @@ Establish startup informational-flag dispatch for help/version requests so `dbc`
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
-- Task ID: 1
-- Task File: PRD-3-TASK-1-startup-informational-dispatch-foundation.md
+- PRD: PRD-003-cli-help-version-and-startup-cli-standards.md
+- Task ID: 01
+- Task File: PRD-003-TASK-01-startup-informational-dispatch-foundation.md
 - PRD Requirements: FR-001, FR-003, FR-005, FR-006, NFR-004
 
 ## Objective
@@ -60,7 +60,7 @@ After this task, selector-first startup and direct-launch startup still work as 
 ## Dependencies
 
 - blocked-by: none
-- blocks: [PRD-3-TASK-2-startup-help-output-contract](.tasks/PRD-3-TASK-2-startup-help-output-contract.md), [PRD-3-TASK-3-startup-version-output-contract](.tasks/PRD-3-TASK-3-startup-version-output-contract.md), [PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization](.tasks/PRD-3-TASK-4-startup-exit-code-and-usage-error-standardization.md)
+- blocks: [PRD-003-TASK-02-startup-help-output-contract](.tasks/PRD-003-TASK-02-startup-help-output-contract.md), [PRD-003-TASK-03-startup-version-output-contract](.tasks/PRD-003-TASK-03-startup-version-output-contract.md), [PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization](.tasks/PRD-003-TASK-04-startup-exit-code-and-usage-error-standardization.md)
 
 ## Completion Summary
 

@@ -5,9 +5,9 @@ Define and implement deterministic startup help output so users can discover sup
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-3-cli-help-version-and-startup-cli-standards.md
-- Task ID: 2
-- Task File: PRD-3-TASK-2-startup-help-output-contract.md
+- PRD: PRD-003-cli-help-version-and-startup-cli-standards.md
+- Task ID: 02
+- Task File: PRD-003-TASK-02-startup-help-output-contract.md
 - PRD Requirements: FR-001, FR-002, NFR-001
 
 ## Objective
@@ -58,8 +58,8 @@ After this task, help output is available and stable via both help aliases with 
 
 ## Dependencies
 
-- blocked-by: [PRD-3-TASK-1-startup-informational-dispatch-foundation](.tasks/PRD-3-TASK-1-startup-informational-dispatch-foundation.md)
-- blocks: [PRD-3-TASK-5-documentation-standards-alignment](.tasks/PRD-3-TASK-5-documentation-standards-alignment.md), [PRD-3-TASK-6-integration-hardening](.tasks/PRD-3-TASK-6-integration-hardening.md)
+- blocked-by: [PRD-003-TASK-01-startup-informational-dispatch-foundation](.tasks/PRD-003-TASK-01-startup-informational-dispatch-foundation.md)
+- blocks: [PRD-003-TASK-05-documentation-standards-alignment](.tasks/PRD-003-TASK-05-documentation-standards-alignment.md), [PRD-003-TASK-06-integration-hardening](.tasks/PRD-003-TASK-06-integration-hardening.md)
 
 ## Completion Summary
 

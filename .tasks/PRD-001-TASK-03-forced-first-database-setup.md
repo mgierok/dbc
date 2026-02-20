@@ -5,9 +5,9 @@ Implement mandatory first-database creation when no configured entries exist, wi
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-1-database-config-management.md
-- Task ID: 3
-- Task File: PRD-1-TASK-3-forced-first-database-setup.md
+- PRD: PRD-001-database-config-management.md
+- Task ID: 03
+- Task File: PRD-001-TASK-03-forced-first-database-setup.md
 - PRD Requirements: FR-004, FR-005, NFR-001, NFR-003
 
 ## Objective
@@ -57,8 +57,8 @@ Startup remains functional for existing users with configured entries, and first
 
 ## Dependencies
 
-- blocked-by: [PRD-1-TASK-1-config-management-foundation](.tasks/PRD-1-TASK-1-config-management-foundation.md), [PRD-1-TASK-2-selector-crud-and-persistence](.tasks/PRD-1-TASK-2-selector-crud-and-persistence.md)
-- blocks: [PRD-1-TASK-4-in-session-config-command-routing](.tasks/PRD-1-TASK-4-in-session-config-command-routing.md)
+- blocked-by: [PRD-001-TASK-01-config-management-foundation](.tasks/PRD-001-TASK-01-config-management-foundation.md), [PRD-001-TASK-02-selector-crud-and-persistence](.tasks/PRD-001-TASK-02-selector-crud-and-persistence.md)
+- blocks: [PRD-001-TASK-04-in-session-config-command-routing](.tasks/PRD-001-TASK-04-in-session-config-command-routing.md)
 
 ## Completion Summary
 

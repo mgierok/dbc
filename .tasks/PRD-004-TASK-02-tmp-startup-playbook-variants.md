@@ -5,9 +5,9 @@ Document deterministic tmp-environment startup playbooks for the three required 
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-4-agent-testability-tmp-startup-fixture.md
-- Task ID: 2
-- Task File: PRD-4-TASK-2-tmp-startup-playbook-variants.md
+- PRD: PRD-004-agent-testability-tmp-startup-fixture.md
+- Task ID: 02
+- Task File: PRD-004-TASK-02-tmp-startup-playbook-variants.md
 - PRD Requirements: FR-005, FR-006, FR-007, FR-008, NFR-001, NFR-004
 - PRD Metrics: M1
 
@@ -69,8 +69,8 @@ After this task, startup behavior is unchanged, and users can execute copy-paste
 
 ## Dependencies
 
-- blocked-by: [PRD-4-TASK-1-fixture-foundation-and-coverage-contract](.tasks/PRD-4-TASK-1-fixture-foundation-and-coverage-contract.md)
-- blocks: [PRD-4-TASK-3-manual-scenario-reproducibility](.tasks/PRD-4-TASK-3-manual-scenario-reproducibility.md), [PRD-4-TASK-4-integration-hardening](.tasks/PRD-4-TASK-4-integration-hardening.md)
+- blocked-by: [PRD-004-TASK-01-fixture-foundation-and-coverage-contract](.tasks/PRD-004-TASK-01-fixture-foundation-and-coverage-contract.md)
+- blocks: [PRD-004-TASK-03-manual-scenario-reproducibility](.tasks/PRD-004-TASK-03-manual-scenario-reproducibility.md), [PRD-004-TASK-04-integration-hardening](.tasks/PRD-004-TASK-04-integration-hardening.md)
 
 ## Completion Summary
 

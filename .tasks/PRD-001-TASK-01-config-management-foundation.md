@@ -5,9 +5,9 @@ Build the configuration-management foundation so application and UI layers can s
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-1-database-config-management.md
-- Task ID: 1
-- Task File: PRD-1-TASK-1-config-management-foundation.md
+- PRD: PRD-001-database-config-management.md
+- Task ID: 01
+- Task File: PRD-001-TASK-01-config-management-foundation.md
 - PRD Requirements: FR-008, FR-010, NFR-004, NFR-005
 
 ## Objective
@@ -59,7 +59,7 @@ The app still starts and loads existing config entries exactly as today, while n
 ## Dependencies
 
 - blocked-by: none
-- blocks: [PRD-1-TASK-2-selector-crud-and-persistence](.tasks/PRD-1-TASK-2-selector-crud-and-persistence.md), [PRD-1-TASK-3-forced-first-database-setup](.tasks/PRD-1-TASK-3-forced-first-database-setup.md)
+- blocks: [PRD-001-TASK-02-selector-crud-and-persistence](.tasks/PRD-001-TASK-02-selector-crud-and-persistence.md), [PRD-001-TASK-03-forced-first-database-setup](.tasks/PRD-001-TASK-03-forced-first-database-setup.md)
 
 ## Completion Summary
 

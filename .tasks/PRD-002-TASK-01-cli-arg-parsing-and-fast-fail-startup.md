@@ -5,9 +5,9 @@ Add direct-launch CLI argument handling and startup branching so known-target se
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-2-cli-direct-database-launch.md
-- Task ID: 1
-- Task File: PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup.md
+- PRD: PRD-002-cli-direct-database-launch.md
+- Task ID: 01
+- Task File: PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup.md
 - PRD Requirements: FR-001, FR-002, FR-003, FR-004, NFR-001, NFR-002
 
 ## Objective
@@ -67,7 +67,7 @@ The app still supports selector-first startup when direct-launch parameter is ab
 ## Dependencies
 
 - blocked-by: none
-- blocks: [PRD-2-TASK-2-launch-target-identity-and-config-reuse](.tasks/PRD-2-TASK-2-launch-target-identity-and-config-reuse.md), [PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch](.tasks/PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch.md)
+- blocks: [PRD-002-TASK-02-launch-target-identity-and-config-reuse](.tasks/PRD-002-TASK-02-launch-target-identity-and-config-reuse.md), [PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch](.tasks/PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch.md)
 
 ## Completion Summary
 

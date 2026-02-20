@@ -52,6 +52,9 @@ These rules apply to all orchestrator workflows unless a task file defines a str
    - if mode mismatches the required phase, stop and request a mode switch.
 3. Do not allow unresolved placeholders (`TBD`, `TODO`) in final saved artifacts.
 4. End each workflow with concise quality gate results (`PASS`/`FAIL` per gate).
+5. Enforce identifier formats in filenames and references:
+   - PRD IDs use three digits (`PRD-001`),
+   - Task IDs use two digits (`TASK-01`).
 
 ## Shared Templates
 

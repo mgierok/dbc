@@ -5,9 +5,9 @@ Ensure direct-launched sessions preserve `:config` switching behavior and expose
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-2-cli-direct-database-launch.md
-- Task ID: 3
-- Task File: PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch.md
+- PRD: PRD-002-cli-direct-database-launch.md
+- Task ID: 03
+- Task File: PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch.md
 - PRD Requirements: FR-005, FR-006, FR-007, NFR-003, NFR-004, NFR-005
 
 ## Objective
@@ -70,8 +70,8 @@ Users can direct-launch, work normally, invoke `:config`, and switch safely, whi
 
 ## Dependencies
 
-- blocked-by: [PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup](.tasks/PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup.md), [PRD-2-TASK-2-launch-target-identity-and-config-reuse](.tasks/PRD-2-TASK-2-launch-target-identity-and-config-reuse.md)
-- blocks: [PRD-2-TASK-4-integration-hardening](.tasks/PRD-2-TASK-4-integration-hardening.md)
+- blocked-by: [PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup](.tasks/PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup.md), [PRD-002-TASK-02-launch-target-identity-and-config-reuse](.tasks/PRD-002-TASK-02-launch-target-identity-and-config-reuse.md)
+- blocks: [PRD-002-TASK-04-integration-hardening](.tasks/PRD-002-TASK-04-integration-hardening.md)
 
 ## Completion Summary
 

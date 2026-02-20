@@ -5,9 +5,9 @@ Add in-session command routing so users in an active database session can invoke
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-1-database-config-management.md
-- Task ID: 4
-- Task File: PRD-1-TASK-4-in-session-config-command-routing.md
+- PRD: PRD-001-database-config-management.md
+- Task ID: 04
+- Task File: PRD-001-TASK-04-in-session-config-command-routing.md
 - PRD Requirements: FR-006, NFR-001, NFR-003
 
 ## Objective
@@ -57,8 +57,8 @@ Main browsing remains fully operational; users can invoke `:config` from session
 
 ## Dependencies
 
-- blocked-by: [PRD-1-TASK-2-selector-crud-and-persistence](.tasks/PRD-1-TASK-2-selector-crud-and-persistence.md), [PRD-1-TASK-3-forced-first-database-setup](.tasks/PRD-1-TASK-3-forced-first-database-setup.md)
-- blocks: [PRD-1-TASK-5-dirty-state-decision-flow-for-config-navigation](.tasks/PRD-1-TASK-5-dirty-state-decision-flow-for-config-navigation.md)
+- blocked-by: [PRD-001-TASK-02-selector-crud-and-persistence](.tasks/PRD-001-TASK-02-selector-crud-and-persistence.md), [PRD-001-TASK-03-forced-first-database-setup](.tasks/PRD-001-TASK-03-forced-first-database-setup.md)
+- blocks: [PRD-001-TASK-05-dirty-state-decision-flow-for-config-navigation](.tasks/PRD-001-TASK-05-dirty-state-decision-flow-for-config-navigation.md)
 
 ## Completion Summary
 

@@ -5,9 +5,9 @@ Define one standardized manual validation scenario tied to the canonical fixture
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-4-agent-testability-tmp-startup-fixture.md
-- Task ID: 3
-- Task File: PRD-4-TASK-3-manual-scenario-reproducibility.md
+- PRD: PRD-004-agent-testability-tmp-startup-fixture.md
+- Task ID: 03
+- Task File: PRD-004-TASK-03-manual-scenario-reproducibility.md
 - PRD Requirements: FR-009, NFR-001, NFR-004
 - PRD Metrics: M3
 
@@ -64,8 +64,8 @@ After this task, application behavior remains unchanged, and a reusable manual s
 
 ## Dependencies
 
-- blocked-by: [PRD-4-TASK-1-fixture-foundation-and-coverage-contract](.tasks/PRD-4-TASK-1-fixture-foundation-and-coverage-contract.md), [PRD-4-TASK-2-tmp-startup-playbook-variants](.tasks/PRD-4-TASK-2-tmp-startup-playbook-variants.md)
-- blocks: [PRD-4-TASK-4-integration-hardening](.tasks/PRD-4-TASK-4-integration-hardening.md)
+- blocked-by: [PRD-004-TASK-01-fixture-foundation-and-coverage-contract](.tasks/PRD-004-TASK-01-fixture-foundation-and-coverage-contract.md), [PRD-004-TASK-02-tmp-startup-playbook-variants](.tasks/PRD-004-TASK-02-tmp-startup-playbook-variants.md)
+- blocks: [PRD-004-TASK-04-integration-hardening](.tasks/PRD-004-TASK-04-integration-hardening.md)
 
 ## Completion Summary
 

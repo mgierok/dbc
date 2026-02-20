@@ -5,9 +5,9 @@ Define and implement normalized connection identity matching so direct launch re
 ## Metadata
 
 - Status: DONE
-- PRD: PRD-2-cli-direct-database-launch.md
-- Task ID: 2
-- Task File: PRD-2-TASK-2-launch-target-identity-and-config-reuse.md
+- PRD: PRD-002-cli-direct-database-launch.md
+- Task ID: 02
+- Task File: PRD-002-TASK-02-launch-target-identity-and-config-reuse.md
 - PRD Requirements: FR-008, NFR-004, NFR-005
 
 ## Objective
@@ -58,8 +58,8 @@ Direct-launch startup remains functional, and when direct target matches configu
 
 ## Dependencies
 
-- blocked-by: [PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup](.tasks/PRD-2-TASK-1-cli-arg-parsing-and-fast-fail-startup.md)
-- blocks: [PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch](.tasks/PRD-2-TASK-3-session-scoped-selector-entry-for-direct-launch.md), [PRD-2-TASK-4-integration-hardening](.tasks/PRD-2-TASK-4-integration-hardening.md)
+- blocked-by: [PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup](.tasks/PRD-002-TASK-01-cli-arg-parsing-and-fast-fail-startup.md)
+- blocks: [PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch](.tasks/PRD-002-TASK-03-session-scoped-selector-entry-for-direct-launch.md), [PRD-002-TASK-04-integration-hardening](.tasks/PRD-002-TASK-04-integration-hardening.md)
 
 ## Completion Summary
 

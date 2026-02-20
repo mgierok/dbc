@@ -233,7 +233,7 @@ During drafting, instantiate the template first, keep heading names/order unchan
 17. Review loop
    - Focused feedback was requested on scope, metrics, non-goals, and residual risks.
 18. File output compliance
-   - Final PRD is saved in `.tasks` as `PRD-[prd-id]-[short-name].md` with next numeric `prd-id`.
+   - Final PRD is saved in `.tasks` as `PRD-[prd-id]-[short-name].md` with next numeric `prd-id` zero-padded to three digits.
 19. Mode compliance
    - Clarification, drafting, and draft quality checks were executed in `Plan`, and final file save was executed only in `Default`.
 20. Template compliance
@@ -274,7 +274,8 @@ When saving the generated PRD:
 
 1. Save in `.tasks`.
 2. Use filename format `PRD-[prd-id]-[short-name].md`.
-3. Set `[prd-id]` to next numeric ID among `.tasks/PRD-*-*.md`.
+   - `[prd-id]` must be three digits (for example `001`).
+3. Set `[prd-id]` to next numeric ID among `.tasks/PRD-[0-9]{3}-*.md`.
    - For this step, inspect filenames only; do not open or parse prior PRD content.
    - Use hint `H001` from `../commands.md` when enumerating existing PRD files.
    - Use hint `H002` from `../commands.md` when computing the next numeric PRD ID.
