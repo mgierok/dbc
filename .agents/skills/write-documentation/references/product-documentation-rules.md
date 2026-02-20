@@ -9,18 +9,19 @@
 
 Document product-facing facts only:
 
-- available capabilities,
-- user-visible behavior,
+- business rules and capability boundaries,
+- user-visible behavior and outcomes,
 - user flows and interaction model,
 - constraints and non-goals.
 
-Do not document architecture internals unless they directly affect user-visible behavior.
+Do not document implementation mechanics unless they directly affect user-visible behavior.
 
 ## Writing Rules
 
 - Write in plain, explicit language.
 - Describe current state only.
 - Keep terminology consistent with technical documentation.
+- Avoid duplicating technical implementation descriptions.
 - Do not describe development workflow (branching, PR flow, delivery process).
 - Preserve existing section numbering and anchors unless structural migration is explicitly requested.
 

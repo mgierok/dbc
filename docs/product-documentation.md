@@ -77,32 +77,25 @@ Canonical ownership note:
 - DBC reads database entries from OS-specific default config paths:
   - macOS and Linux: `~/.config/dbc/config.toml`
   - Windows: `%APPDATA%\dbc\config.toml`
-- Configuration requires at least one database entry.
-- Empty config state (`missing file`, `empty file`, or `databases = []`) is treated as no configured databases, so DBC opens mandatory first-entry setup before normal browsing can start.
+- Startup requires at least one configured database entry.
+- Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing.
 - Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
-- During mandatory setup, users add one required entry and can optionally add more entries before continuing.
-- During mandatory setup, `Esc` cancels startup and exits the application.
-- DBC supports optional direct-launch startup aliases:
+- Mandatory first-entry setup allows adding one required entry (with optional additional entries before continue); `Esc` cancels startup.
+- DBC supports direct-launch aliases:
   - `-d <db_path>`
   - `--database <db_path>`
-- DBC supports optional startup informational aliases:
+- DBC supports startup informational aliases:
   - `-h`
   - `--help`
   - `-v`
   - `--version`
-- `--version` / `-v` prints one stdout token:
-  - short commit hash when build revision metadata is present,
-  - `dev` when revision metadata is unavailable.
-- Informational startup aliases short-circuit startup before config and database initialization work begins.
-- Informational aliases cannot be combined with direct-launch aliases in one startup invocation.
-- Invalid startup usage and argument-validation failures exit with code `2` and show actionable guidance (`Error`, `Hint`, `Usage`).
-- Startup runtime/operational failures keep exit code `1`.
-- When direct launch parameter is provided:
-  - DBC validates target connectivity before runtime starts.
-  - Before runtime opens, DBC normalizes direct-launch SQLite path identity against configured entries and reuses the configured entry when a normalized match exists.
-  - On success, DBC opens the main view directly and bypasses startup selector.
-  - On failure, DBC shows a clear startup error with corrective guidance and exits non-zero (without selector fallback).
-- When direct launch parameter is not provided, selector-first startup behavior remains unchanged.
+- `--version` / `-v` prints one stdout token: short commit hash when revision metadata exists, otherwise `dev`.
+- Informational aliases short-circuit startup and cannot be combined with direct-launch aliases.
+- Invalid startup usage/argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`); startup runtime failures exit with code `1`.
+- Direct launch validates target connectivity before runtime start:
+  - success opens the main view directly (selector is skipped),
+  - failure surfaces startup error guidance and exits non-zero (no selector fallback).
+- Without direct launch, selector-first startup remains the default path.
 - Each entry requires:
   - `name` (display name).
   - `db_path` (SQLite connection path/string).

@@ -14,13 +14,13 @@ Document implementation-facing facts only:
 - technical mechanisms and contracts,
 - runtime/operational constraints and risks.
 
-Do not restate product rationale in full; reference product documentation when user-value context is needed.
+Do not define or restate business rules; keep focus on technical mechanisms and implementation behavior.
 
 ## Writing Rules
 
 - Write for engineering and maintenance audiences.
 - Describe current factual implementation state only.
-- Keep content practical and code-aligned.
+- Keep content practical, code-aligned, and free from repeated product-level behavior narratives.
 - Do not describe development workflow (branching, PR flow, delivery process).
 - Preserve existing section numbering and anchors unless structural migration is explicitly requested.
 

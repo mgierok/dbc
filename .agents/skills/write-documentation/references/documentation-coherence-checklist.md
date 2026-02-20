@@ -21,7 +21,7 @@ Use this checklist before finalizing product and/or technical documentation upda
 ## 4. Non-Duplication
 
 - No large duplicated paragraphs across product and technical docs.
-- Repeated content is replaced by explicit cross-reference links.
+- Repeated content is rewritten to keep one perspective-specific description per document.
 
 ## 5. Traceability
 
