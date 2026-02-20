@@ -42,6 +42,9 @@ The output must:
     - no other task in the same PRD remains in `READY`,
     - parent PRD `Release Criteria` are satisfied with explicit evidence from `DONE` task `Completion Summary` entries.
     If either condition is not met, keep parent PRD open and report the exact blocker.
+13. Keep implementation documentation and governance artifacts context-agnostic:
+    - for files outside `.tasks/`, do not include PRD/TASK references unless the user explicitly requests them,
+    - keep product/technical source-of-truth references as the default contract anchors.
 
 ## 3. Required Workflow (Execution Order)
 Follow this sequence exactly:
@@ -76,6 +79,7 @@ Follow this sequence exactly:
    - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
 6. Execute selected task implementation.
    - Perform implementation directly using required knowledge sources from Section 2, rule 8.
+   - When updating docs/governance files outside `.tasks/`, avoid PRD/TASK references unless explicitly requested by the user.
    - Use hint `H007` from `../commands.md` when you need `Completion Summary` context from current task or dependency tasks.
 7. Verify implementation.
    - Run verification checks required by task `Verification Plan`.
@@ -148,6 +152,7 @@ Follow this sequence exactly:
    - If triggers occurred, `lessons-learned.md` was updated with at least one numbered prevention rule.
    - If no triggers occurred, final report contains `LESSONS LEARNED: no qualifying trigger`.
 10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and parent PRD `Release Criteria` were satisfied with explicit evidence.
+11. Documentation/governance updates outside `.tasks/` are free of PRD/TASK references unless explicitly requested by the user.
 
 ## 8. Agent Output Contract
 When running this workflow, return concise output with:
