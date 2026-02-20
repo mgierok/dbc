@@ -4,7 +4,7 @@ This final task integrates outputs from all PRD-005 behavior tasks, validates cr
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-005-full-quality-regression-scenarios.md
 - Task ID: 05
 - Task File: PRD-005-TASK-05-integration-hardening.md
@@ -100,4 +100,42 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+Delivered full-suite integration hardening and release-readiness evidence package:
+
+- Added `test-cases/full-suite-release-readiness-audit.md` as consolidated audit artifact covering dependency consistency, FR-001..FR-008 validation, metric checkpoints (M1..M4), and deterministic suite-level go/no-go decision.
+- Validated dependency completion gate for this task:
+  - `PRD-005-TASK-02` = `DONE`
+  - `PRD-005-TASK-03` = `DONE`
+  - `PRD-005-TASK-04` = `DONE`
+- Confirmed full coverage and failure/recovery completeness from `test-cases/suite-coverage-matrix.md`:
+  - journey-area coverage = `5/5` (`startup`, `selector/config`, `runtime/TUI`, `save`, `navigation`) -> `PASS`
+  - failure/recovery coverage = `5/5` -> `PASS`
+- Executed full-suite structure and metadata compliance checks across `TC-001`..`TC-006`:
+  - each scenario contains exactly one startup script and one startup command,
+  - required heading order (`## 1`..`## 7`) is present in every scenario,
+  - step mapping remains one action + one expected outcome + one assertion ID per step row.
+- Executed full-suite determinism audit across `TC-001`..`TC-006`:
+  - assertion and final result fields remain binary (`PASS`/`FAIL`) only,
+  - forbidden third-state outcomes are absent,
+  - scenario final-result consistency check passed with all scenario results `PASS`.
+- Captured metric evidence and outcomes:
+  - `M1`: `PASS` (`5/5` journey areas covered),
+  - `M2`: `PASS` (`5/5` critical journeys with failure/recovery coverage),
+  - `M3`: `PASS` (`6/6` scenarios template/spec compliant),
+  - `M4`: `PASS` (`0` determinism violations).
+- Release-readiness conclusion for PRD scope: suite result `PASS`, failed scenarios `none`, failed assertions `none`, go/no-go = `GO`.
+
+Verification executed against this task verification plan:
+
+- FR-001: `PASS` (all required journey areas mapped; no uncovered area).
+- FR-002: `PASS` (one-script/one-command rule satisfied for all scenarios).
+- FR-003: `PASS` (strict heading and required-field compliance across suite).
+- FR-004: `PASS` (step-level one-to-one action/outcome/assertion mapping preserved).
+- FR-005: `PASS` (deterministic binary assertion/final-result outcomes across suite).
+- FR-006: `PASS` (all critical journey areas include explicit failure/recovery coverage).
+- FR-007: `PASS` (context-rich scenarios; no low-value fragmentation pattern found).
+- FR-008: `PASS` (suite-level `PASS` with all scenario assertions/results `PASS`).
+
+Project validation requirement:
+
+- Changed scope is documentation/audit artifacts only; verification for the changed scope passed via the completed full-suite audit artifact and requirement/metric checks listed above.
