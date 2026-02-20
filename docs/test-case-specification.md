@@ -123,11 +123,16 @@ Governance maintenance workflow:
 - For every new or modified `TC-*` scenario, execute structure/metadata and determinism governance checks.
 - Governance evidence must stay concrete and include scenario IDs, assertion IDs, and exact file paths.
 - Suite-level governance status is `PASS` only when coverage mapping and per-scenario governance checks are all `PASS`.
-- Governance checks must be displayed after execution and must not be persisted as `test-cases/*audit*.md` snapshots.
+- Governance checks are required only when creating or modifying `TC-*` scenarios.
+- Governance checks must not be persisted as `test-cases/*audit*.md` snapshots.
 
 ### 8. Execution Result Output Contract
 
 - Result outputs must be displayed immediately after each single test-case execution and after each full-suite execution.
+- Display output must include only one of:
+  - `SINGLE` output for one executed test case, or
+  - `SUITE` output for full-suite execution.
+- Execution output must not include governance-check sections.
 - Result outputs are display-only; do not create or maintain persistent release-readiness result files in `test-cases/`.
 - Single-case and suite output format must follow `docs/test-case/execution-output-template.md`.
 - Output values remain binary:
