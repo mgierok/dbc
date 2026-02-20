@@ -5,7 +5,7 @@
 This document defines fixture assets and mandatory contracts for behavior-oriented manual regression cases.
 It applies to startup and runtime behavior verification scenarios in `test-cases/`.
 
-Every test case must be a separate Markdown file and must follow `docs/test-case-template.md`.
+Every test case must be a separate Markdown file and must follow `docs/test-case/template.md`.
 
 ## Fixture Database
 
@@ -129,7 +129,7 @@ Governance maintenance workflow:
 
 - Result outputs must be displayed immediately after each single test-case execution and after each full-suite execution.
 - Result outputs are display-only; do not create or maintain persistent release-readiness result files in `test-cases/`.
-- Single-case and suite output format must follow `docs/test-case-execution-output-template.md`.
+- Single-case and suite output format must follow `docs/test-case/execution-output-template.md`.
 - Output values remain binary:
   - assertion/test/suite results: `PASS` or `FAIL` only.
 
@@ -163,7 +163,7 @@ Deterministic `FAIL` triggers:
 
 ### 10. Strict Structure Rule
 
-- Section order/headings from `docs/test-case-template.md` are mandatory.
+- Section order/headings from `docs/test-case/template.md` are mandatory.
 - Required fields/columns in template tables cannot be removed.
 - Additional notes are allowed only in the dedicated `Notes` field.
 - Full consistency between this document and the template is mandatory.
@@ -181,16 +181,16 @@ Structure/metadata conformance `FAIL` triggers:
 - a scenario has zero `Functional Behavior Reference` metadata fields,
 - a scenario has more than one `Functional Behavior Reference` metadata fields,
 - `Functional Behavior Reference` is not a Markdown reference to one subsection under `docs/product-documentation.md#4-functional-behavior`,
-- any required heading from `docs/test-case-template.md` is missing,
-- required headings from `docs/test-case-template.md` are out of order,
-- a required metadata field or required table column from `docs/test-case-template.md` is missing,
+- any required heading from `docs/test-case/template.md` is missing,
+- required headings from `docs/test-case/template.md` are out of order,
+- a required metadata field or required table column from `docs/test-case/template.md` is missing,
 - assertion rows use mixed Functional Behavior references,
 - assertion rows use Functional Behavior reference different from metadata.
 
 ## Canonical Template
 
-- Template file: `docs/test-case-template.md`
+- Template file: `docs/test-case/template.md`
 - All new test cases must be created by copying this file and filling placeholders.
-- Suite coverage matrix template file: `docs/test-case-suite-coverage-matrix-template.md`
-- `test-cases/suite-coverage-matrix.md` must follow `docs/test-case-suite-coverage-matrix-template.md`.
-- Execution output template file: `docs/test-case-execution-output-template.md`
+- Suite coverage matrix template file: `docs/test-case/suite-coverage-matrix-template.md`
+- `test-cases/suite-coverage-matrix.md` must follow `docs/test-case/suite-coverage-matrix-template.md`.
+- Execution output template file: `docs/test-case/execution-output-template.md`
