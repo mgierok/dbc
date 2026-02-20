@@ -119,6 +119,8 @@ Each step must contain:
 - `PASS` is valid only when all assertions are marked `PASS`.
 - Any unmet precondition, blocked execution, or failed expectation must be reported as `FAIL` with a reason.
 - No third state (`SKIPPED`, `UNKNOWN`, `PARTIAL`) is allowed.
+- Suite-level result is `PASS` only when every test case in the executed regression suite has final result `PASS`.
+- If at least one test case has final result `FAIL`, the suite-level result must be `FAIL` and must list failed case IDs.
 
 ### 6. Strict Structure Rule
 
