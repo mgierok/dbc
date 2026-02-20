@@ -152,7 +152,7 @@ Package responsibilities:
 
 ### 5.3 Write Flow
 
-1. User stages insert/edit/delete operations in TUI state.
+1. TUI state accumulates insert/edit/delete staging operations.
 2. On save confirmation, TUI builds `model.TableChanges`.
 3. Use case validates payload (`SaveTableChanges`).
 4. Engine applies all changes in one transaction:
@@ -276,8 +276,8 @@ Decision:
 
 Why:
 
-- Delivers usable value quickly.
-- Preserves extension path to future engines with minimal TUI changes.
+- Reduces adapter and operational complexity in the current implementation.
+- Preserves an extension seam for additional engines without rewriting use-case orchestration.
 
 Where:
 
@@ -292,9 +292,9 @@ Decision:
 
 Why:
 
-- Safer user workflow.
-- Enables undo/redo before persistence.
-- Supports single-transaction commit behavior.
+- Prevents implicit write-side effects during field editing.
+- Keeps undo/redo state transitions local to the runtime session.
+- Aligns persistence with explicit transaction boundaries.
 
 Where:
 
@@ -346,7 +346,7 @@ Decision:
 Why:
 
 - Reduces unsafe SQL clause composition risk.
-- Keeps filtering behavior predictable.
+- Constrains query-builder behavior to a validated operator set.
 
 Where:
 

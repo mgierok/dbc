@@ -4,9 +4,9 @@ Use this checklist before finalizing product and/or technical documentation upda
 
 ## 1. Purpose Separation
 
-- Product document answers what and why.
-- Technical document answers how.
-- No section mixes both perspectives without clear reason.
+- Product document is the canonical source for business rules and user-visible behavior.
+- Technical document is the canonical source for implementation details and runtime mechanics.
+- Technical sections do not redefine product business rules.
 
 ## 2. Scope Alignment
 

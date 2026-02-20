@@ -60,7 +60,7 @@ Load only references required for the selected pass:
 
 ## Guardrails
 
-- Document only current factual state.
+- Document only current factual state for the selected perspective: product pass covers business rules/user-visible behavior, technical pass covers implementation mechanics.
 - If docs conflict with code behavior, update docs to match code in the same change set.
 - Do not add development workflow/process guidance.
 - Preserve existing numbering/anchors unless structural migration is explicitly requested.
