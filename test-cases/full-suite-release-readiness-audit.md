@@ -35,26 +35,32 @@ Result is `FAIL` when at least one of these is true:
 
 | Check | Observed | Result (`PASS`/`FAIL`) |
 | --- | --- | --- |
-| Scenario ownership compliance | Active scenarios do not yet include required Functional Behavior reference metadata. | `FAIL` |
-| Assertion ownership purity | Active scenarios do not yet include assertion Functional Behavior reference fields. | `FAIL` |
+| Scoped ownership compliance (`TC-001` to `TC-004`) | `TC-001` to `TC-004` each declare exactly one Functional Behavior reference (`4.1` to `4.4`). | `PASS` |
+| Scoped assertion purity (`TC-001` to `TC-004`) | Assertion references in `TC-001` to `TC-004` match each scenario metadata reference. | `PASS` |
+| Full-suite ownership compliance | `TC-005` and `TC-006` are still pre-refactor and do not yet declare Functional Behavior reference metadata. | `FAIL` |
+| Full-suite assertion purity | `TC-005` and `TC-006` assertions do not yet include Functional Behavior reference fields. | `FAIL` |
 | Binary result determinism | Current scenarios use binary `PASS`/`FAIL` outcomes. | `PASS` |
 
 ## Expand-First Coverage Addition Evidence
 
 | Coverage Change ID | Delivery Method (`Expanded Existing TC` \| `New TC`) | Expanded Scenario IDs | New Scenario IDs | Expand-First Evidence | Counts Toward Expanded Numerator (`0/1`) | Counts Toward Total Denominator (`0/1`) | Result (`PASS`/`FAIL`) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `BASELINE-001` | `Expanded Existing TC` | `none` | `none` | Governance model established; no coverage additions executed in this audit snapshot. | `0` | `0` | `PASS` |
+| `TASK-02-001` | `Expanded Existing TC` | `TC-001` | `none` | Refactored existing `TC-001` to area-pure `4.1` with informational startup script binding (`help`/`version`). | `1` | `1` | `PASS` |
+| `TASK-02-002` | `Expanded Existing TC` | `TC-002` | `none` | Refactored existing `TC-002` to area-pure `4.2` layout/focus ownership assertions. | `1` | `1` | `PASS` |
+| `TASK-02-003` | `Expanded Existing TC` | `TC-003` | `none` | Refactored existing `TC-003` to area-pure `4.3` table discovery and schema assertions. | `1` | `1` | `PASS` |
+| `TASK-02-004` | `Expanded Existing TC` | `TC-004` | `none` | Refactored existing `TC-004` to area-pure `4.4` records/navigation assertions. | `1` | `1` | `PASS` |
 
 ### Expand-First Ratio Formula
 
 - Expanded-first adherence ratio = `sum(Expanded Numerator) / sum(Total Denominator)` for rows with denominator `1`.
 - If denominator sum is `0`, ratio is `N/A` for the snapshot and readiness is evaluated on contract availability.
+- Current ratio after TASK-02 evidence rows: `4/4 = 100%` (`PASS` against M3 threshold).
 
 ## Determinism Violation Checkpoint
 
 - Violation Count Source: `test-cases/deterministic-result-audit-checklist.md`
 - Required threshold: `0`
-- Current observed baseline value: `3` (from baseline audit sample).
+- Current observed baseline value: `0` (sampled baseline audit for `TC-001`).
 - Gate rule: any non-zero value forces `FAIL`.
 
 ## Release Decision (Current Snapshot)
@@ -62,4 +68,4 @@ Result is `FAIL` when at least one of these is true:
 - Governance contract readiness: `PASS`
 - Scenario conformance readiness: `FAIL`
 - Go/No-Go: `NO-GO`
-- Rationale: Governance contracts are synchronized and enforceable, but active scenario files are not yet conformed to one-reference ownership and purity requirements.
+- Rationale: Refactor progress for `TC-001` to `TC-004` is complete and auditable, but full-suite conformance remains blocked by pending `TC-005` and `TC-006` refactors plus missing area `4.5` coverage.

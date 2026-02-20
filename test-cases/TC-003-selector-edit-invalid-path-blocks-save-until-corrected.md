@@ -1,53 +1,52 @@
-# Selector Edit Invalid Path Blocks Save Until Corrected
+# Table Discovery and Schema View Stay Consistent
 
 ## 1. Metadata
 
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-003` |
-| Startup Script | `scripts/start-selector-from-config.sh` |
-| Startup Command | `bash scripts/start-selector-from-config.sh` |
+| Functional Behavior Reference | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` |
+| Startup Script | `scripts/start-direct-launch.sh` |
+| Startup Command | `bash scripts/start-direct-launch.sh` |
 
 ## 2. Scenario
 
-- Subject under test: selector edit workflow validation for configured database entries.
-- Expected result: selector edit rejects invalid `db_path` and allows recovery by correcting path, after which startup can continue to runtime.
+- Subject under test: table-list discovery behavior and schema rendering for selected table in the main runtime view.
+- Expected result: table list remains alphabetically ordered without SQLite internal tables, and schema view renders selected-table column metadata.
 
 ## 3. Preconditions
 
 1. Run from repository root.
-2. Script `scripts/start-selector-from-config.sh` is executable in current environment.
+2. Script `scripts/start-direct-launch.sh` is executable in current environment.
 3. Keep `TMP_ROOT` value printed by startup script output for cleanup.
 
 ## 4. Test Steps
 
 | Step ID | User Action | Expected Outcome | Assertion ID |
 | --- | --- | --- | --- |
-| S1 | Run `bash scripts/start-selector-from-config.sh`. | Startup selector opens with one configured `fixture` entry. | `A1` |
-| S2 | Press `e` on selected entry to open edit form, set `db_path` to `<TMP_ROOT>/missing.db`, then press `Enter`. | Save is rejected, edit form stays open, and validation error is visible. | `A2` |
-| S3 | Replace `db_path` with the original valid path shown in the form and press `Enter`. | Edit is saved and selector list returns with updated reachable entry. | `A3` |
-| S4 | Press `Enter` on the selector row. | App opens runtime main two-panel view for selected database. | `A4` |
-| S5 | Press `q`. | Application exits cleanly to terminal prompt. | `A5` |
+| S1 | Run `bash scripts/start-direct-launch.sh`. | Runtime opens with table list in left panel and schema view for selected table in right panel. | `A1` |
+| S2 | Inspect visible table names in left panel. | SQLite internal tables are not listed. | `A2` |
+| S3 | Verify order of visible table names. | Table list is alphabetically sorted. | `A3` |
+| S4 | Move selection to a different table using `j`/`k`. | Right panel schema updates to show that table's column names and types. | `A4` |
 
 ## 5. Assertions
 
-| Assertion ID | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
-| --- | --- | --- | --- |
-| A1 | Selector is the first screen and contains configured entry from startup script. | `PASS` | Selector list shows `fixture` entry before any runtime view appears. |
-| A2 | Invalid edit submission is blocked with visible error and no selector-to-runtime transition. | `PASS` | Edit form remains active after invalid path submit and shows save validation failure. |
-| A3 | Corrected edit submission succeeds and returns to selector list with valid entry. | `PASS` | Selector list is restored only after valid path is provided and saved. |
-| A4 | Selecting corrected entry transitions to runtime main view. | `PASS` | Main layout appears after `Enter` on selector row. |
-| A5 | App exits on `q` without residual interactive process. | `PASS` | Shell prompt returns immediately after quit command. |
+| Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
+| --- | --- | --- | --- | --- |
+| A1 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Runtime presents table-discovery list and schema panel for selected table. | `PASS` | Left panel contains table names and right panel shows schema rows immediately after startup. |
+| A2 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Table list excludes internal SQLite system tables. | `PASS` | No `sqlite_` system table names are shown in the list. |
+| A3 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Table list ordering is alphabetical for predictable scanning. | `PASS` | Visible table names are ordered lexicographically. |
+| A4 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Changing selected table refreshes schema with column name and type fields. | `PASS` | Right panel schema content updates after selection change and includes name/type information. |
 
 ## 6. Final Result
 
 - Test Result: `PASS`
 - Failed Assertions: `none`
 - Failure Reason: `N/A`
-- Notes: `This scenario covers selector/config failure-recovery in edit flow with explicit invalid-path rejection.`
+- Notes: `Scenario is intentionally limited to table discovery and schema rendering ownership.`
 
 ## 7. Cleanup
 
-1. Run:
+1. Exit app using `q`.
+2. Run:
    - `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
-2. Confirm temporary directory under `<TMP_ROOT>` is removed.

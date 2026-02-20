@@ -4,7 +4,7 @@ This task refactors the first four existing scenarios into area-pure Functional 
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-006-functional-behavior-grouped-test-case-coverage.md
 - Task ID: 02
 - Task File: PRD-006-TASK-02-refactor-existing-scenarios-areas-41-44.md
@@ -83,4 +83,26 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Refactored existing scenarios without creating new `TC-*` files:
+  - `test-cases/TC-001-direct-launch-opens-main-view.md` is now area-pure `4.1` and includes informational startup coverage (`help` and `version`) bound to approved script `scripts/start-informational.sh`.
+  - `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md` is now area-pure `4.2` for two-panel layout and focus switching.
+  - `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md` is now area-pure `4.3` for table discovery and schema view behavior.
+  - `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` is now area-pure `4.4` for records view and navigation behavior.
+- Updated governance/traceability artifacts for this refactor set:
+  - `test-cases/suite-coverage-matrix.md`
+  - `test-cases/scenario-structure-and-metadata-checklist.md`
+  - `test-cases/deterministic-result-audit-checklist.md`
+  - `test-cases/full-suite-release-readiness-audit.md`
+- Verification evidence:
+  - FR-001/FR-002 checks passed for `TC-001` to `TC-004`: each file has exactly one metadata Functional Behavior reference and zero assertion-reference mismatches.
+  - FR-003 negative check passed: `git diff --name-only | rg '^test-cases/TC-'` shows only `TC-001` to `TC-004` were modified (no new `TC-*` files).
+  - FR-004 scoped check passed: coverage matrix rows `4.1` to `4.4` are mapped and marked `PASS`.
+  - FR-005 check passed: `TC-001` metadata binds to approved `scripts/start-informational.sh` command.
+  - FR-010 check passed: all touched governance artifacts were updated in one synchronized change.
+- Metric checkpoint (M3):
+  - Expand-first evidence table contains four additions (`TASK-02-001`..`TASK-02-004`), each classified `Expanded Existing TC`.
+  - Ratio result: `4/4 = 100%` (meets task threshold).
+- Project quality gates:
+  - `gofmt`: no changed Go files.
+  - `golangci-lint run ./...`: passed (`0 issues`).
+  - `go test ./...`: passed.

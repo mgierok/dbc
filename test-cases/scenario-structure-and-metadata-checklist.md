@@ -49,15 +49,15 @@ Checklist result is `FAIL` when at least one of the following is true:
 
 | Check ID | Check | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- |
-| C1 | Exactly one startup script is declared. | `PASS` | Metadata has one `Startup Script` row with `scripts/start-direct-launch.sh`. |
-| C2 | Exactly one startup command is declared. | `PASS` | Metadata has one `Startup Command` row with `bash scripts/start-direct-launch.sh`. |
-| C3 | Exactly one Functional Behavior reference is declared. | `FAIL` | Metadata has no `Functional Behavior Reference` row. |
-| C4 | Metadata field set matches allowed set exactly. | `FAIL` | Metadata rows are missing `Functional Behavior Reference`. |
+| C1 | Exactly one startup script is declared. | `PASS` | Metadata has one `Startup Script` row with `scripts/start-informational.sh`. |
+| C2 | Exactly one startup command is declared. | `PASS` | Metadata has one `Startup Command` row with `bash scripts/start-informational.sh <help\|version>`. |
+| C3 | Exactly one Functional Behavior reference is declared. | `PASS` | Metadata has one `Functional Behavior Reference` row mapped to Product Functional Behavior section `4.1`. |
+| C4 | Metadata field set matches allowed set exactly. | `PASS` | Metadata includes only `Case ID`, `Functional Behavior Reference`, `Startup Script`, and `Startup Command`. |
 | C5 | Required headings exist in required order. | `PASS` | `TC-001` includes sections `1` through `7` in template order. |
-| C6 | Required table columns are present. | `FAIL` | Assertions table is missing `Functional Behavior Reference` column. |
-| C7 | Assertion Functional Behavior references match metadata reference. | `FAIL` | Cannot validate equality because scenario metadata reference is missing. |
+| C6 | Required table columns are present. | `PASS` | Assertions table includes `Functional Behavior Reference`, `Pass Criteria`, `Result`, and `Evidence` columns. |
+| C7 | Assertion Functional Behavior references match metadata reference. | `PASS` | Every `TC-001` assertion row references the same `4.1` link used in metadata. |
 
 ## Baseline Checklist Result
 
-- Result: `FAIL`
-- Reason: Startup binding and section order are correct, but Functional Behavior metadata and assertion-reference ownership fields are missing.
+- Result: `PASS`
+- Reason: `TC-001` now satisfies startup binding, one-reference ownership, template structure, and assertion-reference equality rules.

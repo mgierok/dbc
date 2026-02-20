@@ -43,16 +43,16 @@ Audit result is `FAIL` when at least one of the following is true:
 | D2 | Final test result is binary (`PASS`/`FAIL`) only. | `PASS` | `Final Result` uses `Test Result: PASS`. |
 | D3 | Final `PASS` is consistent with assertion results. | `PASS` | All listed assertions are `PASS`; final result is `PASS`. |
 | D4 | No ambiguous or third-state outcomes appear. | `PASS` | No `SKIPPED`, `UNKNOWN`, `PARTIAL`, or equivalent wording. |
-| D5 | Scenario metadata declares exactly one Functional Behavior reference. | `FAIL` | Metadata has no `Functional Behavior Reference` field. |
-| D6 | Assertion rows declare Functional Behavior reference values. | `FAIL` | Assertions table has no `Functional Behavior Reference` column. |
-| D7 | Assertion references match scenario metadata reference. | `FAIL` | Cannot verify equality because Functional Behavior references are missing. |
+| D5 | Scenario metadata declares exactly one Functional Behavior reference. | `PASS` | Metadata includes one `Functional Behavior Reference` row targeting Product section `4.1`. |
+| D6 | Assertion rows declare Functional Behavior reference values. | `PASS` | Every assertion row includes one `Functional Behavior Reference` value. |
+| D7 | Assertion references match scenario metadata reference. | `PASS` | All assertion references are identical to metadata reference. |
 
 ## Violation Count (Baseline)
 
-- Violation Count: `3`
-- Violations: missing scenario reference metadata, missing assertion reference field, unverified reference equality.
+- Violation Count: `0`
+- Violations: `none`
 
 ## Baseline Determinism Result
 
-- Result: `FAIL`
-- Reason: Binary result determinism passes, but Functional Behavior ownership-purity requirements fail.
+- Result: `PASS`
+- Reason: Binary result determinism and Functional Behavior ownership-purity requirements both pass for sampled scenario `TC-001`.
