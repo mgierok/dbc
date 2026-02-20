@@ -4,7 +4,7 @@ This task defines runtime and TUI interaction regression scenarios so core brows
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-005-full-quality-regression-scenarios.md
 - Task ID: 03
 - Task File: PRD-005-TASK-03-runtime-tui-scenarios.md
@@ -79,4 +79,22 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+Delivered runtime/TUI scenario coverage artifacts:
+
+- Added `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` as a context-rich runtime interaction scenario covering records navigation, field-focus transitions, invalid command handling, and continued interaction recovery.
+- Updated `test-cases/suite-coverage-matrix.md` to map `runtime/TUI` journey coverage to `TC-004` and mark runtime failure/recovery coverage as explicitly present.
+
+Verification executed against this task verification plan:
+
+- FR-001: coverage matrix now maps `runtime/TUI` to runtime scenario `TC-004`; negative-path condition (runtime row unmapped) is no longer present.
+- FR-002: `TC-004` metadata contains exactly one startup script and one startup command from the approved script catalog.
+- FR-003: `TC-004` follows required section headings and order (`## 1` through `## 7`) and required template table columns.
+- FR-004: each `TC-004` test-step row includes one user action, one expected outcome, and one assertion ID.
+- FR-005: assertion pass criteria in `TC-004` are concrete and binary-resolvable; assertion and final-result fields remain constrained to `PASS`/`FAIL`.
+- FR-006: runtime failure/recovery is explicit in `TC-004` through invalid command trigger (`:unknown`) and recovery checks that confirm continued runtime interactivity.
+- FR-007: `TC-004` is intentionally context-rich (multiple high-value assertions across one coherent flow) rather than fragmented single-assert scenarios.
+- Metric checkpoints: none (`PRD Metrics: none`).
+
+Downstream decision context:
+
+- PRD-005 full-suite closure remains intentionally open for `save` and `navigation` journey coverage to be completed in subsequent tasks.

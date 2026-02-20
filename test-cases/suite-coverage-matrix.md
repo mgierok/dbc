@@ -24,11 +24,11 @@ Define mandatory journey-area coverage mapping and deterministic pass/fail cover
 | --- | --- | --- | --- | --- | --- |
 | startup | `TC-001, TC-002` | Yes | `TC-002` | `PASS` | `test-cases/TC-001-direct-launch-opens-main-view.md`, `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md` |
 | selector/config | `TC-002, TC-003` | Yes | `TC-002, TC-003` | `PASS` | `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md`, `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md` |
-| runtime/TUI | `none` | Yes | `none` | `FAIL` | No mapped runtime/TUI scenario yet. |
+| runtime/TUI | `TC-004` | Yes | `TC-004` | `PASS` | `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` |
 | save | `none` | Yes | `none` | `FAIL` | No mapped save scenario yet. |
 | navigation | `none` | Yes | `none` | `FAIL` | No mapped navigation scenario yet. |
 
 ## Current Baseline Conclusion
 
 - Coverage review result: `FAIL`
-- Reason: Required journey areas `runtime/TUI`, `save`, and `navigation` are currently unmapped.
+- Reason: Required journey areas `save` and `navigation` are currently unmapped.
