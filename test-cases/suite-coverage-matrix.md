@@ -22,13 +22,13 @@ Define mandatory Functional Behavior mapping and traceability from Product Docum
 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | `TC-003` | `TC-003:A1,A2,A3,A4` | `PASS` | `PASS` | `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md` |
 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `TC-004` | `TC-004:A1,A2,A3,A4,A5,A6,A7` | `PASS` | `PASS` | `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` |
 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | `none` | `none` | `FAIL` | `FAIL` | `Area coverage intentionally pending dedicated filtering scenario creation.` |
-| `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `TC-005, TC-006` | `TC-005:A4,A7; TC-006:A3,A7` | `PASS` | `FAIL` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
-| `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `TC-005, TC-006` | `TC-005:A4,A5,A6,A7,A8,A9; TC-006:A3,A4,A5,A7,A8` | `PASS` | `FAIL` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
-| `[4.8 Visual State Communication](../docs/product-documentation.md#48-visual-state-communication)` | `TC-005, TC-006` | `TC-005:A6,A9; TC-006:A3,A4,A7,A8` | `PASS` | `FAIL` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `TC-005` | `TC-005:A1,A2,A3,A4,A5,A6,A7,A8,A9,A10` | `PASS` | `PASS` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md` |
+| `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `TC-006` | `TC-006:A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11` | `PASS` | `PASS` | `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.8 Visual State Communication](../docs/product-documentation.md#48-visual-state-communication)` | `none` | `none` | `FAIL` | `FAIL` | `Area coverage intentionally pending dedicated visual-state scenario creation.` |
 
 ## Baseline Conclusion
 
 - Mapping completeness (areas `4.1` to `4.4`): `PASS` (`4/4` scoped references mapped with scenario and assertion IDs).
 - Ownership/purity (areas `4.1` to `4.4`): `PASS` (`4/4` scoped references mapped to area-pure scenarios).
-- Mapping completeness (areas `4.1` to `4.8`): `FAIL` (`7/8`; area `4.5` intentionally pending TASK-04).
-- Ownership/purity (areas `4.1` to `4.8`): `FAIL` (`TC-005` and `TC-006` remain pre-refactor and include mixed-area assertions).
+- Mapping completeness (areas `4.1` to `4.8`): `FAIL` (`6/8`; areas `4.5` and `4.8` intentionally pending TASK-04).
+- Ownership/purity (areas `4.1` to `4.8`): `FAIL` (all active scenarios are area-pure, but suite remains incomplete for uncovered areas `4.5` and `4.8`).

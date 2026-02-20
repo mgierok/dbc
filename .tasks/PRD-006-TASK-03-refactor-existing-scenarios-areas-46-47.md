@@ -4,7 +4,7 @@ This task refactors existing write-path scenarios so data operations and staging
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-006-functional-behavior-grouped-test-case-coverage.md
 - Task ID: 03
 - Task File: PRD-006-TASK-03-refactor-existing-scenarios-areas-46-47.md
@@ -82,4 +82,23 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Refactored existing scenarios without creating new `TC-*` files:
+  - `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md` is now area-pure `4.6` and includes deterministic insert/edit/delete operation assertions.
+  - `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` is now area-pure `4.7` and includes deterministic staged lifecycle, undo/redo, and `:config` decision-path assertions (`cancel`, `save`, `discard`).
+- Updated governance/traceability artifacts for this refactor set:
+  - `test-cases/suite-coverage-matrix.md`
+  - `test-cases/full-suite-release-readiness-audit.md`
+- Verification evidence:
+  - FR-001 happy-path passed: both scenarios contain exactly one metadata `Functional Behavior Reference` (verified with `rg -n '\| Functional Behavior Reference \|' test-cases/TC-005... test-cases/TC-006...`).
+  - FR-002 happy/negative checks passed: no cross-area references found in `TC-005` and `TC-006` outside their declared areas (no-match audits for foreign area anchors).
+  - FR-003 negative check passed: `git diff --name-only | rg '^test-cases/TC-'` returned only `TC-005` and `TC-006` (no new `TC-*` files).
+  - FR-007 check passed: `TC-005` includes deterministic operation steps/assertions for edit (`S4/A4`), delete toggle/remove (`S5,S6,S9`), and insert (`S7,S8`).
+  - FR-008 check passed: `TC-006` includes deterministic staged lifecycle coverage for undo/redo (`S4,S5`) and dirty decision outcomes (`S6,S7,S10`).
+  - FR-010 checks passed: matrix rows for `4.6` and `4.7` are synchronized to area-pure ownership (`PASS`) and release audit baseline/evidence was updated to reflect refactor completion.
+- Metric checkpoint (M3):
+  - Expand-first evidence table now includes `REF-005` and `REF-006`, both classified `Expanded Existing TC`.
+  - Cumulative ratio result: `6/6 = 100%` (meets `>=70%` threshold).
+- Project quality gates:
+  - `gofmt`: no changed Go files.
+  - `golangci-lint run ./...`: passed (`0 issues`).
+  - `go test ./...`: passed.

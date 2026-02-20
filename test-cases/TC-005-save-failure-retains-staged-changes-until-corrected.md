@@ -1,17 +1,18 @@
-# Save Failure Retains Staged Changes Until Corrected
+# Insert, Edit, and Delete Operations Stay Deterministic
 
 ## 1. Metadata
 
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-005` |
+| Functional Behavior Reference | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` |
 | Startup Script | `scripts/start-direct-launch.sh` |
 | Startup Command | `bash scripts/start-direct-launch.sh` |
 
 ## 2. Scenario
 
-- Subject under test: transactional save behavior when staged edits violate a database constraint and require user correction.
-- Expected result: failed save keeps staged changes visible with failure feedback, and corrected staged data can be saved successfully without restarting the session.
+- Subject under test: runtime data operations for insert, edit, and delete in records context.
+- Expected result: insert, edit, and delete interactions each produce deterministic operation outcomes without requiring app restart.
 
 ## 3. Preconditions
 
@@ -25,36 +26,36 @@
 | --- | --- | --- | --- |
 | S1 | Run `bash scripts/start-direct-launch.sh`. | App opens main two-panel runtime view directly (no selector). | `A1` |
 | S2 | In table list, select `categories` and press `Enter` to open records view. | Records view opens for `categories`. | `A2` |
-| S3 | Press `Enter` again to enter field-focus mode in records. | Cell-level navigation is active. | `A3` |
-| S4 | Edit one `categories.name` cell and set it to a name that already exists in another row, then confirm the edit popup. | Duplicate-value edit is staged and dirty mode is active. | `A4` |
-| S5 | Press `w` and confirm save. | Save fails with visible status-line error and session remains in runtime. | `A5` |
-| S6 | Observe write-state indicators after failed save. | Dirty mode and staged edit markers remain present after failure. | `A6` |
-| S7 | Edit the staged duplicate `name` value to a unique corrected value and confirm. | Corrected value is staged and remains ready for save. | `A7` |
-| S8 | Press `w` and confirm save again. | Save succeeds, staged state clears, and records reload. | `A8` |
-| S9 | Verify mode/status after successful save. | Status shows clean `READ-ONLY` mode with no pending dirty count. | `A9` |
+| S3 | Press `Enter` again to enter field-focus mode in records. | Cell-level navigation is active for record operations. | `A3` |
+| S4 | Edit one existing `categories.name` value to a unique value and confirm the edit popup. | Edit is accepted and staged for the selected persisted row. | `A4` |
+| S5 | On a persisted row, press `d`. | Delete marker is toggled on for the selected persisted row. | `A5` |
+| S6 | Press `d` again on the same persisted row. | Delete marker is removed (toggle-off behavior). | `A6` |
+| S7 | Press `i` to stage a new row. | Pending insert row appears at top of records list. | `A7` |
+| S8 | Populate required pending-insert fields and confirm the edit popup. | Pending insert remains valid for subsequent write workflow. | `A8` |
+| S9 | With pending insert selected, press `d`. | Pending insert row is removed immediately (not converted to delete marker). | `A9` |
 | S10 | Press `q`. | Application exits cleanly to terminal prompt. | `A10` |
 
 ## 5. Assertions
 
-| Assertion ID | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
-| --- | --- | --- | --- |
-| A1 | Startup command opens runtime directly without selector step. | `PASS` | Main two-panel view appears immediately after launch command. |
-| A2 | `categories` records can be opened from table list using `Enter`. | `PASS` | Right panel switches to records content for `categories`. |
-| A3 | Field-focus mode can be entered in records context. | `PASS` | Cell-level focus indicator/navigation is visibly active. |
-| A4 | Editing a `name` value to a duplicate existing value creates a staged dirty edit before save. | `PASS` | Edited value is shown with staged change indicator and write mode appears. |
-| A5 | Save attempt with duplicate `categories.name` fails and surfaces clear error feedback. | `PASS` | Status line shows save failure/constraint error while app remains interactive. |
-| A6 | Save failure does not discard user intent; staged change remains pending. | `PASS` | Dirty mode and staged edit marker are still visible after failed save. |
-| A7 | User can correct failed staged value in-session without restart. | `PASS` | Corrected unique value is accepted in edit popup and staged. |
-| A8 | Save succeeds after correction and applies transactional write. | `PASS` | Save completion status is shown and records refresh without failure feedback. |
-| A9 | Successful save clears dirty state and returns runtime mode to clean state. | `PASS` | Mode indicator shows `READ-ONLY` with no pending dirty count. |
-| A10 | Quit exits process normally. | `PASS` | Terminal prompt returns after `q`. |
+| Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
+| --- | --- | --- | --- | --- |
+| A1 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Runtime opens in context where table-level data operations can be performed. | `PASS` | Main two-panel runtime view appears immediately after launch command. |
+| A2 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `categories` records are accessible for insert/edit/delete operations. | `PASS` | Right panel opens records content for `categories`. |
+| A3 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Field-focus mode is reachable for cell-level edit workflow. | `PASS` | Cell-level navigation is visibly active after second `Enter`. |
+| A4 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Editing an existing persisted value is accepted and staged through edit popup flow. | `PASS` | Updated unique value is confirmed in popup and reflected in records row. |
+| A5 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `d` on persisted row toggles delete marker on. | `PASS` | Selected persisted row shows delete-marked state after first `d`. |
+| A6 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Repeating `d` on same persisted row toggles delete marker off. | `PASS` | Previously delete-marked persisted row returns to non-delete state. |
+| A7 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `i` stages a new record at top of records view. | `PASS` | A new pending row is inserted at top position immediately after `i`. |
+| A8 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Pending insert accepts value entry in edit popup for required data fields. | `PASS` | Required field value is accepted and remains populated in pending insert row. |
+| A9 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `d` on pending insert removes that pending row immediately. | `PASS` | Pending insert row disappears from records list after `d`. |
+| A10 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Quit exits process normally after data-operation checks. | `PASS` | Terminal prompt returns after `q`. |
 
 ## 6. Final Result
 
 - Test Result: `PASS`
 - Failed Assertions: `none`
 - Failure Reason: `N/A`
-- Notes: `This scenario validates failure/recovery save behavior: failed save retains staged state, corrected save clears staged state.`
+- Notes: `Scenario is intentionally constrained to area 4.6 insert/edit/delete operation behavior.`
 
 ## 7. Cleanup
 
