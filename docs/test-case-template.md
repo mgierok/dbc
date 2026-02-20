@@ -8,8 +8,11 @@ Recommended filename: `TC-<NNN>-<behavior>-<expected-result>.md`.
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-<NNN>` |
+| Functional Behavior Reference | `[<Section title>](../docs/product-documentation.md#<section-anchor-under-functional-behavior>)` |
 | Startup Script | `scripts/<script-name>.sh` |
 | Startup Command | `bash scripts/<script-name>.sh` |
+
+`Functional Behavior Reference` must be exactly one Markdown link pointing to one subsection under `docs/product-documentation.md#4-functional-behavior`.
 
 ## 2. Scenario
 
@@ -31,11 +34,11 @@ Recommended filename: `TC-<NNN>-<behavior>-<expected-result>.md`.
 
 ## 5. Assertions
 
-| Assertion ID | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
-| --- | --- | --- | --- |
-| A1 | `<clear verification rule>` | `<PASS/FAIL>` | `<what confirms result>` |
-| A2 | `<clear verification rule>` | `<PASS/FAIL>` | `<what confirms result>` |
-| A3 | `<clear verification rule>` | `<PASS/FAIL>` | `<what confirms result>` |
+| Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
+| --- | --- | --- | --- | --- |
+| A1 | `<same reference as Metadata>` | `<clear verification rule>` | `<PASS/FAIL>` | `<what confirms result>` |
+| A2 | `<same reference as Metadata>` | `<clear verification rule>` | `<PASS/FAIL>` | `<what confirms result>` |
+| A3 | `<same reference as Metadata>` | `<clear verification rule>` | `<PASS/FAIL>` | `<what confirms result>` |
 
 ## 6. Final Result
 

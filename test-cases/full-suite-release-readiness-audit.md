@@ -1,49 +1,65 @@
-# Full-Suite Release Readiness Audit (PRD-005)
+# Full-Suite Release Readiness Audit
 
 ## Scope
 
-- PRD: `.tasks/PRD-005-full-quality-regression-scenarios.md`
-- Task: `.tasks/PRD-005-TASK-05-integration-hardening.md`
 - Scenario set: `TC-001` through `TC-006` in `test-cases/`
 - Governance artifacts:
   - `test-cases/suite-coverage-matrix.md`
   - `test-cases/scenario-structure-and-metadata-checklist.md`
   - `test-cases/deterministic-result-audit-checklist.md`
+  - `docs/test-case-specification.md`
+  - `docs/test-case-template.md`
 
-## Dependency Consistency Audit
+## Cross-Artifact Consistency Rules
 
-| Check | Expected | Actual | Result (`PASS`/`FAIL`) |
+Result is `FAIL` when at least one of these is true:
+
+- metadata fields differ between specification, template, and checklist,
+- assertion columns differ between template and checklist,
+- startup script referenced in a scenario is not present in startup scripts catalog,
+- coverage matrix omits scenario or assertion mappings for a tracked Functional Behavior reference,
+- deterministic checklist omits `Violation Count` or fail trigger for non-zero count.
+
+## Governance Contract Audit
+
+| Contract | Audit Check | Evidence | Result (`PASS`/`FAIL`) |
 | --- | --- | --- | --- |
-| TASK-02 status | `DONE` | `DONE` | `PASS` |
-| TASK-03 status | `DONE` | `DONE` | `PASS` |
-| TASK-04 status | `DONE` | `DONE` | `PASS` |
+| One-reference ownership | Scenario contract requires exactly one metadata Functional Behavior reference. | `docs/test-case-specification.md` + `docs/test-case-template.md` + `test-cases/scenario-structure-and-metadata-checklist.md` | `PASS` |
+| Assertion purity | Assertion contract requires one reference per assertion and equality to metadata reference. | `docs/test-case-specification.md` + `test-cases/deterministic-result-audit-checklist.md` | `PASS` |
+| Expand-first evidence model | Release audit includes explicit expanded-vs-new classification and ratio inputs. | `Expand-First Coverage Addition Evidence` section in this file | `PASS` |
+| Area traceability | Coverage matrix maps Functional Behavior reference -> scenario IDs -> assertion IDs. | `test-cases/suite-coverage-matrix.md` | `PASS` |
+| Informational startup coverage readiness | Startup scripts catalog contains informational startup binding command. | `docs/test-case-specification.md` startup scripts catalog + `scripts/start-informational.sh` | `PASS` |
+| Cross-artifact mismatch fail policy | Cross-artifact mismatch fail triggers are explicitly defined. | `Cross-Artifact Consistency Rules` section in this file | `PASS` |
 
-## Requirement Audit Results
+## Current Suite Baseline Under Updated Governance
 
-| Requirement | Audit Check | Evidence | Result (`PASS`/`FAIL`) |
-| --- | --- | --- | --- |
-| FR-001 | All required journey areas are mapped and covered. | `test-cases/suite-coverage-matrix.md` rows for `startup`, `selector/config`, `runtime/TUI`, `save`, `navigation`; all coverage statuses are `PASS`. | `PASS` |
-| FR-002 | Every scenario has exactly one startup script and one startup command. | `TC-001`..`TC-006` metadata contains exactly one `Startup Script` row and one `Startup Command` row each. | `PASS` |
-| FR-003 | All scenarios follow mandatory heading order and required metadata/structure fields. | `TC-001`..`TC-006` each contains `## 1` through `## 7` in template order and required tables. | `PASS` |
-| FR-004 | Every test step row has one action, one expected outcome, and one assertion ID mapping. | For each scenario, all `S*` rows map one-to-one to `A*` IDs in the `Assertion ID` column. | `PASS` |
-| FR-005 | Assertions and final results are deterministic and binary. | `TC-001`..`TC-006` assertions use only `PASS`/`FAIL`; final `Test Result` uses only `PASS`/`FAIL`; no third-state tokens. | `PASS` |
-| FR-006 | Every critical journey includes failure/recovery validation where applicable. | `Failure/Recovery Scenario IDs` column in `test-cases/suite-coverage-matrix.md` is populated for all five journey areas. | `PASS` |
-| FR-007 | Scenarios are context-rich and not fragmented into low-value single-assert files. | Scenario assertion counts: `TC-001=3`, `TC-002=5`, `TC-003=5`, `TC-004=8`, `TC-005=10`, `TC-006=9`. | `PASS` |
-| FR-008 | Suite-level result is `PASS` only when all scenario/assertion results are `PASS`. | `TC-001`..`TC-006` final results are `PASS`; assertion tables contain no `FAIL`. | `PASS` |
+| Check | Observed | Result (`PASS`/`FAIL`) |
+| --- | --- | --- |
+| Scenario ownership compliance | Active scenarios do not yet include required Functional Behavior reference metadata. | `FAIL` |
+| Assertion ownership purity | Active scenarios do not yet include assertion Functional Behavior reference fields. | `FAIL` |
+| Binary result determinism | Current scenarios use binary `PASS`/`FAIL` outcomes. | `PASS` |
 
-## Metric Checkpoints
+## Expand-First Coverage Addition Evidence
 
-| Metric | Threshold | Observed | Evidence | Result (`PASS`/`FAIL`) |
-| --- | --- | --- | --- | --- |
-| M1 | 100% journey-area coverage (`5/5`) | `5/5` | `test-cases/suite-coverage-matrix.md` | `PASS` |
-| M2 | 100% critical-journey failure/recovery coverage (`5/5`) | `5/5` | `test-cases/suite-coverage-matrix.md` failure/recovery columns | `PASS` |
-| M3 | 100% template/spec compliance across suite (`N/N`) | `6/6` scenarios compliant | Full-suite checks recorded in this audit and governed by `test-cases/scenario-structure-and-metadata-checklist.md` | `PASS` |
-| M4 | 0 determinism violations | `0` violations | Binary-result and forbidden-state checks across `TC-001`..`TC-006`; governance contract in `test-cases/deterministic-result-audit-checklist.md` | `PASS` |
+| Coverage Change ID | Delivery Method (`Expanded Existing TC` \| `New TC`) | Expanded Scenario IDs | New Scenario IDs | Expand-First Evidence | Counts Toward Expanded Numerator (`0/1`) | Counts Toward Total Denominator (`0/1`) | Result (`PASS`/`FAIL`) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `BASELINE-001` | `Expanded Existing TC` | `none` | `none` | Governance model established; no coverage additions executed in this audit snapshot. | `0` | `0` | `PASS` |
 
-## Release Decision
+### Expand-First Ratio Formula
 
-- Suite decision: `PASS`
-- Failed scenarios: `none`
-- Failed assertions: `none`
-- Go/No-Go: `GO`
-- Rationale: All FR checks pass, all metric thresholds are met, and all scoped scenario outcomes are deterministic and binary.
+- Expanded-first adherence ratio = `sum(Expanded Numerator) / sum(Total Denominator)` for rows with denominator `1`.
+- If denominator sum is `0`, ratio is `N/A` for the snapshot and readiness is evaluated on contract availability.
+
+## Determinism Violation Checkpoint
+
+- Violation Count Source: `test-cases/deterministic-result-audit-checklist.md`
+- Required threshold: `0`
+- Current observed baseline value: `3` (from baseline audit sample).
+- Gate rule: any non-zero value forces `FAIL`.
+
+## Release Decision (Current Snapshot)
+
+- Governance contract readiness: `PASS`
+- Scenario conformance readiness: `FAIL`
+- Go/No-Go: `NO-GO`
+- Rationale: Governance contracts are synchronized and enforceable, but active scenario files are not yet conformed to one-reference ownership and purity requirements.

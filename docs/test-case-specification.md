@@ -2,42 +2,16 @@
 
 ## Purpose
 
-This document defines the fixture assets and the mandatory format for behavior-oriented test cases.
-It applies to tests covering:
+This document defines fixture assets and mandatory contracts for behavior-oriented manual regression cases.
+It applies to startup and runtime behavior verification scenarios in `test-cases/`.
 
-- user journeys,
-- user interaction with the TUI,
-- critical runtime paths.
-
-The target use of these cases is regression testing for startup and runtime behaviors.
-
-Every test case must be a separate Markdown file and must follow the template in `docs/test-case-template.md`.
+Every test case must be a separate Markdown file and must follow `docs/test-case-template.md`.
 
 ## Fixture Database
 
-- Fixture source file: `scripts/test.db`.
+- Fixture source file: `scripts/test.db`
 - Scope: local/manual startup and runtime behavior verification.
 - Domain modeled by fixture: `customers`, `categories`, `products`, `orders`, `order_items`.
-
-### Table Summary
-
-- `customers`
-  - `id` (PK), `email` (UNIQUE, NOT NULL), `full_name` (NOT NULL, CHECK), `phone` (NULLable), `loyalty_points` (DEFAULT `0`), `is_active` (DEFAULT `1`, CHECK), `created_at` (DEFAULT timestamp).
-- `categories`
-  - `id` (PK), `name` (UNIQUE, NOT NULL), `description` (NOT NULL, DEFAULT `''`, CHECK length).
-- `products`
-  - `id` (PK), `sku` (UNIQUE, NOT NULL), `name` (NOT NULL), `category_id` (FK), `price_cents` (CHECK), `notes` (NULLable), `weight_kg` (`REAL`), `metadata` (`BLOB`), `is_discontinued` (DEFAULT `0`, CHECK).
-- `orders`
-  - `id` (PK), `customer_id` (FK), `status` (NOT NULL, enum-like CHECK), `placed_at` (NULLable), `note` (NOT NULL, DEFAULT `''`), `total_cents` (DEFAULT `0`, CHECK).
-- `order_items`
-  - `id` (PK), `order_id` (FK with `ON DELETE CASCADE`), `product_id` (FK), `quantity` (CHECK), `unit_price_cents` (CHECK), `discount_percent` (`REAL`), UNIQUE(`order_id`, `product_id`).
-
-### Relationship Summary
-
-- `products.category_id` -> `categories.id`
-- `orders.customer_id` -> `customers.id`
-- `order_items.order_id` -> `orders.id` (`ON DELETE CASCADE`)
-- `order_items.product_id` -> `products.id`
 
 ## Startup Scripts Catalog
 
@@ -48,12 +22,13 @@ Run all commands from repository root.
 | [`scripts/start-direct-launch.sh`](../scripts/start-direct-launch.sh) | `bash scripts/start-direct-launch.sh` | Scenario must start in runtime immediately (`-d`) with no selector step. |
 | [`scripts/start-selector-from-config.sh`](../scripts/start-selector-from-config.sh) | `bash scripts/start-selector-from-config.sh` | Scenario must start from selector with a valid config entry. |
 | [`scripts/start-without-database.sh`](../scripts/start-without-database.sh) | `bash scripts/start-without-database.sh` | Scenario must start in mandatory first-entry setup (no configured databases). |
+| [`scripts/start-informational.sh`](../scripts/start-informational.sh) | `bash scripts/start-informational.sh <help\|version>` | Scenario must validate startup informational behavior for `--help` or `--version`. |
 
 ### Output and Cleanup Rules
 
 - Every startup script prints `TMP_ROOT=...`.
 - `scripts/start-without-database.sh` additionally prints `TMP_DB=...`.
-- Mandatory cleanup after each test execution:
+- Mandatory cleanup after each execution:
   - `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
 
 ## Test Case File Contract (Mandatory)
@@ -61,85 +36,99 @@ Run all commands from repository root.
 ### 1. File Placement and Naming
 
 - Default location: `test-cases/`.
-- Each case is one file in Markdown format (`.md`).
-- Filename must be descriptive and scenario-specific.
-- Filename must start with `TC-<NNN>`.
-- Use pattern: `TC-<NNN>-<behavior>-<expected-result>.md`.
-- Hint to get next number quickly (without opening/scanning test content):
-  ```bash
-  LAST_NNN="$(rg --files test-cases 2>/dev/null | rg -o 'TC-[0-9]{3,}' | sed 's/TC-//' | sort -n | tail -1)"
-  printf 'TC-%03d\n' "$((10#${LAST_NNN:-0}+1))"
-  ```
-- Hint to locate a test case by number quickly:
-  ```bash
-  ID=007; rg --files -g "TC-${ID}-*.md" test-cases 2>/dev/null
-  ```
+- Each case is one Markdown file (`.md`).
+- Filename must start with `TC-<NNN>` and follow: `TC-<NNN>-<behavior>-<expected-result>.md`.
 - Do not use generic names such as `test1.md`, `scenario.md`, `case.md`.
 
 ### 2. Required Startup Script Binding
 
 - Each test case must reference exactly one startup script from the catalog above.
-- Test case must include:
-  - script path,
-  - exact run command.
-- If two startup contexts are needed, split into two separate test cases.
+- Metadata must include both script path and exact run command.
+- If two startup contexts are needed, split into separate test cases.
 
-### 3. Minimal Required Metadata
+### 3. Functional Behavior Ownership Contract
 
-Only the fields below are allowed in `Metadata` section:
+- Each scenario must declare exactly one `Functional Behavior Reference` in metadata.
+- The value must be a Markdown reference targeting one subsection under:
+  - `docs/product-documentation.md#4-functional-behavior`
+- Assertions must be area-pure:
+  - every assertion row must include one `Functional Behavior Reference`,
+  - every assertion reference must be identical to the scenario metadata reference.
+- Product documentation is the source of truth for available Functional Behavior subsections.
+- This specification and template must not define an independent local allowlist of areas.
+
+### 4. Minimal Required Metadata
+
+Only fields below are allowed in `## 1. Metadata`:
 
 - `Case ID`
+- `Functional Behavior Reference`
 - `Startup Script`
 - `Startup Command`
 
-Do not add extra metadata fields (for example priority, owner, tags, dates) unless explicitly requested.
+### 5. Required Scenario Contract
 
-### 4. Required Scenario Contract
-
-Every test case must define all elements below explicitly:
+Every test case must define:
 
 - subject under test (what behavior is being tested),
-- expected result (single, observable behavior contract),
-- pass/fail criteria mapped to explicit assertions.
-- Each case must contribute to regression coverage of at least one area from this set:
-  - user journey,
-  - TUI behavior,
-  - critical path.
-- The full `test-cases/` suite must collectively cover all three areas above.
-- The full `test-cases/` suite must include explicit failure and user-visible recovery coverage for every critical journey in scope.
-- A single test case may cover one, two, or all three areas.
-- Prefer expanded scenarios with multiple context-relevant assertions instead of single-assertion scenarios split into separate files.
-- Repeating an assertion across scenarios is allowed only when that assertion is necessary in the context of the scenario under test.
-- Repeated assertions must not be used as a reason to create a new scenario.
-- Suite-level coverage matrix is mandatory for regression execution and review.
-- The coverage matrix must map each `TC-*` case ID to covered areas (`user journey`, `TUI behavior`, `critical path`) and mark whether failure/recovery validation is present where relevant.
-- The coverage matrix must be included in execution evidence and used to confirm full-suite coverage before release decision.
-- During regression suite execution, each `TC-*` test case must be assigned to a separate agent (one agent executes exactly one test case in a given run).
-- Suite-level aggregation must combine results from all assigned agents and preserve per-case evidence for auditability.
+- expected result (single observable behavior contract),
+- explicit step-to-assertion mapping.
 
-Each step must contain:
+Each step row must contain:
 
 - one user action,
-- expected UI/system outcome,
-- linked assertion ID.
+- one expected UI/system outcome,
+- one linked assertion ID.
 
-### 5. Deterministic Result Rule
+Assertions table must contain:
 
-- Allowed final results are only `PASS` or `FAIL`.
-- `PASS` is valid only when all assertions are marked `PASS`.
-- Any unmet precondition, blocked execution, or failed expectation must be reported as `FAIL` with a reason.
+- assertion ID,
+- functional behavior reference,
+- pass criteria,
+- result (`PASS`/`FAIL`),
+- evidence.
+
+### 6. Expand-First Evidence Contract
+
+- Before creating a new `TC-*` file for scoped behavior additions, execution evidence must show that expansion/refactor of existing scenarios was evaluated first.
+- Release-readiness evidence must classify each coverage addition as:
+  - `Expanded Existing TC`, or
+  - `New TC`.
+- Every `New TC` classification must include explicit rationale for why expansion was not viable.
+
+### 7. Suite Governance Artifact Contract
+
+The following files are mandatory and must remain synchronized:
+
+- `test-cases/suite-coverage-matrix.md`
+- `test-cases/scenario-structure-and-metadata-checklist.md`
+- `test-cases/deterministic-result-audit-checklist.md`
+- `test-cases/full-suite-release-readiness-audit.md`
+
+Coverage matrix contract:
+
+- Must map Functional Behavior reference -> scenario IDs -> assertion IDs.
+- For each Product Documentation Functional Behavior subsection in active coverage scope, both `Scenario IDs` and `Assertion IDs` must be non-empty.
+- Missing scenario mapping or missing assertion mapping is an audit `FAIL`.
+
+Cross-artifact mismatch contract:
+
+- Any mismatch between template fields, specification fields, and checklist rules is an audit `FAIL`.
+- Any startup command used by scenarios but missing from startup scripts catalog is an audit `FAIL`.
+
+### 8. Deterministic Result Rule
+
+- Allowed assertion and final-result values are only `PASS` or `FAIL`.
+- Final `PASS` is valid only when all assertions are `PASS`.
+- Any unmet precondition, blocked execution, or failed expectation must produce final `FAIL` with reason.
 - No third state (`SKIPPED`, `UNKNOWN`, `PARTIAL`) is allowed.
-- Suite-level result is `PASS` only when every test case in the executed regression suite has final result `PASS`.
-- If at least one test case has final result `FAIL`, the suite-level result must be `FAIL` and must list failed case IDs.
 
-### 6. Strict Structure Rule
+### 9. Strict Structure Rule
 
-- The section order and headings from `docs/test-case-template.md` are mandatory.
-- Required fields in template tables cannot be removed.
-- Additional notes are allowed only in dedicated `Notes` fields.
-- `docs/test-case-template.md` is an integral, normative part of this specification.
+- Section order/headings from `docs/test-case-template.md` are mandatory.
+- Required fields/columns in template tables cannot be removed.
+- Additional notes are allowed only in the dedicated `Notes` field.
 - Full consistency between this document and the template is mandatory.
-- If any inconsistency is found, this specification is the parent document and has priority; the template must be updated to match it in the same change set.
 
 ## Canonical Template
 

@@ -2,33 +2,31 @@
 
 ## Purpose
 
-Define mandatory journey-area coverage mapping and deterministic pass/fail coverage review rules for the manual regression suite.
-
-## Required Journey Areas
-
-- `startup`
-- `selector/config`
-- `runtime/TUI`
-- `save`
-- `navigation`
+Define mandatory Functional Behavior mapping and traceability from Product Documentation references to scenarios and assertions.
 
 ## Coverage Review Rules
 
-1. Coverage review is `FAIL` when any required journey area has an empty `Scenario IDs` value.
-2. Coverage review is `FAIL` when a listed scenario ID does not resolve to an existing `test-cases/TC-*.md` file.
-3. Coverage review is `PASS` only when every required journey area has at least one valid mapped scenario ID.
+1. Coverage review is `FAIL` when a mapped reference is not a Markdown link to a subsection under `docs/product-documentation.md#4-functional-behavior`.
+2. Coverage review is `FAIL` when any row has empty `Scenario IDs`.
+3. Coverage review is `FAIL` when any row has empty `Assertion IDs`.
+4. Coverage review is `FAIL` when a listed scenario ID does not resolve to an existing `test-cases/TC-*.md` file.
+5. Mapping completeness is `PASS` only when every tracked Functional Behavior reference has non-empty scenario and assertion mappings.
+6. Ownership/purity is `FAIL` when a scenario does not declare exactly one Functional Behavior reference or assertion rows contain mixed references.
 
-## Mapping Matrix
+## Functional Behavior Mapping Matrix
 
-| Journey Area | Scenario IDs | Failure/Recovery Required | Failure/Recovery Scenario IDs | Coverage Status (`PASS`/`FAIL`) | Evidence |
+| Functional Behavior Reference | Scenario IDs | Assertion IDs | Mapping Completeness (`PASS`/`FAIL`) | Ownership / Purity (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| startup | `TC-001, TC-002` | Yes | `TC-002` | `PASS` | `test-cases/TC-001-direct-launch-opens-main-view.md`, `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md` |
-| selector/config | `TC-002, TC-003` | Yes | `TC-002, TC-003` | `PASS` | `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md`, `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md` |
-| runtime/TUI | `TC-004` | Yes | `TC-004` | `PASS` | `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` |
-| save | `TC-005` | Yes | `TC-005` | `PASS` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md` |
-| navigation | `TC-006` | Yes | `TC-006` | `PASS` | `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.1 Database Configuration and Access](../docs/product-documentation.md#41-database-configuration-and-access)` | `TC-001, TC-002, TC-003, TC-006` | `TC-001:A1; TC-002:A1,A2,A3,A4; TC-003:A1,A2,A3,A4; TC-006:A1,A2,A5,A6,A8` | `PASS` | `FAIL` | `test-cases/TC-001-direct-launch-opens-main-view.md`, `test-cases/TC-002-empty-config-startup-recovers-through-first-entry-setup.md`, `test-cases/TC-003-selector-edit-invalid-path-blocks-save-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | `TC-001, TC-004` | `TC-001:A1,A2; TC-004:A1,A3,A4` | `PASS` | `FAIL` | `test-cases/TC-001-direct-launch-opens-main-view.md`, `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` |
+| `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | `TC-001, TC-005` | `TC-001:A2; TC-005:A2` | `PASS` | `FAIL` | `test-cases/TC-001-direct-launch-opens-main-view.md`, `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md` |
+| `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `TC-004, TC-005, TC-006` | `TC-004:A2,A3,A4,A7; TC-005:A2,A3; TC-006:A3,A6` | `PASS` | `FAIL` | `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md`, `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | `TC-004` | `TC-004:A6,A7` | `PASS` | `FAIL` | `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md` |
+| `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `TC-005, TC-006` | `TC-005:A4,A7; TC-006:A3,A7` | `PASS` | `FAIL` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `TC-005, TC-006` | `TC-005:A4,A5,A6,A7,A8,A9; TC-006:A3,A4,A5,A7,A8` | `PASS` | `FAIL` | `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
+| `[4.8 Visual State Communication](../docs/product-documentation.md#48-visual-state-communication)` | `TC-004, TC-005, TC-006` | `TC-004:A5; TC-005:A6,A9; TC-006:A3,A4,A7,A8` | `PASS` | `FAIL` | `test-cases/TC-004-runtime-command-failure-recovery-keeps-session-usable.md`, `test-cases/TC-005-save-failure-retains-staged-changes-until-corrected.md`, `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` |
 
-## Current Baseline Conclusion
+## Baseline Conclusion
 
-- Coverage review result: `PASS`
-- Reason: All required journey areas are mapped to valid `TC-*` scenario files, including explicit failure/recovery coverage for each area.
+- Mapping completeness: `PASS` (`8/8` references mapped with scenario and assertion IDs).
+- Ownership/purity: `FAIL` (active scenarios do not yet declare required Functional Behavior reference metadata and assertion reference purity).
