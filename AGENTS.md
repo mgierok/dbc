@@ -302,6 +302,7 @@ Documentation creation and modification MUST be skill-governed:
 - Mandatory procedure and structure MUST come from `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`.
 - Product and technical documentation MUST stay complementary and consistent without mandatory cross-document links.
 - Documentation MUST describe current factual state only, MUST stay aligned with code/runtime behavior, and MUST be updated with every relevant codebase change.
+- For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep `docs/test-case-specification.md` aligned with documented behavior.
 - The agent SHOULD prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs.
 - Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
 - `README.md` MUST be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, the agent MUST update `README.md` in the same change set.
