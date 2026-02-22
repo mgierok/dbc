@@ -13,9 +13,12 @@ import (
 	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
 
-func TestHandleKey_EnterSwitchesToRecords(t *testing.T) {
+func TestHandleKey_EnterFromTablesSwitchesToRecordsAndContentFocus(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewSchema}
+	model := &Model{
+		viewMode: ViewSchema,
+		focus:    FocusTables,
+	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -23,6 +26,9 @@ func TestHandleKey_EnterSwitchesToRecords(t *testing.T) {
 	// Assert
 	if model.viewMode != ViewRecords {
 		t.Fatalf("expected view mode to switch to records, got %v", model.viewMode)
+	}
+	if model.focus != FocusContent {
+		t.Fatalf("expected focus to switch to content, got %v", model.focus)
 	}
 }
 
@@ -85,6 +91,71 @@ func TestHandleKey_EscClearsFieldFocus(t *testing.T) {
 	// Assert
 	if model.recordFieldFocus {
 		t.Fatalf("expected record field focus to be disabled")
+	}
+	if model.focus != FocusContent {
+		t.Fatalf("expected focus to remain on content in nested context, got %v", model.focus)
+	}
+}
+
+func TestHandleKey_EscInRightPanelNeutralReturnsToTables(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.focus != FocusTables {
+		t.Fatalf("expected focus to return to tables, got %v", model.focus)
+	}
+	if model.viewMode != ViewRecords {
+		t.Fatalf("expected records view to stay active, got %v", model.viewMode)
+	}
+}
+
+func TestHandleKey_CtrlWPanelShortcutsAreUnsupported(t *testing.T) {
+	tests := []struct {
+		name       string
+		startFocus PanelFocus
+		nextKey    tea.KeyMsg
+	}{
+		{
+			name:       "ctrl+w h does not switch to tables",
+			startFocus: FocusContent,
+			nextKey:    tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}},
+		},
+		{
+			name:       "ctrl+w l does not switch to content",
+			startFocus: FocusTables,
+			nextKey:    tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}},
+		},
+		{
+			name:       "ctrl+w w does not toggle panel",
+			startFocus: FocusTables,
+			nextKey:    tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				viewMode: ViewRecords,
+				focus:    tc.startFocus,
+			}
+
+			// Act
+			model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlW})
+			model.handleKey(tc.nextKey)
+
+			// Assert
+			if model.focus != tc.startFocus {
+				t.Fatalf("expected focus to stay %v, got %v", tc.startFocus, model.focus)
+			}
+		})
 	}
 }
 

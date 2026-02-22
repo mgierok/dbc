@@ -204,7 +204,6 @@ type Model struct {
 	editPopup         editPopup
 	confirmPopup      confirmPopup
 	pendingFilterOpen bool
-	pendingCtrlW      bool
 	pendingG          bool
 	pendingTableIndex int
 	pendingConfigOpen bool
@@ -342,23 +341,6 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleCommandInputKey(msg)
 	}
 
-	if m.pendingCtrlW {
-		m.pendingCtrlW = false
-		switch key {
-		case "h":
-			m.focus = FocusTables
-			return m, nil
-		case "l":
-			m.focus = FocusContent
-			return m, nil
-		case "w":
-			m.toggleFocus()
-			return m, nil
-		default:
-			return m, nil
-		}
-	}
-
 	if m.pendingG {
 		if key == "g" {
 			m.pendingG = false
@@ -372,9 +354,6 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case ":":
 		return m.startCommandInput()
-	case "ctrl+w":
-		m.pendingCtrlW = true
-		return m, nil
 	case "g":
 		m.pendingG = true
 		return m, nil
@@ -391,6 +370,10 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		if m.viewMode == ViewRecords && m.recordFieldFocus {
 			m.recordFieldFocus = false
+			return m, nil
+		}
+		if m.focus == FocusContent {
+			m.focus = FocusTables
 			return m, nil
 		}
 		return m, nil
@@ -824,14 +807,6 @@ func (m *Model) jumpBottom() (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m *Model) toggleFocus() {
-	if m.focus == FocusTables {
-		m.focus = FocusContent
-		return
-	}
-	m.focus = FocusTables
-}
-
 func (m *Model) moveTableSelection(delta int) (tea.Model, tea.Cmd) {
 	target := m.selectedTable + delta
 	return m.setTableSelection(target)
@@ -881,6 +856,7 @@ func (m *Model) setContentSelection(index int) (tea.Model, tea.Cmd) {
 
 func (m *Model) switchToRecords() (tea.Model, tea.Cmd) {
 	m.viewMode = ViewRecords
+	m.focus = FocusContent
 	m.recordFieldFocus = false
 	if m.currentTableName() == "" {
 		return m, nil

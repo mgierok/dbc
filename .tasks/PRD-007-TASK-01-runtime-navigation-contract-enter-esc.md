@@ -4,7 +4,7 @@ This task implements the runtime keyboard-navigation contract change from panel-
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-007-simplified-panel-navigation-enter-esc.md
 - Task ID: 01
 - Task File: PRD-007-TASK-01-runtime-navigation-contract-enter-esc.md
@@ -82,4 +82,22 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Implemented runtime navigation contract in `internal/interfaces/tui/model.go`:
+  - `Enter` now transitions from left-panel table selection to right-panel Records view with content focus.
+  - Neutral right-panel `Esc` now returns focus to left-panel table selection.
+  - Nested-context `Esc` precedence remains intact (`recordFieldFocus` exits first, no immediate panel return in the same keypress).
+  - Removed `Ctrl+w h/l/w` panel-transition behavior (deleted pending `Ctrl+w` handling and focus-toggle path).
+- Added/updated focused unit coverage in `internal/interfaces/tui/model_test.go`:
+  - `TestHandleKey_EnterFromTablesSwitchesToRecordsAndContentFocus`
+  - `TestHandleKey_EscInRightPanelNeutralReturnsToTables`
+  - `TestHandleKey_CtrlWPanelShortcutsAreUnsupported`
+  - strengthened nested `Esc` assertion in `TestHandleKey_EscClearsFieldFocus`
+- Verification executed:
+  - `go test ./internal/interfaces/tui -run 'TestHandleKey_(EnterFromTablesSwitchesToRecordsAndContentFocus|EscInRightPanelNeutralReturnsToTables|CtrlWPanelShortcutsAreUnsupported|EscClearsFieldFocus)'`
+  - `go test ./internal/interfaces/tui`
+  - `gofmt -w internal/interfaces/tui/model.go internal/interfaces/tui/model_test.go`
+  - `golangci-lint run ./...`
+  - `go test ./...`
+- Downstream impact for dependent tasks:
+  - TASK-02 can now align user-visible key guidance with implemented `Enter`/`Esc` model.
+  - TASK-03/TASK-04 can validate and audit runtime cases against removed `Ctrl+w` transitions.
