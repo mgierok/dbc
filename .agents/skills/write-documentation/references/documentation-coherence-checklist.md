@@ -44,6 +44,13 @@ Use this checklist before finalizing product and/or technical documentation upda
 
 - Markdown hierarchy is valid and readable.
 
+## 9. Allowlist Compliance
+
+- Every product-documentation change maps to at least one allowed topic from `references/product-documentation-rules.md`.
+- Every technical-documentation change maps to at least one allowed topic from `references/technical-documentation-rules.md`.
+- Non-matching change requests are skipped or normalized to allowed topics without scope expansion.
+- Completion output includes explicit per-change-item topic mapping using exact allowlist labels.
+
 ## Optional Traceability Matrix Template
 
 Traceability matrix is intentionally omitted in this skill variant to avoid introducing cross-document link requirements.

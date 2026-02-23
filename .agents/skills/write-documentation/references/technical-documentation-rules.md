@@ -16,6 +16,57 @@ Document implementation-facing facts only:
 
 Do not define or restate business rules; keep focus on technical mechanisms and implementation behavior.
 
+## Allowed Topics (Mandatory Allowlist)
+
+Each proposed technical-documentation change MUST map to at least one topic below:
+
+- System architecture, layers, and boundary definitions.
+- Dependency direction rules and architectural invariants.
+- Component/module/package responsibilities and ownership.
+- Internal interfaces, contracts, and integration points.
+- Data models, schema contracts, and data-flow definitions.
+- Runtime lifecycle, initialization, and shutdown behavior.
+- Execution flow orchestration and control flow mechanics.
+- State management mechanisms and transition logic.
+- Persistence/read/write mechanisms and transactional behavior.
+- Error classification, handling strategy, and propagation paths.
+- Resilience mechanisms (retries, fallbacks, idempotency, rollback).
+- Concurrency, synchronization, and cancellation behavior.
+- Security controls in implementation (authentication, authorization, validation, sanitization).
+- Privacy/data-protection implementation constraints.
+- Performance characteristics, bottlenecks, and optimization tradeoffs.
+- Resource management (connections, memory, file handles, cleanup behavior).
+- Observability implementation (logging, metrics, tracing, diagnostics).
+- External dependency integration mechanics and adapter behavior.
+- Configuration loading, precedence, and runtime configuration contracts.
+- Environment/runtime operational constraints and failure modes.
+- Backward-compatibility and migration mechanics.
+- Testing strategy, technical coverage boundaries, and verification approach.
+- Toolchain/runtime dependency versions relevant to implementation.
+- Technical risks, limitations, and known tradeoffs.
+- Deep-dive references for architecture/testing internals.
+
+Changes that are primarily user-facing product narrative, UX copywriting, marketing language, or business-policy description without implementation relevance are out of scope for technical documentation.
+
+## Out-of-Allowlist Handling (Mandatory)
+
+If a proposed change does not map to any allowed technical topic:
+
+- skip the change item, or
+- adapt it to the nearest allowed technical topic while preserving factual meaning and without adding scope.
+
+Never introduce technical-documentation content outside this allowlist.
+
+## Topic Mapping Output (Mandatory)
+
+When adding or changing technical-documentation information, explicitly indicate which allowed topic(s) the change maps to.
+
+Minimum requirement:
+
+- provide mapping per applied change item,
+- use exact allowed-topic labels from this file,
+- include this mapping in the completion output.
+
 ## Writing Rules
 
 - Write for engineering and maintenance audiences.

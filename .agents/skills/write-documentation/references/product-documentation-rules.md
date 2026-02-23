@@ -16,6 +16,57 @@ Document product-facing facts only:
 
 Do not document implementation mechanics unless they directly affect user-visible behavior.
 
+## Allowed Topics (Mandatory Allowlist)
+
+Each proposed product-documentation change MUST map to at least one topic below:
+
+- Product purpose, audience, and user value proposition.
+- Problem statement and user needs addressed by the product.
+- Capability scope (in-scope and out-of-scope features).
+- User-visible feature descriptions and expected outcomes.
+- User-visible workflows, journeys, and task sequences.
+- User-visible navigation and interaction model.
+- User-visible controls, actions, and shortcuts.
+- User-visible commands and command outcomes.
+- User-visible screen/panel/view behavior.
+- User-visible dialogs, popups, and confirmation choices.
+- User-visible states and state transitions.
+- User-visible status indicators and visual cues.
+- User-visible validation rules and error messages.
+- User-visible save/discard/cancel semantics.
+- User-visible filtering, sorting, and search behavior.
+- User-visible configuration and preference behavior.
+- User-visible security/safety guards and confirmations.
+- User-visible permissions/roles behavior (if applicable).
+- User-visible data-handling expectations (for example, staging, drafts, retries).
+- User-visible constraints, limitations, and non-goals.
+- User-visible accessibility and usability behavior that is factually implemented.
+- User-visible platform/environment support statements.
+- User-visible output/result formatting rules.
+- User-visible recovery behavior after failures.
+- User-facing terminology and glossary entries.
+
+Changes that are purely implementation, architecture, internals, dependency wiring, infrastructure mechanics, or tooling process are out of scope for product documentation unless they have direct user-visible impact.
+
+## Out-of-Allowlist Handling (Mandatory)
+
+If a proposed change does not map to any allowed product topic:
+
+- skip the change item, or
+- adapt it to the nearest allowed topic while preserving factual meaning and without adding scope.
+
+Never introduce product-documentation content outside this allowlist.
+
+## Topic Mapping Output (Mandatory)
+
+When adding or changing product-documentation information, explicitly indicate which allowed topic(s) the change maps to.
+
+Minimum requirement:
+
+- provide mapping per applied change item,
+- use exact allowed-topic labels from this file,
+- include this mapping in the completion output.
+
 ## Writing Rules
 
 - Write in plain, explicit language.
