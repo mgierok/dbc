@@ -11,6 +11,7 @@
 - Language SHOULD focus on "what to run" and "what happens."
 - Command examples MUST be copy-paste ready.
 - Internal jargon and deep implementation narrative SHOULD be minimized.
+- Descriptions SHOULD use short, direct sentences and avoid redundant or multi-clause explanations unless extra detail is required for correctness.
 
 ## 3. Required Content
 

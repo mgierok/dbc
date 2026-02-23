@@ -39,12 +39,11 @@ Global/main navigation:
 - `h` / `l`: move left/right (field focus in records)
 - `gg` / `G`: jump top/bottom
 - `Ctrl+f` / `Ctrl+b`: page down/up
-- `Ctrl+w h`, `Ctrl+w l`, `Ctrl+w w`: switch panel focus
 - `q`, `Ctrl+c`: quit
 
 Records and staged changes:
 - `Enter`: open records view / enter field focus / open edit popup (context dependent)
-- `Esc`: exit field focus or close popup
+- `Esc`: return to tables (right panel neutral) / exit field focus / close popup
 - `F`: open filter popup
 - `i`: stage insert
 - `d`: toggle delete marker or remove pending insert
