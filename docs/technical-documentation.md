@@ -132,7 +132,7 @@ Package responsibilities:
    Runtime does not start until user selects a reachable entry or updates configuration.
 9. SQLite engine and runtime table/record use cases are created.
 10. Bubble Tea application loop starts (`tui.Run`).
-11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config`), DB connection is closed and startup selector flow runs again without restarting process.
+11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config` or `:c`), DB connection is closed and startup selector flow runs again without restarting process.
     `cmd/dbc/main.go` passes `SelectorLaunchState` (`PreferConnString` + session `AdditionalOptions`) built from in-memory startup context, and `internal/interfaces/tui/selector.go` merges those options after config-backed entries while keeping edit/delete mapped only to config indexes.
     Startup CLI contract details in this flow align with `docs/cli-parameter-and-output-standards.md` (input-error format, help discoverability, and exit-code mapping).
 
@@ -146,15 +146,15 @@ Package responsibilities:
    - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
    - `Esc` from neutral right-panel content focus returns focus to tables and forces `ViewSchema` (Table Discovery) in the right panel.
 6. Command entry (`:`) is handled inside the TUI model.
-7. `:config` routing behavior:
+7. `:config` / `:c` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
    - if staged changes exist: open dirty-state decision popup with `save`, `discard`, `cancel`,
    - `save` executes save flow first and exits to selector only after successful save,
    - `discard` clears staged state and exits to selector immediately,
    - `cancel` keeps runtime session active with staged state unchanged.
-8. `:help` routing behavior:
+8. `:help` / `:h` routing behavior:
    - command opens runtime help popup in active main-session contexts,
-   - re-entering `:help` while popup is already open keeps popup open (idempotent open),
+   - re-entering `:help` or `:h` while popup is already open keeps popup open (idempotent open),
    - popup renderer outputs deterministic sections (`Supported Commands`, `Supported Keywords`) with one-line entries,
    - help popup maintains internal scroll offset for overflow content and supports keyboard scrolling (`j/k`, `down/up`, `Ctrl+f`/`Ctrl+b`, `g`/`G`, `home`/`end`),
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
@@ -173,7 +173,7 @@ Package responsibilities:
    - deletes.
 5. On success:
    - default save action: staged state is cleared and records are reloaded,
-   - save from dirty `:config` decision: staged state is cleared and runtime exits to selector instead of reloading records.
+   - save from dirty `:config` / `:c` decision: staged state is cleared and runtime exits to selector instead of reloading records.
 6. On failure, rollback occurs and staged state remains.
 
 ### 5.4 Technical Interaction Patterns

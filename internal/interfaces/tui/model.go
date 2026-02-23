@@ -960,12 +960,12 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	command := ":" + strings.TrimSpace(m.commandInput.value)
 	m.commandInput = commandInput{}
 
-	if strings.EqualFold(command, ":help") {
+	if strings.EqualFold(command, ":help") || strings.EqualFold(command, ":h") {
 		m.openHelpPopup()
 		return m, nil
 	}
 
-	if strings.EqualFold(command, ":config") {
+	if strings.EqualFold(command, ":config") || strings.EqualFold(command, ":c") {
 		if m.hasDirtyEdits() {
 			m.openConfirmPopupWithOptions(
 				"Unsaved changes detected. Choose save, discard, or cancel.",

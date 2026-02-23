@@ -184,22 +184,32 @@ func TestHandleKey_CtrlWPanelShortcutsAreUnsupported(t *testing.T) {
 }
 
 func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
-	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "full command", command: "config"},
+		{name: "alias", command: "c"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{viewMode: ViewRecords}
 
-	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
-	for _, r := range "config" {
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-	}
-	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+			// Act
+			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+			for _, r := range tc.command {
+				model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+			}
+			_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Assert
-	if cmd == nil {
-		t.Fatal("expected quit command for :config")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg for :config, got %T", cmd())
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
 	}
 }
 
@@ -277,6 +287,23 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 		}
 		if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
 			t.Fatalf("expected no unknown-command status for :help, got %q", model.statusMessage)
+		}
+	})
+
+	t.Run("FR-001 alias path opens help popup", func(t *testing.T) {
+		// Arrange
+		model := newRuntimeModel()
+
+		// Act
+		cmd := submitCommand(model, "h")
+
+		// Assert
+		assertSessionActive(t, cmd, ":h")
+		if !model.helpPopup.active {
+			t.Fatal("expected :h to open help popup")
+		}
+		if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+			t.Fatalf("expected no unknown-command status for :h, got %q", model.statusMessage)
 		}
 	})
 
@@ -702,30 +729,40 @@ func TestHandleKey_MisspelledHelpCommandUsesUnknownCommandFallback(t *testing.T)
 }
 
 func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
-	// Arrange
-	model := &Model{
-		viewMode:       ViewRecords,
-		pendingInserts: []pendingInsertRow{{}},
-	}
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "full command", command: "config"},
+		{name: "alias", command: "c"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				viewMode:       ViewRecords,
+				pendingInserts: []pendingInsertRow{{}},
+			}
 
-	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
-	for _, r := range "config" {
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-	}
-	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+			// Act
+			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+			for _, r := range tc.command {
+				model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+			}
+			_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Assert
-	if cmd != nil {
-		if _, ok := cmd().(tea.QuitMsg); ok {
-			t.Fatal("expected dirty :config to wait for explicit decision")
-		}
-	}
-	if !model.confirmPopup.active {
-		t.Fatal("expected dirty :config decision popup to open")
-	}
-	if model.openConfigSelector {
-		t.Fatal("expected selector navigation to remain blocked until explicit decision")
+			// Assert
+			if cmd != nil {
+				if _, ok := cmd().(tea.QuitMsg); ok {
+					t.Fatalf("expected dirty :%s to wait for explicit decision", tc.command)
+				}
+			}
+			if !model.confirmPopup.active {
+				t.Fatalf("expected dirty :%s decision popup to open", tc.command)
+			}
+			if model.openConfigSelector {
+				t.Fatalf("expected :%s navigation to remain blocked until explicit decision", tc.command)
+			}
+		})
 	}
 }
 

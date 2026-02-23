@@ -178,8 +178,11 @@ func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testi
 	if !strings.Contains(popup, "Supported Keywords") {
 		t.Fatalf("expected help popup to include Supported Keywords section, got %q", popup)
 	}
-	if !strings.Contains(popup, ":help - Open runtime help popup reference.") {
-		t.Fatalf("expected help popup to include :help one-line description, got %q", popup)
+	if !strings.Contains(popup, ":config / :c - Open database selector and config manager.") {
+		t.Fatalf("expected help popup to include :config alias one-line description, got %q", popup)
+	}
+	if !strings.Contains(popup, ":help / :h - Open runtime help popup reference.") {
+		t.Fatalf("expected help popup to include :help alias one-line description, got %q", popup)
 	}
 	if !strings.Contains(popup, "Esc - Close active popup/context.") {
 		t.Fatalf("expected help popup to include Esc one-line description, got %q", popup)

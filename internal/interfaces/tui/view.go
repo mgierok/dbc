@@ -241,8 +241,8 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 func helpPopupContentLines() []string {
 	return []string{
 		"Supported Commands",
-		":config - Open database selector and config manager.",
-		":help - Open runtime help popup reference.",
+		":config / :c - Open database selector and config manager.",
+		":help / :h - Open runtime help popup reference.",
 		"",
 		"Supported Keywords",
 		"q / Ctrl+c - Quit the application.",

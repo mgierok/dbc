@@ -46,8 +46,8 @@ Canonical ownership note:
   - Delete database entry with explicit confirmation.
   - Display active config file path.
 - In-session command entry supports:
-  - `:config` to return to selector/management without restarting.
-  - `:help` to open runtime help popup reference during active session.
+  - `:config` / `:c` to return to selector/management without restarting.
+  - `:help` / `:h` to open runtime help popup reference during active session.
 - Two-panel browsing experience:
   - Left panel: table list.
   - Right panel: schema view or records view for selected table.
@@ -109,14 +109,14 @@ Canonical ownership note:
 - If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
 - After such startup connection error, user must select another reachable entry or edit the selected entry before main view can open.
 - Startup selector displays active configuration file path.
-- During active database session, users can open command entry with `:` and execute `:config` to return to selector/management.
-- During active database session, users can execute `:help` to open runtime help popup reference.
-- Re-running `:help` while help popup is already open keeps popup open.
+- During active database session, users can open command entry with `:` and execute `:config` / `:c` to return to selector/management.
+- During active database session, users can execute `:help` / `:h` to open runtime help popup reference.
+- Re-running `:help` or `:h` while help popup is already open keeps popup open.
 - Help popup content is split into `Supported Commands` and `Supported Keywords` sections with one-line descriptions.
 - When help content exceeds visible popup height, users can scroll to reach final entries.
 - Help popup closes only with `Esc`; unrelated keys keep it open.
 - Unsupported runtime commands continue to show unknown-command status while session remains active.
-- If `:config` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
+- If `:config` or `:c` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
   - `save`: persist staged changes, then open selector/management only on success.
   - `discard`: clear staged changes, then open selector/management.
   - `cancel`: keep current session context and preserve staged changes.
@@ -203,7 +203,7 @@ Canonical ownership note:
   - Staged state is retained.
   - Error is surfaced in status line.
 - If user attempts to switch tables with unsaved changes, product requests discard confirmation.
-- If user invokes `:config` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
+- If user invokes `:config` or `:c` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
 
 ### 4.8 Visual State Communication
 
@@ -310,7 +310,7 @@ Canonical ownership note:
 | Filter popup | `j/k` selection, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` (nullable fields) |
 | Confirm popup (binary) | `Enter` or `y` confirm, `Esc` or `n` cancel |
-| Dirty `:config` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
+| Dirty `:config` / `:c` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Help popup | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 
@@ -356,7 +356,7 @@ For capability boundaries and scope classification, see Section 3.
 - On execution failure, product preserves staged intent for user correction.
 - Dirty-state visibility is always present in status line.
 - Table switch with unsaved staged changes is guarded by discard confirmation.
-- `:config` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
+- `:config` / `:c` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
 
 ## 9. Glossary
 

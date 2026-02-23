@@ -54,7 +54,8 @@ Records and staged changes:
 
 Command mode:
 - `:`: open command entry
-- `:config`: return to startup selector/config management from active session
+- `:config` / `:c`: return to startup selector/config management from active session
+- `:help` / `:h`: open runtime help popup reference
 - `Enter`: execute command
 - `Esc`: cancel command entry
 
