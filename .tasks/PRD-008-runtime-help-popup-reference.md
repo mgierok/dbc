@@ -5,7 +5,7 @@ We will know this is true when the updated existing help-validation test case pa
 
 # Metadata
 
-- Status: READY
+- Status: DONE
 
 # Problem Statement
 
