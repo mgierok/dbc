@@ -36,17 +36,14 @@ The output must:
     - one happy-path verification scenario,
     - one negative-path verification scenario.
     Each scenario must be mapped to a specific task and an explicit test/check in that task `Verification Plan`.
-18. If the PRD is split into multiple implementation tasks and behavior spans task boundaries, include a final integration task named with `integration-hardening` scope.
-    - This task must be blocked by all behavior-delivering tasks for that PRD.
-    - This task must verify cross-task interactions and regression coverage before PRD closure.
-19. Every parent PRD metric in `Success Metrics and Release Criteria` must be mapped to at least one task.
-20. Each mapped metric must have an execution-phase measurement checkpoint in task `Verification Plan` that is measurable before PRD closure.
-21. For post-release outcome metrics, define at least one delivery-phase proxy checkpoint used for go/no-go decisions.
-22. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
-23. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
-24. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
-25. Use `../templates/task-template.md` as the single source of truth for task file structure; do not infer structure from existing files in `.tasks`.
-26. Consistency contract for referenced template:
+18. Every parent PRD metric in `Success Metrics and Release Criteria` must be mapped to at least one task.
+19. Each mapped metric must have an execution-phase measurement checkpoint in task `Verification Plan` that is measurable before PRD closure.
+20. For post-release outcome metrics, define at least one delivery-phase proxy checkpoint used for go/no-go decisions.
+21. Do not finalize tasks with metric placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`) in checkpoints or metric mappings.
+22. Metric evidence must be recorded in the same task file `Completion Summary` when that task is marked `DONE`.
+23. Do not plan separate evidence-documentation paths for metric proof unless the user explicitly asks for them.
+24. Use `../templates/task-template.md` as the single source of truth for task file structure; do not infer structure from existing files in `.tasks`.
+25. Consistency contract for referenced template:
     - Full consistency is mandatory between this task specification and `../templates/task-template.md`.
     - If this specification changes template expectations, update the template in the same change set.
 
@@ -80,7 +77,6 @@ Follow this sequence exactly:
    - Build a verification coverage map `FR-* -> (happy-path task + test/check, negative-path task + test/check)`.
    - Build a metric checkpoint map `M* -> (task + evidence artifact + execution-phase threshold/check)`.
    - If a parent metric is post-release by nature, add delivery-phase proxy checkpoints mapped to tasks and release decision use.
-   - If the feature spans multiple tasks and cross-task interactions exist, append a final `integration-hardening` task that depends on all prior behavior-delivering tasks.
 6. Draft task files from template `../templates/task-template.md`.
    - Instantiate template structure for each task first.
    - Keep heading names and heading order exactly as in the template.
@@ -112,7 +108,7 @@ Rules:
 - Do not generate final task files while critical unknowns remain unresolved.
 
 ## 5. Fixed Task Template (Must Be Exact)
-Apply Section 2 rule 26 as the single template contract.
+Apply Section 2 rule 25 as the single template contract.
 During drafting, instantiate the template first, keep heading names/order unchanged, and fill all sections with concrete task-specific content.
 
 ### 5.1 Section Rules
@@ -165,7 +161,6 @@ During drafting, instantiate the template first, keep heading names/order unchan
 5. Keep task descriptions specific enough to be implemented without reinterpretation.
 6. Order tasks by dependency graph first, then by logical delivery sequence.
 7. Ensure every parent PRD requirement (`FR-*` / `NFR-*`) is covered by at least one task, with no orphan requirements.
-8. For multi-task features with cross-task interaction risk, reserve the last task for `integration-hardening` and set dependencies so it executes after all behavior-delivering tasks.
 
 ## 7. Dependency Rules
 1. Allowed dependency relations:
@@ -215,16 +210,15 @@ When saving tasks:
 14. Every mapped metric has an execution-phase checkpoint in a task `Verification Plan`, including explicit evidence source artifact and threshold or expected value.
 15. If a parent metric is post-release by nature, at least one delivery-phase proxy checkpoint is defined and mapped to task(s) for release decision support.
 16. No metric mapping or checkpoint includes placeholders (`Not measured`, `Unknown`, `TBD`, `to be defined`).
-17. If the feature uses multiple behavior-delivering tasks with cross-task interactions, the task set includes a final `integration-hardening` task blocked by all those tasks.
-18. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
-19. Dependency references are valid, resolvable, and acyclic.
-20. File names follow required naming format.
-21. `Task ID` metadata value matches `[task-id]` in filename for every task.
-22. No task includes unresolved placeholders.
-23. Mode compliance
+17. Every task has explicit `blocked-by` and `blocks` fields (`none` allowed), using links not plain IDs.
+18. Dependency references are valid, resolvable, and acyclic.
+19. File names follow required naming format.
+20. `Task ID` metadata value matches `[task-id]` in filename for every task.
+21. No task includes unresolved placeholders.
+22. Mode compliance
    - Draft phase execution mode was `Plan`, and save phase execution mode was `Default`.
-24. Every mapped metric checkpoint uses `Completion Summary` of the same task file as the evidence source artifact.
-25. Template compliance
+23. Every mapped metric checkpoint uses `Completion Summary` of the same task file as the evidence source artifact.
+24. Template compliance
    - Every generated task preserves heading names and order from `../templates/task-template.md`.
 
 ## 11. Forbidden Content

@@ -38,11 +38,17 @@ The output must:
    - check execution/user-feedback triggers: user correction/pushback, aborted/repeated turn, verification failure with rework, ambiguity clarification, documentation consistency issue,
    - if any trigger exists, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item,
    - if no trigger exists, explicitly report `LESSONS LEARNED: no qualifying trigger`.
-12. Set parent PRD `Status` to `DONE` only when both are true:
+12. If selected task is the last `READY` task for the parent PRD, run pre-closure `integration-hardening` in the same execution context before PRD status decision.
+    - Reuse evidence from current task verification and existing `DONE` task `Completion Summary` entries as the primary source.
+    - Do not duplicate per-task checks already proven unless inconsistency is detected.
+    - Validate cross-task consistency for behavior contracts, docs/test artifacts, and release evidence completeness.
+    - If any integration blocker is detected, keep PRD open and report the blocker explicitly.
+13. Set parent PRD `Status` to `DONE` only when all are true:
     - no other task in the same PRD remains in `READY`,
-    - parent PRD `Release Criteria` are satisfied with explicit evidence from `DONE` task `Completion Summary` entries.
-    If either condition is not met, keep parent PRD open and report the exact blocker.
-13. Keep implementation documentation and governance artifacts context-agnostic:
+    - parent PRD `Release Criteria` are satisfied with explicit evidence from `DONE` task `Completion Summary` entries,
+    - pre-closure `integration-hardening` (when required by rule 12) passed.
+    If any condition is not met, keep parent PRD open and report the exact blocker.
+14. Keep implementation documentation and governance artifacts context-agnostic:
     - for files outside `.tasks/`, do not include PRD/TASK references unless the user explicitly requests them,
     - keep product/technical source-of-truth references as the default contract anchors.
 
@@ -78,7 +84,7 @@ Follow this sequence exactly:
    - If branch exists, checkout it.
    - If branch does not exist, checkout local `main`, create branch from current local `main`, then checkout new branch.
 6. Execute selected task implementation.
-   - Perform implementation directly using required knowledge sources from Section 2, rule 8.
+   - Perform implementation directly using required knowledge sources from Section 2, rule 7.
    - When updating docs/governance files outside `.tasks/`, avoid PRD/TASK references unless explicitly requested by the user.
    - Use hint `H007` from `../commands.md` when you need `Completion Summary` context from current task or dependency tasks.
 7. Verify implementation.
@@ -89,22 +95,31 @@ Follow this sequence exactly:
    - Update task file: set `Status: DONE`.
    - Replace `Completion Summary` with factual delivery summary.
 9. Capture reusable process lessons (mandatory scan).
-   - Review the trigger set from Section 2, rule 12.
+   - Review the trigger set from Section 2, rule 11.
    - If at least one trigger occurred, append at least one concrete prevention rule to `lessons-learned.md` as numbered list item.
    - If no trigger occurred, record `LESSONS LEARNED: no qualifying trigger` in final report.
 10. Commit.
     - Create one commit containing task implementation and task-state update.
     - Commit message must include parent PRD ID reference (for example `PRD-003`).
-11. Finalize PRD state.
+11. Run pre-closure `integration-hardening` (conditional).
+   - Run this step only when no sibling task in the same PRD remains in `READY` after step 8.
+   - Reuse current-task verification results and sibling `DONE` task `Completion Summary` entries as primary evidence.
+   - Check only PRD-level integration closure:
+     - cross-task contract compatibility,
+     - docs/test artifact consistency for PRD scope,
+     - release-criteria evidence completeness.
+   - Do not rerun or duplicate full per-task verification unless inconsistency is found.
+   - If an integration blocker is found, keep PRD open and report the blocker.
+12. Finalize PRD state.
    - Inspect sibling tasks for same PRD.
    - Use hint `H009` from `../commands.md` when deciding whether parent PRD can be moved to `DONE`.
    - Validate parent PRD `Release Criteria` and confirm they are satisfied by explicit evidence in `DONE` task `Completion Summary` entries.
-   - If none has `Status: READY` and release criteria evidence is sufficient, set parent PRD `Status: DONE`.
-   - Otherwise keep parent PRD `Status` unchanged and report unmet release criteria or missing evidence.
-12. Commit PRD status change separately.
-    - If parent PRD status changed in step 11, create a separate commit containing only PRD status update.
-13. Publish concise completion report.
-    - Include task executed, verification result, task commit hash, optional PRD-status commit hash, and PRD status result.
+   - If none has `Status: READY`, release criteria evidence is sufficient, and step 11 passed when executed, set parent PRD `Status: DONE`.
+   - Otherwise keep parent PRD `Status` unchanged and report unmet release criteria, missing evidence, or integration blockers.
+13. Commit PRD status change separately.
+    - If parent PRD status changed in step 12, create a separate commit containing only PRD status update.
+14. Publish concise completion report.
+    - Include task executed, verification result, integration-hardening result (when step 11 executed), task commit hash, optional PRD-status commit hash, and PRD status result.
 
 ## 4. Task Selection Rules
 1. When selector is PRD:
@@ -127,15 +142,24 @@ Follow this sequence exactly:
    - do not pull latest `main` automatically; pull only when user explicitly asks.
 4. Do not execute task on unrelated branch.
 
-## 6. Verification and Completion Rules
+## 6. Verification, Integration-Hardening, and Completion Rules
 1. Verification scope is defined by task `Verification Plan`; do not replace it with ad-hoc checks.
 2. Task can be marked `DONE` only after verification passes.
 3. `Completion Summary` must include:
    - key implementation outcomes,
    - tests/checks executed,
    - decisions relevant for downstream tasks.
-4. Commit message should reflect executed task intent and scope, and must include parent PRD ID reference (for example `PRD-003`).
-5. If PRD status is changed to `DONE`, commit that status update in a separate commit from task implementation.
+4. Pre-closure `integration-hardening` is required only when executed task closes the last `READY` task for the parent PRD.
+5. `integration-hardening` must be lightweight and evidence-driven:
+   - use current verification results and sibling `DONE` task `Completion Summary` entries as primary evidence,
+   - avoid duplicating full per-task checks unless inconsistency is detected.
+6. `integration-hardening` must validate PRD-level closure:
+   - cross-task contract compatibility,
+   - docs/test artifact consistency for PRD scope,
+   - release criteria evidence completeness.
+7. If `integration-hardening` fails, parent PRD must remain open with explicit blocker report.
+8. Commit message should reflect executed task intent and scope, and must include parent PRD ID reference (for example `PRD-003`).
+9. If PRD status is changed to `DONE`, commit that status update in a separate commit from task implementation.
 
 ## 7. Quality Gates (All Must Pass)
 1. Execution mode was `Default`.
@@ -151,8 +175,9 @@ Follow this sequence exactly:
 9. Mandatory lessons-learned scan was executed and outcome was reported.
    - If triggers occurred, `lessons-learned.md` was updated with at least one numbered prevention rule.
    - If no triggers occurred, final report contains `LESSONS LEARNED: no qualifying trigger`.
-10. Parent PRD status was set to `DONE` only when no sibling task remained `READY` and parent PRD `Release Criteria` were satisfied with explicit evidence.
-11. Documentation/governance updates outside `.tasks/` are free of PRD/TASK references unless explicitly requested by the user.
+10. If selected task closed the last `READY` sibling task, pre-closure `integration-hardening` was executed before PRD status decision.
+11. Parent PRD status was set to `DONE` only when no sibling task remained `READY`, parent PRD `Release Criteria` were satisfied with explicit evidence, and required `integration-hardening` passed.
+12. Documentation/governance updates outside `.tasks/` are free of PRD/TASK references unless explicitly requested by the user.
 
 ## 8. Agent Output Contract
 When running this workflow, return concise output with:
@@ -165,5 +190,6 @@ When running this workflow, return concise output with:
 6. Task commit hash.
 7. Optional PRD-status commit hash (when PRD status changed).
 8. Whether parent PRD was moved to `DONE` or why not.
-9. Release criteria evidence result used for PRD closure decision.
-10. Lessons-learned harvest outcome (entries added or `LESSONS LEARNED: no qualifying trigger`).
+9. Integration-hardening result (`not required`, `passed`, or `failed with blocker list`).
+10. Release criteria evidence result used for PRD closure decision.
+11. Lessons-learned harvest outcome (entries added or `LESSONS LEARNED: no qualifying trigger`).
