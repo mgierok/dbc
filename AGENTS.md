@@ -96,7 +96,7 @@ For each task, the agent MUST:
 1. Define expected product outcome (what changes for the user).
 2. Map affected layers/packages.
 3. Identify test impact (new tests or updates).
-4. Identify documentation impact (`docs/technical-documentation.md` and/or `docs/product-documentation.md`).
+4. Identify documentation impact (`docs/technical-documentation.md` and/or `docs/product-documentation.md`) for every code change.
 
 ### 4.1.1 Assumptions and Ambiguity Protocol
 
@@ -328,6 +328,7 @@ Documentation creation and modification MUST be skill-governed:
 - Mandatory procedure and structure MUST come from `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`.
 - Product and technical documentation MUST stay complementary and consistent without mandatory cross-document links.
 - Documentation MUST describe current factual state only, MUST stay aligned with code/runtime behavior, and MUST be updated with every relevant codebase change.
+- Every code change MUST be explicitly verified for documentation impact on `docs/technical-documentation.md` and/or `docs/product-documentation.md`, even when no documentation update is ultimately required.
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep `docs/test-case-specification.md` aligned with documented behavior.
 - The agent SHOULD prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs.
 - Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
