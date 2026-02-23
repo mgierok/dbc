@@ -112,6 +112,8 @@ Canonical ownership note:
 - During active database session, users can open command entry with `:` and execute `:config` to return to selector/management.
 - During active database session, users can execute `:help` to open runtime help popup reference.
 - Re-running `:help` while help popup is already open keeps popup open.
+- Help popup content is split into `Supported Commands` and `Supported Keywords` sections with one-line descriptions.
+- When help content exceeds visible popup height, users can scroll to reach final entries.
 - Help popup closes only with `Esc`; unrelated keys keep it open.
 - Unsupported runtime commands continue to show unknown-command status while session remains active.
 - If `:config` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
@@ -309,7 +311,7 @@ Canonical ownership note:
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` (nullable fields) |
 | Confirm popup (binary) | `Enter` or `y` confirm, `Esc` or `n` cancel |
 | Dirty `:config` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
-| Help popup | `Esc` close |
+| Help popup | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 
 ### 6.5 Startup Selector

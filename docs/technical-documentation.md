@@ -155,6 +155,8 @@ Package responsibilities:
 8. `:help` routing behavior:
    - command opens runtime help popup in active main-session contexts,
    - re-entering `:help` while popup is already open keeps popup open (idempotent open),
+   - popup renderer outputs deterministic sections (`Supported Commands`, `Supported Keywords`) with one-line entries,
+   - help popup maintains internal scroll offset for overflow content and supports keyboard scrolling (`j/k`, `down/up`, `Ctrl+f`/`Ctrl+b`, `g`/`G`, `home`/`end`),
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
 9. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,

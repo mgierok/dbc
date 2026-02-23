@@ -195,13 +195,56 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 	}
 
 	border := "+" + strings.Repeat("-", width-2) + "+"
+	content := helpPopupContentLines()
+	visibleLines := m.helpPopupVisibleLines()
+	maxOffset := len(content) - visibleLines
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	offset := clamp(m.helpPopup.scrollOffset, 0, maxOffset)
+	end := minInt(len(content), offset+visibleLines)
+
 	lines := []string{border}
 	lines = append(lines, "|"+padRight("Help", width-2)+"|")
 	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
-	lines = append(lines, "|"+padRight("Runtime reference is available in this popup.", width-2)+"|")
-	lines = append(lines, "|"+padRight("Press Esc to close.", width-2)+"|")
+
+	for i := offset; i < end; i++ {
+		lines = append(lines, "|"+padRight(content[i], width-2)+"|")
+	}
+	for i := end - offset; i < visibleLines; i++ {
+		lines = append(lines, "|"+padRight("", width-2)+"|")
+	}
+
+	if maxOffset > 0 {
+		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
+		lines = append(lines, "|"+padRight(indicator, width-2)+"|")
+	}
+
 	lines = append(lines, border)
 	return lines
+}
+
+func helpPopupContentLines() []string {
+	return []string{
+		"Supported Commands",
+		":config - Open database selector and config manager.",
+		":help - Open runtime help popup reference.",
+		"",
+		"Supported Keywords",
+		"q / Ctrl+c - Quit the application.",
+		"j / k - Move selection down or up.",
+		"h / l - Move field focus left or right.",
+		"gg / G - Jump to first or last item.",
+		"Ctrl+f / Ctrl+b - Page down or up.",
+		"Enter - Open records or confirm action.",
+		"Esc - Close active popup/context.",
+		"F - Open filter flow for current table.",
+		"i - Stage a new insert row.",
+		"d - Toggle delete marker/remove insert.",
+		"u / Ctrl+r - Undo or redo staged action.",
+		"w - Save staged changes.",
+		"Ctrl+a - Toggle auto field visibility for inserts.",
+	}
 }
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
@@ -410,7 +453,7 @@ func (m *Model) statusShortcuts() string {
 	case m.filterPopup.active:
 		return "Popup: Enter apply | Esc close"
 	case m.helpPopup.active:
-		return "Help: Esc close"
+		return "Help: j/k scroll | Esc close"
 	case m.commandInput.active:
 		return "Command: Enter run | Esc cancel"
 	case m.focus == FocusTables:

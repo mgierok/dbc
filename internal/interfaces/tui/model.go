@@ -58,7 +58,8 @@ type commandInput struct {
 }
 
 type helpPopup struct {
-	active bool
+	active       bool
+	scrollOffset int
 }
 
 type stagedEdit struct {
@@ -466,6 +467,24 @@ func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case ":":
 		return m.startCommandInput()
+	case "j", "down":
+		m.moveHelpPopupScroll(1)
+		return m, nil
+	case "k", "up":
+		m.moveHelpPopupScroll(-1)
+		return m, nil
+	case "ctrl+f":
+		m.moveHelpPopupScroll(m.helpPopupVisibleLines())
+		return m, nil
+	case "ctrl+b":
+		m.moveHelpPopupScroll(-m.helpPopupVisibleLines())
+		return m, nil
+	case "g", "home":
+		m.helpPopup.scrollOffset = 0
+		return m, nil
+	case "G", "end":
+		m.helpPopup.scrollOffset = m.helpPopupMaxOffset()
+		return m, nil
 	default:
 		return m, nil
 	}
@@ -974,6 +993,33 @@ func (m *Model) openHelpPopup() {
 
 func (m *Model) closeHelpPopup() {
 	m.helpPopup = helpPopup{}
+}
+
+func (m *Model) moveHelpPopupScroll(delta int) {
+	maxOffset := m.helpPopupMaxOffset()
+	m.helpPopup.scrollOffset = clamp(m.helpPopup.scrollOffset+delta, 0, maxOffset)
+}
+
+func (m *Model) helpPopupVisibleLines() int {
+	const minVisibleLines = 6
+	const maxVisibleLines = 12
+
+	visible := m.contentHeight() - 10
+	if visible < minVisibleLines {
+		return minVisibleLines
+	}
+	if visible > maxVisibleLines {
+		return maxVisibleLines
+	}
+	return visible
+}
+
+func (m *Model) helpPopupMaxOffset() int {
+	maxOffset := len(helpPopupContentLines()) - m.helpPopupVisibleLines()
+	if maxOffset < 0 {
+		return 0
+	}
+	return maxOffset
 }
 
 func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {

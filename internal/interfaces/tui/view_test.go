@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/mgierok/dbc/internal/application/dto"
 	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
@@ -156,5 +158,75 @@ func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 	// Assert
 	if !strings.Contains(popup, "Value: jo|hn") {
 		t.Fatalf("expected caret in edit text input, got %q", popup)
+	}
+}
+
+func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testing.T) {
+	// Arrange
+	model := &Model{
+		height:    40,
+		helpPopup: helpPopup{active: true},
+	}
+
+	// Act
+	popup := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Assert
+	if !strings.Contains(popup, "Supported Commands") {
+		t.Fatalf("expected help popup to include Supported Commands section, got %q", popup)
+	}
+	if !strings.Contains(popup, "Supported Keywords") {
+		t.Fatalf("expected help popup to include Supported Keywords section, got %q", popup)
+	}
+	if !strings.Contains(popup, ":help - Open runtime help popup reference.") {
+		t.Fatalf("expected help popup to include :help one-line description, got %q", popup)
+	}
+	if !strings.Contains(popup, "Esc - Close active popup/context.") {
+		t.Fatalf("expected help popup to include Esc one-line description, got %q", popup)
+	}
+}
+
+func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
+	// Arrange
+	model := &Model{
+		height:        12,
+		helpPopup:     helpPopup{active: true},
+		statusMessage: "",
+	}
+	initial := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Act
+	for range 30 {
+		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	}
+	scrolled := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Assert
+	if strings.Contains(initial, "Ctrl+a - Toggle auto field visibility for inserts.") {
+		t.Fatalf("expected final help item to be hidden before scrolling, got %q", initial)
+	}
+	if !strings.Contains(scrolled, "Ctrl+a - Toggle auto field visibility for inserts.") {
+		t.Fatalf("expected final help item to be reachable after scrolling, got %q", scrolled)
+	}
+}
+
+func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T) {
+	// Arrange
+	model := &Model{
+		height:    12,
+		helpPopup: helpPopup{active: true},
+	}
+	for range 5 {
+		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	}
+	before := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Act
+	model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	after := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Assert
+	if before != after {
+		t.Fatalf("expected non-scroll key to keep help window stable, before=%q after=%q", before, after)
 	}
 }
