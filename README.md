@@ -53,9 +53,9 @@ Records and staged changes:
 
 Command mode:
 - `:`: open command entry
-- `:q` / `:quit`: quit application from active runtime session
 - `:config` / `:c`: return to startup selector/config management from active session
 - `:help` / `:h`: open runtime help popup reference
+- `:quit` / `:q`: quit application from active runtime session
 - `Enter`: execute command
 - `Esc`: cancel command entry
 

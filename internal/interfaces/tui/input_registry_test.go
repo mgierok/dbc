@@ -78,7 +78,7 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	if lines[2] != ":help / :h - Open runtime help popup reference." {
 		t.Fatalf("unexpected second command line: %q", lines[2])
 	}
-	if lines[3] != ":q / :quit - Quit the application." {
+	if lines[3] != ":quit / :q - Quit the application." {
 		t.Fatalf("unexpected third command line: %q", lines[3])
 	}
 }

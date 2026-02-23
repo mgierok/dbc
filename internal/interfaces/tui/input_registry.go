@@ -147,7 +147,7 @@ var runtimeCommandSpecs = []runtimeCommandSpec{
 		action:      runtimeCommandActionOpenHelp,
 	},
 	{
-		aliases:     []string{"q", "quit"},
+		aliases:     []string{"quit", "q"},
 		description: "Quit the application.",
 		action:      runtimeCommandActionQuit,
 	},

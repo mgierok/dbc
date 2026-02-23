@@ -212,8 +212,8 @@ func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testi
 	if !strings.Contains(popup, ":help / :h - Open runtime help popup reference.") {
 		t.Fatalf("expected help popup to include :help alias one-line description, got %q", popup)
 	}
-	if !strings.Contains(popup, ":q / :quit - Quit the application.") {
-		t.Fatalf("expected help popup to include :q alias one-line description, got %q", popup)
+	if !strings.Contains(popup, ":quit / :q - Quit the application.") {
+		t.Fatalf("expected help popup to include :quit alias one-line description, got %q", popup)
 	}
 	if strings.Contains(popup, "q / Ctrl+c - Quit the application.") {
 		t.Fatalf("expected help popup to avoid runtime q/Ctrl+c quit shortcut, got %q", popup)
