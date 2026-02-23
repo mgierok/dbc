@@ -29,7 +29,7 @@
 | S3 | Select column `name` and press `Enter`, then select operator `LIKE` and press `Enter`. | Filter flow advances to value-input step because `LIKE` requires value input. | `A3` |
 | S4 | Enter value `Tea%` and confirm filter. | Filter is applied and records list reflects `name LIKE 'Tea%'` constraint. | `A4` |
 | S5 | Open filter popup again (`F`), choose `category_id`, operator `=`, value `1`, then confirm. | New filter replaces prior filter and only one active filter remains for `products`. | `A5` |
-| S6 | Switch to table `categories` in left panel. | Active filter from `products` is reset on table switch. | `A6` |
+| S6 | Press `Esc` from neutral right-panel records state to return to left panel, then switch to table `categories`. | Active filter from `products` is reset on table switch. | `A6` |
 | S7 | Switch back to `products` and open records view. | Previous `products` filter is no longer active after table-switch reset. | `A7` |
 
 ## 5. Assertions
@@ -41,7 +41,7 @@
 | A3 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Column and operator selection steps execute in sequence; `LIKE` requires value input step. | `PASS` | Flow progresses from column to operator to value input after selecting `LIKE`. |
 | A4 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Confirmed value-input filter is applied to currently selected table records. | `PASS` | Records list updates and visible rows satisfy `name LIKE 'Tea%'`. |
 | A5 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Applying another filter replaces previous one, preserving one-active-filter rule for selected table. | `PASS` | Active-filter summary reflects only `category_id = 1` and prior filter is no longer active. |
-| A6 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Switching to different table resets active filter state. | `PASS` | Filter summary for new table does not carry over `products` filter. |
+| A6 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Switching to different table resets active filter state after explicit return to left-panel table focus. | `PASS` | `Esc` returns to left-panel table focus, and filter summary for `categories` does not carry over `products` filter. |
 | A7 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Returning to original table after switch keeps filter reset behavior deterministic. | `PASS` | `products` records reopen without previously active filter summary. |
 
 ## 6. Final Result

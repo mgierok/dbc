@@ -4,7 +4,7 @@ This task performs the required runtime regression audit for `TC-003..TC-008` to
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-007-simplified-panel-navigation-enter-esc.md
 - Task ID: 04
 - Task File: PRD-007-TASK-04-runtime-regression-audit-tc-003-to-tc-008.md
@@ -79,4 +79,25 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Completed runtime regression audit for `TC-003..TC-008` with explicit per-file outcomes (`6/6` complete):
+
+| Case ID | File | Audit Result | Outcome |
+| --- | --- | --- | --- |
+| `TC-003` | `test-cases/TC-003-table-discovery-and-schema-view-stay-consistent.md` | Non-impacted | Scenario remains in startup/schema context and contains no direct or implicit dependency on removed `Ctrl+w` panel transitions. |
+| `TC-004` | `test-cases/TC-004-records-view-navigation-and-field-focus-stay-interactive.md` | Non-impacted | Uses explicit `Enter` and `Esc` transitions for records/field-focus behavior; no `Ctrl+w` dependency detected. |
+| `TC-005` | `test-cases/TC-005-insert-edit-and-delete-operations-stay-deterministic.md` | Non-impacted | Data-operation flow already uses explicit records-entry interaction and contains no removed panel-switch shortcuts. |
+| `TC-006` | `test-cases/TC-006-dirty-config-navigation-requires-explicit-decision.md` | Non-impacted | Selector/runtime decision routing scenario has no direct/implicit dependency on removed runtime `Ctrl+w` panel switching. |
+| `TC-007` | `test-cases/TC-007-filter-core-flow-applies-and-resets-on-table-switch.md` | Impacted (updated) | Replaced implicit left-panel switch in `S6` with explicit `Esc` return to left panel before table switch; synchronized `A6` pass criteria/evidence with explicit left-panel focus transition. |
+| `TC-008` | `test-cases/TC-008-visual-state-indicators-remain-visible-during-staged-changes.md` | Non-impacted | Visual-state scenario already uses explicit records entry and has no removed `Ctrl+w` transition dependency. |
+
+- `test-cases/suite-coverage-matrix.md` synchronization check: no assertion IDs or scenario mappings changed, so file content remained unchanged.
+
+- Verification executed (pass for task scope):
+  - `rg -n 'Ctrl\+w h|Ctrl\+w l|Ctrl\+w w|Ctrl\+w' test-cases/TC-00[3-8]-*.md || true` (no matches)
+  - `rg -n '^\| S6 \|.*Esc.*left panel.*categories.*\| `A6` \|' test-cases/TC-007-filter-core-flow-applies-and-resets-on-table-switch.md`
+  - `rg -n '^\| A6 \|.*left-panel table focus.*\|' test-cases/TC-007-filter-core-flow-applies-and-resets-on-table-switch.md`
+  - `rg -n 'TC-003:A1,A2,A3,A4|TC-004:A1,A2,A3,A4,A5,A6,A7|TC-005:A1,A2,A3,A4,A5,A6,A7,A8,A9,A10|TC-006:A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11|TC-007:A1,A2,A3,A4,A5,A6,A7|TC-008:A1,A2,A3,A4,A5,A6' test-cases/suite-coverage-matrix.md`
+
+- Metric evidence:
+  - `M4` satisfied: audit completeness is `6/6`, and impacted case updates were applied with deterministic assertion evidence.
+  - `M2` satisfied: required runtime navigation checks remain represented by maintained testcase assertions and unchanged suite-coverage mappings.
