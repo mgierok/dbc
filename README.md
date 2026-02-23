@@ -39,7 +39,6 @@ Global/main navigation:
 - `h` / `l`: move left/right (field focus in records)
 - `gg` / `G`: jump top/bottom
 - `Ctrl+f` / `Ctrl+b`: page down/up
-- `q`, `Ctrl+c`: quit
 
 Records and staged changes:
 - `Enter`: open records view / enter field focus / open edit popup (context dependent)
@@ -54,6 +53,7 @@ Records and staged changes:
 
 Command mode:
 - `:`: open command entry
+- `:q` / `:quit`: quit application from active runtime session
 - `:config` / `:c`: return to startup selector/config management from active session
 - `:help` / `:h`: open runtime help popup reference
 - `Enter`: execute command

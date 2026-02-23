@@ -48,6 +48,7 @@ Canonical ownership note:
 - In-session command entry supports:
   - `:config` / `:c` to return to selector/management without restarting.
   - `:help` / `:h` to open runtime help popup reference during active session.
+  - `:q` / `:quit` to exit runtime session.
 - Two-panel browsing experience:
   - Left panel: table list.
   - Right panel: schema view or records view for selected table.
@@ -111,6 +112,7 @@ Canonical ownership note:
 - Startup selector displays active configuration file path.
 - During active database session, users can open command entry with `:` and execute `:config` / `:c` to return to selector/management.
 - During active database session, users can execute `:help` / `:h` to open runtime help popup reference.
+- During active database session, users can execute `:q` / `:quit` to exit the application.
 - Re-running `:help` or `:h` while help popup is already open keeps popup open.
 - Help popup content is split into `Supported Commands` and `Supported Keywords` sections with one-line descriptions.
 - When help content exceeds visible popup height, users can scroll to reach final entries.
@@ -279,7 +281,6 @@ Canonical ownership note:
 
 | Action | Shortcut |
 | --- | --- |
-| Quit | `q`, `Ctrl+c` |
 | Move down/up | `j`, `k` |
 | Move left/right (field focus in records) | `h`, `l` |
 | Jump to top | `gg` |
@@ -295,6 +296,7 @@ Canonical ownership note:
 | Enter field focus / open edit popup | `Enter` (in records context) |
 | Exit nested right-panel context | `Esc` |
 | Open command entry | `:` |
+| Exit runtime session (command mode) | `:q`, `:quit` |
 | Open filter popup | `F` |
 | Stage insert | `i` |
 | Toggle delete marker / remove pending insert | `d` |

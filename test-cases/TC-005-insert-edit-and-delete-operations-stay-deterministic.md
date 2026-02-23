@@ -33,7 +33,7 @@
 | S7 | Press `i` to stage a new row. | Pending insert row appears at top of records list. | `A7` |
 | S8 | Populate required pending-insert fields and confirm the edit popup. | Pending insert remains valid for subsequent write workflow. | `A8` |
 | S9 | With pending insert selected, press `d`. | Pending insert row is removed immediately (not converted to delete marker). | `A9` |
-| S10 | Press `q`. | Application exits cleanly to terminal prompt. | `A10` |
+| S10 | Run `:q`. | Application exits cleanly to terminal prompt. | `A10` |
 
 ## 5. Assertions
 
@@ -48,7 +48,7 @@
 | A7 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `i` stages a new record at top of records view. | `PASS` | A new pending row is inserted at top position immediately after `i`. |
 | A8 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Pending insert accepts value entry in edit popup for required data fields. | `PASS` | Required field value is accepted and remains populated in pending insert row. |
 | A9 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `d` on pending insert removes that pending row immediately. | `PASS` | Pending insert row disappears from records list after `d`. |
-| A10 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Quit exits process normally after data-operation checks. | `PASS` | Terminal prompt returns after `q`. |
+| A10 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Quit exits process normally after data-operation checks. | `PASS` | Terminal prompt returns after `:q`. |
 
 ## 6. Final Result
 

@@ -359,8 +359,6 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	switch key {
-	case "ctrl+c", "q":
-		return m, tea.Quit
 	case ":":
 		return m.startCommandInput()
 	case "g":
@@ -963,6 +961,10 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	if strings.EqualFold(command, ":help") || strings.EqualFold(command, ":h") {
 		m.openHelpPopup()
 		return m, nil
+	}
+
+	if strings.EqualFold(command, ":q") || strings.EqualFold(command, ":quit") {
+		return m, tea.Quit
 	}
 
 	if strings.EqualFold(command, ":config") || strings.EqualFold(command, ":c") {

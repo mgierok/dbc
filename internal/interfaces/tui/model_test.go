@@ -213,6 +213,36 @@ func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
 	}
 }
 
+func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "short command", command: "q"},
+		{name: "full command", command: "quit"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{viewMode: ViewRecords}
+
+			// Act
+			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+			for _, r := range tc.command {
+				model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+			}
+			_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
+	}
+}
+
 func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 	newRuntimeModel := func() *Model {
 		return &Model{
@@ -600,6 +630,36 @@ func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
 	if cmd != nil {
 		if _, ok := cmd().(tea.QuitMsg); ok {
 			t.Fatal("expected no quit command without explicit ':' prefix")
+		}
+	}
+}
+
+func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected q without ':' prefix to keep runtime active")
+		}
+	}
+}
+
+func TestHandleKey_CtrlCWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlC})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected Ctrl+c without ':' prefix to keep runtime active")
 		}
 	}
 }

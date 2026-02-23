@@ -51,6 +51,6 @@
 
 ## 7. Cleanup
 
-1. Exit app using `q`.
+1. Exit app using `:q`.
 2. Run:
    - `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
