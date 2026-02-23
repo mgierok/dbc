@@ -219,7 +219,7 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 
 	lines := []string{border}
 	lines = append(lines, "|"+padRight("Help", width-2)+"|")
-	lines = append(lines, "|"+padRight("Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes.", width-2)+"|")
+	lines = append(lines, "|"+padRight(runtimeHelpPopupSummaryLine(), width-2)+"|")
 	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
 
 	for i := offset; i < end; i++ {
@@ -239,26 +239,7 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 }
 
 func helpPopupContentLines() []string {
-	return []string{
-		"Supported Commands",
-		":config / :c - Open database selector and config manager.",
-		":help / :h - Open runtime help popup reference.",
-		":q / :quit - Quit the application.",
-		"",
-		"Supported Keywords",
-		"j / k - Move selection down or up.",
-		"h / l - Move field focus left or right.",
-		"gg / G - Jump to first or last item.",
-		"Ctrl+f / Ctrl+b - Page down or up.",
-		"Enter - Open records or confirm action.",
-		"Esc - Close active popup/context.",
-		"F - Open filter flow for current table.",
-		"i - Stage a new insert row.",
-		"d - Toggle delete marker/remove insert.",
-		"u / Ctrl+r - Undo or redo staged action.",
-		"w - Save staged changes.",
-		"Ctrl+a - Toggle auto field visibility for inserts.",
-	}
+	return runtimeHelpPopupContentLines()
 }
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
@@ -458,24 +439,21 @@ func (m *Model) filterSummary() string {
 func (m *Model) statusShortcuts() string {
 	switch {
 	case m.editPopup.active:
-		return "Edit: Enter confirm | Esc cancel | Ctrl+n null"
+		return runtimeStatusEditShortcuts()
 	case m.confirmPopup.active:
-		if len(m.confirmPopup.options) > 0 {
-			return "Confirm: j/k choose | Enter select | Esc cancel"
-		}
-		return "Confirm: Enter yes | Esc no"
+		return runtimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
 	case m.filterPopup.active:
-		return "Popup: Enter apply | Esc close"
+		return runtimeStatusFilterPopupShortcuts()
 	case m.helpPopup.active:
-		return "Help: j/k scroll | Esc close"
+		return runtimeStatusHelpPopupShortcuts()
 	case m.commandInput.active:
-		return "Command: Enter run | Esc cancel"
+		return runtimeStatusCommandInputShortcuts()
 	case m.focus == FocusTables:
-		return "Tables: Enter records | F filter"
+		return runtimeStatusTablesShortcuts()
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
-		return "Schema: Esc tables | F filter"
+		return runtimeStatusSchemaShortcuts()
 	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return "Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter"
+		return runtimeStatusRecordsShortcuts()
 	default:
 		return ""
 	}

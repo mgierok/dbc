@@ -288,11 +288,11 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		key := msg.String()
-		switch key {
-		case "ctrl+c", "q", "esc":
+		switch {
+		case keyMatches(keySelectorCancel, key):
 			m.canceled = true
 			return m, tea.Quit
-		case "enter":
+		case keyMatches(keySelectorEnter, key):
 			if len(m.options) == 0 {
 				if m.requiresFirstEntry {
 					m.openAddForm()
@@ -302,35 +302,35 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.chosen = true
 			return m, tea.Quit
-		case "j", "down":
+		case keyMatches(keySelectorMoveDown, key):
 			m.moveSelection(1)
 			return m, nil
-		case "k", "up":
+		case keyMatches(keySelectorMoveUp, key):
 			m.moveSelection(-1)
 			return m, nil
-		case "g", "home":
+		case keyMatches(keySelectorJumpTop, key):
 			m.selectTop()
 			return m, nil
-		case "G", "end":
+		case keyMatches(keySelectorJumpBottom, key):
 			m.selectBottom()
 			return m, nil
-		case "ctrl+f", "pgdown":
+		case keyMatches(keySelectorPageDown, key):
 			m.page(1)
 			return m, nil
-		case "ctrl+b", "pgup":
+		case keyMatches(keySelectorPageUp, key):
 			m.page(-1)
 			return m, nil
-		case "a":
+		case keyMatches(keySelectorAdd, key):
 			m.openAddForm()
 			return m, nil
-		case "e":
+		case keyMatches(keySelectorEdit, key):
 			if m.requiresFirstEntry {
 				m.statusMessage = "Edit is unavailable during first setup"
 				return m, nil
 			}
 			m.openEditForm()
 			return m, nil
-		case "d":
+		case keyMatches(keySelectorDelete, key):
 			if m.requiresFirstEntry {
 				m.statusMessage = "Delete is unavailable during first setup"
 				return m, nil
@@ -573,8 +573,9 @@ func (m *databaseSelectorModel) openDeleteConfirmation() {
 }
 
 func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "esc":
+	key := msg.String()
+	switch {
+	case keyMatches(keySelectorFormEsc, key):
 		if m.requiresFirstEntry && len(m.options) == 0 {
 			m.canceled = true
 			return m, tea.Quit
@@ -583,18 +584,18 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 		m.form = selectorForm{}
 		m.statusMessage = "Config update canceled"
 		return m, nil
-	case "tab", "shift+tab":
+	case keyMatches(keySelectorFormSwitch, key):
 		if m.form.activeField == selectorInputName {
 			m.form.activeField = selectorInputPath
 		} else {
 			m.form.activeField = selectorInputName
 		}
 		return m, nil
-	case "ctrl+u":
+	case keyMatches(keySelectorFormClear, key):
 		m.setActiveFormValue("")
 		m.form.errorMessage = ""
 		return m, nil
-	case "backspace", "ctrl+h":
+	case keyMatches(keySelectorFormBackspace, key):
 		value := m.activeFormValue()
 		if value == "" {
 			return m, nil
@@ -602,7 +603,7 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 		m.setActiveFormValue(value[:len(value)-1])
 		m.form.errorMessage = ""
 		return m, nil
-	case "enter":
+	case keyMatches(keySelectorEnter, key):
 		return m.submitForm()
 	default:
 		if len(msg.Runes) == 0 {
@@ -615,13 +616,14 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 }
 
 func (m *databaseSelectorModel) handleDeleteConfirmationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "esc":
+	key := msg.String()
+	switch {
+	case keyMatches(keySelectorDeleteCancel, key):
 		m.mode = selectorModeBrowse
 		m.confirmDelete = selectorDeleteConfirm{}
 		m.statusMessage = "Delete canceled"
 		return m, nil
-	case "enter":
+	case keyMatches(keySelectorDeleteConfirm, key):
 		optionIndex := m.confirmDelete.optionIndex
 		managerIndex := m.confirmDelete.managerIndex
 		if optionIndex < 0 || optionIndex >= len(m.options) || managerIndex < 0 {
@@ -727,11 +729,9 @@ func (m *databaseSelectorModel) contextLines() []string {
 	}
 	lines := []string{""}
 	if m.requiresFirstEntry {
-		lines = append(lines, "First setup: Enter continue | a add database")
-		lines = append(lines, "j/k navigate | q quit")
+		lines = append(lines, selectorContextLinesBrowseFirstSetup()...)
 	} else {
-		lines = append(lines, "j/k navigate | Enter select | a add | e edit | d delete")
-		lines = append(lines, "Esc cancel | q quit")
+		lines = append(lines, selectorContextLinesBrowseDefault()...)
 		lines = append(lines, "Legend: ⚙ config | ⌨ CLI session")
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
@@ -771,8 +771,8 @@ func (m *databaseSelectorModel) formLines() []string {
 		namePrefix + "Name: " + nameValue,
 		pathPrefix + "Path: " + pathValue,
 		"",
-		"Tab switch field | Ctrl+u clear field",
-		"Enter save | " + escLabel,
+		selectorFormSwitchLine(),
+		selectorFormSubmitLine(escLabel),
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
 		lines = append(lines, "Error: "+m.form.errorMessage)
@@ -796,7 +796,7 @@ func (m *databaseSelectorModel) deleteConfirmationLines() []string {
 		"",
 		selected.Name + " | " + selected.ConnString,
 		"",
-		"Enter confirm delete | Esc cancel",
+		selectorDeleteConfirmationLine(),
 	}
 }
 

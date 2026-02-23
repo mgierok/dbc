@@ -351,22 +351,22 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.pendingG {
-		if key == "g" {
+		if keyMatches(keyRuntimeJumpTopPending, key) {
 			m.pendingG = false
 			return m.jumpTop()
 		}
 		m.pendingG = false
 	}
 
-	switch key {
-	case ":":
+	switch {
+	case keyMatches(keyRuntimeOpenCommandInput, key):
 		return m.startCommandInput()
-	case "g":
+	case keyMatches(keyRuntimeJumpTopPending, key):
 		m.pendingG = true
 		return m, nil
-	case "G":
+	case keyMatches(keyRuntimeJumpBottom, key):
 		return m.jumpBottom()
-	case "enter":
+	case keyMatches(keyRuntimeEnter, key):
 		if m.viewMode == ViewRecords && m.focus == FocusContent {
 			if !m.recordFieldFocus {
 				return m.enableRecordFieldFocus()
@@ -374,7 +374,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.openEditPopup()
 		}
 		return m.switchToRecords()
-	case "esc":
+	case keyMatches(keyRuntimeEsc, key):
 		if m.viewMode == ViewRecords && m.recordFieldFocus {
 			m.recordFieldFocus = false
 			return m, nil
@@ -385,31 +385,31 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, nil
-	case "F":
+	case keyMatches(keyRuntimeFilter, key):
 		return m.startFilterPopup()
-	case "w":
+	case keyMatches(keyRuntimeSave, key):
 		return m.requestSaveChanges()
-	case "i":
+	case keyMatches(keyRuntimeInsert, key):
 		return m.addPendingInsert()
-	case "d":
+	case keyMatches(keyRuntimeDelete, key):
 		return m.toggleDeleteSelection()
-	case "u":
+	case keyMatches(keyRuntimeUndo, key):
 		return m.undoStagedAction()
-	case "ctrl+r":
+	case keyMatches(keyRuntimeRedo, key):
 		return m.redoStagedAction()
-	case "ctrl+a":
+	case keyMatches(keyRuntimeToggleAutoFields, key):
 		return m.toggleInsertAutoFields()
-	case "j":
+	case keyMatches(keyRuntimeMoveDown, key):
 		return m.moveDown()
-	case "k":
+	case keyMatches(keyRuntimeMoveUp, key):
 		return m.moveUp()
-	case "h":
+	case keyMatches(keyRuntimeMoveLeft, key):
 		return m.moveLeft()
-	case "l":
+	case keyMatches(keyRuntimeMoveRight, key):
 		return m.moveRight()
-	case "ctrl+f":
+	case keyMatches(keyRuntimePageDown, key):
 		return m.pageDown()
-	case "ctrl+b":
+	case keyMatches(keyRuntimePageUp, key):
 		return m.pageUp()
 	default:
 		return m, nil
@@ -418,29 +418,29 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	switch key {
-	case "esc":
+	switch {
+	case keyMatches(keyRuntimeEsc, key):
 		m.closeFilterPopup()
 		return m, nil
-	case "enter":
+	case keyMatches(keyRuntimeEnter, key):
 		return m.confirmPopupSelection()
-	case "j":
+	case keyMatches(keyRuntimeMoveDown, key):
 		m.movePopupSelection(1)
 		return m, nil
-	case "k":
+	case keyMatches(keyRuntimeMoveUp, key):
 		m.movePopupSelection(-1)
 		return m, nil
-	case "left":
+	case keyMatches(keyInputMoveLeft, key):
 		if m.filterPopup.step == filterInputValue {
 			m.filterPopup.cursor = clamp(m.filterPopup.cursor-1, 0, len(m.filterPopup.input))
 		}
 		return m, nil
-	case "right":
+	case keyMatches(keyInputMoveRight, key):
 		if m.filterPopup.step == filterInputValue {
 			m.filterPopup.cursor = clamp(m.filterPopup.cursor+1, 0, len(m.filterPopup.input))
 		}
 		return m, nil
-	case "backspace":
+	case keyMatches(keyInputBackspace, key):
 		if m.filterPopup.step == filterInputValue && m.filterPopup.input != "" {
 			m.filterPopup.input, m.filterPopup.cursor = deleteAtCursor(m.filterPopup.input, m.filterPopup.cursor)
 		}
@@ -455,32 +455,33 @@ func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
 	if m.commandInput.active {
 		return m.handleCommandInputKey(msg)
 	}
 
-	switch msg.String() {
-	case "esc":
+	switch {
+	case keyMatches(keyRuntimeEsc, key):
 		m.closeHelpPopup()
 		return m, nil
-	case ":":
+	case keyMatches(keyRuntimeOpenCommandInput, key):
 		return m.startCommandInput()
-	case "j", "down":
+	case keyMatches(keyPopupMoveDown, key):
 		m.moveHelpPopupScroll(1)
 		return m, nil
-	case "k", "up":
+	case keyMatches(keyPopupMoveUp, key):
 		m.moveHelpPopupScroll(-1)
 		return m, nil
-	case "ctrl+f":
+	case keyMatches(keyRuntimePageDown, key):
 		m.moveHelpPopupScroll(m.helpPopupVisibleLines())
 		return m, nil
-	case "ctrl+b":
+	case keyMatches(keyRuntimePageUp, key):
 		m.moveHelpPopupScroll(-m.helpPopupVisibleLines())
 		return m, nil
-	case "g", "home":
+	case keyMatches(keyPopupJumpTop, key):
 		m.helpPopup.scrollOffset = 0
 		return m, nil
-	case "G", "end":
+	case keyMatches(keyPopupJumpBottom, key):
 		m.helpPopup.scrollOffset = m.helpPopupMaxOffset()
 		return m, nil
 	default:
@@ -490,19 +491,19 @@ func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	switch key {
-	case "esc":
+	switch {
+	case keyMatches(keyRuntimeEsc, key):
 		m.commandInput = commandInput{}
 		return m, nil
-	case "enter":
+	case keyMatches(keyRuntimeEnter, key):
 		return m.submitCommandInput()
-	case "left":
+	case keyMatches(keyInputMoveLeft, key):
 		m.commandInput.cursor = clamp(m.commandInput.cursor-1, 0, len(m.commandInput.value))
 		return m, nil
-	case "right":
+	case keyMatches(keyInputMoveRight, key):
 		m.commandInput.cursor = clamp(m.commandInput.cursor+1, 0, len(m.commandInput.value))
 		return m, nil
-	case "backspace":
+	case keyMatches(keyInputBackspace, key):
 		if m.commandInput.value != "" {
 			m.commandInput.value, m.commandInput.cursor = deleteAtCursor(m.commandInput.value, m.commandInput.cursor)
 		}
@@ -524,11 +525,11 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	switch key {
-	case "esc":
+	switch {
+	case keyMatches(keyRuntimeEsc, key):
 		m.closeEditPopup()
 		return m, nil
-	case "ctrl+n":
+	case keyMatches(keyEditSetNull, key):
 		if !column.Nullable {
 			m.editPopup.errorMessage = "Column is not nullable"
 			return m, nil
@@ -536,9 +537,9 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.editPopup.isNull = true
 		m.editPopup.errorMessage = ""
 		return m, nil
-	case "enter":
+	case keyMatches(keyRuntimeEnter, key):
 		return m.confirmEditPopup()
-	case "j":
+	case keyMatches(keyRuntimeMoveDown, key):
 		if column.Input.Kind == dto.ColumnInputSelect {
 			if len(column.Input.Options) > 0 {
 				m.editPopup.optionIndex = clamp(m.editPopup.optionIndex+1, 0, len(column.Input.Options)-1)
@@ -547,7 +548,7 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
-	case "k":
+	case keyMatches(keyRuntimeMoveUp, key):
 		if column.Input.Kind == dto.ColumnInputSelect {
 			if len(column.Input.Options) > 0 {
 				m.editPopup.optionIndex = clamp(m.editPopup.optionIndex-1, 0, len(column.Input.Options)-1)
@@ -556,19 +557,19 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
-	case "left":
+	case keyMatches(keyInputMoveLeft, key):
 		if column.Input.Kind == dto.ColumnInputText {
 			m.editPopup.cursor = clamp(m.editPopup.cursor-1, 0, len(m.editPopup.input))
 			m.editPopup.errorMessage = ""
 		}
 		return m, nil
-	case "right":
+	case keyMatches(keyInputMoveRight, key):
 		if column.Input.Kind == dto.ColumnInputText {
 			m.editPopup.cursor = clamp(m.editPopup.cursor+1, 0, len(m.editPopup.input))
 			m.editPopup.errorMessage = ""
 		}
 		return m, nil
-	case "backspace":
+	case keyMatches(keyInputBackspace, key):
 		if column.Input.Kind == dto.ColumnInputText && m.editPopup.input != "" {
 			m.editPopup.input, m.editPopup.cursor = deleteAtCursor(m.editPopup.input, m.editPopup.cursor)
 			m.editPopup.isNull = false
@@ -588,23 +589,23 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	switch key {
-	case "j", "down":
+	switch {
+	case keyMatches(keyPopupMoveDown, key):
 		if len(m.confirmPopup.options) > 0 {
 			m.confirmPopup.selected = clamp(m.confirmPopup.selected+1, 0, len(m.confirmPopup.options)-1)
 		}
 		return m, nil
-	case "k", "up":
+	case keyMatches(keyPopupMoveUp, key):
 		if len(m.confirmPopup.options) > 0 {
 			m.confirmPopup.selected = clamp(m.confirmPopup.selected-1, 0, len(m.confirmPopup.options)-1)
 		}
 		return m, nil
-	case "esc", "n":
+	case keyMatches(keyConfirmCancel, key):
 		m.closeConfirmPopup()
 		m.pendingTableIndex = -1
 		m.pendingConfigOpen = false
 		return m, nil
-	case "enter", "y":
+	case keyMatches(keyConfirmAccept, key):
 		action := m.confirmPopup.action
 		if len(m.confirmPopup.options) > 0 {
 			action = m.confirmPopup.options[clamp(m.confirmPopup.selected, 0, len(m.confirmPopup.options)-1)].action
@@ -958,16 +959,19 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	command := ":" + strings.TrimSpace(m.commandInput.value)
 	m.commandInput = commandInput{}
 
-	if strings.EqualFold(command, ":help") || strings.EqualFold(command, ":h") {
-		m.openHelpPopup()
+	commandSpec, found := resolveRuntimeCommand(command)
+	if !found {
+		m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
 		return m, nil
 	}
 
-	if strings.EqualFold(command, ":q") || strings.EqualFold(command, ":quit") {
+	switch commandSpec.action {
+	case runtimeCommandActionOpenHelp:
+		m.openHelpPopup()
+		return m, nil
+	case runtimeCommandActionQuit:
 		return m, tea.Quit
-	}
-
-	if strings.EqualFold(command, ":config") || strings.EqualFold(command, ":c") {
+	case runtimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
 			m.openConfirmPopupWithOptions(
 				"Unsaved changes detected. Choose save, discard, or cancel.",
@@ -985,7 +989,6 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
 	return m, nil
 }
 
