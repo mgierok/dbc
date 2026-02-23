@@ -4,7 +4,7 @@ This task updates `TC-002` to validate the new runtime panel-navigation contract
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-007-simplified-panel-navigation-enter-esc.md
 - Task ID: 03
 - Task File: PRD-007-TASK-03-tc-002-navigation-model-update.md
@@ -87,4 +87,18 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Updated `test-cases/TC-002-main-layout-focus-switching-remains-predictable.md` to the new runtime navigation model:
+  - replaced old `Ctrl+w`-driven panel-switch happy-path steps with `Enter` (left-panel -> right-panel Records) and `Esc` (neutral right-panel -> left-panel) transitions,
+  - added nested-context `Esc` precedence evidence using filter-popup flow (`Esc` closes nested context first, second `Esc` performs panel return),
+  - added explicit negative assertion for unsupported `Ctrl+w h/l/w` panel transitions.
+- Updated `test-cases/suite-coverage-matrix.md` mapping for `[4.2 Main Layout and Focus Model]`:
+  - assertion mapping changed from `TC-002:A1,A2,A3,A4` to `TC-002:A1,A2,A3,A4,A5,A6`.
+- Verification executed (all pass for artifact scope):
+  - `rg -n 'Enter|Esc|Ctrl\\+w h|Ctrl\\+w l|Ctrl\\+w w|nested|filter popup|Result \\(`PASS`/`FAIL`\\)' test-cases/TC-002-main-layout-focus-switching-remains-predictable.md`
+  - `rg -n '^\\| A[0-9]+ \\|' test-cases/TC-002-main-layout-focus-switching-remains-predictable.md`
+  - `rg -n 'TC-002:A1,A2,A3,A4,A5,A6' test-cases/suite-coverage-matrix.md`
+- Metric evidence:
+  - M2 satisfied: updated `TC-002` now contains deterministic assertions for all required navigation checks in scope (`Enter`, neutral `Esc`, nested-context-first `Esc`, unsupported `Ctrl+w`).
+  - M5 satisfied: nested-context evidence in `A4`/`A5` confirms first `Esc` exits local context before any panel transition.
+- Downstream impact:
+  - TASK-04 can audit `TC-003..TC-008` against the same explicit `Enter`/`Esc` + unsupported-`Ctrl+w` contract style introduced in `TC-002`.
