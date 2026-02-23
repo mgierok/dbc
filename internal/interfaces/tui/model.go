@@ -146,6 +146,7 @@ type confirmAction int
 const (
 	confirmSave confirmAction = iota + 1
 	confirmDiscardTable
+	confirmCancelTableSwitch
 	confirmConfigSaveAndOpen
 	confirmConfigDiscardAndOpen
 	confirmConfigCancel
@@ -618,6 +619,9 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.confirmSaveChanges()
 		case confirmDiscardTable:
 			return m.confirmDiscardTableSwitch()
+		case confirmCancelTableSwitch:
+			m.pendingTableIndex = -1
+			return m, nil
 		case confirmConfigSaveAndOpen:
 			return m.confirmConfigSaveAndOpen()
 		case confirmConfigDiscardAndOpen:
@@ -880,7 +884,18 @@ func (m *Model) setTableSelection(index int) (tea.Model, tea.Cmd) {
 	}
 	if m.hasDirtyEdits() {
 		m.pendingTableIndex = index
-		m.openConfirmPopup(confirmDiscardTable, "Discard changes and switch tables?")
+		m.openModalConfirmPopupWithOptions(
+			"Switch Table",
+			fmt.Sprintf(
+				"Switching tables will cause loss of unsaved data (%d changes). Are you sure you want to discard unsaved data?",
+				m.dirtyEditCount(),
+			),
+			[]confirmOption{
+				{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
+				{label: "(n) No, continue editing", action: confirmCancelTableSwitch},
+			},
+			0,
+		)
 		return m, nil
 	}
 	m.selectedTable = index

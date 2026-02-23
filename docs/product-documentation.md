@@ -204,7 +204,10 @@ Canonical ownership note:
 - On save failure:
   - Staged state is retained.
   - Error is surfaced in status line.
-- If user attempts to switch tables with unsaved changes, product requests discard confirmation.
+- If user attempts to switch tables with unsaved changes, product opens a `Switch Table` decision popup with warning text: `Switching tables will cause loss of unsaved data (N changes). Are you sure you want to discard unsaved data?`.
+- The table-switch decision popup exposes explicit actions:
+  - `(y) Yes, discard changes and switch table`.
+  - `(n) No, continue editing`.
 - If user invokes `:config` or `:c` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
 
 ### 4.8 Visual State Communication
@@ -314,6 +317,7 @@ Canonical ownership note:
 | Filter popup | `j/k` selection, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` (nullable fields) |
 | Confirm popup (binary) | `Enter` or `y` confirm, `Esc` or `n` cancel |
+| Dirty table-switch decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Dirty `:config` / `:c` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Help popup | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
@@ -359,7 +363,7 @@ For capability boundaries and scope classification, see Section 3.
 - Save applies as one unit for the current table.
 - On execution failure, product preserves staged intent for user correction.
 - Dirty-state visibility is always present in status line.
-- Table switch with unsaved staged changes is guarded by discard confirmation.
+- Table switch with unsaved staged changes is guarded by explicit yes/no discard decision popup with unsaved-change count warning.
 - `:config` / `:c` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
 
 ## 9. Glossary

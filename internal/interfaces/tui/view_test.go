@@ -498,6 +498,41 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 	}
 }
 
+func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitActions(t *testing.T) {
+	// Arrange
+	model := &Model{
+		confirmPopup: confirmPopup{
+			active:  true,
+			title:   "Switch Table",
+			message: "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?",
+			options: []confirmOption{
+				{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
+				{label: "(n) No, continue editing", action: confirmCancelTableSwitch},
+			},
+			selected: 0,
+			modal:    true,
+		},
+	}
+
+	// Act
+	lines := model.renderConfirmPopup(120)
+	popup := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(popup, "|Switch Table") {
+		t.Fatalf("expected switch-table title in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "Switching tables will cause loss of unsaved data") {
+		t.Fatalf("expected informational switch-table summary in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "> (y) Yes, discard changes and switch table") {
+		t.Fatalf("expected explicit yes action in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "(n) No, continue editing") {
+		t.Fatalf("expected explicit no action in popup, got %q", popup)
+	}
+}
+
 func TestView_RegularConfirmPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{

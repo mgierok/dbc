@@ -145,26 +145,31 @@ Package responsibilities:
 5. Runtime panel transitions are handled in `internal/interfaces/tui/model.go`:
    - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
    - `Esc` from neutral right-panel content focus returns focus to tables and forces `ViewSchema` (Table Discovery) in the right panel.
-6. Command entry (`:`) is handled inside the TUI model.
-7. `:config` / `:c` routing behavior:
+6. Dirty table-switch routing behavior:
+   - when table selection changes while staged edits exist, TUI opens a modal decision popup,
+   - popup summary includes current dirty-change count (`dirtyEditCount()`),
+   - discard action clears staged state and switches to pending table selection,
+   - cancel action keeps current table selection and preserves staged state.
+7. Command entry (`:`) is handled inside the TUI model.
+8. `:config` / `:c` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
    - if staged changes exist: open modal dirty-state decision popup (`Config`) with `save`, `discard`, `cancel`,
    - `save` executes save flow first and exits to selector only after successful save,
    - `discard` clears staged state and exits to selector immediately,
    - `cancel` keeps runtime session active with staged state unchanged.
-8. `:help` / `:h` routing behavior:
+9. `:help` / `:h` routing behavior:
    - command opens runtime help popup in active main-session contexts,
    - re-entering `:help` or `:h` while popup is already open keeps popup open (idempotent open),
    - popup renderer outputs deterministic sections (`Supported Commands`, `Supported Keywords`) with one-line entries,
    - help popup maintains internal scroll offset for overflow content and supports keyboard scrolling (`j/k`, `down/up`, `Ctrl+f`/`Ctrl+b`, `g`/`G`, `home`/`end`),
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
-9. `:quit` / `:q` routing behavior:
+10. `:quit` / `:q` routing behavior:
    - command exits runtime loop immediately without save/discard confirmation.
-10. Runtime popup rendering standardization:
+11. Runtime popup rendering standardization:
    - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by runtime help, filter, edit, and confirm popup variants,
    - shared popup spec includes title/summary rows, optional selectable list rows, optional scroll window/indicator, and width clamping,
    - `View()` renders runtime popup overlays via `centerBoxLines` for help, filter, edit, and confirm popup variants.
-11. Unsupported runtime commands keep existing fallback:
+12. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,
    - runtime session remains active.
 
