@@ -158,10 +158,12 @@ type confirmOption struct {
 
 type confirmPopup struct {
 	active   bool
+	title    string
 	action   confirmAction
 	message  string
 	options  []confirmOption
 	selected int
+	modal    bool
 }
 
 type pkColumn struct {
@@ -724,19 +726,32 @@ func (m *Model) closeEditPopup() {
 }
 
 func (m *Model) openConfirmPopup(action confirmAction, message string) {
-	m.confirmPopup = confirmPopup{active: true, action: action, message: message}
+	m.confirmPopup = confirmPopup{
+		active:  true,
+		title:   "Confirm",
+		action:  action,
+		message: message,
+	}
 }
 
-func (m *Model) openConfirmPopupWithOptions(message string, options []confirmOption, selected int) {
+func (m *Model) openModalConfirmPopupWithOptions(title, message string, options []confirmOption, selected int) {
 	if len(options) == 0 {
-		m.openConfirmPopup(confirmConfigCancel, message)
+		m.confirmPopup = confirmPopup{
+			active:  true,
+			title:   title,
+			action:  confirmConfigCancel,
+			message: message,
+			modal:   true,
+		}
 		return
 	}
 	m.confirmPopup = confirmPopup{
 		active:   true,
+		title:    title,
 		message:  message,
 		options:  options,
 		selected: clamp(selected, 0, len(options)-1),
+		modal:    true,
 	}
 }
 
@@ -973,7 +988,8 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case runtimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
-			m.openConfirmPopupWithOptions(
+			m.openModalConfirmPopupWithOptions(
+				"Config",
 				"Unsaved changes detected. Choose save, discard, or cancel.",
 				[]confirmOption{
 					{label: "Save and open config", action: confirmConfigSaveAndOpen},

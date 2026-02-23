@@ -300,3 +300,109 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 		t.Fatalf("expected help frame to be vertically centered, line=%d total=%d", helpLine, len(lines))
 	}
 }
+
+func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:       ViewRecords,
+		width:          80,
+		height:         24,
+		pendingInserts: []pendingInsertRow{{}},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	view := model.View()
+
+	// Assert
+	if !strings.Contains(view, "|Config") {
+		t.Fatalf("expected dirty :config modal title, got %q", view)
+	}
+	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
+		t.Fatalf("expected centered modal without background panels, got %q", view)
+	}
+
+	lines := strings.Split(view, "\n")
+	configLine := -1
+	for i, line := range lines {
+		if strings.Contains(line, "|Config") {
+			configLine = i
+			if strings.Index(line, "|Config") == 0 {
+				t.Fatalf("expected centered config modal line with left padding, got %q", line)
+			}
+			break
+		}
+	}
+	if configLine <= 0 || configLine >= len(lines)-1 {
+		t.Fatalf("expected config modal to be vertically centered, line=%d total=%d", configLine, len(lines))
+	}
+}
+
+func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t *testing.T) {
+	// Arrange
+	model := &Model{
+		confirmPopup: confirmPopup{
+			active:  true,
+			title:   "Config",
+			message: "Unsaved changes detected. Choose save, discard, or cancel.",
+			options: []confirmOption{
+				{label: "Save and open config", action: confirmConfigSaveAndOpen},
+				{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
+				{label: "Cancel", action: confirmConfigCancel},
+			},
+			selected: 0,
+			modal:    true,
+		},
+	}
+
+	// Act
+	lines := model.renderConfirmPopup(60)
+	popup := strings.Join(lines, "\n")
+
+	// Assert
+	if len(lines) < 6 {
+		t.Fatalf("expected modal config popup with framed header and options, got %q", popup)
+	}
+	if !strings.Contains(popup, "|Config") {
+		t.Fatalf("expected config title in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "Unsaved changes detected. Choose save, discard, or cancel.") {
+		t.Fatalf("expected decision summary in popup, got %q", popup)
+	}
+
+	separator := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[3], "|"), "|"))
+	if separator == "" || strings.Trim(separator, "-") != "" {
+		t.Fatalf("expected separator row after summary, got %q", separator)
+	}
+	if !strings.Contains(popup, "> Save and open config") {
+		t.Fatalf("expected selected option marker in popup, got %q", popup)
+	}
+}
+
+func TestView_RegularConfirmPopupStaysInlineWithPanels(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width:  80,
+		height: 24,
+		confirmPopup: confirmPopup{
+			active:  true,
+			title:   "Confirm",
+			message: "Save staged changes?",
+		},
+	}
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if !strings.Contains(view, "Tables") {
+		t.Fatalf("expected background panels for non-modal confirm, got %q", view)
+	}
+	if !strings.Contains(view, "|Confirm") {
+		t.Fatalf("expected inline confirm popup frame, got %q", view)
+	}
+}

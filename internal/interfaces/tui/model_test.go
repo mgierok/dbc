@@ -819,6 +819,12 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 			if !model.confirmPopup.active {
 				t.Fatalf("expected dirty :%s decision popup to open", tc.command)
 			}
+			if !model.confirmPopup.modal {
+				t.Fatalf("expected dirty :%s decision popup to be modal", tc.command)
+			}
+			if model.confirmPopup.title != "Config" {
+				t.Fatalf("expected dirty :%s popup title Config, got %q", tc.command, model.confirmPopup.title)
+			}
 			if model.openConfigSelector {
 				t.Fatalf("expected :%s navigation to remain blocked until explicit decision", tc.command)
 			}

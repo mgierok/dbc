@@ -20,6 +20,9 @@ func (m *Model) View() string {
 	if m.helpPopup.active {
 		return centerBoxLines(m.renderHelpPopup(width), width, height)
 	}
+	if m.confirmPopup.active && m.confirmPopup.modal {
+		return centerBoxLines(m.renderConfirmPopup(width), width, height)
+	}
 
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
@@ -28,7 +31,7 @@ func (m *Model) View() string {
 	right := m.renderContent(rightWidth, bodyHeight)
 	lines := mergePanels(left, right, leftWidth, rightWidth)
 
-	if m.filterPopup.active || m.editPopup.active || m.confirmPopup.active || m.helpPopup.active {
+	if m.filterPopup.active || m.editPopup.active || m.confirmPopup.active {
 		lines = append(lines, "")
 		lines = append(lines, m.renderPopup(leftWidth+rightWidth+3)...)
 	}
@@ -196,46 +199,18 @@ func (m *Model) renderPopup(totalWidth int) []string {
 }
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
-	width := totalWidth
-	if width <= 0 {
-		width = 50
-	}
-	if width > 60 {
-		width = 60
-	}
-	if width < 20 {
-		width = 20
-	}
-
-	border := "+" + strings.Repeat("-", width-2) + "+"
-	content := helpPopupContentLines()
-	visibleLines := m.helpPopupVisibleLines()
-	maxOffset := len(content) - visibleLines
-	if maxOffset < 0 {
-		maxOffset = 0
-	}
-	offset := clamp(m.helpPopup.scrollOffset, 0, maxOffset)
-	end := minInt(len(content), offset+visibleLines)
-
-	lines := []string{border}
-	lines = append(lines, "|"+padRight("Help", width-2)+"|")
-	lines = append(lines, "|"+padRight(runtimeHelpPopupSummaryLine(), width-2)+"|")
-	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
-
-	for i := offset; i < end; i++ {
-		lines = append(lines, "|"+padRight(content[i], width-2)+"|")
-	}
-	for i := end - offset; i < visibleLines; i++ {
-		lines = append(lines, "|"+padRight("", width-2)+"|")
-	}
-
-	if maxOffset > 0 {
-		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
-		lines = append(lines, "|"+padRight(indicator, width-2)+"|")
-	}
-
-	lines = append(lines, border)
-	return lines
+	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+		title:               "Help",
+		summary:             runtimeHelpPopupSummaryLine(),
+		rows:                helpPopupContentLines(),
+		selected:            -1,
+		scrollOffset:        m.helpPopup.scrollOffset,
+		visibleRows:         m.helpPopupVisibleLines(),
+		showScrollIndicator: true,
+		defaultWidth:        50,
+		minWidth:            20,
+		maxWidth:            60,
+	})
 }
 
 func helpPopupContentLines() []string {
@@ -360,6 +335,35 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 }
 
 func (m *Model) renderConfirmPopup(totalWidth int) []string {
+	if m.confirmPopup.modal {
+		title := strings.TrimSpace(m.confirmPopup.title)
+		if title == "" {
+			title = "Confirm"
+		}
+		message := m.confirmPopup.message
+		if strings.TrimSpace(message) == "" {
+			message = "Are you sure?"
+		}
+		options := make([]string, len(m.confirmPopup.options))
+		for i, option := range m.confirmPopup.options {
+			options[i] = option.label
+		}
+
+		selected := -1
+		if len(options) > 0 {
+			selected = clamp(m.confirmPopup.selected, 0, len(options)-1)
+		}
+		return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+			title:        title,
+			summary:      message,
+			rows:         options,
+			selected:     selected,
+			defaultWidth: 50,
+			minWidth:     20,
+			maxWidth:     60,
+		})
+	}
+
 	width := totalWidth
 	if width <= 0 {
 		width = 50
