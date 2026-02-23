@@ -152,6 +152,13 @@ Package responsibilities:
    - `save` executes save flow first and exits to selector only after successful save,
    - `discard` clears staged state and exits to selector immediately,
    - `cancel` keeps runtime session active with staged state unchanged.
+8. `:help` routing behavior:
+   - command opens runtime help popup in active main-session contexts,
+   - re-entering `:help` while popup is already open keeps popup open (idempotent open),
+   - popup closes on `Esc`; unrelated keys do not dismiss popup.
+9. Unsupported runtime commands keep existing fallback:
+   - status message shows unknown command text,
+   - runtime session remains active.
 
 ### 5.3 Write Flow
 

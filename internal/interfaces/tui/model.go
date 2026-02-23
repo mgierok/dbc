@@ -57,6 +57,10 @@ type commandInput struct {
 	cursor int
 }
 
+type helpPopup struct {
+	active bool
+}
+
 type stagedEdit struct {
 	Value model.Value
 }
@@ -201,6 +205,7 @@ type Model struct {
 	currentFilter     *dto.Filter
 	filterPopup       filterPopup
 	commandInput      commandInput
+	helpPopup         helpPopup
 	editPopup         editPopup
 	confirmPopup      confirmPopup
 	pendingFilterOpen bool
@@ -337,6 +342,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.filterPopup.active {
 		return m.handleFilterPopupKey(msg)
 	}
+	if m.helpPopup.active {
+		return m.handleHelpPopupKey(msg)
+	}
 	if m.commandInput.active {
 		return m.handleCommandInputKey(msg)
 	}
@@ -445,6 +453,22 @@ func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.filterPopup.input, m.filterPopup.cursor = insertAtCursor(m.filterPopup.input, insert, m.filterPopup.cursor)
 	}
 	return m, nil
+}
+
+func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.commandInput.active {
+		return m.handleCommandInputKey(msg)
+	}
+
+	switch msg.String() {
+	case "esc":
+		m.closeHelpPopup()
+		return m, nil
+	case ":":
+		return m.startCommandInput()
+	default:
+		return m, nil
+	}
 }
 
 func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -917,6 +941,11 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	command := ":" + strings.TrimSpace(m.commandInput.value)
 	m.commandInput = commandInput{}
 
+	if strings.EqualFold(command, ":help") {
+		m.openHelpPopup()
+		return m, nil
+	}
+
 	if strings.EqualFold(command, ":config") {
 		if m.hasDirtyEdits() {
 			m.openConfirmPopupWithOptions(
@@ -937,6 +966,14 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 
 	m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
 	return m, nil
+}
+
+func (m *Model) openHelpPopup() {
+	m.helpPopup = helpPopup{active: true}
+}
+
+func (m *Model) closeHelpPopup() {
+	m.helpPopup = helpPopup{}
 }
 
 func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
@@ -1025,6 +1062,7 @@ func (m *Model) resetTableContext() {
 	m.recordLoading = false
 	m.recordFieldFocus = false
 	m.filterPopup = filterPopup{}
+	m.helpPopup = helpPopup{}
 	m.editPopup = editPopup{}
 	m.confirmPopup = confirmPopup{}
 	m.clearStagedState()

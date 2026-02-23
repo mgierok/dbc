@@ -15,7 +15,7 @@ func (m *Model) View() string {
 	right := m.renderContent(rightWidth, bodyHeight)
 	lines := mergePanels(left, right, leftWidth, rightWidth)
 
-	if m.filterPopup.active || m.editPopup.active || m.confirmPopup.active {
+	if m.filterPopup.active || m.editPopup.active || m.confirmPopup.active || m.helpPopup.active {
 		lines = append(lines, "")
 		lines = append(lines, m.renderPopup(leftWidth+rightWidth+3)...)
 	}
@@ -176,7 +176,32 @@ func (m *Model) renderPopup(totalWidth int) []string {
 	if m.filterPopup.active {
 		return m.renderFilterPopup(totalWidth)
 	}
+	if m.helpPopup.active {
+		return m.renderHelpPopup(totalWidth)
+	}
 	return nil
+}
+
+func (m *Model) renderHelpPopup(totalWidth int) []string {
+	width := totalWidth
+	if width <= 0 {
+		width = 60
+	}
+	if width > 60 {
+		width = 60
+	}
+	if width < 30 {
+		width = 30
+	}
+
+	border := "+" + strings.Repeat("-", width-2) + "+"
+	lines := []string{border}
+	lines = append(lines, "|"+padRight("Help", width-2)+"|")
+	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
+	lines = append(lines, "|"+padRight("Runtime reference is available in this popup.", width-2)+"|")
+	lines = append(lines, "|"+padRight("Press Esc to close.", width-2)+"|")
+	lines = append(lines, border)
+	return lines
 }
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
@@ -384,6 +409,8 @@ func (m *Model) statusShortcuts() string {
 		return "Confirm: Enter yes | Esc no"
 	case m.filterPopup.active:
 		return "Popup: Enter apply | Esc close"
+	case m.helpPopup.active:
+		return "Help: Esc close"
 	case m.commandInput.active:
 		return "Command: Enter run | Esc cancel"
 	case m.focus == FocusTables:

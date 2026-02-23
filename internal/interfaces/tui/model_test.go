@@ -203,6 +203,31 @@ func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
 	}
 }
 
+func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected :help to keep session active")
+		}
+	}
+	if !model.helpPopup.active {
+		t.Fatal("expected :help to open help popup")
+	}
+	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected no unknown-command status for :help, got %q", model.statusMessage)
+	}
+}
+
 func TestHandleKey_InvalidCommandShowsErrorAndKeepsSessionActive(t *testing.T) {
 	// Arrange
 	model := &Model{viewMode: ViewRecords}
@@ -225,6 +250,27 @@ func TestHandleKey_InvalidCommandShowsErrorAndKeepsSessionActive(t *testing.T) {
 	}
 }
 
+func TestHandleKey_HelpCommandRequiresExplicitPrefix(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected no quit command without explicit ':' prefix")
+		}
+	}
+	if model.helpPopup.active {
+		t.Fatal("expected help popup to stay closed without ':' prefix")
+	}
+}
+
 func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
 	// Arrange
 	model := &Model{viewMode: ViewRecords}
@@ -240,6 +286,130 @@ func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
 		if _, ok := cmd().(tea.QuitMsg); ok {
 			t.Fatal("expected no quit command without explicit ':' prefix")
 		}
+	}
+}
+
+func TestHandleKey_CommandHelpReenterKeepsPopupOpen(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before idempotence check")
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to remain open when :help is re-entered")
+	}
+	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected no unknown-command status for repeated :help, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_CommandHelpReenterDoesNotResetStatusUnexpectedly(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords, statusMessage: "existing status"}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before re-entering :help")
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if model.statusMessage != "existing status" {
+		t.Fatalf("expected status message to remain unchanged, got %q", model.statusMessage)
+	}
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to remain open")
+	}
+}
+
+func TestHandleKey_HelpPopupEscClosesPopup(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before close check")
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.helpPopup.active {
+		t.Fatal("expected Esc to close help popup")
+	}
+}
+
+func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before unrelated-key check")
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected unrelated keys to keep help popup open")
+	}
+}
+
+func TestHandleKey_MisspelledHelpCommandUsesUnknownCommandFallback(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range "helpp" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatal("expected misspelled :help to keep session active")
+		}
+	}
+	if model.helpPopup.active {
+		t.Fatal("expected misspelled :help to keep help popup closed")
+	}
+	if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected unknown-command status for misspelled :help, got %q", model.statusMessage)
 	}
 }
 
