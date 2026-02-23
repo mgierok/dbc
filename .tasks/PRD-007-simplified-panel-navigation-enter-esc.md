@@ -5,7 +5,7 @@ We will know this is true when panel transitions are validated as a two-key mode
 
 # Metadata
 
-- Status: READY
+- Status: DONE
 
 # Problem Statement
 
