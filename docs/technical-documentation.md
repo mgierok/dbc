@@ -144,7 +144,7 @@ Package responsibilities:
 4. Additional records load when selection approaches loaded tail.
 5. Runtime panel transitions are handled in `internal/interfaces/tui/model.go`:
    - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
-   - `Esc` from neutral right-panel content focus returns focus to tables.
+   - `Esc` from neutral right-panel content focus returns focus to tables and forces `ViewSchema` (Table Discovery) in the right panel.
 6. Command entry (`:`) is handled inside the TUI model.
 7. `:config` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,

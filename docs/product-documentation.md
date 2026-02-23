@@ -120,7 +120,7 @@ Canonical ownership note:
 - Left panel shows tables.
 - Right panel shows schema or records for the selected table.
 - Left-panel `Enter` transitions to right panel in Records view.
-- Neutral right-panel `Esc` returns focus to left-panel table selection.
+- Neutral right-panel `Esc` returns focus to left-panel table selection and forces right panel to Table Discovery (Schema view).
 - In nested right-panel contexts, `Esc` exits local context first before any panel transition.
 - Active panel is visually indicated.
 
@@ -278,7 +278,7 @@ Canonical ownership note:
 | Jump to bottom | `G` |
 | Page down/up | `Ctrl+f`, `Ctrl+b` |
 | Open selected table in records panel | `Enter` (from left panel) |
-| Return to tables panel | `Esc` (from neutral right panel) |
+| Return to tables panel and force Table Discovery in right panel | `Esc` (from neutral right panel) |
 
 ### 6.3 View and Record Actions
 
@@ -326,7 +326,7 @@ Current user-visible constraints:
 - Only SQLite is supported.
 - Editing/deleting existing records requires a primary key in the table.
 - Only one active filter is supported at a time.
-- There is no direct shortcut to switch from Records view back to Schema view after entering Records view.
+- There is no shortcut to switch from Records view back to Schema view while keeping right-panel focus.
 - No dedicated command exists to clear filter directly (filter resets on table switch or is replaced by applying a new filter).
 - Quit action does not prompt to preserve unsaved staged changes.
 

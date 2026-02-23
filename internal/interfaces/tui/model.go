@@ -374,6 +374,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		if m.focus == FocusContent {
 			m.focus = FocusTables
+			m.viewMode = ViewSchema
 			return m, nil
 		}
 		return m, nil
