@@ -34,12 +34,13 @@ Execute one defined workflow from `references/tasks/` at a time, with strict adh
 2. Preserve required order, required formats, and non-negotiable constraints.
 3. Do not merge or blend rules between task files unless a task file explicitly says to do so.
 4. If task instructions conflict with higher-priority runtime constraints, explain the conflict and apply the safe fallback.
-5. Enforce lifecycle invariants across workflows:
+5. Every task plan and task execution MUST comply with repository rules from `AGENTS.md`; when task instructions conflict with `AGENTS.md`, `AGENTS.md` takes precedence.
+6. Enforce lifecycle invariants across workflows:
    - parent PRD must be `READY` for planning/refinement workflows,
    - parent PRD can move to `DONE` only after execution closes all `READY` tasks for that PRD,
    - task statuses use `READY`/`DONE` only.
-6. If selected task requires mode switch, pause at phase boundary and request explicit switch before any file-save step.
-7. Keep outputs concise and verifiable against the selected task's quality gates.
+7. If selected task requires mode switch, pause at phase boundary and request explicit switch before any file-save step.
+8. Keep outputs concise and verifiable against the selected task's quality gates.
 
 ## Shared Workflow Baseline
 
