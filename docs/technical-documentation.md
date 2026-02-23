@@ -87,7 +87,7 @@ Package responsibilities:
 - `internal/application/usecase`: use case orchestration.
 - `internal/application/port`: interfaces that infrastructure implements.
 - `internal/application/dto`: data structures exchanged with interface adapters.
-- `internal/interfaces/tui`: terminal adapter (input, state, rendering).
+- `internal/interfaces/tui`: terminal adapter (input, state, rendering), including shared popup rendering primitives for runtime overlays.
 - `internal/infrastructure/config`: config file loading and validation.
 - `internal/infrastructure/engine`: SQLite adapter implementation.
 
@@ -150,7 +150,7 @@ Package responsibilities:
    - command exits runtime loop immediately without save/discard confirmation.
 8. `:config` / `:c` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
-   - if staged changes exist: open dirty-state decision popup with `save`, `discard`, `cancel`,
+   - if staged changes exist: open modal dirty-state decision popup (`Config`) with `save`, `discard`, `cancel`,
    - `save` executes save flow first and exits to selector only after successful save,
    - `discard` clears staged state and exits to selector immediately,
    - `cancel` keeps runtime session active with staged state unchanged.
@@ -160,7 +160,11 @@ Package responsibilities:
    - popup renderer outputs deterministic sections (`Supported Commands`, `Supported Keywords`) with one-line entries,
    - help popup maintains internal scroll offset for overflow content and supports keyboard scrolling (`j/k`, `down/up`, `Ctrl+f`/`Ctrl+b`, `g`/`G`, `home`/`end`),
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
-10. Unsupported runtime commands keep existing fallback:
+10. Runtime popup rendering standardization:
+   - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by help popup and modal confirm popup variants,
+   - shared popup spec includes title/summary rows, optional selectable list rows, optional scroll window/indicator, and width clamping,
+   - `View()` renders modal overlays via `centerBoxLines` for help popup and modal confirms; non-modal confirms and other runtime popups remain inline under panel content.
+11. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,
    - runtime session remains active.
 
@@ -212,7 +216,7 @@ Coverage boundaries:
 - Domain tests validate domain-level rules and helper behavior.
 - Application tests validate use-case orchestration and port contracts.
 - Infrastructure tests validate adapter behavior for config and SQLite integration.
-- TUI tests validate user-visible state transitions and input handling.
+- TUI tests validate user-visible state transitions and input handling, including standardized popup rendering and modal/inline popup placement.
 
 Current conventions:
 
