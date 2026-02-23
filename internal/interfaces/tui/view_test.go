@@ -186,6 +186,32 @@ func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testi
 	}
 }
 
+func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
+	// Arrange
+	model := &Model{
+		height:    40,
+		helpPopup: helpPopup{active: true},
+	}
+
+	// Act
+	lines := model.renderHelpPopup(60)
+
+	// Assert
+	if len(lines) < 5 {
+		t.Fatalf("expected help popup to include framed header and content, got %q", strings.Join(lines, "\n"))
+	}
+
+	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[2], "|"), "|"))
+	if summary != "Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes." {
+		t.Fatalf("expected config-style summary row below title, got %q", summary)
+	}
+
+	separator := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[3], "|"), "|"))
+	if separator == "" || strings.Trim(separator, "-") != "" {
+		t.Fatalf("expected separator row after summary, got %q", separator)
+	}
+}
+
 func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -228,5 +254,40 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 	// Assert
 	if before != after {
 		t.Fatalf("expected non-scroll key to keep help window stable, before=%q after=%q", before, after)
+	}
+}
+
+func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width:     80,
+		height:    24,
+		helpPopup: helpPopup{active: true},
+	}
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
+		t.Fatalf("expected help modal view without background panels, got %q", view)
+	}
+	if !strings.Contains(view, "|Help") {
+		t.Fatalf("expected help modal frame in view, got %q", view)
+	}
+
+	lines := strings.Split(view, "\n")
+	helpLine := -1
+	for i, line := range lines {
+		if strings.Contains(line, "|Help") {
+			helpLine = i
+			if strings.Index(line, "|Help") == 0 {
+				t.Fatalf("expected centered modal line with left padding, got %q", line)
+			}
+			break
+		}
+	}
+	if helpLine <= 0 || helpLine >= len(lines)-1 {
+		t.Fatalf("expected help frame to be vertically centered, line=%d total=%d", helpLine, len(lines))
 	}
 }

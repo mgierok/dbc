@@ -8,6 +8,19 @@ import (
 )
 
 func (m *Model) View() string {
+	width := m.width
+	if width <= 0 {
+		width = 80
+	}
+	height := m.height
+	if height <= 0 {
+		height = 24
+	}
+
+	if m.helpPopup.active {
+		return centerBoxLines(m.renderHelpPopup(width), width, height)
+	}
+
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
@@ -20,7 +33,7 @@ func (m *Model) View() string {
 		lines = append(lines, m.renderPopup(leftWidth+rightWidth+3)...)
 	}
 
-	status := m.renderStatus(m.width)
+	status := m.renderStatus(width)
 	lines = append(lines, status)
 
 	return strings.Join(lines, "\n")
@@ -185,13 +198,13 @@ func (m *Model) renderPopup(totalWidth int) []string {
 func (m *Model) renderHelpPopup(totalWidth int) []string {
 	width := totalWidth
 	if width <= 0 {
-		width = 60
+		width = 50
 	}
 	if width > 60 {
 		width = 60
 	}
-	if width < 30 {
-		width = 30
+	if width < 20 {
+		width = 20
 	}
 
 	border := "+" + strings.Repeat("-", width-2) + "+"
@@ -206,6 +219,7 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 
 	lines := []string{border}
 	lines = append(lines, "|"+padRight("Help", width-2)+"|")
+	lines = append(lines, "|"+padRight("Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes.", width-2)+"|")
 	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
 
 	for i := offset; i < end; i++ {
@@ -520,6 +534,46 @@ func mergePanels(left, right []string, leftWidth, rightWidth int) []string {
 		lines = append(lines, combined)
 	}
 	return lines
+}
+
+func centerBoxLines(lines []string, width, height int) string {
+	if width <= 0 {
+		width = 80
+	}
+	if height <= 0 {
+		height = 24
+	}
+	if len(lines) == 0 {
+		lines = []string{""}
+	}
+
+	boxHeight := len(lines)
+	if boxHeight > height {
+		boxHeight = height
+		lines = lines[:boxHeight]
+	}
+
+	boxWidth := len(lines[0])
+	leftPad := 0
+	if width > boxWidth {
+		leftPad = (width - boxWidth) / 2
+	}
+	topPad := 0
+	if height > boxHeight {
+		topPad = (height - boxHeight) / 2
+	}
+
+	full := make([]string, 0, height)
+	for i := 0; i < topPad; i++ {
+		full = append(full, strings.Repeat(" ", width))
+	}
+	for _, line := range lines {
+		full = append(full, padRight(strings.Repeat(" ", leftPad)+line, width))
+	}
+	for len(full) < height {
+		full = append(full, strings.Repeat(" ", width))
+	}
+	return strings.Join(full, "\n")
 }
 
 func allocateColumnWidths(totalWidth, columns int) []int {
