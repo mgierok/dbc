@@ -21,8 +21,14 @@ func (m *Model) View() string {
 	if m.helpPopup.active {
 		return centerBoxLines(m.renderHelpPopup(width), width, height)
 	}
-	if m.confirmPopup.active && m.confirmPopup.modal {
+	if m.confirmPopup.active {
 		return centerBoxLines(m.renderConfirmPopup(width), width, height)
+	}
+	if m.editPopup.active {
+		return centerBoxLines(m.renderEditPopup(width), width, height)
+	}
+	if m.filterPopup.active {
+		return centerBoxLines(m.renderFilterPopup(width), width, height)
 	}
 
 	bodyHeight := m.contentHeight()
@@ -31,11 +37,6 @@ func (m *Model) View() string {
 	left := m.renderTables(leftWidth, bodyHeight)
 	right := m.renderContent(rightWidth, bodyHeight)
 	lines := mergePanels(left, right, leftWidth, rightWidth)
-
-	if m.filterPopup.active || m.editPopup.active || m.confirmPopup.active {
-		lines = append(lines, "")
-		lines = append(lines, m.renderPopup(leftWidth+rightWidth+3)...)
-	}
 
 	status := m.renderStatus(width)
 	lines = append(lines, status)
@@ -183,22 +184,6 @@ func (m *Model) renderRecords(width, height int) []string {
 	return padLines(lines, height, width)
 }
 
-func (m *Model) renderPopup(totalWidth int) []string {
-	if m.editPopup.active {
-		return m.renderEditPopup(totalWidth)
-	}
-	if m.confirmPopup.active {
-		return m.renderConfirmPopup(totalWidth)
-	}
-	if m.filterPopup.active {
-		return m.renderFilterPopup(totalWidth)
-	}
-	if m.helpPopup.active {
-		return m.renderHelpPopup(totalWidth)
-	}
-	return nil
-}
-
 func (m *Model) renderHelpPopup(totalWidth int) []string {
 	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
 		title:               "Help",
@@ -219,73 +204,48 @@ func helpPopupContentLines() []string {
 }
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
-	width := totalWidth
-	if width <= 0 {
-		width = 60
-	}
-	if width > 60 {
-		width = 60
-	}
-	if width < 20 {
-		width = 20
-	}
-
-	border := "+" + strings.Repeat("-", width-2) + "+"
-	lines := []string{border}
-	lines = append(lines, "|"+padRight("Filter", width-2)+"|")
-
-	stepLabel := ""
+	stepLabel := "Select column"
+	rows := []string{}
+	selected := -1
 	switch m.filterPopup.step {
 	case filterSelectColumn:
 		stepLabel = "Select column"
+		rows = make([]string, len(m.schema.Columns))
+		for i, column := range m.schema.Columns {
+			rows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+		}
+		if len(rows) > 0 {
+			selected = clamp(m.filterPopup.columnIndex, 0, len(rows)-1)
+		}
 	case filterSelectOperator:
 		stepLabel = "Select operator"
+		rows = make([]string, len(m.filterPopup.operators))
+		for i, operator := range m.filterPopup.operators {
+			rows[i] = fmt.Sprintf("%s (%s)", operator.Name, operator.SQL)
+		}
+		if len(rows) > 0 {
+			selected = clamp(m.filterPopup.operatorIndex, 0, len(rows)-1)
+		}
 	case filterInputValue:
 		stepLabel = "Enter value"
-	}
-	lines = append(lines, "|"+padRight(stepLabel, width-2)+"|")
-	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
-
-	switch m.filterPopup.step {
-	case filterSelectColumn:
-		items := make([]string, len(m.schema.Columns))
-		for i, column := range m.schema.Columns {
-			items[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
-		}
-		lines = append(lines, renderPopupList(items, m.filterPopup.columnIndex, width-2)...)
-	case filterSelectOperator:
-		items := make([]string, len(m.filterPopup.operators))
-		for i, operator := range m.filterPopup.operators {
-			items[i] = fmt.Sprintf("%s (%s)", operator.Name, operator.SQL)
-		}
-		lines = append(lines, renderPopupList(items, m.filterPopup.operatorIndex, width-2)...)
-	case filterInputValue:
 		input := m.filterPopup.input
 		cursor := clamp(m.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
-		lines = append(lines, "|"+padRight("Value: "+value, width-2)+"|")
+		rows = append(rows, "Value: "+value)
 	}
 
-	lines = append(lines, border)
-	return lines
+	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+		title:        "Filter",
+		summary:      stepLabel,
+		rows:         rows,
+		selected:     selected,
+		defaultWidth: 60,
+		minWidth:     20,
+		maxWidth:     60,
+	})
 }
 
 func (m *Model) renderEditPopup(totalWidth int) []string {
-	width := totalWidth
-	if width <= 0 {
-		width = 60
-	}
-	if width > 60 {
-		width = 60
-	}
-	if width < 30 {
-		width = 30
-	}
-
-	border := "+" + strings.Repeat("-", width-2) + "+"
-	lines := []string{border}
-	lines = append(lines, "|"+padRight("Edit Cell", width-2)+"|")
-
 	columnLabel := "Unknown column"
 	nullableLabel := "NOT NULL"
 	inputKind := dto.ColumnInputText
@@ -299,9 +259,8 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 		inputKind = column.Input.Kind
 		options = column.Input.Options
 	}
-	lines = append(lines, "|"+padRight(columnLabel, width-2)+"|")
-	lines = append(lines, "|"+padRight(nullableLabel, width-2)+"|")
-	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
+	rows := []string{}
+	selected := -1
 
 	if inputKind == dto.ColumnInputSelect {
 		current := "NULL"
@@ -312,88 +271,65 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 				current = m.editPopup.input
 			}
 		}
-		lines = append(lines, "|"+padRight("Value: "+current, width-2)+"|")
+		rows = append(rows, "Value: "+current)
 		if len(options) > 0 {
-			lines = append(lines, renderPopupList(options, m.editPopup.optionIndex, width-2)...)
+			rows = append(rows, options...)
+			selected = clamp(m.editPopup.optionIndex, 0, len(options)-1) + 1
 		}
 	} else {
 		if m.editPopup.isNull {
-			lines = append(lines, "|"+padRight("Value: NULL", width-2)+"|")
+			rows = append(rows, "Value: NULL")
 		} else {
 			input := m.editPopup.input
 			cursor := clamp(m.editPopup.cursor, 0, len(input))
 			value := input[:cursor] + "|" + input[cursor:]
-			lines = append(lines, "|"+padRight("Value: "+value, width-2)+"|")
+			rows = append(rows, "Value: "+value)
 		}
 	}
 
 	if strings.TrimSpace(m.editPopup.errorMessage) != "" {
-		lines = append(lines, "|"+padRight("Error: "+m.editPopup.errorMessage, width-2)+"|")
+		rows = append(rows, "Error: "+m.editPopup.errorMessage)
 	}
 
-	lines = append(lines, border)
-	return lines
+	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+		title:        "Edit Cell",
+		summary:      fmt.Sprintf("%s | %s", columnLabel, nullableLabel),
+		rows:         rows,
+		selected:     selected,
+		defaultWidth: 60,
+		minWidth:     30,
+		maxWidth:     60,
+	})
 }
 
 func (m *Model) renderConfirmPopup(totalWidth int) []string {
-	if m.confirmPopup.modal {
-		title := strings.TrimSpace(m.confirmPopup.title)
-		if title == "" {
-			title = "Confirm"
-		}
-		message := m.confirmPopup.message
-		if strings.TrimSpace(message) == "" {
-			message = "Are you sure?"
-		}
-		options := make([]string, len(m.confirmPopup.options))
-		for i, option := range m.confirmPopup.options {
-			options[i] = option.label
-		}
-
-		selected := -1
-		if len(options) > 0 {
-			selected = clamp(m.confirmPopup.selected, 0, len(options)-1)
-		}
-		return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
-			title:        title,
-			summary:      message,
-			rows:         options,
-			selected:     selected,
-			defaultWidth: 50,
-			minWidth:     20,
-			maxWidth:     60,
-		})
+	title := strings.TrimSpace(m.confirmPopup.title)
+	if title == "" {
+		title = "Confirm"
 	}
-
-	width := totalWidth
-	if width <= 0 {
-		width = 50
-	}
-	if width > 60 {
-		width = 60
-	}
-	if width < 20 {
-		width = 20
-	}
-
-	border := "+" + strings.Repeat("-", width-2) + "+"
-	lines := []string{border}
-	lines = append(lines, "|"+padRight("Confirm", width-2)+"|")
 	message := m.confirmPopup.message
 	if strings.TrimSpace(message) == "" {
 		message = "Are you sure?"
 	}
-	lines = append(lines, "|"+padRight(message, width-2)+"|")
-	if len(m.confirmPopup.options) > 0 {
-		lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
-		items := make([]string, len(m.confirmPopup.options))
-		for i, option := range m.confirmPopup.options {
-			items[i] = option.label
-		}
-		lines = append(lines, renderPopupList(items, m.confirmPopup.selected, width-2)...)
+	options := make([]string, len(m.confirmPopup.options))
+	for i, option := range m.confirmPopup.options {
+		options[i] = option.label
 	}
-	lines = append(lines, border)
-	return lines
+
+	selected := -1
+	if len(options) > 0 {
+		selected = clamp(m.confirmPopup.selected, 0, len(options)-1)
+	}
+
+	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+		title:        title,
+		summary:      message,
+		rows:         options,
+		selected:     selected,
+		defaultWidth: 50,
+		minWidth:     20,
+		maxWidth:     60,
+	})
 }
 
 func (m *Model) renderStatus(width int) string {
@@ -484,21 +420,6 @@ func renderList(items []string, selected, height, width int, focused bool) []str
 		lines = append(lines, padRight(line, width))
 	}
 	return padLines(lines, height, width)
-}
-
-func renderPopupList(items []string, selected, width int) []string {
-	if len(items) == 0 {
-		return []string{"|" + padRight("No options.", width) + "|"}
-	}
-	lines := make([]string, 0, len(items))
-	for i, item := range items {
-		prefix := "  "
-		if i == selected {
-			prefix = "> "
-		}
-		lines = append(lines, "|"+padRight(prefix+item, width)+"|")
-	}
-	return lines
 }
 
 func mergePanels(left, right []string, leftWidth, rightWidth int) []string {

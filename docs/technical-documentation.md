@@ -161,9 +161,9 @@ Package responsibilities:
    - help popup maintains internal scroll offset for overflow content and supports keyboard scrolling (`j/k`, `down/up`, `Ctrl+f`/`Ctrl+b`, `g`/`G`, `home`/`end`),
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
 10. Runtime popup rendering standardization:
-   - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by help popup and modal confirm popup variants,
+   - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by runtime help, filter, edit, and confirm popup variants,
    - shared popup spec includes title/summary rows, optional selectable list rows, optional scroll window/indicator, and width clamping,
-   - `View()` renders modal overlays via `centerBoxLines` for help popup and modal confirms; non-modal confirms and other runtime popups remain inline under panel content.
+   - `View()` renders runtime popup overlays via `centerBoxLines` for help, filter, edit, and confirm popup variants.
 11. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,
    - runtime session remains active.

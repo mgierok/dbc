@@ -161,6 +161,34 @@ func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 	}
 }
 
+func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
+	// Arrange
+	model := &Model{
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{
+					Name:     "name",
+					Type:     "TEXT",
+					Nullable: true,
+					Input:    dto.ColumnInput{Kind: dto.ColumnInputText},
+				},
+			},
+		},
+		editPopup: editPopup{
+			active:      true,
+			columnIndex: 0,
+		},
+	}
+
+	// Act
+	popup := strings.Join(model.renderEditPopup(60), "\n")
+
+	// Assert
+	if !strings.Contains(popup, "name (TEXT) | NULLABLE") {
+		t.Fatalf("expected combined summary row for column metadata, got %q", popup)
+	}
+}
+
 func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -301,6 +329,93 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	}
 }
 
+func TestView_FilterPopupRendersAsCenteredModal(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width:  80,
+		height: 24,
+		filterPopup: filterPopup{
+			active: true,
+			step:   filterInputValue,
+			input:  "abc",
+			cursor: 1,
+		},
+	}
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
+		t.Fatalf("expected filter popup modal view without background panels, got %q", view)
+	}
+	if !strings.Contains(view, "|Filter") {
+		t.Fatalf("expected filter popup frame in view, got %q", view)
+	}
+	lines := strings.Split(view, "\n")
+	filterLine := -1
+	for i, line := range lines {
+		if strings.Contains(line, "|Filter") {
+			filterLine = i
+			if strings.Index(line, "|Filter") == 0 {
+				t.Fatalf("expected centered filter popup line with left padding, got %q", line)
+			}
+			break
+		}
+	}
+	if filterLine <= 0 || filterLine >= len(lines)-1 {
+		t.Fatalf("expected filter popup to be vertically centered, line=%d total=%d", filterLine, len(lines))
+	}
+}
+
+func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width:  80,
+		height: 24,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{
+					Name:  "name",
+					Type:  "TEXT",
+					Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+				},
+			},
+		},
+		editPopup: editPopup{
+			active:      true,
+			columnIndex: 0,
+			input:       "john",
+			cursor:      2,
+		},
+	}
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
+		t.Fatalf("expected edit popup modal view without background panels, got %q", view)
+	}
+	if !strings.Contains(view, "|Edit Cell") {
+		t.Fatalf("expected edit popup frame in view, got %q", view)
+	}
+	lines := strings.Split(view, "\n")
+	editLine := -1
+	for i, line := range lines {
+		if strings.Contains(line, "|Edit Cell") {
+			editLine = i
+			if strings.Index(line, "|Edit Cell") == 0 {
+				t.Fatalf("expected centered edit popup line with left padding, got %q", line)
+			}
+			break
+		}
+	}
+	if editLine <= 0 || editLine >= len(lines)-1 {
+		t.Fatalf("expected edit popup to be vertically centered, line=%d total=%d", editLine, len(lines))
+	}
+}
+
 func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -383,7 +498,7 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 	}
 }
 
-func TestView_RegularConfirmPopupStaysInlineWithPanels(t *testing.T) {
+func TestView_RegularConfirmPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
 		width:  80,
@@ -399,10 +514,48 @@ func TestView_RegularConfirmPopupStaysInlineWithPanels(t *testing.T) {
 	view := model.View()
 
 	// Assert
-	if !strings.Contains(view, "Tables") {
-		t.Fatalf("expected background panels for non-modal confirm, got %q", view)
+	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
+		t.Fatalf("expected non-modal confirm as centered popup without background panels, got %q", view)
 	}
 	if !strings.Contains(view, "|Confirm") {
-		t.Fatalf("expected inline confirm popup frame, got %q", view)
+		t.Fatalf("expected confirm popup frame, got %q", view)
+	}
+	lines := strings.Split(view, "\n")
+	confirmLine := -1
+	for i, line := range lines {
+		if strings.Contains(line, "|Confirm") {
+			confirmLine = i
+			if strings.Index(line, "|Confirm") == 0 {
+				t.Fatalf("expected centered confirm popup line with left padding, got %q", line)
+			}
+			break
+		}
+	}
+	if confirmLine <= 0 || confirmLine >= len(lines)-1 {
+		t.Fatalf("expected confirm popup to be vertically centered, line=%d total=%d", confirmLine, len(lines))
+	}
+}
+
+func TestRenderConfirmPopup_InlineUsesStandardizedSeparatorRow(t *testing.T) {
+	// Arrange
+	model := &Model{
+		confirmPopup: confirmPopup{
+			active:  true,
+			title:   "Confirm",
+			message: "Save staged changes?",
+		},
+	}
+
+	// Act
+	lines := model.renderConfirmPopup(60)
+
+	// Assert
+	if len(lines) < 5 {
+		t.Fatalf("expected standardized confirm popup layout, got %q", strings.Join(lines, "\n"))
+	}
+
+	separator := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[3], "|"), "|"))
+	if separator == "" || strings.Trim(separator, "-") != "" {
+		t.Fatalf("expected separator row after summary, got %q", separator)
 	}
 }
