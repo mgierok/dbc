@@ -733,6 +733,61 @@ func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing
 	}
 }
 
+func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.width = 110
+	model.height = 24
+
+	// Act
+	view := model.View()
+	lines := strings.Split(view, "\n")
+
+	// Assert
+	var rightBorderColumn int
+	hasRightBorderColumn := false
+	for _, line := range lines {
+		trimmed := strings.TrimLeft(line, " ")
+		if trimmed == "" || trimmed[0] != '|' {
+			continue
+		}
+		col := lastRuneIndex(line, '|')
+		if col < 0 {
+			t.Fatalf("expected right border in line %q", line)
+		}
+		if !hasRightBorderColumn {
+			rightBorderColumn = col
+			hasRightBorderColumn = true
+			continue
+		}
+		if col != rightBorderColumn {
+			t.Fatalf("expected right border at rune column %d, got %d for line %q", rightBorderColumn, col, line)
+		}
+	}
+	if !hasRightBorderColumn {
+		t.Fatalf("expected popup content lines in view, got %q", view)
+	}
+	if !strings.Contains(view, "Legend: ⚙ config | ⌨ CLI session") {
+		t.Fatalf("expected legend with unicode markers in view, got %q", view)
+	}
+}
+
 func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
 	current := model
 	for _, r := range text {
@@ -744,6 +799,16 @@ func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel 
 func sendKey(model *databaseSelectorModel, key tea.KeyMsg) *databaseSelectorModel {
 	updated, _ := model.Update(key)
 	return updated.(*databaseSelectorModel)
+}
+
+func lastRuneIndex(s string, target rune) int {
+	index := -1
+	for i, r := range []rune(s) {
+		if r == target {
+			index = i
+		}
+	}
+	return index
 }
 
 type fakeSelectorManager struct {

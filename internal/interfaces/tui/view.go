@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mgierok/dbc/internal/application/dto"
 )
@@ -651,20 +652,29 @@ func padRight(text string, width int) string {
 		return ""
 	}
 	text = truncate(text, width)
-	if len(text) >= width {
+	textLength := textWidth(text)
+	if textLength >= width {
 		return text
 	}
-	return text + strings.Repeat(" ", width-len(text))
+	return text + strings.Repeat(" ", width-textLength)
 }
 
 func truncate(text string, width int) string {
-	if width <= 0 || len(text) <= width {
+	if width <= 0 {
+		return ""
+	}
+	if textWidth(text) <= width {
 		return text
 	}
+	runes := []rune(text)
 	if width <= 3 {
-		return text[:width]
+		return string(runes[:width])
 	}
-	return text[:width-3] + "..."
+	return string(runes[:width-3]) + "..."
+}
+
+func textWidth(text string) int {
+	return utf8.RuneCountInString(text)
 }
 
 func minInt(a, b int) int {

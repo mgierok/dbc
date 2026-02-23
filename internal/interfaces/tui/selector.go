@@ -364,7 +364,7 @@ func (m *databaseSelectorModel) View() string {
 	}
 
 	leftPad := 0
-	boxWidth := len(lines[0])
+	boxWidth := textWidth(lines[0])
 	if width > boxWidth {
 		leftPad = (width - boxWidth) / 2
 	}
@@ -409,29 +409,29 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 	pathLine := "Config: " + configPath
 
 	items := m.optionLines()
-	contentWidth := len(title)
-	if len(pathLine) > contentWidth {
-		contentWidth = len(pathLine)
+	contentWidth := textWidth(title)
+	if textWidth(pathLine) > contentWidth {
+		contentWidth = textWidth(pathLine)
 	}
 	for _, item := range items {
-		itemWidth := len(item) + 2
+		itemWidth := textWidth(item) + 2
 		if itemWidth > contentWidth {
 			contentWidth = itemWidth
 		}
 	}
 	for _, line := range m.contextLines() {
-		if len(line) > contentWidth {
-			contentWidth = len(line)
+		if textWidth(line) > contentWidth {
+			contentWidth = textWidth(line)
 		}
 	}
 	for _, line := range m.formLines() {
-		if len(line) > contentWidth {
-			contentWidth = len(line)
+		if textWidth(line) > contentWidth {
+			contentWidth = textWidth(line)
 		}
 	}
 	for _, line := range m.deleteConfirmationLines() {
-		if len(line) > contentWidth {
-			contentWidth = len(line)
+		if textWidth(line) > contentWidth {
+			contentWidth = textWidth(line)
 		}
 	}
 	if contentWidth < 1 {
