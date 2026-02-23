@@ -4,7 +4,7 @@ This task synchronizes user-visible key guidance with the new runtime panel-tran
 
 ## Metadata
 
-- Status: READY
+- Status: DONE
 - PRD: PRD-007-simplified-panel-navigation-enter-esc.md
 - Task ID: 02
 - Task File: PRD-007-TASK-02-runtime-key-guidance-and-doc-sync.md
@@ -78,4 +78,26 @@ Format rule:
 
 ## Completion Summary
 
-Not started
+- Updated runtime shortcut guidance in `internal/interfaces/tui/view.go`:
+  - `Tables: Enter records | F filter`
+  - `Schema: Esc tables | F filter`
+  - `Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter`
+- Updated unit tests in `internal/interfaces/tui/view_test.go`:
+  - adjusted existing table/records shortcut expectations,
+  - added `TestStatusShortcuts_SchemaPanel` for right-panel neutral guidance.
+- Synced user-facing keyboard documentation:
+  - `README.md` keyboard controls now describe panel transitions with `Enter`/`Esc` and keep concise runtime wording,
+  - `docs/product-documentation.md` updated in:
+    - `4.2 Main Layout and Focus Model` (explicit panel-transition rules),
+    - `6.2 Global/Main Navigation` (panel transition shortcuts),
+    - `6.3 View and Record Actions` (records-context `Enter`/`Esc` actions),
+  - `docs/technical-documentation.md` updated in `5.2 Main Read Flow` with factual runtime transition handling in `internal/interfaces/tui/model.go`.
+- Verification executed (all pass):
+  - `gofmt -w internal/interfaces/tui/view.go internal/interfaces/tui/view_test.go`
+  - `go test ./internal/interfaces/tui`
+  - `golangci-lint run ./...`
+  - `go test ./...`
+  - `rg -n 'Ctrl\\+w h|Ctrl\\+w l|Ctrl\\+w w' README.md docs/product-documentation.md docs/technical-documentation.md internal/interfaces/tui || true` (no matches)
+- Metric evidence:
+  - M1 satisfied: runtime hints and documentation surfaces now describe the same `Enter`/`Esc` transition model.
+  - M3 satisfied: canonical panel-transition guidance uses exactly two keys (`Enter`, `Esc`) in the updated guidance surfaces.

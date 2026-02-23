@@ -387,11 +387,11 @@ func (m *Model) statusShortcuts() string {
 	case m.commandInput.active:
 		return "Command: Enter run | Esc cancel"
 	case m.focus == FocusTables:
-		return "Tables: F filter"
+		return "Tables: Enter records | F filter"
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
-		return "Schema: F filter"
+		return "Schema: Esc tables | F filter"
 	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return "Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter"
+		return "Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter"
 	default:
 		return ""
 	}

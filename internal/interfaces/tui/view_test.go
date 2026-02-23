@@ -16,8 +16,24 @@ func TestStatusShortcuts_TablesPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Tables: F filter" {
+	if shortcuts != "Tables: Enter records | F filter" {
 		t.Fatalf("expected table shortcuts, got %q", shortcuts)
+	}
+}
+
+func TestStatusShortcuts_SchemaPanel(t *testing.T) {
+	// Arrange
+	model := &Model{
+		focus:    FocusContent,
+		viewMode: ViewSchema,
+	}
+
+	// Act
+	shortcuts := model.statusShortcuts()
+
+	// Assert
+	if shortcuts != "Schema: Esc tables | F filter" {
+		t.Fatalf("expected schema shortcuts, got %q", shortcuts)
 	}
 }
 
@@ -47,7 +63,7 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter" {
+	if shortcuts != "Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
 	}
 }

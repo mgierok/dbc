@@ -142,8 +142,11 @@ Package responsibilities:
 2. Selected table schema is loaded.
 3. Records are loaded in pages (`offset`, `limit`) with optional filter.
 4. Additional records load when selection approaches loaded tail.
-5. Command entry (`:`) is handled inside the TUI model.
-6. `:config` routing behavior:
+5. Runtime panel transitions are handled in `internal/interfaces/tui/model.go`:
+   - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
+   - `Esc` from neutral right-panel content focus returns focus to tables.
+6. Command entry (`:`) is handled inside the TUI model.
+7. `:config` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
    - if staged changes exist: open dirty-state decision popup with `save`, `discard`, `cancel`,
    - `save` executes save flow first and exits to selector only after successful save,

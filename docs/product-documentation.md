@@ -119,7 +119,9 @@ Canonical ownership note:
 - Layout is permanently two-panel in current state.
 - Left panel shows tables.
 - Right panel shows schema or records for the selected table.
-- Focus can be moved between panels.
+- Left-panel `Enter` transitions to right panel in Records view.
+- Neutral right-panel `Esc` returns focus to left-panel table selection.
+- In nested right-panel contexts, `Esc` exits local context first before any panel transition.
 - Active panel is visually indicated.
 
 ### 4.3 Table Discovery and Schema View
@@ -275,14 +277,15 @@ Canonical ownership note:
 | Jump to top | `gg` |
 | Jump to bottom | `G` |
 | Page down/up | `Ctrl+f`, `Ctrl+b` |
-| Switch panel focus | `Ctrl+w h`, `Ctrl+w l`, `Ctrl+w w` |
+| Open selected table in records panel | `Enter` (from left panel) |
+| Return to tables panel | `Esc` (from neutral right panel) |
 
 ### 6.3 View and Record Actions
 
 | Action | Shortcut |
 | --- | --- |
-| Open records view / enter field focus / open edit popup | `Enter` (context dependent) |
-| Exit field focus | `Esc` |
+| Enter field focus / open edit popup | `Enter` (in records context) |
+| Exit nested right-panel context | `Esc` |
 | Open command entry | `:` |
 | Open filter popup | `F` |
 | Stage insert | `i` |
