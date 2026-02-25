@@ -1,52 +1,29 @@
-# Test Fixture and Test Case Standard
+# Test Case Authoring and Modification Standard
 
 ## Purpose
 
-This document defines fixture assets and mandatory contracts for behavior-oriented manual regression cases.
-It applies to startup and runtime behavior verification scenarios in `test-cases/`.
+This document defines mandatory contracts for creating and modifying behavior-oriented manual regression scenarios in `test-cases/`.
+
+Execution and result-reporting rules are defined in `docs/test-case-execution-reporting-specification.md`.
 
 Every test case must be a separate Markdown file and must follow `docs/test-case/template.md`.
 
-## Fixture Database
+## 1. Test Case File Contract (Mandatory)
 
-- Fixture source file: `scripts/test.db`
-- Scope: local/manual startup and runtime behavior verification.
-- Domain modeled by fixture: `customers`, `categories`, `products`, `orders`, `order_items`.
-
-## Startup Scripts Catalog
-
-Run all commands from repository root.
-
-| Script | Run | Use When |
-| --- | --- | --- |
-| [`scripts/start-direct-launch.sh`](../scripts/start-direct-launch.sh) | `bash scripts/start-direct-launch.sh` | Scenario must start in runtime immediately (`-d`) with no selector step. |
-| [`scripts/start-selector-from-config.sh`](../scripts/start-selector-from-config.sh) | `bash scripts/start-selector-from-config.sh` | Scenario must start from selector with a valid config entry. |
-| [`scripts/start-without-database.sh`](../scripts/start-without-database.sh) | `bash scripts/start-without-database.sh` | Scenario must start in mandatory first-entry setup (no configured databases). |
-| [`scripts/start-informational.sh`](../scripts/start-informational.sh) | `bash scripts/start-informational.sh <help\|version>` | Scenario must validate startup informational behavior for `--help` or `--version`. |
-
-### Output and Cleanup Rules
-
-- Every startup script prints `TMP_ROOT=...`.
-- `scripts/start-without-database.sh` additionally prints `TMP_DB=...`.
-- Mandatory cleanup after each execution:
-  - `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
-
-## Test Case File Contract (Mandatory)
-
-### 1. File Placement and Naming
+### 1.1 File Placement and Naming
 
 - Default location: `test-cases/`.
 - Each case is one Markdown file (`.md`).
 - Filename must start with `TC-<NNN>` and follow: `TC-<NNN>-<behavior>-<expected-result>.md`.
 - Do not use generic names such as `test1.md`, `scenario.md`, `case.md`.
 
-### 2. Required Startup Script Binding
+### 1.2 Required Startup Script Binding
 
-- Each test case must reference exactly one startup script from the catalog above.
+- Each test case must reference exactly one startup script from the catalog in `docs/test-case-execution-reporting-specification.md`.
 - Metadata must include both script path and exact run command.
 - If two startup contexts are needed, split into separate test cases.
 
-### 3. Functional Behavior Ownership Contract
+### 1.3 Functional Behavior Ownership Contract
 
 - Each scenario must declare exactly one `Functional Behavior Reference` in metadata.
 - The value must be a Markdown reference targeting one subsection under:
@@ -57,7 +34,7 @@ Run all commands from repository root.
 - Product documentation is the source of truth for available Functional Behavior subsections.
 - This specification and template must not define an independent local allowlist of areas.
 
-### 4. Minimal Required Metadata
+### 1.4 Minimal Required Metadata
 
 Only fields below are allowed in `## 1. Metadata`:
 
@@ -66,7 +43,7 @@ Only fields below are allowed in `## 1. Metadata`:
 - `Startup Script`
 - `Startup Command`
 
-### 5. Required Scenario Contract
+### 1.5 Required Scenario Contract
 
 Every test case must define:
 
@@ -88,7 +65,7 @@ Assertions table must contain:
 - result (`PASS`/`FAIL`),
 - evidence.
 
-### 6. Expand-First Evidence Contract
+### 1.6 Expand-First Evidence Contract
 
 - Before creating a new `TC-*` file for scoped behavior additions, execution evidence must show that expansion/refactor of existing scenarios was evaluated first.
 - Release-readiness evidence must classify each coverage addition as:
@@ -96,7 +73,7 @@ Assertions table must contain:
   - `New TC`.
 - Every `New TC` classification must include explicit rationale for why expansion was not viable.
 
-### 7. Suite Governance Artifact Contract
+### 1.7 Suite Governance Artifact Contract
 
 The following files are mandatory and must remain synchronized:
 
@@ -115,7 +92,7 @@ Coverage matrix contract:
 Cross-artifact mismatch contract:
 
 - Any mismatch between template fields and this specification is an audit `FAIL`.
-- Any startup command used by scenarios but missing from startup scripts catalog is an audit `FAIL`.
+- Any startup command used by scenarios but missing from startup scripts catalog in `docs/test-case-execution-reporting-specification.md` is an audit `FAIL`.
 
 Governance maintenance workflow:
 
@@ -126,43 +103,7 @@ Governance maintenance workflow:
 - Governance checks are required only when creating or modifying `TC-*` scenarios.
 - Governance checks must not be persisted as `test-cases/*audit*.md` snapshots.
 
-### 8. Execution Result Output Contract
-
-- Result outputs must be displayed immediately after each single test-case execution and after each full-suite execution.
-- Display output must include only one of:
-  - `SINGLE` output for one executed test case, or
-  - `SUITE` output for full-suite execution.
-- Execution output must not include governance-check sections.
-- Result outputs are display-only; do not create or maintain persistent release-readiness result files in `test-cases/`.
-- Single-case and suite output format must follow `docs/test-case/execution-output-template.md`.
-- Output values remain binary:
-  - assertion/test/suite results: `PASS` or `FAIL` only.
-
-### 9. Deterministic Result Rule
-
-- Allowed assertion and final-result values are only `PASS` or `FAIL`.
-- Final `PASS` is valid only when all assertions are `PASS`.
-- Any unmet precondition, blocked execution, or failed expectation must produce final `FAIL` with reason.
-- No third state (`SKIPPED`, `UNKNOWN`, `PARTIAL`) is allowed.
-- `Functional Behavior Reference` cardinality/purity rules are defined in Section 3 and are normative for deterministic checks.
-
-Violation Count contract:
-
-- Each execution output (single or suite) must include explicit integer `Violation Count`.
-- Any `Violation Count > 0` forces result `FAIL`.
-- `Violation Count = 0` is required for result `PASS`.
-
-Deterministic `FAIL` triggers:
-
-- assertion result includes a value other than `PASS` or `FAIL`,
-- final `Test Result` includes a value other than `PASS` or `FAIL`,
-- final `PASS` is declared while at least one assertion is not `PASS`,
-- final `FAIL` omits failure reason/context,
-- ambiguous language prevents binary resolution,
-- any violation of Section 3 `Functional Behavior Ownership Contract`,
-- `Violation Count` is missing or not numeric.
-
-### 10. Strict Structure Rule
+### 1.8 Strict Structure Rule
 
 - Section order/headings from `docs/test-case/template.md` are mandatory.
 - Required fields/columns in template tables cannot be removed.
@@ -170,7 +111,7 @@ Deterministic `FAIL` triggers:
 - Full consistency between this document and the template is mandatory.
 - Structure/metadata conformance checks must verify:
   - exactly one startup script binding and exactly one startup command,
-  - Section 3 `Functional Behavior Ownership Contract`.
+  - Section 1.3 `Functional Behavior Ownership Contract`.
 
 Structure/metadata conformance `FAIL` triggers:
 
@@ -181,12 +122,11 @@ Structure/metadata conformance `FAIL` triggers:
 - any required heading from `docs/test-case/template.md` is missing,
 - required headings from `docs/test-case/template.md` are out of order,
 - a required metadata field or required table column from `docs/test-case/template.md` is missing,
-- any violation of Section 3 `Functional Behavior Ownership Contract`.
+- any violation of Section 1.3 `Functional Behavior Ownership Contract`.
 
-## Canonical Template
+## 2. Canonical Templates
 
 - Template file: `docs/test-case/template.md`
 - All new test cases must be created by copying this file and filling placeholders.
 - Suite coverage matrix template file: `docs/test-case/suite-coverage-matrix-template.md`
 - `test-cases/suite-coverage-matrix.md` must follow `docs/test-case/suite-coverage-matrix-template.md`.
-- Execution output template file: `docs/test-case/execution-output-template.md`

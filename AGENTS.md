@@ -183,7 +183,7 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
     - linter for full repository scope (`golangci-lint run ./...`)
     - tests for full repository scope (`go test ./...`)
 - If tests cannot run, you MUST explicitly report why.
-- When running full regression tests or a single test case, the agent MUST execute them based on `docs/test-case-specification.md` as the normative execution contract for scope, scenario rules, and suite/test-case result criteria.
+- When running full regression tests or a single test case, the agent MUST execute them based on `docs/test-case-execution-reporting-specification.md` as the normative execution contract for scope, scenario rules, and suite/test-case result criteria.
 
 ### 4.3.1 Goal-Driven Verification
 
@@ -282,7 +282,7 @@ Documentation creation and modification MUST be skill-governed:
 - Product and technical documentation MUST stay complementary and consistent without mandatory cross-document links.
 - Documentation MUST describe current factual state only, MUST stay aligned with code/runtime behavior, and MUST be updated with every relevant codebase change.
 - Every code change MUST be explicitly verified for documentation impact on `docs/technical-documentation.md` and/or `docs/product-documentation.md`, even when no documentation update is ultimately required.
-- For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep `docs/test-case-specification.md` aligned with documented behavior.
+- For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep `docs/test-case-authoring-specification.md` aligned with documented behavior.
 - The agent SHOULD prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs.
 - Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
 - `README.md` MUST be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, the agent MUST update `README.md` in the same change set.
