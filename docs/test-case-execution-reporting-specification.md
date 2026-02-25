@@ -31,6 +31,14 @@ Run all commands from repository root.
 - Mandatory cleanup after each execution:
   - `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`
 
+### 2.2 Subagent Isolation Contract
+
+- Each `TC-*` scenario must be executed by a separate independent subagent instance.
+- Subagent context must be isolated per scenario:
+  - include only scenario-local execution inputs (the target `TC-*` file and its startup binding),
+  - do not include cross-scenario notes, summaries, decisions, or outcomes.
+- Full-suite execution must be orchestrated as one subagent per scenario, then aggregated only at final reporting level.
+
 ## 3. Execution Result Output Contract
 
 - Result outputs must be displayed immediately after each single test-case execution and after each full-suite execution.

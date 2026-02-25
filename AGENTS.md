@@ -184,6 +184,7 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
     - tests for full repository scope (`go test ./...`)
 - If tests cannot run, you MUST explicitly report why.
 - When running full regression tests or a single test case, the agent MUST execute them based on `docs/test-case-execution-reporting-specification.md` as the normative execution contract for scope, scenario rules, and suite/test-case result criteria.
+- When executing manual `TC-*` scenarios, each test case MUST be run by a separate independent subagent with isolated context (no cross-case context sharing).
 
 ### 4.3.1 Goal-Driven Verification
 
