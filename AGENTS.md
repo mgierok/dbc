@@ -72,20 +72,17 @@ When this skill is invoked, commit messages MUST use Conventional Commits format
 
 ### 3.3 Mandatory Documentation Skill Invocation
 
-You MUST explicitly invoke skill `write-documentation` when at least one of these situations is true:
+You MUST explicitly invoke skill `authoring-product-documentation` when at least one of these situations is true:
 
 - creating `docs/product-documentation.md`
-- creating `docs/technical-documentation.md`
 - modifying `docs/product-documentation.md`
+
+You MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
+
+- creating `docs/technical-documentation.md`
 - modifying `docs/technical-documentation.md`
-- reviewing consistency or complementarity between `docs/product-documentation.md` and `docs/technical-documentation.md`
-- implementing any codebase change that affects documented behavior, scope, architecture, runtime, interfaces, or constraints reflected in `docs/product-documentation.md` and/or `docs/technical-documentation.md`
 
-When this skill is invoked:
-
-- you MUST follow `.agents/skills/write-documentation/SKILL.md` as the primary writing procedure
-- you MUST limit scope strictly to `docs/product-documentation.md` and `docs/technical-documentation.md`
-- you MUST document only the current factual application state
+If a task requires changes to both files, you MUST invoke both skills independently.
 
 ## 4. Agent Workflow Standard
 
@@ -278,15 +275,15 @@ When adding functionality, the agent MUST follow this order:
 
 Documentation creation and modification MUST be skill-governed:
 
-- Mandatory procedure and structure MUST come from `.agents/skills/write-documentation/SKILL.md` only for `docs/product-documentation.md` and `docs/technical-documentation.md`.
-- Product and technical documentation MUST stay complementary and consistent without mandatory cross-document links.
 - Documentation MUST describe current factual state only, MUST stay aligned with code/runtime behavior, and MUST be updated with every relevant codebase change.
+- If a change affects user-visible behavior, user flows, capability scope, interaction model, or user-facing constraints, the agent MUST update `docs/product-documentation.md` and invoke `authoring-product-documentation`.
+- If a change affects architecture boundaries, implementation mechanisms, runtime behavior, interfaces/contracts, or technical constraints, the agent MUST update `docs/technical-documentation.md` and invoke `authoring-technical-documentation`.
+- If both perspectives are affected, the agent MUST update both documents and invoke both skills independently.
 - Every code change MUST be explicitly verified for documentation impact on `docs/technical-documentation.md` and/or `docs/product-documentation.md`, even when no documentation update is ultimately required.
-- For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep `docs/test-case-authoring-specification.md` aligned with documented behavior.
+- For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
 - The agent SHOULD prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs.
 - Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
 - `README.md` MUST be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, the agent MUST update `README.md` in the same change set.
-- Documentation MUST NOT define or describe development flow.
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 

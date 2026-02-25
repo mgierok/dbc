@@ -46,8 +46,6 @@ Each proposed technical-documentation change MUST map to at least one topic belo
 - Technical risks, limitations, and known tradeoffs.
 - Deep-dive references for architecture/testing internals.
 
-Changes that are primarily user-facing product narrative, UX copywriting, marketing language, or business-policy description without implementation relevance are out of scope for technical documentation.
-
 ## Out-of-Allowlist Handling (Mandatory)
 
 If a proposed change does not map to any allowed technical topic:
@@ -71,7 +69,7 @@ Minimum requirement:
 
 - Write for engineering and maintenance audiences.
 - Describe current factual implementation state only.
-- Keep content practical, code-aligned, and free from repeated product-level behavior narratives.
+- Keep content practical and code-aligned.
 - Do not describe development workflow (branching, PR flow, delivery process).
 - Preserve existing section numbering and anchors unless structural migration is explicitly requested.
 

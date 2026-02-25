@@ -46,11 +46,9 @@ Each proposed product-documentation change MUST map to at least one topic below:
 - User-visible recovery behavior after failures.
 - User-facing terminology and glossary entries.
 
-Changes that are purely implementation, architecture, internals, dependency wiring, infrastructure mechanics, or tooling process are out of scope for product documentation unless they have direct user-visible impact.
-
 ## Out-of-Allowlist Handling (Mandatory)
 
-If a proposed change does not map to any allowed product topic:
+If a proposed change does not map to any allowed topic:
 
 - skip the change item, or
 - adapt it to the nearest allowed topic while preserving factual meaning and without adding scope.
@@ -71,8 +69,7 @@ Minimum requirement:
 
 - Write in plain, explicit language.
 - Describe current state only.
-- Keep terminology consistent with technical documentation.
-- Avoid duplicating technical implementation descriptions.
+- Keep terminology consistent with product-facing vocabulary.
 - Do not describe development workflow (branching, PR flow, delivery process).
 - Preserve existing section numbering and anchors unless structural migration is explicitly requested.
 
