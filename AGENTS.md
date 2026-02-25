@@ -219,32 +219,6 @@ For every code change, the agent MUST apply the following non-negotiable rules:
    - You MUST include `go test ./...` result.
    - You MUST list any accepted local exceptions (`#nosec` / `nolint`) with rationale.
 
-### 4.3.3 Go LSP (`gopls`) Usage Rules
-
-For Go code changes, the agent MUST apply the following `gopls` rules:
-
-1. Purpose and scope:
-   - `gopls` MUST be treated as iterative semantic support for navigation, symbol analysis, diagnostics, and safe rename operations.
-2. Iterative diagnostics:
-   - During implementation, the agent SHOULD run `gopls check` for each changed Go file before full-repository verification.
-3. Semantic-first symbol changes:
-   - For symbol updates across function/file/package boundaries, the agent SHOULD use:
-     - `gopls definition <position>`
-     - `gopls references <position>`
-     - `gopls implementation <position>`
-   - For renames, the agent SHOULD preview with `gopls rename -d <position> <new_name>` and apply with `gopls rename -w <position> <new_name>`.
-4. Quality-gate boundaries:
-   - `gopls` diagnostics MUST NOT replace mandatory verification gates:
-     - `golangci-lint run ./...`
-     - `go test ./...`
-5. Workspace requirement:
-   - `gopls` commands MUST be run from the module workspace (directory containing `go.mod`) to keep package loading deterministic.
-6. Failure handling:
-   - If `gopls` fails due environment/tooling constraints (for example cache permission issues, sandbox limits, missing toolchain), the agent MUST:
-     - report the exact limitation,
-     - retry with appropriate permissions when possible,
-     - continue mandatory lint/test verification once environment constraints are resolved.
-
 ### 4.4 Completion
 
 A task is complete only when all conditions below are met:
@@ -351,17 +325,3 @@ Documentation creation and modification MUST be skill-governed:
 - Lessons learned log: `lessons-learned.md`
 - Run/setup basics: `README.md`
 - README writing rules: `docs/readme-guidelines.md`
-
-### 7.1 Go LSP Quick Commands
-
-- Diagnostics for one file: `gopls check path/to/file.go`
-- Definition lookup: `gopls definition path/to/file.go:line:column`
-- References lookup: `gopls references path/to/file.go:line:column`
-- Implementation lookup: `gopls implementation path/to/file.go:line:column`
-- Rename preview (diff): `gopls rename -d path/to/file.go:line:column NewName`
-- Rename apply (write): `gopls rename -w path/to/file.go:line:column NewName`
-- File symbols: `gopls symbols path/to/file.go`
-- Workspace symbols: `gopls workspace_symbol QueryText`
-- Imports update (optional iteration helper): `gopls imports -w path/to/file.go`
-- Formatting helper (optional during iteration): `gopls format -w path/to/file.go`
-- Final formatter gate for changed Go code remains mandatory: `gofmt`
