@@ -39,6 +39,30 @@ Run all commands from repository root.
   - do not include cross-scenario notes, summaries, decisions, or outcomes.
 - Full-suite execution must be orchestrated as one subagent per scenario, then aggregated only at final reporting level.
 
+### 2.3 Execution Modes
+
+- `SINGLE`: execute one `TC-*` using Section 2.4.
+- `SUITE`: execute full `TC-*` suite using Section 2.5.
+
+### 2.4 Single Test Case Runbook (`SINGLE`)
+
+1. Run one isolated subagent for the target `TC-*`.
+2. In that same subagent run preflight:
+   - execute startup command from target `TC-*` metadata,
+   - capture `TMP_ROOT`,
+   - run `bash scripts/cleanup-temp-environment.sh <TMP_ROOT>`,
+   - continue only when cleanup succeeds.
+3. Execute target `TC-*` scenario steps and assertions exactly as defined in its file.
+4. Run mandatory cleanup for the execution `TMP_ROOT`.
+5. Publish `SINGLE` output using `docs/test-case/execution-output-template.md` with explicit `Violation Count`.
+
+### 2.5 Full Test Case Suite Runbook (`SUITE`)
+
+1. Determine suite scope from `test-cases/suite-coverage-matrix.md` and `test-cases/TC-*.md`.
+2. For each scenario, run full process from Section 2.4 in a separate isolated subagent.
+3. Publish immediate `SINGLE` output after each scenario.
+4. Aggregate all single-case results into one final `SUITE` output using `docs/test-case/execution-output-template.md`.
+
 ## 3. Execution Result Output Contract
 
 - Result outputs must be displayed immediately after each single test-case execution and after each full-suite execution.
