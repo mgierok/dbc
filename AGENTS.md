@@ -70,30 +70,6 @@ You MUST explicitly invoke skill `write-commit-messages` when at least one of th
 
 When this skill is invoked, commit messages MUST use Conventional Commits format and SHOULD use the changed files/diff as primary context.
 
-### 3.3 Mandatory Documentation Skill Invocation
-
-You MUST explicitly invoke skill `authoring-product-documentation` when at least one of these situations is true:
-
-- task changes at least one non-documentation file in the repository
-- creating `docs/product-documentation.md`
-- modifying `docs/product-documentation.md`
-
-You MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
-
-- task changes at least one non-documentation file in the repository
-- creating `docs/technical-documentation.md`
-- modifying `docs/technical-documentation.md`
-
-You MUST explicitly invoke skill `authoring-readme-file` when at least one of these situations is true:
-
-- task changes at least one non-documentation file in the repository
-- creating `README.md`
-- modifying `README.md`
-
-For this trigger, documentation files include Markdown/governance documentation artifacts (for example `docs/**`, `README.md`, `AGENTS.md`, `.agents/skills/**/*.md`).
-
-You MUST accept each invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
-
 ## 4. Agent Workflow Standard
 
 ### 4.1 Planning
@@ -103,7 +79,7 @@ For each task, the agent MUST:
 1. Define expected product outcome (what changes for the user).
 2. Map affected layers/packages.
 3. Identify test impact (new tests or updates).
-4. Invoke documentation skills according to Section `3.3` and follow their decisions.
+4. Invoke documentation skills according to Section `6` and follow their decisions.
 
 ### 4.1.1 Assumptions and Ambiguity Protocol
 
@@ -180,6 +156,11 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
 - `STEP`: what will be done now
 - `VERIFY`: how success will be checked
 - `DECISION`: what needs user confirmation before next step
+
+### 4.2.4 Reference Integrity
+
+- Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
+- Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
 ### 4.3 Verification
 
@@ -285,14 +266,37 @@ When adding functionality, the agent MUST follow this order:
 
 Documentation creation and modification MUST be skill-governed:
 
-- Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
-- Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
-- README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
+For trigger evaluation, documentation files MUST include Markdown/governance documentation artifacts (for example `docs/**`, `README.md`, `AGENTS.md`, `.agents/skills/**/*.md`).
+
 - If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
+
+### 6.1 Product Documentation Policy
+
+- The agent MUST explicitly invoke skill `authoring-product-documentation` when at least one of these situations is true:
+  - task changes at least one non-documentation file in the repository
+  - creating `docs/product-documentation.md`
+  - modifying `docs/product-documentation.md`
+- Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
-- Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
-- Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
-- Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
+- The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
+
+### 6.2 Technical Documentation Policy
+
+- The agent MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
+  - task changes at least one non-documentation file in the repository
+  - creating `docs/technical-documentation.md`
+  - modifying `docs/technical-documentation.md`
+- Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
+- The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
+
+### 6.3 README Documentation Policy
+
+- The agent MUST explicitly invoke skill `authoring-readme-file` when at least one of these situations is true:
+  - task changes at least one non-documentation file in the repository
+  - creating `README.md`
+  - modifying `README.md`
+- README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
+- The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
 ## 7. Quick Reference
 
