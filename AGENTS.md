@@ -59,38 +59,36 @@ When this skill is invoked, commit messages MUST use Conventional Commits format
 
 ### 3.1 Planning
 
-For each task, the agent MUST:
+This section applies only to project tasks that can result in project-code changes.
+This section MUST NOT be applied to documentation-only or governance-only tasks.
 
-1. Define expected product outcome (what changes for the user).
-2. Map affected layers/packages.
-3. Identify test impact (new tests or updates).
-4. Invoke documentation skills according to Section `5` and follow their decisions.
+For each in-scope task, the agent MUST execute planning in the following order:
 
-### 3.1.1 Assumptions and Ambiguity Protocol
-
-For any non-trivial task, the agent MUST state assumptions before coding.
-
-Use this format:
-
-`ASSUMPTIONS:`
-`1. ...`
-`2. ...`
-`-> Confirm or correct before I proceed.`
-
-If requirements are ambiguous or inconsistent, the agent MUST follow this flow:
-
-1. Stop.
-2. Name the exact conflict.
-3. Ask one focused clarifying question or present two options with tradeoffs.
-4. Wait for user decision before continuing.
-
-The agent MUST wait for user decision when ambiguity affects behavior, architecture boundaries, data safety, or public interfaces.
-The agent MAY proceed without waiting only for low-risk mechanical work (for example naming, formatting, or obvious local cleanup), but MUST still state assumptions.
-
-Quick examples:
-
-- Good: "File A says read-only, file B says write allowed. Which is correct?"
-- Bad: silently choosing one interpretation and implementing it.
+1. Step 1: Intent Understanding
+   - The agent MUST NOT treat the user instruction as literal and complete by default.
+   - The agent MUST ask focused clarification questions to establish full intent and required context.
+   - The agent MUST challenge instructions that appear unusual, inconsistent, risky, or controversial, and MUST explain concrete reasons for doubt.
+   - The agent MUST NOT continue to Step 2 when any ambiguity or contradiction remains.
+   - The step MUST end with an explicit interpretation artifact.
+   - The agent MUST obtain explicit user approval of that artifact before continuing.
+2. Step 2: Measurable Success Criteria
+   - The agent MUST define measurable success criteria from a project-development perspective.
+   - Criteria MUST be verifiable through engineering evidence (for example behavior, tests, quality gates, architecture constraints, delivery artifacts).
+   - Business outcome metrics (for example revenue, adoption, installs) MUST NOT be used as success criteria in this step.
+3. Step 3: Implementation Planning
+   - The agent MUST create a detailed implementation plan that links product intent to technical execution.
+   - For each planned change set, the agent MUST describe:
+     - product-side value delivered by the change,
+     - corresponding technical implementation vision.
+   - The plan SHOULD be iterative and split complex work into multiple change sets.
+   - Each change set MUST deliver working software.
+   - Each change set MUST target the smallest change that increases business value.
+   - Each change set MUST be complete for code consistency, tests, and documentation.
+   - Each change set MUST end with a commit.
+4. Step 4: Plan Verification
+   - The agent MUST verify that the full plan achieves the intended goal.
+   - The agent MUST verify that the full plan can meet the defined success criteria.
+   - If gaps or risks are found, the agent MUST update the plan before implementation starts.
 
 ### 3.2 Implementation
 
