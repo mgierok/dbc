@@ -77,7 +77,7 @@ Canonical ownership note:
 ### 4.1 Database Configuration and Access
 
 - DBC reads database entries from the active system configuration location.
-- Startup requires at least one configured database entry.
+- Startup supports zero or more configured database entries.
 - Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing.
 - Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
 - Mandatory first-entry setup allows adding one required entry (with optional additional entries before continue); `Esc` cancels startup.
@@ -106,6 +106,7 @@ Canonical ownership note:
   - Add and edit validate database target before config save.
   - If validation fails, entry is not saved and user stays in form with an error message.
   - Delete requires explicit confirmation.
+  - Delete can remove the last config-backed entry; selector then stays open with an empty list state until user adds an entry or exits startup.
   - Add/edit form shows a visible caret (`|`) in the active editable field.
 - If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
 - After such startup connection error, user must select another reachable entry or edit the selected entry before main view can open.

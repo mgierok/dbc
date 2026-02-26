@@ -240,7 +240,8 @@ Current implementation-level characteristics:
 
 - Default config paths:
   - `~/.config/dbc/config.toml`
-- Config contract requires `[[databases]]` entries with:
+- Config contract supports zero or more `[[databases]]` entries.
+- Each persisted `[[databases]]` entry requires:
   - `name`
   - `db_path`
 - Empty config states (`missing file`, `empty file`, `databases = []`) are mapped to mandatory first-entry setup.
@@ -332,16 +333,18 @@ Where:
 
 - `internal/infrastructure/engine/sqlite_update.go`
 
-### 8.4 Strict Config Contract
+### 8.4 Config Contract and Validation
 
 Decision:
 
-- Require at least one configured database, each with `name` and `db_path`.
+- Allow persisting empty database configuration (`databases = []`).
+- Require `name` and `db_path` only for entries that exist in config.
 - Require successful SQLite connection validation before persisting add/edit changes.
 
 Why:
 
-- Prevent ambiguous startup behavior.
+- Keep empty config behavior equivalent to missing config at startup.
+- Allow deleting the last configured database without violating config persistence rules.
 - Keep startup errors explicit and actionable.
 - Prevent saving unreachable or non-existent database targets in selector configuration.
 
@@ -410,7 +413,7 @@ Current technical constraints:
 - Filter pipeline applies one active predicate for the selected table at a time.
 - Missing or empty config file is tolerated at startup and mapped to mandatory first-entry setup.
 - Invalid config content still stops startup with explicit error.
-- Config persistence requires at least one `[[databases]]` entry; deleting the last configured entry fails validation and is not persisted.
+- Config persistence allows `databases = []`; deleting the last configured entry is persisted as an empty config state.
 
 Operational risks and tradeoffs to verify during changes:
 

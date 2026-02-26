@@ -19,7 +19,6 @@ const (
 )
 
 var (
-	ErrMissingDatabase         = errors.New("database config missing")
 	ErrMissingDatabaseName     = errors.New("database name is required")
 	ErrMissingDatabasePath     = errors.New("database path is required")
 	ErrDatabaseIndexOutOfRange = errors.New("database index out of range")
@@ -55,9 +54,6 @@ func Decode(r io.Reader) (Config, error) {
 }
 
 func (c Config) Validate() error {
-	if len(c.Databases) == 0 {
-		return ErrMissingDatabase
-	}
 	for _, database := range c.Databases {
 		if strings.TrimSpace(database.Name) == "" {
 			return ErrMissingDatabaseName
@@ -107,7 +103,7 @@ func LoadFile(path string) (cfg Config, err error) {
 func (s *Store) List(_ context.Context) ([]port.ConfigEntry, error) {
 	cfg, err := LoadFile(s.path)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) || errors.Is(err, ErrMissingDatabase) {
+		if errors.Is(err, os.ErrNotExist) {
 			return []port.ConfigEntry{}, nil
 		}
 		return nil, err
@@ -125,7 +121,7 @@ func (s *Store) List(_ context.Context) ([]port.ConfigEntry, error) {
 func (s *Store) Create(_ context.Context, entry port.ConfigEntry) error {
 	cfg, err := LoadFile(s.path)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) || errors.Is(err, ErrMissingDatabase) {
+		if errors.Is(err, os.ErrNotExist) {
 			cfg = Config{}
 		} else {
 			return err

@@ -79,11 +79,14 @@ func TestDecode_EmptyDocument(t *testing.T) {
 	input := ``
 
 	// Act
-	_, err := config.Decode(strings.NewReader(input))
+	cfg, err := config.Decode(strings.NewReader(input))
 
 	// Assert
-	if !errors.Is(err, config.ErrMissingDatabase) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabase, err)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(cfg.Databases) != 0 {
+		t.Fatalf("expected zero databases, got %d", len(cfg.Databases))
 	}
 }
 
@@ -98,9 +101,6 @@ func TestDecode_UnknownTopLevelField(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected malformed config error, got nil")
 	}
-	if errors.Is(err, config.ErrMissingDatabase) {
-		t.Fatalf("expected malformed config error, got empty-config error %v", err)
-	}
 }
 
 func TestDecode_EmptyDatabasesList(t *testing.T) {
@@ -108,11 +108,14 @@ func TestDecode_EmptyDatabasesList(t *testing.T) {
 	input := `databases = []`
 
 	// Act
-	_, err := config.Decode(strings.NewReader(input))
+	cfg, err := config.Decode(strings.NewReader(input))
 
 	// Assert
-	if !errors.Is(err, config.ErrMissingDatabase) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabase, err)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(cfg.Databases) != 0 {
+		t.Fatalf("expected zero databases, got %d", len(cfg.Databases))
 	}
 }
 
@@ -130,9 +133,6 @@ db_path = "/tmp/example.sqlite"
 	// Assert
 	if err == nil {
 		t.Fatal("expected malformed config error, got nil")
-	}
-	if errors.Is(err, config.ErrMissingDatabase) {
-		t.Fatalf("expected malformed config error, got empty-config error %v", err)
 	}
 }
 
@@ -376,9 +376,6 @@ db_path = "/tmp/legacy.sqlite"
 	if err == nil {
 		t.Fatal("expected malformed config error, got nil")
 	}
-	if errors.Is(err, config.ErrMissingDatabase) {
-		t.Fatalf("expected malformed config error, got empty-config error %v", err)
-	}
 }
 
 func TestConfigStore_CreateCreatesConfigWhenFileDoesNotExist(t *testing.T) {
@@ -457,5 +454,34 @@ func TestConfigStore_CreateReturnsErrorWhenConfigHasInvalidSyntax(t *testing.T) 
 	// Assert
 	if err == nil {
 		t.Fatal("expected error for invalid config syntax, got nil")
+	}
+}
+
+func TestConfigStore_DeleteAllowsRemovingLastEntry(t *testing.T) {
+	// Arrange
+	path := filepath.Join(t.TempDir(), "config.toml")
+	content := `
+[[databases]]
+name = "local"
+db_path = "/tmp/local.sqlite"
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp config file: %v", err)
+	}
+	store := config.NewStore(path)
+
+	// Act
+	err := store.Delete(context.Background(), 0)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	entries, listErr := store.List(context.Background())
+	if listErr != nil {
+		t.Fatalf("expected list without error, got %v", listErr)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("expected zero entries, got %d", len(entries))
 	}
 }
