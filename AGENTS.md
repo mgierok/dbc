@@ -1,23 +1,6 @@
 # AGENTS
 
-## 1. Purpose
-
-This file defines operating instructions for AI coding agents (for example Codex, Claude Code) working in this repository during:
-
-- planning future tasks
-- implementing new features
-- changing existing behavior
-- refactoring and maintenance
-
-Goal: keep product and code changes consistent, safe, and aligned with project standards.
-
-### 1.1 Normative Keywords
-
-- `MUST` / `MUST NOT`: absolute requirement.
-- `SHOULD` / `SHOULD NOT`: strong default; deviations require explicit justification.
-- `MAY`: optional action based on context.
-
-## 2. Scope and Priority
+## 1. Scope and Priority
 
 - This file MUST be treated as applying to the whole repository (project root level).
 - Source of truth split:
@@ -28,7 +11,7 @@ If any documentation conflicts with current code behavior:
 1. You MUST treat current code as factual state.
 2. You MUST resolve the documentation update through the applicable documentation skill(s) in the same change set.
 
-## 3. Mandatory Context Loading
+## 2. Mandatory Context Loading
 
 Before planning or coding project changes (for example feature work, bug fixes, refactors, or future project planning), the agent MUST load both full source-of-truth documents:
 
@@ -48,7 +31,7 @@ Deep-dive references SHOULD be loaded only when task complexity requires normati
   - when designing or updating test strategy/coverage,
   - when deciding Red-Green-Refactor execution details for non-trivial changes.
 
-### 3.1 Mandatory Unit-Test Skill Reference Loading
+### 2.1 Mandatory Unit-Test Skill Reference Loading
 
 You MUST explicitly load `.agents/skills/create-unit-tests/references/unit-testing-guide.md` before implementation when at least one of these situations is true:
 
@@ -61,7 +44,7 @@ You MUST explicitly load `.agents/skills/create-unit-tests/references/unit-testi
 
 You MUST NOT skip this reference for unit-test work, regardless of language, framework, or methodology (`TDD`, `BDD`, or test-after).
 
-### 3.2 Mandatory Commit-Message Skill Invocation
+### 2.2 Mandatory Commit-Message Skill Invocation
 
 You MUST explicitly invoke skill `write-commit-messages` when at least one of these situations is true:
 
@@ -72,18 +55,18 @@ You MUST explicitly invoke skill `write-commit-messages` when at least one of th
 
 When this skill is invoked, commit messages MUST use Conventional Commits format and SHOULD use the changed files/diff as primary context.
 
-## 4. Agent Workflow Standard
+## 3. Agent Workflow Standard
 
-### 4.1 Planning
+### 3.1 Planning
 
 For each task, the agent MUST:
 
 1. Define expected product outcome (what changes for the user).
 2. Map affected layers/packages.
 3. Identify test impact (new tests or updates).
-4. Invoke documentation skills according to Section `6` and follow their decisions.
+4. Invoke documentation skills according to Section `5` and follow their decisions.
 
-### 4.1.1 Assumptions and Ambiguity Protocol
+### 3.1.1 Assumptions and Ambiguity Protocol
 
 For any non-trivial task, the agent MUST state assumptions before coding.
 
@@ -109,7 +92,7 @@ Quick examples:
 - Good: "File A says read-only, file B says write allowed. Which is correct?"
 - Bad: silently choosing one interpretation and implementing it.
 
-### 4.2 Implementation
+### 3.2 Implementation
 
 - Changes MUST stay minimal and scoped to task intent.
 - The implementation MUST respect architecture boundaries and dependency direction.
@@ -117,7 +100,7 @@ Quick examples:
 - Interface adapters MUST NOT bypass use cases.
 - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
 
-### 4.2.1 Mandatory TDD Execution Rules
+### 3.2.1 Mandatory TDD Execution Rules
 
 TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
 
@@ -129,7 +112,7 @@ Repository-enforced TDD guardrails:
 - You MUST NOT weaken assertions only to make failing behavior pass.
 - You MUST NOT skip the `Red` step unless technically impossible; if impossible, you MUST document the reason and treat test-after as an explicit exception.
 
-### 4.2.2 Simplicity and Scope Discipline (Mandatory)
+### 3.2.2 Simplicity and Scope Discipline (Mandatory)
 
 Apply minimum-change rules:
 
@@ -145,7 +128,7 @@ Quick examples:
 - Good: edit one use case and its tests for one behavior change.
 - Bad: adding new generic helper layers "for future reuse" when only one call site exists.
 
-### 4.2.3 Pushback and Decision Checkpoints
+### 3.2.3 Pushback and Decision Checkpoints
 
 When a proposed direction has a clear technical downside:
 
@@ -159,12 +142,12 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
 - `VERIFY`: how success will be checked
 - `DECISION`: what needs user confirmation before next step
 
-### 4.2.4 Reference Integrity
+### 3.2.4 Reference Integrity
 
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
-### 4.3 Verification
+### 3.3 Verification
 
 - Apply quality gates for code changes:
   - during iteration, you MAY run formatter/linter/tests for affected scope to speed up feedback
@@ -175,7 +158,7 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
 - If tests cannot run, you MUST explicitly report why.
 - For manual `TC-*` execution and reporting rules (`single test case` and `full test case suite`), use `docs/test-case-execution-reporting-specification.md`.
 
-### 4.3.1 Goal-Driven Verification
+### 3.3.1 Goal-Driven Verification
 
 Before coding, the agent SHOULD define clear success criteria that can be verified:
 
@@ -186,7 +169,7 @@ Before coding, the agent SHOULD define clear success criteria that can be verifi
 
 The agent MUST avoid vague goals like "make it better" or "improve code quality" without measurable checks.
 
-### 4.3.2 Lint and Safety Prevention Rules
+### 3.3.2 Lint and Safety Prevention Rules
 
 For every code change, the agent MUST apply the following non-negotiable rules:
 
@@ -209,7 +192,7 @@ For every code change, the agent MUST apply the following non-negotiable rules:
    - You MUST include `go test ./...` result.
    - You MUST list any accepted local exceptions (`#nosec` / `nolint`) with rationale.
 
-### 4.4 Completion
+### 3.4 Completion
 
 A task is complete only when all conditions below are met:
 
@@ -218,7 +201,7 @@ A task is complete only when all conditions below are met:
 - tests pass (or limitation is explicitly documented)
 - naming and terminology remains consistent
 
-### 4.4.1 Mandatory Completion Report
+### 3.4.1 Mandatory Completion Report
 
 After each completed implementation, the agent MUST report:
 
@@ -228,15 +211,15 @@ After each completed implementation, the agent MUST report:
 
 The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.
 
-## 5. Engineering Guardrails
+## 4. Engineering Guardrails
 
-### 5.1 Language and Style
+### 4.1 Language and Style
 
 - The agent MUST use English for identifiers and internal technical documentation.
 - The agent MUST write idiomatic Go.
 - The agent SHOULD keep functions focused and explicit in error handling.
 
-### 5.2 Architecture
+### 4.2 Architecture
 
 The agent MUST use `docs/technical-documentation.md#3-architecture-and-boundaries` as the primary architecture guide.
 
@@ -247,7 +230,7 @@ Non-negotiable summary:
 - TUI MUST remain an adapter (no direct database/business rule implementation).
 - Infrastructure MUST implement ports and MUST NOT drive use case logic.
 
-### 5.2.1 Architecture Rule for New Features
+### 4.2.1 Architecture Rule for New Features
 
 When adding functionality, the agent MUST follow this order:
 
@@ -257,14 +240,14 @@ When adding functionality, the agent MUST follow this order:
 4. Implement infrastructure adapters for new port behavior.
 5. Connect UI adapter to use case, not to infrastructure.
 
-### 5.3 Dependencies and Toolchain
+### 4.3 Dependencies and Toolchain
 
 - Dependency/toolchain baseline MUST be taken from:
   - `docs/technical-documentation.md#9-technology-stack-and-versions`
   - `go.mod`
 - Adding third-party dependencies MUST have explicit approval.
 
-## 6. Documentation Policy
+## 5. Documentation Policy
 
 Documentation creation and modification MUST be skill-governed:
 
@@ -272,7 +255,7 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 
 - If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
 
-### 6.1 Product Documentation Policy
+### 5.1 Product Documentation Policy
 
 - The agent MUST explicitly invoke skill `authoring-product-documentation` when at least one of these situations is true:
   - task changes at least one non-documentation file in the repository
@@ -282,7 +265,7 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-### 6.2 Technical Documentation Policy
+### 5.2 Technical Documentation Policy
 
 - The agent MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
   - task changes at least one non-documentation file in the repository
@@ -291,7 +274,7 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 - Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-### 6.3 README Documentation Policy
+### 5.3 README Documentation Policy
 
 - The agent MUST explicitly invoke skill `authoring-readme-file` when at least one of these situations is true:
   - task changes at least one non-documentation file in the repository
@@ -300,7 +283,7 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 - README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-## 7. Quick Reference
+## 6. Quick Reference
 
 - Product source of truth: `docs/product-documentation.md`
 - Technical source of truth: `docs/technical-documentation.md`
