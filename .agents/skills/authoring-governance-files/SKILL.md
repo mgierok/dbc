@@ -102,6 +102,8 @@ When editing `AGENTS.md`:
 1. Prefer updating existing rules in-place.
 2. Preserve section coherence and terminology consistency.
 3. Add new rules only when no existing section can safely absorb the intent.
+4. Numeric heading prefixes (for example `1.`, `1.1`, `2.`) MUST remain sequential and consistent after edits.
+5. Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
 ## G4 Anti-Patterns and Quality Checks
 
@@ -121,3 +123,5 @@ Before finalizing governance output, verify:
 4. No imperative hidden requirements remain without RFC keywords.
 5. Existing rules were refined first; new rules were added only when necessary.
 6. No contradiction or avoidable redundancy remains.
+7. Numeric heading prefixes remain sequential and consistent after edits.
+8. Inbound heading references were updated when heading titles or numeric prefixes were changed.
