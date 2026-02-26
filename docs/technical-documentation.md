@@ -413,6 +413,7 @@ Current technical constraints:
 - Filter pipeline applies one active predicate for the selected table at a time.
 - Missing or empty config file is tolerated at startup and mapped to mandatory first-entry setup.
 - Invalid config content still stops startup with explicit error.
+- Config persistence requires at least one `[[databases]]` entry; deleting the last configured entry fails validation and is not persisted.
 
 Operational risks and tradeoffs to verify during changes:
 
