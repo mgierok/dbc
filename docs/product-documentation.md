@@ -119,7 +119,7 @@ Core user value in current state:
   - `save`: persist staged changes, then open selector/management only on success.
   - `discard`: clear staged changes, then open selector/management.
   - `cancel`: keep current session context and preserve staged changes.
-- Startup CLI behavior in this section follows `docs/cli-parameter-and-output-standards.md` for help/discoverability, argument-validation feedback, and exit-code mapping.
+- Startup CLI behavior is consistent and user-visible across startup paths for help/discoverability, argument-validation feedback, and exit-code mapping.
 
 ### 4.2 Main Layout and Focus Model
 
