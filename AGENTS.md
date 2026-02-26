@@ -26,7 +26,7 @@ Goal: keep product and code changes consistent, safe, and aligned with project s
 If any documentation conflicts with current code behavior:
 
 1. You MUST treat current code as factual state.
-2. You MUST update the relevant documentation in the same change set.
+2. You MUST resolve the documentation update through the applicable documentation skill(s) in the same change set.
 
 ## 3. Mandatory Context Loading
 
@@ -77,12 +77,11 @@ You MUST explicitly invoke skill `authoring-product-documentation` when at least
 - creating `docs/product-documentation.md`
 - modifying `docs/product-documentation.md`
 
-You MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
+You MUST explicitly invoke skill `authoring-technical-documentation` for every task that changes at least one non-documentation file in the repository.
 
-- creating `docs/technical-documentation.md`
-- modifying `docs/technical-documentation.md`
+For this trigger, documentation files include Markdown/governance documentation artifacts (for example `docs/**`, `README.md`, `AGENTS.md`, `.agents/skills/**/*.md`).
 
-If a task requires changes to both files, you MUST invoke both skills independently.
+You MUST accept the skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
 ## 4. Agent Workflow Standard
 
@@ -93,7 +92,7 @@ For each task, the agent MUST:
 1. Define expected product outcome (what changes for the user).
 2. Map affected layers/packages.
 3. Identify test impact (new tests or updates).
-4. Identify documentation impact (`docs/technical-documentation.md` and/or `docs/product-documentation.md`) for every code change.
+4. Invoke documentation skills according to Section `3.3` and follow their decisions.
 
 ### 4.1.1 Assumptions and Ambiguity Protocol
 
@@ -275,13 +274,10 @@ When adding functionality, the agent MUST follow this order:
 
 Documentation creation and modification MUST be skill-governed:
 
-- Documentation MUST describe current factual state only, MUST stay aligned with code/runtime behavior, and MUST be updated with every relevant codebase change.
-- If a change affects user-visible behavior, user flows, capability scope, interaction model, or user-facing constraints, the agent MUST update `docs/product-documentation.md` and invoke `authoring-product-documentation`.
-- If a change affects architecture boundaries, implementation mechanisms, runtime behavior, interfaces/contracts, or technical constraints, the agent MUST update `docs/technical-documentation.md` and invoke `authoring-technical-documentation`.
-- If both perspectives are affected, the agent MUST update both documents and invoke both skills independently.
-- Every code change MUST be explicitly verified for documentation impact on `docs/technical-documentation.md` and/or `docs/product-documentation.md`, even when no documentation update is ultimately required.
+- Product documentation policy is governed by skill `authoring-product-documentation`.
+- Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
+- If both perspectives are affected, the agent MUST invoke both skills independently and apply each skill decision.
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
-- The agent SHOULD prefer deep-dive references for extended technical theory instead of duplicating long-form explanations in product/technical docs.
 - Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
 - `README.md` MUST be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, the agent MUST update `README.md` in the same change set.
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
