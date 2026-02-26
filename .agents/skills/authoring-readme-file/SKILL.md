@@ -80,7 +80,6 @@ Return `NO_UPDATE_REQUIRED` when changes are README-irrelevant, for example:
    - `EVIDENCE`
    - `IMPACTED SECTIONS`
    - `CHANGES MADE`
-   - `THINGS NOT TOUCHED`
    - `RISKS / VERIFY`
 
 ## Consistency and Integrity Contract (Mandatory)

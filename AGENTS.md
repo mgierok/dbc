@@ -206,7 +206,6 @@ A task is complete only when all conditions below are met:
 After each completed implementation, the agent MUST report:
 
 - `CHANGES MADE`: file-level summary of what changed and why
-- `THINGS NOT TOUCHED`: areas intentionally left unchanged
 - `RISKS / VERIFY`: potential regressions and additional checks to run
 
 The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.

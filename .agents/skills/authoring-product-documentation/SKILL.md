@@ -85,7 +85,6 @@ Return `NO_UPDATE_REQUIRED` when changes are product-documentation-irrelevant, f
    - `EVIDENCE`
    - `IMPACTED SECTIONS`
    - `CHANGES MADE`
-   - `THINGS NOT TOUCHED`
    - `RISKS / VERIFY`
 
 ## Consistency and Integrity Contract (Mandatory)
