@@ -242,6 +242,7 @@ Current conventions:
 - Default config paths:
   - macOS/Linux: `~/.config/dbc/config.toml`
   - Windows: `%APPDATA%\\dbc\\config.toml`
+    - if `APPDATA` is empty, fallback is `~/AppData/Roaming/dbc/config.toml`
 - Config contract requires `[[databases]]` entries with:
   - `name`
   - `db_path`
