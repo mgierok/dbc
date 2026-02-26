@@ -307,4 +307,3 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 - Architecture deep dive: `docs/clean-architecture-ddd.md`
 - TDD deep dive: `docs/test-driven-development.md`
 - Run/setup basics: `README.md`
-- README governance skill: `.agents/skills/authoring-readme-file/SKILL.md`
