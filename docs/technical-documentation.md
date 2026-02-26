@@ -30,7 +30,6 @@ Core technical characteristics:
 This project follows architecture rules defined in:
 
 - `docs/clean-architecture-ddd.md`
-- `AGENTS.md`
 
 ### 3.1 Dependency Direction
 
