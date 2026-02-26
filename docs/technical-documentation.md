@@ -124,7 +124,7 @@ Package responsibilities:
 8. Selected SQLite database is opened and pinged.
    Startup DB open and config-entry connection checks reuse the same infrastructure connection-open helper (`internal/infrastructure/engine.OpenSQLiteDatabase`) to keep validation behavior and errors consistent.
    If open/ping fails, startup loop reopens selector with status error and preferred selection set to failed connection string.
-   Runtime does not start until user selects a reachable entry or updates configuration.
+   Runtime does not start until user selects a reachable entry, updates configuration, or cancels database selection.
 9. SQLite engine and runtime table/record use cases are created.
 10. Bubble Tea application loop starts (`tui.Run`).
 11. If runtime exits with `ErrOpenConfigSelector` (triggered by `:config` or `:c`), DB connection is closed and startup selector flow runs again without restarting process.
