@@ -74,14 +74,19 @@ When this skill is invoked, commit messages MUST use Conventional Commits format
 
 You MUST explicitly invoke skill `authoring-product-documentation` when at least one of these situations is true:
 
+- task changes at least one non-documentation file in the repository
 - creating `docs/product-documentation.md`
 - modifying `docs/product-documentation.md`
 
-You MUST explicitly invoke skill `authoring-technical-documentation` for every task that changes at least one non-documentation file in the repository.
+You MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
+
+- task changes at least one non-documentation file in the repository
+- creating `docs/technical-documentation.md`
+- modifying `docs/technical-documentation.md`
 
 For this trigger, documentation files include Markdown/governance documentation artifacts (for example `docs/**`, `README.md`, `AGENTS.md`, `.agents/skills/**/*.md`).
 
-You MUST accept the skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
+You MUST accept each invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
 ## 4. Agent Workflow Standard
 
@@ -274,7 +279,7 @@ When adding functionality, the agent MUST follow this order:
 
 Documentation creation and modification MUST be skill-governed:
 
-- Product documentation policy is governed by skill `authoring-product-documentation`.
+- Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
 - Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
 - If both perspectives are affected, the agent MUST invoke both skills independently and apply each skill decision.
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
