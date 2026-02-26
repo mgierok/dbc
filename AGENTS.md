@@ -84,6 +84,12 @@ You MUST explicitly invoke skill `authoring-technical-documentation` when at lea
 - creating `docs/technical-documentation.md`
 - modifying `docs/technical-documentation.md`
 
+You MUST explicitly invoke skill `authoring-readme-file` when at least one of these situations is true:
+
+- task changes at least one non-documentation file in the repository
+- creating `README.md`
+- modifying `README.md`
+
 For this trigger, documentation files include Markdown/governance documentation artifacts (for example `docs/**`, `README.md`, `AGENTS.md`, `.agents/skills/**/*.md`).
 
 You MUST accept each invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
@@ -281,17 +287,12 @@ Documentation creation and modification MUST be skill-governed:
 
 - Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
 - Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
-- If both perspectives are affected, the agent MUST invoke both skills independently and apply each skill decision.
+- README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
+- If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
 - Documentation maintenance/meta-guidance MUST stay in `AGENTS.md`, not in `docs/product-documentation.md` or `docs/technical-documentation.md`.
-- `README.md` MUST be kept up to date for user-facing CLI basics; when setup, installation, supported database scope, core startup usage, keybindings, or license details change, the agent MUST update `README.md` in the same change set.
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
-
-### 6.1 README Policy
-
-- Detailed README writing rules MUST be taken from `docs/readme-guidelines.md`.
-- When README-related conditions from Section 6 apply, the agent MUST update `README.md` in the same change set and MUST follow `docs/readme-guidelines.md`.
 
 ## 7. Quick Reference
 
@@ -300,4 +301,4 @@ Documentation creation and modification MUST be skill-governed:
 - Architecture deep dive: `docs/clean-architecture-ddd.md`
 - TDD deep dive: `docs/test-driven-development.md`
 - Run/setup basics: `README.md`
-- README writing rules: `docs/readme-guidelines.md`
+- README governance skill: `.agents/skills/authoring-readme-file/SKILL.md`
