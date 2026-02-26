@@ -91,6 +91,7 @@ Package responsibilities:
 ### 5.1 Startup Flow
 
 1. `cmd/dbc/main.go` parses startup CLI arguments.
+   - Startup validates operating system support before dispatch; unsupported systems return startup failure (`exit code 1`).
    - Supported direct-launch aliases: `-d <db_path>` and `--database <db_path>`.
    - Supported informational aliases: `-h` / `--help` and `-v` / `--version`.
    - Version informational rendering resolves `vcs.revision` from Go build metadata and emits a short hash token; when metadata is unavailable it emits `dev`.
@@ -99,9 +100,8 @@ Package responsibilities:
    - Invalid startup usage and argument-validation failures are classified as usage errors and mapped to exit code `2`.
    - Usage failures emit deterministic stderr guidance in `Error` -> `Hint` -> `Usage` format.
    - Non-usage startup/runtime failures are mapped to exit code `1`.
-2. `cmd/dbc/main.go` resolves config path using OS-specific defaults:
-   - macOS/Linux: `~/.config/dbc/config.toml`
-   - Windows: `%APPDATA%\dbc\config.toml`
+2. `cmd/dbc/main.go` resolves config path from user home:
+   - `~/.config/dbc/config.toml`
 3. Startup selector dependencies are created with config-management use cases:
    - list configured databases,
    - create/update/delete configured database entry,
@@ -239,9 +239,7 @@ Current implementation-level characteristics:
 ### 6.2 Runtime Configuration Contract
 
 - Default config paths:
-  - macOS/Linux: `~/.config/dbc/config.toml`
-  - Windows: `%APPDATA%\\dbc\\config.toml`
-    - if `APPDATA` is empty, fallback is `~/AppData/Roaming/dbc/config.toml`
+  - `~/.config/dbc/config.toml`
 - Config contract requires `[[databases]]` entries with:
   - `name`
   - `db_path`

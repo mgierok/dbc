@@ -240,15 +240,15 @@ func TestResolvePathForOS_MacOSUsesHomeConfig(t *testing.T) {
 	}
 }
 
-func TestResolvePathForOS_WindowsUsesAppData(t *testing.T) {
+func TestResolvePathForOS_UnknownOSUsesHomeConfig(t *testing.T) {
 	// Arrange
-	appData := "C:/Users/tester/AppData/Roaming"
+	home := "/home/tester"
 
 	// Act
-	path := config.ResolvePathForOS("windows", "C:/Users/tester", appData)
+	path := config.ResolvePathForOS("plan9", home, "")
 
 	// Assert
-	expected := filepath.Join(appData, "dbc", "config.toml")
+	expected := filepath.Join(home, ".config", "dbc", "config.toml")
 	if path != expected {
 		t.Fatalf("expected %q, got %q", expected, path)
 	}

@@ -36,7 +36,7 @@ Canonical ownership note:
 ### In Scope (Current State)
 
 - SQLite database support.
-- Supported operating systems: macOS, Linux, and Windows.
+- Supported operating systems: macOS and Linux.
 - Startup informational flags via `-h` / `--help` and `-v` / `--version`.
 - Optional direct CLI launch for known SQLite targets via `-d` / `--database`.
 - Multi-database startup selector from local configuration.

@@ -109,6 +109,44 @@ func TestBuildConnectionFailureStatus_IncludesGuidanceAndDatabaseName(t *testing
 	}
 }
 
+func TestValidateSupportedOS_AcceptsMacOSAndLinux(t *testing.T) {
+	t.Parallel()
+
+	cases := []string{"darwin", "linux"}
+	for _, goos := range cases {
+		goos := goos
+		t.Run(goos, func(t *testing.T) {
+			t.Parallel()
+
+			// Act
+			err := validateSupportedOS(goos)
+
+			// Assert
+			if err != nil {
+				t.Fatalf("expected supported OS %q to pass validation, got %v", goos, err)
+			}
+		})
+	}
+}
+
+func TestValidateSupportedOS_RejectsWindows(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	err := validateSupportedOS("windows")
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected unsupported-OS error, got nil")
+	}
+	if !strings.Contains(err.Error(), "unsupported operating system") {
+		t.Fatalf("expected unsupported-OS token, got %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "windows") {
+		t.Fatalf("expected OS name in error, got %q", err.Error())
+	}
+}
+
 func TestParseStartupOptions_AcceptsDirectLaunchAliases(t *testing.T) {
 	t.Parallel()
 

@@ -13,6 +13,7 @@ Database Commander is a terminal-first application for browsing and managing dat
 ## Installation
 Prerequisites:
 - Go `1.25.0` or newer.
+- Supported operating systems: macOS and Linux.
 
 Clone repository and install:
 ```bash

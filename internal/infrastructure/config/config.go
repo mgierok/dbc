@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/port"
@@ -79,17 +78,10 @@ func DefaultPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return ResolvePathForOS(runtime.GOOS, home, os.Getenv("APPDATA")), nil
+	return PathFromHome(home), nil
 }
 
-func ResolvePathForOS(goos, home, appData string) string {
-	if goos == "windows" {
-		base := strings.TrimSpace(appData)
-		if base == "" {
-			base = filepath.Join(home, "AppData", "Roaming")
-		}
-		return filepath.Join(base, appDirName, configFileName)
-	}
+func ResolvePathForOS(_ string, home, _ string) string {
 	return PathFromHome(home)
 }
 

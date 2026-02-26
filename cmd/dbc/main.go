@@ -208,6 +208,10 @@ func runStartupDispatch(
 	handleInformational func(startupInformationalCommand) error,
 	runRuntime func(startupOptions) error,
 ) error {
+	if err := validateSupportedOS(runtime.GOOS); err != nil {
+		return err
+	}
+
 	options, err := parseStartupOptions(args)
 	if err != nil {
 		return err
@@ -218,6 +222,18 @@ func runStartupDispatch(
 	}
 
 	return runRuntime(options)
+}
+
+func validateSupportedOS(goos string) error {
+	switch goos {
+	case "darwin", "linux":
+		return nil
+	default:
+		return fmt.Errorf(
+			"unsupported operating system %q: supported operating systems are macOS and Linux",
+			goos,
+		)
+	}
 }
 
 func parseStartupOptions(args []string) (startupOptions, error) {
@@ -426,9 +442,6 @@ func normalizeSQLiteConnectionIdentity(connString string) string {
 }
 
 func sqliteConnectionIdentityEqual(left string, right string) bool {
-	if runtime.GOOS == "windows" {
-		return strings.EqualFold(left, right)
-	}
 	return left == right
 }
 
