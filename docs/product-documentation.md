@@ -27,10 +27,6 @@ Core user value in current state:
 - Predictable keyboard workflow inspired by vim-like interaction patterns.
 - Safer change process through staged edits, explicit confirmation, and transactional save behavior.
 
-Canonical ownership note:
-
-- This document is canonical for user-visible behavior, product scope, and user-facing constraints.
-
 ## 3. Available Capabilities
 
 ### In Scope (Current State)
