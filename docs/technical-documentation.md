@@ -25,10 +25,6 @@ Core technical characteristics:
 - SQLite implementation in the infrastructure layer.
 - Staged table changes (insert/update/delete) persisted in one transaction.
 
-Canonical ownership note:
-
-- This document is canonical for implementation details, architecture, runtime mechanics, and technical constraints.
-
 ## 3. Architecture and Boundaries
 
 This project follows architecture rules defined in:
