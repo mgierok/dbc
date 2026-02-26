@@ -100,12 +100,12 @@ Core user value in current state:
 - Startup selector supports in-app add/edit/delete management:
   - Add and edit require non-empty `name` and `db_path`.
   - Add and edit validate database target before config save.
-  - If validation fails, entry is not saved and user stays in form with an error message.
+  - If validation fails, entry is not saved and the user stays in the form with an error message.
   - Delete requires explicit confirmation.
-  - Delete can remove the last config-backed entry; selector then stays open with an empty list state until user adds an entry or exits startup.
+  - Delete can remove the last config-backed entry; selector then stays open with an empty list state until a user adds an entry or exits startup.
   - Add/edit form shows a visible caret (`|`) in the active editable field.
-- If user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
-- After such startup connection error, user must select another reachable entry or edit the selected entry before main view can open.
+- If a user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
+- After such startup connection error, a user must select another reachable entry or edit the selected entry before the main view can open.
 - Startup selector displays active configuration file path.
 - During active database session, users can open command entry with `:` and execute `:config` / `:c` to return to selector/management.
 - During active database session, users can execute `:help` / `:h` to open runtime help popup reference.
@@ -148,7 +148,7 @@ Core user value in current state:
 
 ### 4.5 Filtering
 
-- User can open a guided filter popup from main browsing contexts.
+- Users can open a guided filter popup from main browsing contexts.
 - Filter flow is step-based:
   - Select column.
   - Select operator.
@@ -173,7 +173,7 @@ Core user value in current state:
 #### Edit
 
 - Existing record edits require a table with a primary key.
-- User enters field focus, then opens edit popup for selected cell.
+- Users enter field focus, then open the edit popup for the selected cell.
 - Edit popup shows:
   - Column identity and type.
   - Nullable/not-null indicator.
@@ -192,7 +192,7 @@ Core user value in current state:
 - All writes are staged first; database is unchanged until save.
 - Undo/redo is available during the current app session for staged actions in the selected table.
 - Save flow:
-  - User presses save.
+  - Users press save.
   - Product asks for confirmation.
   - Product applies staged insert/update/delete changes as one save operation.
 - On save success:
@@ -201,11 +201,11 @@ Core user value in current state:
 - On save failure:
   - Staged state is retained.
   - Error is surfaced in status line.
-- If user attempts to switch tables with unsaved changes, product opens a `Switch Table` decision popup with warning text: `Switching tables will cause loss of unsaved data (N changes). Are you sure you want to discard unsaved data?`.
+- If a user attempts to switch tables with unsaved changes, product opens a `Switch Table` decision popup with warning text: `Switching tables will cause loss of unsaved data (N changes). Are you sure you want to discard unsaved data?`.
 - The table-switch decision popup exposes explicit actions:
   - `(y) Yes, discard changes and switch table`.
   - `(n) No, continue editing`.
-- If user invokes `:config` or `:c` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
+- If a user invokes `:config` or `:c` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
 
 ### 4.8 Visual State Communication
 
@@ -230,30 +230,30 @@ Core user value in current state:
 
 ### Step 1: Startup and Database Selection
 
-- User launches DBC in one of three startup modes:
+- Users launch DBC in one of three startup modes:
   - Informational mode: `-h` / `--help` or `-v` / `--version`; startup returns informational output and exits without opening selector or database.
   - Default: centered database selector.
   - Direct launch: pass `-d` / `--database` with a SQLite path to bypass selector on successful validation.
 - Selector displays active config file path.
 - Each database option is presented as `Name | Connection String`.
-- User can manage entries in place (`add`, `edit`, `delete` with confirmation).
-- User can confirm selection or cancel startup.
+- Users can manage entries in place (`add`, `edit`, `delete` with confirmation).
+- Users can confirm selection or cancel startup.
 
 ### Step 2: Table Discovery and Schema Orientation
 
-- After database selection, user enters the main two-panel view.
+- After database selection, users enter the main two-panel view.
 - Left panel lists available tables in alphabetical order.
 - Right panel defaults to schema view for the selected table.
 
 ### Step 3: Record Exploration
 
-- User switches to records view for the selected table.
-- Record list loads progressively as the user navigates deeper.
-- User can navigate rows and jump/page efficiently.
+- Users switch to records view for the selected table.
+- Record list loads progressively as users navigate deeper.
+- Users can navigate rows and jump/page efficiently.
 
 ### Step 4: Focused Inspection with Filters
 
-- User opens filter flow and selects:
+- Users open the filter flow and select:
   - Column.
   - Operator.
   - Value (when required by operator).
@@ -261,9 +261,9 @@ Core user value in current state:
 
 ### Step 5: Controlled Data Change Workflow
 
-- User stages inserts, edits, and deletes in records view.
+- Users stage inserts, edits, and deletes in records view.
 - Product visually marks pending changes.
-- User can undo/redo staged actions before save.
+- Users can undo/redo staged actions before save.
 - Save action requests confirmation, then applies all staged changes together.
 
 ## 6. Interaction Model
