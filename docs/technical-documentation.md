@@ -200,7 +200,7 @@ Write interaction pattern:
 
 ### 5.5 Testing Strategy and Coverage
 
-This repository follows TDD expectations documented in `docs/test-driven-development.md`.
+Testing deep dive reference: `docs/test-driven-development.md`.
 
 Current test layers:
 
@@ -218,11 +218,10 @@ Coverage boundaries:
 - Infrastructure tests validate adapter behavior for config and SQLite integration.
 - TUI tests validate user-visible state transitions and input handling, including standardized popup rendering and modal/inline popup placement.
 
-Current conventions:
+Current implementation-level characteristics:
 
-- Arrange/Act/Assert structure is used in test bodies.
-- Tests target behavior contracts, not private implementation details.
-- Integration-like SQLite tests use in-memory databases.
+- Tests target behavior contracts instead of private implementation details.
+- SQLite integration-like tests use in-memory databases.
 
 ## 6. Data and Interface Contracts
 
