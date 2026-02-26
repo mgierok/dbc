@@ -30,10 +30,12 @@ If any documentation conflicts with current code behavior:
 
 ## 3. Mandatory Context Loading
 
-Before planning or coding, the agent MUST load both full source-of-truth documents:
+Before planning or coding project changes (for example feature work, bug fixes, refactors, or future project planning), the agent MUST load both full source-of-truth documents:
 
 - `docs/product-documentation.md`
 - `docs/technical-documentation.md`
+
+This requirement MUST NOT apply when the task scope is limited to governance-only changes (for example updating `AGENTS.md` or `.agents/skills/**/SKILL.md`) and no project behavior is being changed.
 
 Deep-dive references SHOULD be loaded only when task complexity requires normative detail:
 
