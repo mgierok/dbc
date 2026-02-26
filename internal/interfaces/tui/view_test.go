@@ -594,3 +594,81 @@ func TestRenderConfirmPopup_InlineUsesStandardizedSeparatorRow(t *testing.T) {
 		t.Fatalf("expected separator row after summary, got %q", separator)
 	}
 }
+
+func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
+	// Arrange
+	longName := "table_name_for_dynamic_left_panel_width"
+	model := &Model{
+		width: 180,
+		tables: []dto.Table{
+			{Name: "users"},
+			{Name: longName},
+		},
+	}
+
+	// Act
+	leftWidth, rightWidth := model.panelWidths()
+
+	// Assert
+	const (
+		tablePrefixWidth = 2
+		nameMargin       = 1
+		separatorWidth   = 3
+	)
+	expectedLeftWidth := tablePrefixWidth + textWidth(longName) + nameMargin
+	if leftWidth != expectedLeftWidth {
+		t.Fatalf("expected left panel width %d, got %d", expectedLeftWidth, leftWidth)
+	}
+	if rightWidth != model.width-leftWidth-separatorWidth {
+		t.Fatalf("expected right panel width %d, got %d", model.width-leftWidth-separatorWidth, rightWidth)
+	}
+}
+
+func TestRenderTables_DoesNotTruncateLongestNameAtComputedMaxWidth(t *testing.T) {
+	// Arrange
+	longName := "table_name_for_dynamic_left_panel_width"
+	model := &Model{
+		width: 180,
+		focus: FocusTables,
+		tables: []dto.Table{
+			{Name: longName},
+		},
+	}
+
+	leftWidth, _ := model.panelWidths()
+
+	// Act
+	lines := model.renderTables(leftWidth, 4)
+
+	// Assert
+	if !strings.Contains(lines[1], longName) {
+		t.Fatalf("expected full table name in rendered line, got %q", lines[1])
+	}
+	if strings.Contains(lines[1], "...") {
+		t.Fatalf("expected no truncation in rendered line, got %q", lines[1])
+	}
+}
+
+func TestPanelWidths_PreservesMinimumRightPanelWidthInNarrowWindow(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width: 30,
+		tables: []dto.Table{
+			{Name: "table_name_for_dynamic_left_panel_width"},
+		},
+	}
+
+	// Act
+	leftWidth, rightWidth := model.panelWidths()
+
+	// Assert
+	if rightWidth != 10 {
+		t.Fatalf("expected minimum right panel width 10, got %d", rightWidth)
+	}
+	if leftWidth != 17 {
+		t.Fatalf("expected adjusted left panel width 17, got %d", leftWidth)
+	}
+	if leftWidth+rightWidth+3 != model.width {
+		t.Fatalf("expected panel widths to match available width, got left=%d right=%d total=%d", leftWidth, rightWidth, model.width)
+	}
+}

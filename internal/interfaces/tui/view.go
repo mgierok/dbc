@@ -49,10 +49,20 @@ func (m *Model) panelWidths() (int, int) {
 	if width <= 0 {
 		width = 80
 	}
+
 	left := width / 3
 	if left < 18 {
 		left = 18
 	}
+
+	maxLeft := m.maxTablePanelWidth()
+	if maxLeft < 18 {
+		maxLeft = 18
+	}
+	if left > maxLeft {
+		left = maxLeft
+	}
+
 	right := width - left - 3
 	if right < 10 {
 		right = 10
@@ -62,6 +72,25 @@ func (m *Model) panelWidths() (int, int) {
 		}
 	}
 	return left, right
+}
+
+func (m *Model) maxTablePanelWidth() int {
+	const (
+		tablePrefixWidth = 2
+		nameMargin       = 1
+	)
+
+	maxWidth := maxInt(textWidth("Tables *"), textWidth("No items."))
+	longestNameWidth := 0
+	for _, table := range m.tables {
+		longestNameWidth = maxInt(longestNameWidth, textWidth(table.Name))
+	}
+	if longestNameWidth == 0 {
+		return maxWidth
+	}
+
+	tableListWidth := tablePrefixWidth + longestNameWidth + nameMargin
+	return maxInt(maxWidth, tableListWidth)
 }
 
 func (m *Model) renderTables(width, height int) []string {
