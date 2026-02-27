@@ -21,7 +21,7 @@ This requirement MUST NOT apply when the task scope is limited to governance-onl
 
 ## 3. Agent Workflow Rules
 
-This section applies only to project tasks that can result in project-code changes.
+This section MUST be applied only to project tasks that can result in project-code changes.
 This section MUST NOT be applied to documentation-only or governance-only tasks.
 
 ### 3.1 Intent Alignment
@@ -42,9 +42,14 @@ For each in-scope task, before planning, the agent MUST execute intent alignment
 For each in-scope task, after completing Section 3.1, the agent MUST execute planning in the following order:
 
 1. Step 1: Measurable Success Criteria
-   - The agent MUST define measurable success criteria from a project-development perspective.
+   - Before coding, the agent MUST define clear, measurable success criteria from a project-development perspective.
    - Criteria MUST be verifiable through engineering evidence (for example behavior, tests, quality gates, architecture constraints, delivery artifacts).
+   - The agent MUST avoid vague goals like "make it better" or "improve code quality".
    - Business outcome metrics (for example revenue, adoption, installs) MUST NOT be used as success criteria in this step.
+   - For a bug fix, success criteria MUST include a regression test that fails before the fix and passes after the fix.
+   - For new behavior, success criteria MUST include happy path, edge case, and error path verification.
+   - For a behavior-preserving refactor, success criteria MUST include proof that behavior is unchanged.
+   - For optimization, success criteria MUST include a correctness baseline first, then optimization evidence with preserved behavior.
 2. Step 2: Implementation Planning
    - The agent MUST create a detailed implementation plan that links product intent to technical execution.
    - For each planned change set, the agent MUST describe:
@@ -142,12 +147,6 @@ For adapter-only or infrastructure-only changes that do not change domain behavi
 - Before starting unit-test work, the agent MUST read `.agents/skills/create-unit-tests/references/unit-testing-guide.md`.
 - This prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests.
 - The agent MUST apply this prerequisite independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
-- Before coding, the agent SHOULD define clear success criteria that can be verified:
-  - bug fix: add failing regression test first, then make it pass
-  - new behavior: cover happy path, edge cases, and error path
-  - refactor: verify no behavior change with tests before and after
-  - optimization: implement obviously-correct baseline first, then optimize while preserving behavior
-- The agent MUST avoid vague goals like "make it better" or "improve code quality" without measurable checks.
 - TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
 - The agent MUST treat `docs/test-driven-development.md` as the normative TDD reference and SHOULD consult it for behavior-impacting implementation, test strategy updates, and non-trivial Red-Green-Refactor decisions.
 - For bug fixes, the agent MUST add a regression unit test that reproduces the bug before applying the fix.
@@ -155,7 +154,6 @@ For adapter-only or infrastructure-only changes that do not change domain behavi
 - The agent MUST NOT skip the `Red` step unless technically impossible; if impossible, the agent MUST document the reason and treat test-after as an explicit exception.
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
 - The agent MUST NOT add speculative abstractions, configurability, or extensibility that were not requested.
-- When asked to add or change instructions/rules, the agent MUST first verify whether the intent can be covered by extending, generalizing, or refactoring an existing instruction; the agent MUST add a new instruction only when no safe merge is possible; this applies to all governance artifacts, including `AGENTS.md` and `.agents/skills/**` definitions (`SKILL.md` and `references/*`).
 - Changes MUST stay minimal and scoped to task intent.
 - Changes MUST stay surgical; every changed line MUST map directly to task intent.
 - The agent MUST NOT refactor adjacent or orthogonal code unless explicitly requested.
@@ -187,35 +185,33 @@ Quick examples:
 
 Documentation creation and modification MUST be skill-governed:
 
-For trigger evaluation, documentation files MUST include Markdown/governance documentation artifacts (for example `docs/**`, `README.md`, `AGENTS.md`, `.agents/skills/**/*.md`).
+For tasks that modify at least one non-documentation file, the agent MUST invoke all of these skills:
+
+- `authoring-product-documentation`
+- `authoring-technical-documentation`
+- `authoring-readme-file`
+
+For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
+
+- `docs/product-documentation.md` -> `authoring-product-documentation`
+- `docs/technical-documentation.md` -> `authoring-technical-documentation`
+- `README.md` -> `authoring-readme-file`
 
 - If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
 
 ### 5.1 Product Documentation Policy
 
-- The agent MUST explicitly invoke skill `authoring-product-documentation` when at least one of these situations is true:
-  - task changes at least one non-documentation file in the repository
-  - creating `docs/product-documentation.md`
-  - modifying `docs/product-documentation.md`
 - Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
 - For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
 ### 5.2 Technical Documentation Policy
 
-- The agent MUST explicitly invoke skill `authoring-technical-documentation` when at least one of these situations is true:
-  - task changes at least one non-documentation file in the repository
-  - creating `docs/technical-documentation.md`
-  - modifying `docs/technical-documentation.md`
 - Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
 ### 5.3 README Documentation Policy
 
-- The agent MUST explicitly invoke skill `authoring-readme-file` when at least one of these situations is true:
-  - task changes at least one non-documentation file in the repository
-  - creating `README.md`
-  - modifying `README.md`
 - README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
