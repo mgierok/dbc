@@ -3,8 +3,8 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
@@ -109,7 +109,16 @@ func (m *Model) renderTables(width, height int) []string {
 	}
 
 	listHeight := height - 1
-	lines = append(lines, renderList(items, m.selectedTable, listHeight, width, m.focus == FocusTables)...)
+	listLines := renderList(items, m.selectedTable, listHeight, width, m.focus == FocusTables)
+	if len(items) > 0 && len(listLines) > 0 && listHeight > 0 {
+		selected := clamp(m.selectedTable, 0, len(items)-1)
+		start := scrollStart(selected, listHeight, len(items))
+		selectedLine := selected - start
+		if selectedLine >= 0 && selectedLine < len(listLines) {
+			listLines[selectedLine] = bold(listLines[selectedLine])
+		}
+	}
+	lines = append(lines, listLines...)
 	return padLines(lines, height, width)
 }
 
@@ -778,11 +787,10 @@ func truncate(text string, width int) string {
 	if textWidth(text) <= width {
 		return text
 	}
-	runes := []rune(text)
 	if width <= 3 {
-		return string(runes[:width])
+		return ansi.Truncate(text, width, "")
 	}
-	return string(runes[:width-3]) + "..."
+	return ansi.Truncate(text, width, "...")
 }
 
 func wrapTextToWidth(text string, width int) []string {
@@ -814,7 +822,11 @@ func wrapTextToWidth(text string, width int) []string {
 }
 
 func textWidth(text string) int {
-	return utf8.RuneCountInString(text)
+	return ansi.StringWidth(text)
+}
+
+func bold(text string) string {
+	return "\x1b[1m" + text + "\x1b[0m"
 }
 
 func minInt(a, b int) int {

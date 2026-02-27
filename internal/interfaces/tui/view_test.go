@@ -774,6 +774,40 @@ func TestRenderTables_DoesNotTruncateLongestNameAtComputedMaxWidth(t *testing.T)
 	}
 }
 
+func TestRenderTables_BoldsSelectedTableWithoutTableFocus(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width:         80,
+		focus:         FocusContent,
+		selectedTable: 1,
+		tables: []dto.Table{
+			{Name: "users"},
+			{Name: "orders"},
+		},
+	}
+
+	// Act
+	lines := model.renderTables(20, 4)
+
+	// Assert
+	var selectedLine string
+	for _, line := range lines {
+		if strings.Contains(line, "orders") {
+			selectedLine = line
+			break
+		}
+	}
+	if selectedLine == "" {
+		t.Fatalf("expected selected table line to be rendered, got %q", strings.Join(lines, "\n"))
+	}
+	if !strings.Contains(selectedLine, "\x1b[1m") || !strings.Contains(selectedLine, "\x1b[0m") {
+		t.Fatalf("expected selected table to be bold, got %q", selectedLine)
+	}
+	if strings.Contains(selectedLine, "> ") {
+		t.Fatalf("expected no focus marker when tables panel is not focused, got %q", selectedLine)
+	}
+}
+
 func TestPanelWidths_PreservesMinimumRightPanelWidthInNarrowWindow(t *testing.T) {
 	// Arrange
 	model := &Model{
