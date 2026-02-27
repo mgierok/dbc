@@ -53,6 +53,9 @@ For each in-scope task, after completing Section 3.1, the agent MUST execute pla
    - For each planned change set, the agent MUST describe:
      - product-side value delivered by the change,
      - corresponding technical implementation vision.
+   - The agent MUST default to multiple change sets for non-trivial scope.
+   - A single change set MAY be used only when scope is trivial (for example one tightly-scoped behavior in one layer) or when the user explicitly requests one change set.
+   - If a single change set is chosen, the plan MUST include explicit justification why further decomposition would not improve delivery safety or reviewability.
    - The plan SHOULD be iterative and split complex work into multiple change sets.
    - Each change set MUST deliver working software.
    - Each change set MUST target the smallest change that increases business value.
@@ -79,8 +82,10 @@ For each approved change set from Section 3.2, the agent MUST execute implementa
    - If mandatory tests cannot run, the agent MUST explicitly report why.
 4. Step 4: Documentation Skill Invocation
    - If a change set modifies at least one non-documentation file in the repository, the agent MUST invoke the required documentation skill workflow defined in Section 5 before finalizing that change set.
+   - If the change set modifies `docs/product-documentation.md`, the agent MUST perform test-case impact analysis using `docs/test-case-authoring-specification.md`.
 5. Step 5: Change Set Commit
    - The agent MUST commit the full completed change set as exactly one commit.
+   - The agent MUST NOT start implementation of the next change set before completing the commit for the current change set.
 
 ### 3.4 Completion
 
@@ -97,6 +102,7 @@ For each in-scope task, after completing all planned change sets from Section 3.
    - After completing the full planned scope, the agent MUST provide one final completion report.
    - The report MUST include `CHANGES MADE`: a file-level summary of what changed and why.
    - The report MUST include `RISKS / VERIFY`: potential regressions and additional checks to run.
+   - The report MUST include `CHANGE SET COMMITS`: each completed change set mapped to exactly one commit hash.
    - The report MUST include results of all mandatory verification commands defined in Section 4.
    - The report MUST include all accepted local exceptions (for example linter or security suppressions) with concrete rationale.
    - The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.
