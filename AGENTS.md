@@ -76,6 +76,7 @@ For each approved change set from Section 3.2, the agent MUST execute implementa
    - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
 2. Step 2: Code and Test Execution
    - For project-code implementation, the agent MUST apply all coding rules from Section 4 (`Engineering Guardrails`).
+   - For each change set, the agent MUST apply TDD approach according to Section `4.3.2 TDD Rules`.
    - During implementation, the agent MAY run verification tools iteratively for affected scope to speed up feedback.
 3. Step 3: Change Set Verification
    - Before finalizing implementation, the agent MUST run all mandatory verification commands defined in Section 4.
@@ -148,14 +149,6 @@ For adapter-only or infrastructure-only changes that do not change domain behavi
 #### 4.3.1 General Development Rules
 
 - The agent MUST use English for identifiers and internal technical documentation.
-- Before starting unit-test work, the agent MUST read `.agents/skills/create-unit-tests/references/unit-testing-guide.md`.
-- This prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests.
-- The agent MUST apply this prerequisite independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
-- TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
-- The agent MUST treat `docs/test-driven-development.md` as the normative TDD reference and SHOULD consult it for behavior-impacting implementation, test strategy updates, and non-trivial Red-Green-Refactor decisions.
-- For bug fixes, the agent MUST add a regression unit test that reproduces the bug before applying the fix.
-- The agent MUST NOT weaken assertions only to make failing behavior pass.
-- The agent MUST NOT skip the `Red` step unless technically impossible; if impossible, the agent MUST document the reason and treat test-after as an explicit exception.
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
 - The agent MUST NOT add speculative abstractions, configurability, or extensibility that were not requested.
 - Changes MUST stay minimal and scoped to task intent.
@@ -168,7 +161,18 @@ Quick examples:
 - Good: edit one use case and its tests for one behavior change.
 - Bad: adding new generic helper layers "for future reuse" when only one call site exists.
 
-#### 4.3.2 Go-Specific Rules
+#### 4.3.2 TDD Rules
+
+- Before starting unit-test work, the agent MUST invoke skill `create-unit-tests`.
+- This prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests.
+- The agent MUST apply this prerequisite independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
+- TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
+- The agent MUST treat `docs/test-driven-development.md` as the normative TDD reference and SHOULD consult it for behavior-impacting implementation, test strategy updates, and non-trivial Red-Green-Refactor decisions.
+- For bug fixes, the agent MUST add a regression unit test that reproduces the bug before applying the fix.
+- The agent MUST NOT weaken assertions only to make failing behavior pass.
+- The agent MUST NOT skip the `Red` step unless technically impossible; if impossible, the agent MUST document the reason and treat test-after as an explicit exception.
+
+#### 4.3.3 Go-Specific Rules
 
 - The agent MUST write idiomatic Go.
 - The agent SHOULD keep functions focused and explicit in error handling.
