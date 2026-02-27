@@ -404,12 +404,17 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.jumpBottom()
 	case keyMatches(keyRuntimeEnter, key):
 		if m.viewMode == ViewRecords && m.focus == FocusContent {
+			return m.openRecordDetail()
+		}
+		return m.switchToRecords()
+	case keyMatches(keyRuntimeEdit, key):
+		if m.viewMode == ViewRecords && m.focus == FocusContent {
 			if !m.recordFieldFocus {
 				return m.enableRecordFieldFocus()
 			}
 			return m.openEditPopup()
 		}
-		return m.switchToRecords()
+		return m, nil
 	case keyMatches(keyRuntimeEsc, key):
 		if m.viewMode == ViewRecords && m.recordFieldFocus {
 			m.recordFieldFocus = false

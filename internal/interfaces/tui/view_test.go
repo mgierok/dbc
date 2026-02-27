@@ -65,7 +65,7 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: Esc tables | Enter edit | Shift+V detail | i insert | d delete | u undo | Ctrl+r redo | w save | F filter | Shift+S sort" {
+	if shortcuts != "Records: Esc tables | e edit | Enter detail | i insert | d delete | u undo | Ctrl+r redo | w save | F filter | Shift+S sort" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
 	}
 }
@@ -337,13 +337,13 @@ func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testi
 	if !strings.Contains(popup, ":quit / :q - Quit the application.") {
 		t.Fatalf("expected help popup to include :quit alias one-line description, got %q", popup)
 	}
-	if !strings.Contains(strings.Join(helpPopupContentLines(), "\n"), "Shift+V - Open selected record detail view.") {
-		t.Fatalf("expected help content to include Shift+V one-line description, got %q", popup)
+	if !strings.Contains(strings.Join(helpPopupContentLines(), "\n"), "Enter - Open selected record detail view.") {
+		t.Fatalf("expected help content to include Enter one-line description, got %q", popup)
 	}
 	if strings.Contains(popup, "q / Ctrl+c - Quit the application.") {
 		t.Fatalf("expected help popup to avoid runtime q/Ctrl+c quit shortcut, got %q", popup)
 	}
-	if !strings.Contains(popup, "Esc - Close active popup/context.") {
+	if !strings.Contains(strings.Join(helpPopupContentLines(), "\n"), "Esc - Close active popup/context.") {
 		t.Fatalf("expected help popup to include Esc one-line description, got %q", popup)
 	}
 }

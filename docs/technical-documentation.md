@@ -166,7 +166,7 @@ Package responsibilities:
    - sort state resets on table switch as part of table-context reset,
    - pending inserts remain rendered before persisted rows and are not SQL-sorted.
 12. Runtime single-record detail behavior:
-   - `Shift+V` opens selected-row detail state only when records panel context is active,
+   - `Enter` opens selected-row detail state only when records panel context is active,
    - detail renderer uses effective row values (persisted values overridden by staged edits/inserts),
    - detail layout is vertical and wraps values without truncation,
    - detail supports keyboard scrolling (`j/k`, `Ctrl+f`/`Ctrl+b`, `g`/`G`) and closes with `Esc`,

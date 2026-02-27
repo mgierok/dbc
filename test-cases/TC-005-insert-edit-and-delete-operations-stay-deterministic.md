@@ -26,7 +26,7 @@
 | --- | --- | --- | --- |
 | S1 | Run `bash scripts/start-direct-launch.sh`. | App opens main two-panel runtime view directly (no selector). | `A1` |
 | S2 | In table list, select `categories` and press `Enter` to open records view. | Records view opens for `categories`. | `A2` |
-| S3 | Press `Enter` again to enter field-focus mode in records. | Cell-level navigation is active for record operations. | `A3` |
+| S3 | Press `e` to enter field-focus mode in records. | Cell-level navigation is active for record operations. | `A3` |
 | S4 | Edit one existing `categories.name` value to a unique value and confirm the edit popup. | Edit is accepted and staged for the selected persisted row. | `A4` |
 | S5 | On a persisted row, press `d`. | Delete marker is toggled on for the selected persisted row. | `A5` |
 | S6 | Press `d` again on the same persisted row. | Delete marker is removed (toggle-off behavior). | `A6` |
@@ -41,7 +41,7 @@
 | --- | --- | --- | --- | --- |
 | A1 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Runtime opens in context where table-level data operations can be performed. | `PASS` | Main two-panel runtime view appears immediately after launch command. |
 | A2 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `categories` records are accessible for insert/edit/delete operations. | `PASS` | Right panel opens records content for `categories`. |
-| A3 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Field-focus mode is reachable for cell-level edit workflow. | `PASS` | Cell-level navigation is visibly active after second `Enter`. |
+| A3 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Field-focus mode is reachable for cell-level edit workflow. | `PASS` | Cell-level navigation is visibly active after `e`. |
 | A4 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Editing an existing persisted value is accepted and staged through edit popup flow. | `PASS` | Updated unique value is confirmed in popup and reflected in records row. |
 | A5 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `d` on persisted row toggles delete marker on. | `PASS` | Selected persisted row shows delete-marked state after first `d`. |
 | A6 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Repeating `d` on same persisted row toggles delete marker off. | `PASS` | Previously delete-marked persisted row returns to non-delete state. |

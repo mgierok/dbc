@@ -26,7 +26,7 @@
 | --- | --- | --- | --- |
 | S1 | Run `bash scripts/start-direct-launch.sh`. | Main runtime view opens with no staged changes. | `A1` |
 | S2 | Select table `categories`, press `Enter` to open records view, then inspect status line. | Status line shows clean-mode visual state for current table/view context. | `A2` |
-| S3 | Enter field-focus mode and edit one existing cell value; confirm edit popup. | Edited value is visibly marked and mode indicator switches to dirty write mode. | `A3` |
+| S3 | Press `e` to enter field-focus mode and edit one existing cell value; confirm edit popup. | Edited value is visibly marked and mode indicator switches to dirty write mode. | `A3` |
 | S4 | Press `i` to stage a new row. | Pending insert row is visibly marked with `[INS]`. | `A4` |
 | S5 | Move to a persisted row and press `d`. | Selected persisted row is visibly marked with `[DEL]`. | `A5` |
 | S6 | Inspect status line again after staged operations. | Status line still shows contextual mode/view/table/filter/hint communication in dirty state. | `A6` |

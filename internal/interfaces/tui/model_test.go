@@ -32,7 +32,7 @@ func TestHandleKey_EnterFromTablesSwitchesToRecordsAndContentFocus(t *testing.T)
 	}
 }
 
-func TestHandleKey_EnterInRecordsEnablesFieldFocus(t *testing.T) {
+func TestHandleKey_EInRecordsEnablesFieldFocus(t *testing.T) {
 	// Arrange
 	model := &Model{
 		viewMode: ViewRecords,
@@ -46,7 +46,7 @@ func TestHandleKey_EnterInRecordsEnablesFieldFocus(t *testing.T) {
 	}
 
 	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	// Assert
 	if !model.recordFieldFocus {
@@ -54,7 +54,7 @@ func TestHandleKey_EnterInRecordsEnablesFieldFocus(t *testing.T) {
 	}
 }
 
-func TestHandleKey_EnterInFieldFocusOpensEditPopup(t *testing.T) {
+func TestHandleKey_EInFieldFocusOpensEditPopup(t *testing.T) {
 	// Arrange
 	model := &Model{
 		viewMode:         ViewRecords,
@@ -69,7 +69,7 @@ func TestHandleKey_EnterInFieldFocusOpensEditPopup(t *testing.T) {
 	}
 
 	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	// Assert
 	if !model.editPopup.active {
@@ -182,7 +182,7 @@ func TestHandleKey_ShiftSIgnoredOutsideRecordsView(t *testing.T) {
 	}
 }
 
-func TestHandleKey_ShiftVOpensRecordDetailInRecordsView(t *testing.T) {
+func TestHandleKey_EnterOpensRecordDetailInRecordsView(t *testing.T) {
 	// Arrange
 	model := &Model{
 		viewMode: ViewRecords,
@@ -197,7 +197,7 @@ func TestHandleKey_ShiftVOpensRecordDetailInRecordsView(t *testing.T) {
 	}
 
 	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'V'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
 	if !model.recordDetail.active {
@@ -208,7 +208,7 @@ func TestHandleKey_ShiftVOpensRecordDetailInRecordsView(t *testing.T) {
 	}
 }
 
-func TestHandleKey_ShiftVIgnoredOutsideRecordsView(t *testing.T) {
+func TestHandleKey_EnterIgnoredOutsideRecordsViewForDetail(t *testing.T) {
 	// Arrange
 	model := &Model{
 		viewMode: ViewSchema,
@@ -217,7 +217,7 @@ func TestHandleKey_ShiftVIgnoredOutsideRecordsView(t *testing.T) {
 	}
 
 	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'V'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
 	if model.recordDetail.active {

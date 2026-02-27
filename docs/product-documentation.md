@@ -50,7 +50,7 @@ Core user value in current state:
   - Right panel: schema view or records view for selected table.
 - Schema inspection for selected table columns.
 - Record browsing with continuous scrolling behavior.
-- Single-record detail inspection in right panel (`Shift+V`) with vertical field layout.
+- Single-record detail inspection in right panel (`Enter`) with vertical field layout.
 - Single active filter per selected table.
 - Single active sort (one column + direction) per selected table.
 - Staged data operations for current table:
@@ -147,7 +147,7 @@ Core user value in current state:
 - Row selection is visible in the focused records panel.
 - Field focus mode is supported for cell-level editing navigation.
 - Record cell content is width-constrained in the UI (truncated when needed).
-- Users can open a single-record detail view in records context with `Shift+V`.
+- Users can open a single-record detail view in records context with `Enter`.
 - Single-record detail view behavior:
   - Renders selected row vertically as `column -> value`.
   - Uses effective row state (includes staged insert/edit values).
@@ -282,7 +282,7 @@ Core user value in current state:
   - One column.
   - `ASC` or `DESC`.
 - Product applies one active sort for the currently selected table.
-- Users can open single-record detail with `Shift+V` to inspect full field values without truncation.
+- Users can open single-record detail with `Enter` to inspect full field values without truncation.
 - Users can leave single-record detail with `Esc` and continue records browsing.
 
 ### Step 5: Controlled Data Change Workflow
@@ -319,7 +319,7 @@ Core user value in current state:
 
 | Action | Shortcut |
 | --- | --- |
-| Enter field focus / open edit popup | `Enter` (in records context) |
+| Enter field focus / open edit popup | `e` (in records context) |
 | Exit nested right-panel context | `Esc` |
 | Open command entry | `:` |
 | Open selector/config management (command mode) | `:config`, `:c` |
@@ -327,7 +327,7 @@ Core user value in current state:
 | Exit runtime session (command mode) | `:quit`, `:q` |
 | Open filter popup | `F` |
 | Open sort popup | `Shift+S` |
-| Open selected row detail view | `Shift+V` |
+| Open selected row detail view | `Enter` (in records context) |
 | Stage insert | `i` |
 | Toggle delete marker / remove pending insert | `d` |
 | Undo staged action | `u` |

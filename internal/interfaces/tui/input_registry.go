@@ -33,6 +33,7 @@ const (
 	keyRuntimeJumpTopDisplay   keyBindingID = "runtime.jump_top_display"
 	keyRuntimeJumpBottom       keyBindingID = "runtime.jump_bottom"
 	keyRuntimeEnter            keyBindingID = "runtime.enter"
+	keyRuntimeEdit             keyBindingID = "runtime.edit"
 	keyRuntimeEsc              keyBindingID = "runtime.esc"
 	keyRuntimeFilter           keyBindingID = "runtime.filter"
 	keyRuntimeSort             keyBindingID = "runtime.sort"
@@ -89,10 +90,11 @@ var keyBindings = map[keyBindingID]keyBinding{
 	keyRuntimeJumpTopDisplay:   {label: "gg"},
 	keyRuntimeJumpBottom:       {keys: []string{"G"}, label: "G"},
 	keyRuntimeEnter:            {keys: []string{"enter"}, label: "Enter"},
+	keyRuntimeEdit:             {keys: []string{"e"}, label: "e"},
 	keyRuntimeEsc:              {keys: []string{"esc"}, label: "Esc"},
 	keyRuntimeFilter:           {keys: []string{"F"}, label: "F"},
 	keyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
-	keyRuntimeRecordDetail:     {keys: []string{"V"}, label: "Shift+V"},
+	keyRuntimeRecordDetail:     {keys: []string{"enter"}, label: "Enter"},
 	keyRuntimeSave:             {keys: []string{"w"}, label: "w"},
 	keyRuntimeInsert:           {keys: []string{"i"}, label: "i"},
 	keyRuntimeDelete:           {keys: []string{"d"}, label: "d"},
@@ -186,7 +188,11 @@ var runtimeHelpKeywordSpecs = []runtimeHelpKeywordSpec{
 	},
 	{
 		bindings:    []keyBindingID{keyRuntimeEnter},
-		description: "Open records or confirm action.",
+		description: "Open records, detail, or confirm action.",
+	},
+	{
+		bindings:    []keyBindingID{keyRuntimeEdit},
+		description: "Enter field focus or open edit popup.",
 	},
 	{
 		bindings:    []keyBindingID{keyRuntimeEsc},
@@ -390,7 +396,7 @@ func runtimeStatusRecordsShortcuts() string {
 	return fmt.Sprintf(
 		"Records: %s tables | %s edit | %s detail | %s insert | %s delete | %s undo | %s redo | %s save | %s filter | %s sort",
 		keyLabel(keyRuntimeEsc),
-		keyLabel(keyRuntimeEnter),
+		keyLabel(keyRuntimeEdit),
 		keyLabel(keyRuntimeRecordDetail),
 		keyLabel(keyRuntimeInsert),
 		keyLabel(keyRuntimeDelete),

@@ -42,11 +42,11 @@ Global/main navigation:
 - `Ctrl+f` / `Ctrl+b`: page down/up
 
 Records and staged changes:
-- `Enter`: open records view / enter field focus / open edit popup (context dependent)
+- `Enter`: open records view (from tables) / open selected record detail (in records)
+- `e`: enter field focus / open edit popup (in records)
 - `Esc`: return to tables (right panel neutral) / exit field focus / close popup
 - `F`: open filter popup
 - `Shift+S`: open sort popup (single column + `ASC`/`DESC`)
-- `Shift+V`: open selected record detail view in vertical layout; field values are wrapped (no truncation)
 - `i`: stage insert
 - `d`: toggle delete marker or remove pending insert
 - `u`: undo staged action

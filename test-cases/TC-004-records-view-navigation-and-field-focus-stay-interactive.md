@@ -28,10 +28,10 @@
 | S2 | Press `Enter` in main view to open records for the selected table. | Right panel switches from schema to records view with visible row selection. | `A2` |
 | S3 | Press `j` and `k` in records view. | Row selection moves down/up while remaining in records view. | `A3` |
 | S4 | Press `Ctrl+f`, then `Ctrl+b`. | Records list pages down/up and remains interactive. | `A4` |
-| S5 | Press `Enter` again in records view. | Field-focus mode activates for cell-level navigation. | `A5` |
+| S5 | Press `e` in records view. | Field-focus mode activates for cell-level navigation. | `A5` |
 | S6 | Press `h` and `l` in field-focus mode. | Active cell focus moves left/right within row context. | `A6` |
 | S7 | Press `Esc`. | Field-focus mode exits and records-level row navigation context is restored. | `A7` |
-| S8 | Press `Shift+V` in records view. | Right panel opens selected-row detail in vertical column/value layout without truncating field content. | `A8` |
+| S8 | Press `Enter` in records view. | Right panel opens selected-row detail in vertical column/value layout without truncating field content. | `A8` |
 | S9 | Press `Esc` while row detail is open. | Row detail closes and records list context is restored for continued navigation. | `A9` |
 
 ## 5. Assertions
@@ -42,10 +42,10 @@
 | A2 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Enter` opens records view with visible selected row. | `PASS` | Right panel switches to record rows and highlights active row. |
 | A3 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Row navigation keys move selected record while staying in records view. | `PASS` | Selection changes as `j`/`k` are pressed with no context loss. |
 | A4 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Paging motions keep records browsing interactive and stable. | `PASS` | Records list responds to page motions and remains navigable. |
-| A5 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Field-focus mode can be entered from records view. | `PASS` | Cell-level focus state becomes active after `Enter`. |
+| A5 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Field-focus mode can be entered from records view. | `PASS` | Cell-level focus state becomes active after `e`. |
 | A6 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Field-focus left/right navigation works at cell level. | `PASS` | Focused cell changes horizontally with `h`/`l`. |
 | A7 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Esc` exits field-focus mode and returns to records-level navigation. | `PASS` | Row-level navigation state is restored and records view remains open. |
-| A8 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Shift+V` opens vertical selected-row detail and preserves full field visibility. | `PASS` | Right panel shows column/value blocks and long values are wrapped instead of truncated. |
+| A8 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Enter` opens vertical selected-row detail and preserves full field visibility. | `PASS` | Right panel shows column/value blocks and long values are wrapped instead of truncated. |
 | A9 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Esc` closes row detail and returns to records list context. | `PASS` | Records list selection is visible again and row navigation remains active. |
 
 ## 6. Final Result
