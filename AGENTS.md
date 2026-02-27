@@ -19,27 +19,33 @@ Before planning or coding project changes (for example feature work, bug fixes, 
 
 This requirement MUST NOT apply when the task scope is limited to governance-only changes (for example updating `AGENTS.md` or `.agents/skills/**/SKILL.md`) and no project behavior is being changed.
 
-## 3. Agent Workflow Standard
-
-### 3.1 Planning
+## 3. Agent Workflow Rules
 
 This section applies only to project tasks that can result in project-code changes.
 This section MUST NOT be applied to documentation-only or governance-only tasks.
 
-For each in-scope task, the agent MUST execute planning in the following order:
+### 3.1 Intent Alignment
+
+For each in-scope task, before planning, the agent MUST execute intent alignment in the following order:
 
 1. Step 1: Intent Understanding
    - The agent MUST NOT treat the user instruction as literal and complete by default.
    - The agent MUST ask focused clarification questions to establish full intent and required context.
    - The agent MUST challenge instructions that appear unusual, inconsistent, risky, or controversial, and MUST explain concrete reasons for doubt.
    - The agent MUST NOT continue to Step 2 when any ambiguity or contradiction remains.
+2. Step 2: Intent Approval
    - The step MUST end with an explicit interpretation artifact.
    - The agent MUST obtain explicit user approval of that artifact before continuing.
-2. Step 2: Measurable Success Criteria
+
+### 3.2 Planning
+
+For each in-scope task, after completing Section 3.1, the agent MUST execute planning in the following order:
+
+1. Step 1: Measurable Success Criteria
    - The agent MUST define measurable success criteria from a project-development perspective.
    - Criteria MUST be verifiable through engineering evidence (for example behavior, tests, quality gates, architecture constraints, delivery artifacts).
    - Business outcome metrics (for example revenue, adoption, installs) MUST NOT be used as success criteria in this step.
-3. Step 3: Implementation Planning
+2. Step 2: Implementation Planning
    - The agent MUST create a detailed implementation plan that links product intent to technical execution.
    - For each planned change set, the agent MUST describe:
      - product-side value delivered by the change,
@@ -49,21 +55,18 @@ For each in-scope task, the agent MUST execute planning in the following order:
    - Each change set MUST target the smallest change that increases business value.
    - Each change set MUST be complete for code consistency, tests, and documentation.
    - Each change set MUST end with a commit.
-4. Step 4: Plan Verification
+3. Step 3: Plan Verification
    - The agent MUST verify that the full plan achieves the intended goal.
    - The agent MUST verify that the full plan can meet the defined success criteria.
    - If gaps or risks are found, the agent MUST update the plan before implementation starts.
 
-### 3.2 Implementation
+### 3.3 Implementation
 
-This section applies only to project tasks that can result in project-code changes.
-This section MUST NOT be applied to documentation-only or governance-only tasks.
-
-For each approved change set from Section 3.1, the agent MUST execute implementation in the following order:
+For each approved change set from Section 3.2, the agent MUST execute implementation in the following order:
 
 1. Step 1: Change-Set Alignment
-   - The agent MUST implement only an approved change set from Section 3.1 Step 3.
-   - The agent MUST keep implementation aligned with the approved intent artifact (Section 3.1 Step 1) and measurable success criteria (Section 3.1 Step 2).
+   - The agent MUST implement only an approved change set from Section 3.2 Step 2.
+   - The agent MUST keep implementation aligned with the approved intent artifact (Section 3.1 Step 2) and measurable success criteria (Section 3.2 Step 1).
    - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
 2. Step 2: Code and Test Execution
    - For project-code implementation, the agent MUST apply all coding rules from Section 4 (`Engineering Guardrails`).
@@ -76,16 +79,13 @@ For each approved change set from Section 3.1, the agent MUST execute implementa
 5. Step 5: Change-Set Commit
    - The agent MUST commit the full completed change set as exactly one commit.
 
-### 3.3 Completion
+### 3.4 Completion
 
-This section applies only to project tasks that can result in project-code changes.
-This section MUST NOT be applied to documentation-only or governance-only tasks.
-
-For each in-scope task, after completing all planned change sets from Section 3.1 Step 3, the agent MUST execute completion in the following order:
+For each in-scope task, after completing all planned change sets from Section 3.2 Step 2, the agent MUST execute completion in the following order:
 
 1. Step 1: Full-Plan Completion Verification
    - The agent MUST verify that all approved change sets from the plan were implemented, or that any approved deviation is explicitly documented.
-   - The agent MUST verify that measurable success criteria from Section 3.1 Step 2 are satisfied for the full planned scope.
+   - The agent MUST verify that measurable success criteria from Section 3.2 Step 1 are satisfied for the full planned scope.
    - The agent MUST verify that required tests were added or updated according to Section 4 TDD rules, or that an exception is explicitly documented.
    - The agent MUST verify that all mandatory verification commands from Section 4 were completed for the full planned scope, or that a limitation is explicitly documented.
    - The agent MUST verify that mandatory tests pass, or that a limitation is explicitly documented.
@@ -134,9 +134,9 @@ When adding functionality that changes behavior, the agent MUST follow this orde
 
 For adapter-only or infrastructure-only changes that do not change domain behavior, steps `1` and `2` MAY be no-op, but dependency direction and architecture boundaries MUST still be preserved.
 
-### 4.3 Coding Standards
+### 4.3 Development Standards
 
-#### 4.3.1 General Coding Rules
+#### 4.3.1 General Development Rules
 
 - The agent MUST use English for identifiers and internal technical documentation.
 - Before starting unit-test work, the agent MUST read `.agents/skills/create-unit-tests/references/unit-testing-guide.md`.
@@ -219,7 +219,7 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 - README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-## 6. Misc Rules
+## 6. Cross-Cutting Operational Rules
 
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
