@@ -60,11 +60,25 @@ For each in-scope task, the agent MUST execute planning in the following order:
 
 ### 3.2 Implementation
 
-- For project-code implementation, the agent MUST apply all coding rules from Section 4 (`Engineering Guardrails`).
-- During implementation, the agent MAY run verification tools iteratively for affected scope to speed up feedback.
-- Before finalizing implementation, the agent MUST run all mandatory verification commands defined in Section 4.
-- If mandatory tests cannot run, the agent MUST explicitly report why.
-- If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
+This section applies only to project tasks that can result in project-code changes.
+This section MUST NOT be applied to documentation-only or governance-only tasks.
+
+For each approved change set from Section 3.1, the agent MUST execute implementation in the following order:
+
+1. Step 1: Change-Set Alignment
+   - The agent MUST implement only an approved change set from Section 3.1 Step 3.
+   - The agent MUST keep implementation aligned with the approved intent artifact (Section 3.1 Step 1) and measurable success criteria (Section 3.1 Step 2).
+   - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
+2. Step 2: Code and Test Execution
+   - For project-code implementation, the agent MUST apply all coding rules from Section 4 (`Engineering Guardrails`).
+   - During implementation, the agent MAY run verification tools iteratively for affected scope to speed up feedback.
+3. Step 3: Change-Set Verification
+   - Before finalizing implementation, the agent MUST run all mandatory verification commands defined in Section 4.
+   - If mandatory tests cannot run, the agent MUST explicitly report why.
+4. Step 4: Documentation Skill Invocation
+   - If a change set modifies at least one non-documentation file in the repository, the agent MUST invoke the required documentation skill workflow defined in Section 5 before finalizing that change set.
+5. Step 5: Change-Set Commit
+   - The agent MUST commit the full completed change set as exactly one commit.
 
 ### 3.3 Completion
 
