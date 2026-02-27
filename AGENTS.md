@@ -23,17 +23,6 @@ Before planning or coding project changes (for example feature work, bug fixes, 
 
 This requirement MUST NOT apply when the task scope is limited to governance-only changes (for example updating `AGENTS.md` or `.agents/skills/**/SKILL.md`) and no project behavior is being changed.
 
-Deep-dive references SHOULD be loaded only when task complexity requires normative detail:
-
-- `docs/clean-architecture-ddd.md`:
-  - when introducing or changing architecture boundaries,
-  - when changing dependency direction or package responsibilities,
-  - when adding features that require new ports/adapters or cross-layer orchestration.
-- `docs/test-driven-development.md`:
-  - when implementing behavior changes (feature/bug fix/refactor with behavior impact),
-  - when designing or updating test strategy/coverage,
-  - when deciding Red-Green-Refactor execution details for non-trivial changes.
-
 ## 3. Agent Workflow Standard
 
 ### 3.1 Planning
@@ -125,6 +114,7 @@ The report SHOULD stay short and concrete so a junior engineer can quickly revie
 ### 4.2 Architecture
 
 The agent MUST use `docs/technical-documentation.md#3-architecture-and-boundaries` as the primary architecture guide.
+For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
 
 Non-negotiable summary:
 
@@ -163,7 +153,7 @@ For adapter-only or infrastructure-only changes that do not change domain behavi
   - optimization: implement obviously-correct baseline first, then optimize while preserving behavior
 - The agent MUST avoid vague goals like "make it better" or "improve code quality" without measurable checks.
 - TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
-- Execution and quality rules for TDD are defined in `docs/test-driven-development.md` and MUST be treated as normative for implementation work in this repository.
+- The agent MUST treat `docs/test-driven-development.md` as the normative TDD reference and SHOULD consult it for behavior-impacting implementation, test strategy updates, and non-trivial Red-Green-Refactor decisions.
 - For bug fixes, the agent MUST add a regression unit test that reproduces the bug before applying the fix.
 - The agent MUST NOT weaken assertions only to make failing behavior pass.
 - The agent MUST NOT skip the `Red` step unless technically impossible; if impossible, the agent MUST document the reason and treat test-after as an explicit exception.
