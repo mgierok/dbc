@@ -66,20 +66,6 @@ For each in-scope task, the agent MUST execute planning in the following order:
 - If mandatory tests cannot run, the agent MUST explicitly report why.
 - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
 
-### 3.2.1 Pushback and Decision Checkpoints
-
-When a proposed direction has a clear technical downside:
-
-- you MUST push back directly and explain the concrete risk
-- you SHOULD propose a safer or simpler alternative
-- you MUST proceed with the user's choice after the risk is made explicit
-
-For multi-step tasks, the agent MUST include short checkpoints in this format:
-
-- `STEP`: what will be done now
-- `VERIFY`: how success will be checked
-- `DECISION`: what needs user confirmation before next step
-
 ### 3.3 Completion
 
 A task is complete only when all conditions below are met:
