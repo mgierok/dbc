@@ -270,11 +270,11 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
 	lines := make([]string, 0, len(m.schema.Columns)*4)
-	rowLine := "[ROW] Persisted record"
+	rowLine := "ⓘ Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		rowLine = "[ROW] [INS] Pending insert"
+		rowLine = "ⓘ [INS] Pending insert"
 	} else if m.isRowMarkedDelete(rowIndex) {
-		rowLine = "[ROW] [DEL] Marked for delete"
+		rowLine = "ⓘ [DEL] Marked for delete"
 	}
 	lines = append(lines, wrapTextToWidth(rowLine, width)...)
 	lines = append(lines, "")
@@ -286,7 +286,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	for columnIndex, column := range m.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
-		header := fmt.Sprintf("[COL] %s (%s)", column.Name, column.Type)
+		header := fmt.Sprintf("%s (%s)", bold(column.Name), column.Type)
 		if edited {
 			header += " *"
 		}
@@ -804,16 +804,20 @@ func wrapTextToWidth(text string, width int) []string {
 	segments := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 	lines := make([]string, 0, len(segments))
 	for _, segment := range segments {
-		runes := []rune(segment)
-		if len(runes) == 0 {
+		if segment == "" {
 			lines = append(lines, "")
 			continue
 		}
-		for len(runes) > width {
-			lines = append(lines, string(runes[:width]))
-			runes = runes[width:]
+		remaining := segment
+		for ansi.StringWidth(remaining) > width {
+			line := ansi.Truncate(remaining, width, "")
+			if line == "" {
+				break
+			}
+			lines = append(lines, line)
+			remaining = ansi.Cut(remaining, width, ansi.StringWidth(remaining))
 		}
-		lines = append(lines, string(runes))
+		lines = append(lines, remaining)
 	}
 	if len(lines) == 0 {
 		return []string{""}

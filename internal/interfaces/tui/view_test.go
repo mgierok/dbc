@@ -243,15 +243,99 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	content := strings.Join(lines, "\n")
 
 	// Assert
-	if !strings.Contains(content, "[COL] id (INTEGER)") {
+	if !strings.Contains(content, "ⓘ Persisted record") {
+		t.Fatalf("expected information marker in detail layout, got %q", content)
+	}
+	if strings.Contains(content, "[ROW]") {
+		t.Fatalf("expected [ROW] marker to be removed in detail layout, got %q", content)
+	}
+	if !strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER)") {
 		t.Fatalf("expected id header in detail layout, got %q", content)
 	}
-	if !strings.Contains(content, "[COL] payload (TEXT)") {
+	if !strings.Contains(content, "\x1b[1mpayload\x1b[0m (TEXT)") {
 		t.Fatalf("expected payload header in detail layout, got %q", content)
+	}
+	if strings.Contains(content, "[COL]") {
+		t.Fatalf("expected [COL] marker to be removed in detail layout, got %q", content)
 	}
 	if strings.Contains(content, "...") {
 		t.Fatalf("expected no truncation marker in detail layout, got %q", content)
 	}
+}
+
+func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T) {
+	t.Run("persisted row", func(t *testing.T) {
+		// Arrange
+		model := &Model{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1"}},
+			},
+		}
+
+		// Act
+		lines := model.recordDetailContentLines(40)
+
+		// Assert
+		if !strings.Contains(lines[0], "ⓘ Persisted record") {
+			t.Fatalf("expected persisted information marker, got %q", lines[0])
+		}
+	})
+
+	t.Run("pending insert row", func(t *testing.T) {
+		// Arrange
+		model := &Model{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+				},
+			},
+			pendingInserts: []pendingInsertRow{
+				{},
+			},
+		}
+
+		// Act
+		lines := model.recordDetailContentLines(40)
+
+		// Assert
+		if !strings.Contains(lines[0], "ⓘ [INS] Pending insert") {
+			t.Fatalf("expected pending insert information marker, got %q", lines[0])
+		}
+	})
+
+	t.Run("delete-marked persisted row", func(t *testing.T) {
+		// Arrange
+		model := &Model{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1"}},
+			},
+		}
+		key, ok := model.recordKeyForPersistedRow(0)
+		if !ok {
+			t.Fatal("expected persisted row key")
+		}
+		model.pendingDeletes = map[string]recordDelete{
+			key: {},
+		}
+
+		// Act
+		lines := model.recordDetailContentLines(40)
+
+		// Assert
+		if !strings.Contains(lines[0], "ⓘ [DEL] Marked for delete") {
+			t.Fatalf("expected delete information marker, got %q", lines[0])
+		}
+	})
 }
 
 func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
