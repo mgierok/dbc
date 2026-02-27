@@ -35,9 +35,24 @@ For each in-scope task, before planning, the agent MUST execute intent alignment
    - The step MUST end with an explicit interpretation artifact.
    - The agent MUST obtain explicit user approval of that artifact before continuing.
 
+#### 3.1.1 Change Set Definition
+
+- A `change set` MUST be the smallest independently reviewable implementation increment that delivers one coherent value objective.
+- A change set MUST be executable, verifiable, and reversible as one unit.
+- A change set MUST NOT mix unrelated value objectives.
+- A change set MUST include all of the following components:
+  - `Identifier`: stable ID (for example `CS-01`) used consistently in planning, implementation, verification evidence, and reporting.
+  - `Value Objective`: one concise statement of product-side or technical value delivered by this change set.
+  - `Technical Scope`: concrete implementation scope (files/components/contracts affected).
+  - `Test Scope`: tests to add/update and verification commands to run for this change set.
+  - `Documentation Scope`: required documentation-skill decisions (`UPDATE_REQUIRED` / `NO_UPDATE_REQUIRED`) and touched files when updates are required.
+  - `Verification Evidence`: results of mandatory verification commands for this change set.
+  - `Commit Artifact`: exactly one commit hash representing the completed change set.
+- If a component is not applicable for a specific change set, the plan and closure report MUST state `N/A` with explicit rationale.
+
 ### 3.2 Planning
 
-For each in-scope task, after completing Section 3.1, the agent MUST execute planning in the following order:
+For each in-scope task, after completing Section 3.1, the agent MUST execute planning in the following order and MUST define every planned change set according to Section 3.1.1:
 
 1. Step 1: Measurable Success Criteria
    - Before coding, the agent MUST define clear, measurable success criteria from a project-development perspective.
@@ -50,10 +65,11 @@ For each in-scope task, after completing Section 3.1, the agent MUST execute pla
    - For optimization, success criteria MUST include a correctness baseline first, then optimization evidence with preserved behavior.
 2. Step 2: Implementation Planning
    - The agent MUST create a detailed implementation plan that links product intent to technical execution.
+   - Each planned change set MUST explicitly include all required components from Section 3.1.1.
    - For each planned change set, the agent MUST describe:
      - product-side value delivered by the change,
      - corresponding technical implementation vision.
-   - For plans with multiple change sets, the agent MUST include a dedicated `Technical Scope` section inside each change set.
+   - The plan MUST present `Technical Scope` as a dedicated section inside each planned change set.
    - The agent MUST NOT provide one aggregated technical-scope section shared across multiple change sets.
    - The agent MUST default to multiple change sets for non-trivial scope.
    - A single change set MAY be used only when scope is trivial (for example one tightly-scoped behavior in one layer) or when the user explicitly requests one change set.
@@ -62,7 +78,7 @@ For each in-scope task, after completing Section 3.1, the agent MUST execute pla
    - Each change set MUST deliver working software.
    - Each change set MUST target the smallest change that increases business value.
    - Each change set MUST be complete for code consistency, tests, and documentation.
-   - Each change set MUST end with a commit.
+   - Commit-artifact requirements for each change set are defined by Section 3.1.1 and enforced in Section 3.3 Step 5.
 3. Step 3: Plan Verification
    - The agent MUST verify that the full plan achieves the intended goal.
    - The agent MUST verify that the full plan can meet the defined success criteria.
@@ -70,7 +86,13 @@ For each in-scope task, after completing Section 3.1, the agent MUST execute pla
 
 ### 3.3 Implementation
 
-For each approved change set from Section 3.2, the agent MUST execute implementation in the following order:
+For each approved change set from Section 3.2, the agent MUST execute implementation in the following order and MUST preserve conformance with the change set definition from Section 3.1.1:
+
+- Execution loop contract:
+  - For a plan with `N` approved change sets, the agent MUST execute the full `3.3 Step 1 -> Step 6` sequence for `CS-01`, then `CS-02`, and so on until `CS-N`.
+  - The agent MUST NOT batch implementation work from multiple change sets into one combined code/test/documentation cycle.
+  - The agent MUST NOT run `3.3 Step 5` as one aggregated commit for multiple change sets.
+  - If implementation drift crosses approved change set boundaries, the agent MUST stop and request explicit user approval for a plan update before continuing.
 
 1. Step 1: Change Set Alignment
    - The agent MUST implement only an approved change set from Section 3.2 Step 2.
@@ -88,7 +110,13 @@ For each approved change set from Section 3.2, the agent MUST execute implementa
    - If the change set modifies `docs/product-documentation.md`, the agent MUST perform test-case impact analysis using `docs/test-case-authoring-specification.md`.
 5. Step 5: Change Set Commit
    - The agent MUST commit the full completed change set as exactly one commit.
-   - The agent MUST NOT start implementation of the next change set before completing the commit for the current change set.
+6. Step 6: Change Set Closure Report
+   - Immediately after Step 5, the agent MUST provide a short closure report for the completed change set that includes:
+     - change set identifier,
+     - commit hash,
+     - mandatory verification command results for that change set,
+     - documentation-skill decisions (`UPDATE_REQUIRED`/`NO_UPDATE_REQUIRED`) with touched files.
+   - The agent MUST NOT start implementation of the next change set before publishing this closure report.
 
 ### 3.4 Completion
 
@@ -96,6 +124,8 @@ For each in-scope task, after completing all planned change sets from Section 3.
 
 1. Step 1: Full-Plan Completion Verification
    - The agent MUST verify that all approved change sets from the plan were implemented, or that any approved deviation is explicitly documented.
+   - The agent MUST verify that each completed change set includes all required components defined in Section 3.1.1.
+   - The agent MUST verify `one change set = one commit` across the full plan and MUST explicitly list this mapping check result.
    - The agent MUST verify that measurable success criteria from Section 3.2 Step 1 are satisfied for the full planned scope.
    - The agent MUST verify that required tests were added or updated according to Section 4 TDD rules, or that an exception is explicitly documented.
    - The agent MUST verify that all mandatory verification commands from Section 4 were completed for the full planned scope, or that a limitation is explicitly documented.
@@ -105,6 +135,7 @@ For each in-scope task, after completing all planned change sets from Section 3.
    - After completing the full planned scope, the agent MUST provide one final completion report.
    - The report MUST include `CHANGES MADE`: a file-level summary of what changed and why.
    - The report MUST include `RISKS / VERIFY`: potential regressions and additional checks to run.
+   - The report MUST include `CHANGE SET EXECUTION LOG`: ordered `CS-XX` entries with per-change-set closure status.
    - The report MUST include `CHANGE SET COMMITS`: each completed change set mapped to exactly one commit hash.
    - The report MUST include results of all mandatory verification commands defined in Section 4.
    - The report MUST include all accepted local exceptions (for example linter or security suppressions) with concrete rationale.
