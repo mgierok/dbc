@@ -6,9 +6,7 @@
 - Source of truth split:
   - Product perspective: `docs/product-documentation.md`
   - Technical perspective: `docs/technical-documentation.md`
-If any documentation conflicts with current code behavior:
-
-1. You MUST treat current code as factual state.
+- If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
 
 ## 2. Mandatory Context Loading
 
@@ -69,19 +67,19 @@ For each in-scope task, after completing Section 3.1, the agent MUST execute pla
 
 For each approved change set from Section 3.2, the agent MUST execute implementation in the following order:
 
-1. Step 1: Change-Set Alignment
+1. Step 1: Change Set Alignment
    - The agent MUST implement only an approved change set from Section 3.2 Step 2.
    - The agent MUST keep implementation aligned with the approved intent artifact (Section 3.1 Step 2) and measurable success criteria (Section 3.2 Step 1).
    - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
 2. Step 2: Code and Test Execution
    - For project-code implementation, the agent MUST apply all coding rules from Section 4 (`Engineering Guardrails`).
    - During implementation, the agent MAY run verification tools iteratively for affected scope to speed up feedback.
-3. Step 3: Change-Set Verification
+3. Step 3: Change Set Verification
    - Before finalizing implementation, the agent MUST run all mandatory verification commands defined in Section 4.
    - If mandatory tests cannot run, the agent MUST explicitly report why.
 4. Step 4: Documentation Skill Invocation
    - If a change set modifies at least one non-documentation file in the repository, the agent MUST invoke the required documentation skill workflow defined in Section 5 before finalizing that change set.
-5. Step 5: Change-Set Commit
+5. Step 5: Change Set Commit
    - The agent MUST commit the full completed change set as exactly one commit.
 
 ### 3.4 Completion
@@ -193,11 +191,11 @@ For tasks that modify at least one non-documentation file, the agent MUST invoke
 
 For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
 
-- `docs/product-documentation.md` -> `authoring-product-documentation`
-- `docs/technical-documentation.md` -> `authoring-technical-documentation`
-- `README.md` -> `authoring-readme-file`
+- For `docs/product-documentation.md`, the agent MUST invoke `authoring-product-documentation`.
+- For `docs/technical-documentation.md`, the agent MUST invoke `authoring-technical-documentation`.
+- For `README.md`, the agent MUST invoke `authoring-readme-file`.
 
-- If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
+If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
 
 ### 5.1 Product Documentation Policy
 
@@ -220,8 +218,8 @@ For tasks that directly create or modify documentation files, the agent MUST inv
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
 - Whenever the agent asks the user a question, it MUST present exactly four numbered response options:
-  - options `1`, `2`, and `3` MUST be predefined choices
-  - option `4` MUST allow the user to provide a custom response
+  - Options `1`, `2`, and `3` MUST be predefined choices.
+  - Option `4` MUST allow the user to provide a custom response.
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
