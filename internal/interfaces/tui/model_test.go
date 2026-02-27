@@ -182,6 +182,76 @@ func TestHandleKey_ShiftSIgnoredOutsideRecordsView(t *testing.T) {
 	}
 }
 
+func TestHandleKey_ShiftFOpensFilterPopupInRecordsView(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		tables:   []dto.Table{{Name: "users"}},
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'F'}})
+
+	// Assert
+	if !model.filterPopup.active {
+		t.Fatal("expected filter popup to be active")
+	}
+	if model.filterPopup.step != filterSelectColumn {
+		t.Fatalf("expected filter popup to start at column step, got %v", model.filterPopup.step)
+	}
+}
+
+func TestHandleKey_ShiftFIgnoredOutsideRecordsContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		viewMode ViewMode
+		focus    PanelFocus
+	}{
+		{
+			name:     "schema content",
+			viewMode: ViewSchema,
+			focus:    FocusContent,
+		},
+		{
+			name:     "records tables panel",
+			viewMode: ViewRecords,
+			focus:    FocusTables,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				viewMode: tc.viewMode,
+				focus:    tc.focus,
+				tables:   []dto.Table{{Name: "users"}},
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{
+						{Name: "id", Type: "INTEGER"},
+						{Name: "name", Type: "TEXT"},
+					},
+				},
+			}
+
+			// Act
+			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'F'}})
+
+			// Assert
+			if model.filterPopup.active {
+				t.Fatal("expected filter popup to stay closed outside records context")
+			}
+		})
+	}
+}
+
 func TestHandleKey_EnterOpensRecordDetailInRecordsView(t *testing.T) {
 	// Arrange
 	model := &Model{

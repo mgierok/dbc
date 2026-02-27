@@ -97,6 +97,9 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 		t.Fatalf("unexpected third command line: %q", lines[3])
 	}
 	joined := strings.Join(lines, "\n")
+	if !strings.Contains(joined, "Shift+F - Open filter flow for current table.") {
+		t.Fatalf("expected filter keyword in help content, got %q", joined)
+	}
 	if !strings.Contains(joined, "Shift+S - Open sort flow for current table.") {
 		t.Fatalf("expected sort keyword in help content, got %q", joined)
 	}

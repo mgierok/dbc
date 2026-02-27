@@ -1036,6 +1036,9 @@ func (m *Model) switchToRecords() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) startFilterPopup() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent {
+		return m, nil
+	}
 	if m.currentTableName() == "" {
 		return m, nil
 	}

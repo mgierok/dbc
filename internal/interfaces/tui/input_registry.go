@@ -94,7 +94,7 @@ var keyBindings = map[keyBindingID]keyBinding{
 	keyRuntimeEnter:            {keys: []string{"enter"}, label: "Enter"},
 	keyRuntimeEdit:             {keys: []string{"e"}, label: "e"},
 	keyRuntimeEsc:              {keys: []string{"esc"}, label: "Esc"},
-	keyRuntimeFilter:           {keys: []string{"F"}, label: "F"},
+	keyRuntimeFilter:           {keys: []string{"F"}, label: "Shift+F"},
 	keyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
 	keyRuntimeRecordDetail:     {keys: []string{"enter"}, label: "Enter"},
 	keyRuntimeSave:             {keys: []string{"w"}, label: "w"},
@@ -380,17 +380,15 @@ func runtimeStatusCommandInputShortcuts() string {
 
 func runtimeStatusTablesShortcuts() string {
 	return fmt.Sprintf(
-		"Tables: %s records | %s filter",
+		"Tables: %s records",
 		keyLabel(keyRuntimeEnter),
-		keyLabel(keyRuntimeFilter),
 	)
 }
 
 func runtimeStatusSchemaShortcuts() string {
 	return fmt.Sprintf(
-		"Schema: %s tables | %s filter",
+		"Schema: %s tables",
 		keyLabel(keyRuntimeEsc),
-		keyLabel(keyRuntimeFilter),
 	)
 }
 
