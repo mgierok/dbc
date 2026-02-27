@@ -53,6 +53,8 @@ For each in-scope task, after completing Section 3.1, the agent MUST execute pla
    - For each planned change set, the agent MUST describe:
      - product-side value delivered by the change,
      - corresponding technical implementation vision.
+   - For plans with multiple change sets, the agent MUST include a dedicated `Technical Scope` section inside each change set.
+   - The agent MUST NOT provide one aggregated technical-scope section shared across multiple change sets.
    - The agent MUST default to multiple change sets for non-trivial scope.
    - A single change set MAY be used only when scope is trivial (for example one tightly-scoped behavior in one layer) or when the user explicitly requests one change set.
    - If a single change set is chosen, the plan MUST include explicit justification why further decomposition would not improve delivery safety or reviewability.
