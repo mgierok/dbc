@@ -78,25 +78,25 @@ For each approved change set from Section 3.1, the agent MUST execute implementa
 
 ### 3.3 Completion
 
-A task is complete only when all conditions below are met:
+This section applies only to project tasks that can result in project-code changes.
+This section MUST NOT be applied to documentation-only or governance-only tasks.
 
-- code change is implemented
-- required tests are added/updated according to Section 4 TDD rules (or exception is explicitly documented)
-- required verification commands from Section 4 are completed (or limitation is explicitly documented)
-- mandatory tests pass (or limitation is explicitly documented)
-- naming and terminology remains consistent
+For each in-scope task, after completing all planned change sets from Section 3.1 Step 3, the agent MUST execute completion in the following order:
 
-### 3.3.1 Mandatory Completion Report
-
-After each completed implementation, the agent MUST report:
-
-- `CHANGES MADE`: file-level summary of what changed and why
-- `RISKS / VERIFY`: potential regressions and additional checks to run
-- `golangci-lint run ./...` result
-- `go test ./...` result
-- accepted local exceptions (`#nosec` / `nolint`) with rationale
-
-The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.
+1. Step 1: Full-Plan Completion Verification
+   - The agent MUST verify that all approved change sets from the plan were implemented, or that any approved deviation is explicitly documented.
+   - The agent MUST verify that measurable success criteria from Section 3.1 Step 2 are satisfied for the full planned scope.
+   - The agent MUST verify that required tests were added or updated according to Section 4 TDD rules, or that an exception is explicitly documented.
+   - The agent MUST verify that all mandatory verification commands from Section 4 were completed for the full planned scope, or that a limitation is explicitly documented.
+   - The agent MUST verify that mandatory tests pass, or that a limitation is explicitly documented.
+   - The agent MUST verify that naming and terminology remain consistent across the full planned scope.
+2. Step 2: Final Completion Report
+   - After completing the full planned scope, the agent MUST provide one final completion report.
+   - The report MUST include `CHANGES MADE`: a file-level summary of what changed and why.
+   - The report MUST include `RISKS / VERIFY`: potential regressions and additional checks to run.
+   - The report MUST include results of all mandatory verification commands defined in Section 4.
+   - The report MUST include all accepted local exceptions (for example linter or security suppressions) with concrete rationale.
+   - The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.
 
 ## 4. Engineering Guardrails
 
