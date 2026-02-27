@@ -58,6 +58,8 @@ When adding or changing instructions:
 ### G1.4 Consistency Requirement
 - Updated governance content MUST NOT contain contradictory normative statements.
 - If two rules overlap, they SHOULD be unified into one clearer rule.
+- Formatting conventions for equivalent structures in updated governance content MUST remain uniform and coherent within each file (for example heading style, list style, lead-in punctuation, capitalization, and terminology).
+Rationale: consistent formatting improves scanability and reduces interpretation mistakes.
 
 ## G2 SKILL.md-Specific Rules (Codex-Adapted Best Practices)
 
@@ -114,6 +116,7 @@ When editing `AGENTS.md`:
 - Vague requirements without verification criteria.
 - Overly long and multi-clause sentences that reduce junior readability.
 - Skill descriptions that explain only “what” but not “when”.
+- Mixed formatting conventions for equivalent structures in the same governance file (`AGENTS.md` or `SKILL.md`).
 
 ### G4.2 Final Quality Gate
 Before finalizing governance output, verify:
@@ -125,3 +128,4 @@ Before finalizing governance output, verify:
 6. No contradiction or avoidable redundancy remains.
 7. Numeric heading prefixes remain sequential and consistent after edits.
 8. Inbound heading references were updated when heading titles or numeric prefixes were changed.
+9. Formatting conventions are uniform and coherent across equivalent structures in each updated governance file.
