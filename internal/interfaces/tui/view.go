@@ -30,6 +30,9 @@ func (m *Model) View() string {
 	if m.filterPopup.active {
 		return centerBoxLines(m.renderFilterPopup(width), width, height)
 	}
+	if m.sortPopup.active {
+		return centerBoxLines(m.renderSortPopup(width), width, height)
+	}
 
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
@@ -147,7 +150,7 @@ func (m *Model) renderRecords(width, height int) []string {
 	}
 	lines := []string{padRight(title, width)}
 
-	columns := m.schemaColumns()
+	columns := m.schemaColumnsForRecordsHeader()
 	if len(columns) == 0 {
 		lines = append(lines, padRight("No columns loaded.", width))
 		return padLines(lines, height, width)
@@ -274,6 +277,43 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 	})
 }
 
+func (m *Model) renderSortPopup(totalWidth int) []string {
+	stepLabel := "Select column"
+	rows := []string{}
+	selected := -1
+
+	switch m.sortPopup.step {
+	case sortSelectColumn:
+		rows = make([]string, len(m.schema.Columns))
+		for i, column := range m.schema.Columns {
+			rows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+		}
+		if len(rows) > 0 {
+			selected = clamp(m.sortPopup.columnIndex, 0, len(rows)-1)
+		}
+	case sortSelectDirection:
+		stepLabel = "Select direction"
+		directions := sortDirections()
+		rows = make([]string, len(directions))
+		for i, direction := range directions {
+			rows[i] = string(direction)
+		}
+		if len(rows) > 0 {
+			selected = clamp(m.sortPopup.directionIndex, 0, len(rows)-1)
+		}
+	}
+
+	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+		title:        "Sort",
+		summary:      stepLabel,
+		rows:         rows,
+		selected:     selected,
+		defaultWidth: 60,
+		minWidth:     20,
+		maxWidth:     60,
+	})
+}
+
 func (m *Model) renderEditPopup(totalWidth int) []string {
 	columnLabel := "Unknown column"
 	nullableLabel := "NOT NULL"
@@ -374,6 +414,7 @@ func (m *Model) renderStatus(width int) string {
 		fmt.Sprintf("View: %s", m.viewModeLabel()),
 		fmt.Sprintf("Table: %s", m.currentTableName()),
 		m.filterSummary(),
+		m.sortSummary(),
 	}
 	if m.commandInput.active {
 		parts = append(parts, "Command: "+m.commandPrompt())
@@ -406,6 +447,33 @@ func (m *Model) filterSummary() string {
 	return fmt.Sprintf("Filter: %s %s", m.currentFilter.Column, m.currentFilter.Operator.SQL)
 }
 
+func (m *Model) sortSummary() string {
+	if m.currentSort == nil {
+		return "Sort: none"
+	}
+	return fmt.Sprintf("Sort: %s %s", m.currentSort.Column, m.currentSort.Direction)
+}
+
+func (m *Model) schemaColumnsForRecordsHeader() []string {
+	if len(m.schema.Columns) == 0 {
+		return nil
+	}
+	columns := make([]string, len(m.schema.Columns))
+	for i, column := range m.schema.Columns {
+		label := column.Name
+		if m.currentSort != nil && column.Name == m.currentSort.Column {
+			switch m.currentSort.Direction {
+			case dto.SortDirectionAsc:
+				label += " ↑"
+			case dto.SortDirectionDesc:
+				label += " ↓"
+			}
+		}
+		columns[i] = label
+	}
+	return columns
+}
+
 func (m *Model) statusShortcuts() string {
 	switch {
 	case m.editPopup.active:
@@ -414,6 +482,8 @@ func (m *Model) statusShortcuts() string {
 		return runtimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
 	case m.filterPopup.active:
 		return runtimeStatusFilterPopupShortcuts()
+	case m.sortPopup.active:
+		return runtimeStatusSortPopupShortcuts()
 	case m.helpPopup.active:
 		return runtimeStatusHelpPopupShortcuts()
 	case m.commandInput.active:

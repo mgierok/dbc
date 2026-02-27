@@ -45,12 +45,14 @@ Records and staged changes:
 - `Enter`: open records view / enter field focus / open edit popup (context dependent)
 - `Esc`: return to tables (right panel neutral) / exit field focus / close popup
 - `F`: open filter popup
+- `Shift+S`: open sort popup (single column + `ASC`/`DESC`)
 - `i`: stage insert
 - `d`: toggle delete marker or remove pending insert
 - `u`: undo staged action
 - `Ctrl+r`: redo staged action
 - `w`: save staged changes
 - `Ctrl+a`: toggle auto-increment fields for pending insert row
+- records header marks active sort column with `↑` (`ASC`) or `↓` (`DESC`)
 
 Command mode:
 - `:`: open command entry

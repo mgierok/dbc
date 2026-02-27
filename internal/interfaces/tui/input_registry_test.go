@@ -1,6 +1,9 @@
 package tui
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 	tests := []struct {
@@ -80,5 +83,9 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	}
 	if lines[3] != ":quit / :q - Quit the application." {
 		t.Fatalf("unexpected third command line: %q", lines[3])
+	}
+	joined := strings.Join(lines, "\n")
+	if !strings.Contains(joined, "Shift+S - Open sort flow for current table.") {
+		t.Fatalf("expected sort keyword in help content, got %q", joined)
 	}
 }

@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -69,7 +70,7 @@ func TestSQLiteEngine_ListRecords_AppliesFilterAndPagination(t *testing.T) {
 	}
 
 	// Act
-	page, err := engine.ListRecords(context.Background(), "users", 0, 1, filter)
+	page, err := engine.ListRecords(context.Background(), "users", 0, 1, filter, nil)
 
 	// Assert
 	if err != nil {
@@ -99,7 +100,7 @@ func TestSQLiteEngine_ListRecords_SupportsQuotedTableName(t *testing.T) {
 	engine := NewSQLiteEngine(db)
 
 	// Act
-	page, err := engine.ListRecords(context.Background(), `audit"log`, 0, 10, nil)
+	page, err := engine.ListRecords(context.Background(), `audit"log`, 0, 10, nil, nil)
 
 	// Assert
 	if err != nil {
@@ -113,6 +114,135 @@ func TestSQLiteEngine_ListRecords_SupportsQuotedTableName(t *testing.T) {
 	}
 	if got := page.Records[0].Values[1].Text; got != "entry" {
 		t.Fatalf("expected note entry, got %q", got)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_AppliesSortAscAndDesc(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+		INSERT INTO users (id, name)
+		VALUES (1, 'charlie'),
+		       (2, 'alice'),
+		       (3, 'bob');
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	ascPage, ascErr := engine.ListRecords(context.Background(), "users", 0, 10, nil, &model.Sort{
+		Column:    "name",
+		Direction: model.SortDirectionAsc,
+	})
+	descPage, descErr := engine.ListRecords(context.Background(), "users", 0, 10, nil, &model.Sort{
+		Column:    "name",
+		Direction: model.SortDirectionDesc,
+	})
+
+	// Assert
+	if ascErr != nil {
+		t.Fatalf("expected no asc error, got %v", ascErr)
+	}
+	if descErr != nil {
+		t.Fatalf("expected no desc error, got %v", descErr)
+	}
+	if got := ascPage.Records[0].Values[1].Text; got != "alice" {
+		t.Fatalf("expected asc first value alice, got %q", got)
+	}
+	if got := descPage.Records[0].Values[1].Text; got != "charlie" {
+		t.Fatalf("expected desc first value charlie, got %q", got)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_RejectsUnknownSortColumn(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	_, err := engine.ListRecords(context.Background(), "users", 0, 10, nil, &model.Sort{
+		Column:    "missing",
+		Direction: model.SortDirectionAsc,
+	})
+
+	// Assert
+	if !errors.Is(err, ErrUnknownSortColumn) {
+		t.Fatalf("expected error %v, got %v", ErrUnknownSortColumn, err)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_RejectsUnknownSortDirection(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	_, err := engine.ListRecords(context.Background(), "users", 0, 10, nil, &model.Sort{
+		Column:    "name",
+		Direction: model.SortDirection("SIDEWAYS"),
+	})
+
+	// Assert
+	if !errors.Is(err, ErrUnknownSortDirection) {
+		t.Fatalf("expected error %v, got %v", ErrUnknownSortDirection, err)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_FilterSortAndPagination(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			score INTEGER NOT NULL
+		);
+		INSERT INTO users (id, name, score)
+		VALUES (1, 'a', 30),
+		       (2, 'a', 10),
+		       (3, 'a', 20),
+		       (4, 'b', 5);
+	`)
+	engine := NewSQLiteEngine(db)
+	filter := &model.Filter{
+		Column: "name",
+		Operator: model.Operator{
+			SQL:           "=",
+			RequiresValue: true,
+		},
+		Value: "a",
+	}
+	sort := &model.Sort{
+		Column:    "score",
+		Direction: model.SortDirectionAsc,
+	}
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "users", 1, 1, filter, sort)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(page.Records) != 1 {
+		t.Fatalf("expected one record, got %d", len(page.Records))
+	}
+	if got := page.Records[0].Values[2].Text; got != "20" {
+		t.Fatalf("expected sorted paged score 20, got %q", got)
+	}
+	if !page.HasMore {
+		t.Fatal("expected hasMore for remaining filtered sorted rows")
 	}
 }
 

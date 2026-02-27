@@ -140,6 +140,103 @@ func TestHandleKey_EscFromFieldFocusThenNeutralSwitchesToTablesAndSchema(t *test
 	}
 }
 
+func TestHandleKey_ShiftSOpensSortPopupInRecordsView(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		tables:   []dto.Table{{Name: "users"}},
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+
+	// Assert
+	if !model.sortPopup.active {
+		t.Fatal("expected sort popup to be active")
+	}
+	if model.sortPopup.step != sortSelectColumn {
+		t.Fatalf("expected sort popup to start at column step, got %v", model.sortPopup.step)
+	}
+}
+
+func TestHandleKey_ShiftSIgnoredOutsideRecordsView(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewSchema,
+		focus:    FocusContent,
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+
+	// Assert
+	if model.sortPopup.active {
+		t.Fatal("expected sort popup to stay closed outside records view")
+	}
+}
+
+func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
+	// Arrange
+	engine := &tuiSpyEngine{
+		recordPage: domainmodel.RecordPage{
+			Records: []domainmodel.Record{
+				{Values: []domainmodel.Value{{Text: "1"}, {Text: "alice"}}},
+			},
+		},
+	}
+	model := &Model{
+		ctx:         context.Background(),
+		viewMode:    ViewRecords,
+		focus:       FocusContent,
+		listRecords: usecase.NewListRecords(engine),
+		tables:      []dto.Table{{Name: "users"}},
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected records reload command after applying sort")
+	}
+	msg := cmd()
+	model.Update(msg)
+
+	// Assert
+	if model.sortPopup.active {
+		t.Fatal("expected sort popup to close after apply")
+	}
+	if model.currentSort == nil {
+		t.Fatal("expected current sort to be set")
+	}
+	if model.currentSort.Column != "id" {
+		t.Fatalf("expected sorted column id, got %q", model.currentSort.Column)
+	}
+	if model.currentSort.Direction != dto.SortDirectionDesc {
+		t.Fatalf("expected sort direction DESC, got %s", model.currentSort.Direction)
+	}
+	if engine.lastSort == nil {
+		t.Fatal("expected engine to receive sort")
+	}
+	if engine.lastSort.Column != "id" || engine.lastSort.Direction != domainmodel.SortDirectionDesc {
+		t.Fatalf("expected engine sort id DESC, got %+v", engine.lastSort)
+	}
+}
+
 func TestHandleKey_CtrlWPanelShortcutsAreUnsupported(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -1333,6 +1430,29 @@ func TestSetTableSelection_WithDirtyStateNoKeyPreservesStagingAndSelection(t *te
 	}
 }
 
+func TestSetTableSelection_ClearsSortOnTableSwitch(t *testing.T) {
+	// Arrange
+	model := &Model{
+		tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+		selectedTable: 0,
+		currentSort: &dto.Sort{
+			Column:    "name",
+			Direction: dto.SortDirectionAsc,
+		},
+	}
+
+	// Act
+	model.setTableSelection(1)
+
+	// Assert
+	if model.selectedTable != 1 {
+		t.Fatalf("expected selected table to switch, got %d", model.selectedTable)
+	}
+	if model.currentSort != nil {
+		t.Fatalf("expected sort to reset on table switch, got %+v", model.currentSort)
+	}
+}
+
 func TestHandleKey_UndoRedo_RevertsAndReappliesInsertAdd(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -1522,6 +1642,8 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 type tuiSpyEngine struct {
 	lastChanges domainmodel.TableChanges
 	saveErr     error
+	lastSort    *domainmodel.Sort
+	recordPage  domainmodel.RecordPage
 }
 
 func (s *tuiSpyEngine) ListTables(ctx context.Context) ([]domainmodel.Table, error) {
@@ -1532,8 +1654,9 @@ func (s *tuiSpyEngine) GetSchema(ctx context.Context, tableName string) (domainm
 	return domainmodel.Schema{}, nil
 }
 
-func (s *tuiSpyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *domainmodel.Filter) (domainmodel.RecordPage, error) {
-	return domainmodel.RecordPage{}, nil
+func (s *tuiSpyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *domainmodel.Filter, sort *domainmodel.Sort) (domainmodel.RecordPage, error) {
+	s.lastSort = sort
+	return s.recordPage, nil
 }
 
 func (s *tuiSpyEngine) ListOperators(ctx context.Context, columnType string) ([]domainmodel.Operator, error) {

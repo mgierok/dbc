@@ -20,6 +20,7 @@ type fakeEngine struct {
 	lastRecordsOffset int
 	lastRecordsLimit  int
 	lastRecordsFilter *model.Filter
+	lastRecordsSort   *model.Sort
 }
 
 func (f *fakeEngine) ListTables(ctx context.Context) ([]model.Table, error) {
@@ -31,11 +32,12 @@ func (f *fakeEngine) GetSchema(ctx context.Context, tableName string) (model.Sch
 	return f.schema, nil
 }
 
-func (f *fakeEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter) (model.RecordPage, error) {
+func (f *fakeEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter, sort *model.Sort) (model.RecordPage, error) {
 	f.lastRecordsTable = tableName
 	f.lastRecordsOffset = offset
 	f.lastRecordsLimit = limit
 	f.lastRecordsFilter = filter
+	f.lastRecordsSort = sort
 	return f.records, nil
 }
 
@@ -140,7 +142,7 @@ func TestListRecords_MapsValues(t *testing.T) {
 	uc := usecase.NewListRecords(engine)
 
 	// Act
-	result, err := uc.Execute(context.Background(), "users", 0, 10, nil)
+	result, err := uc.Execute(context.Background(), "users", 0, 10, nil, nil)
 
 	// Assert
 	if err != nil {
@@ -172,7 +174,7 @@ func TestListRecords_MapsFilter(t *testing.T) {
 	}
 
 	// Act
-	_, err := uc.Execute(context.Background(), "users", 5, 20, filter)
+	_, err := uc.Execute(context.Background(), "users", 5, 20, filter, nil)
 
 	// Assert
 	if err != nil {
@@ -195,6 +197,31 @@ func TestListRecords_MapsFilter(t *testing.T) {
 	}
 	if !reflect.DeepEqual(engine.lastRecordsFilter, expectedFilter) {
 		t.Fatalf("expected filter %v, got %v", expectedFilter, engine.lastRecordsFilter)
+	}
+}
+
+func TestListRecords_MapsSort(t *testing.T) {
+	// Arrange
+	engine := &fakeEngine{}
+	uc := usecase.NewListRecords(engine)
+	sort := &dto.Sort{
+		Column:    "created_at",
+		Direction: dto.SortDirectionDesc,
+	}
+
+	// Act
+	_, err := uc.Execute(context.Background(), "users", 0, 50, nil, sort)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	expectedSort := &model.Sort{
+		Column:    "created_at",
+		Direction: model.SortDirectionDesc,
+	}
+	if !reflect.DeepEqual(engine.lastRecordsSort, expectedSort) {
+		t.Fatalf("expected sort %v, got %v", expectedSort, engine.lastRecordsSort)
 	}
 }
 

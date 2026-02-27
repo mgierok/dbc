@@ -135,7 +135,7 @@ Package responsibilities:
 
 1. TUI model initializes by loading tables.
 2. Selected table schema is loaded.
-3. Records are loaded in pages (`offset`, `limit`) with optional filter.
+3. Records are loaded in pages (`offset`, `limit`) with optional filter and optional single-column sort.
 4. Additional records load when selection approaches loaded tail.
 5. Runtime panel transitions are handled in `internal/interfaces/tui/model.go`:
    - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
@@ -160,11 +160,16 @@ Package responsibilities:
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
 10. `:quit` / `:q` routing behavior:
    - command exits runtime loop immediately without save/discard confirmation.
-11. Runtime popup rendering standardization:
-   - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by runtime help, filter, edit, and confirm popup variants,
+11. Runtime records sort behavior:
+   - records sort state is kept in runtime model as optional single-column sort (`column` + `ASC`/`DESC`),
+   - sort apply triggers records reload from offset `0`,
+   - sort state resets on table switch as part of table-context reset,
+   - pending inserts remain rendered before persisted rows and are not SQL-sorted.
+12. Runtime popup rendering standardization:
+   - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by runtime help, filter, sort, edit, and confirm popup variants,
    - shared popup spec includes title/summary rows, optional selectable list rows, optional scroll window/indicator, and width clamping,
-   - `View()` renders runtime popup overlays via `centerBoxLines` for help, filter, edit, and confirm popup variants.
-12. Unsupported runtime commands keep existing fallback:
+   - `View()` renders runtime popup overlays via `centerBoxLines` for help, filter, sort, edit, and confirm popup variants.
+13. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,
    - runtime session remains active.
 
@@ -250,10 +255,12 @@ Current implementation-level characteristics:
 ### 6.3 Application Port Contracts
 
 - Engine contract is defined in `internal/application/port/engine.go`.
+- `Engine.ListRecords` accepts optional filter and optional sort payload.
 - Database connection validation boundary is defined in `internal/application/port/database_connection_checker.go`.
 - Use cases call ports and remain independent from concrete SQLite implementation.
 - Infrastructure adapters implement these contracts in:
   - `internal/infrastructure/engine/sqlite_engine.go`
+  - `internal/infrastructure/engine/sqlite_sort.go`
   - `internal/infrastructure/engine/sqlite_connection_checker.go`
 
 ### 6.4 Selector Session Contracts

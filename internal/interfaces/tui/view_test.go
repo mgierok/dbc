@@ -65,7 +65,7 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter" {
+	if shortcuts != "Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter | Shift+S sort" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
 	}
 }
@@ -129,6 +129,73 @@ func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
 	// Assert
 	if !strings.Contains(popup, "Value: a|bc") {
 		t.Fatalf("expected caret in filter value input, got %q", popup)
+	}
+}
+
+func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		currentSort: &dto.Sort{
+			Column:    "name",
+			Direction: dto.SortDirectionAsc,
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", "alice"}},
+		},
+	}
+
+	// Act
+	lines := model.renderRecords(80, 6)
+
+	// Assert
+	if len(lines) < 2 {
+		t.Fatalf("expected header row, got %v", lines)
+	}
+	header := lines[1]
+	if !strings.Contains(header, "name ↑") {
+		t.Fatalf("expected asc sort indicator in header, got %q", header)
+	}
+	if strings.Contains(header, "id ↑") || strings.Contains(header, "id ↓") {
+		t.Fatalf("expected indicator only on sorted column, got %q", header)
+	}
+}
+
+func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		currentSort: &dto.Sort{
+			Column:    "name",
+			Direction: dto.SortDirectionDesc,
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", "alice"}},
+		},
+	}
+
+	// Act
+	lines := model.renderRecords(80, 6)
+
+	// Assert
+	if len(lines) < 2 {
+		t.Fatalf("expected header row, got %v", lines)
+	}
+	header := lines[1]
+	if !strings.Contains(header, "name ↓") {
+		t.Fatalf("expected desc sort indicator in header, got %q", header)
 	}
 }
 

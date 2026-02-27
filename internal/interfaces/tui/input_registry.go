@@ -35,6 +35,7 @@ const (
 	keyRuntimeEnter            keyBindingID = "runtime.enter"
 	keyRuntimeEsc              keyBindingID = "runtime.esc"
 	keyRuntimeFilter           keyBindingID = "runtime.filter"
+	keyRuntimeSort             keyBindingID = "runtime.sort"
 	keyRuntimeSave             keyBindingID = "runtime.save"
 	keyRuntimeInsert           keyBindingID = "runtime.insert"
 	keyRuntimeDelete           keyBindingID = "runtime.delete"
@@ -89,6 +90,7 @@ var keyBindings = map[keyBindingID]keyBinding{
 	keyRuntimeEnter:            {keys: []string{"enter"}, label: "Enter"},
 	keyRuntimeEsc:              {keys: []string{"esc"}, label: "Esc"},
 	keyRuntimeFilter:           {keys: []string{"F"}, label: "F"},
+	keyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
 	keyRuntimeSave:             {keys: []string{"w"}, label: "w"},
 	keyRuntimeInsert:           {keys: []string{"i"}, label: "i"},
 	keyRuntimeDelete:           {keys: []string{"d"}, label: "d"},
@@ -191,6 +193,10 @@ var runtimeHelpKeywordSpecs = []runtimeHelpKeywordSpec{
 	{
 		bindings:    []keyBindingID{keyRuntimeFilter},
 		description: "Open filter flow for current table.",
+	},
+	{
+		bindings:    []keyBindingID{keyRuntimeSort},
+		description: "Open sort flow for current table.",
 	},
 	{
 		bindings:    []keyBindingID{keyRuntimeInsert},
@@ -334,6 +340,14 @@ func runtimeStatusFilterPopupShortcuts() string {
 	)
 }
 
+func runtimeStatusSortPopupShortcuts() string {
+	return fmt.Sprintf(
+		"Popup: %s apply | %s close",
+		keyLabel(keyRuntimeEnter),
+		keyLabel(keyRuntimeEsc),
+	)
+}
+
 func runtimeStatusHelpPopupShortcuts() string {
 	return fmt.Sprintf(
 		"Help: %s scroll | %s close",
@@ -368,7 +382,7 @@ func runtimeStatusSchemaShortcuts() string {
 
 func runtimeStatusRecordsShortcuts() string {
 	return fmt.Sprintf(
-		"Records: %s tables | %s edit | %s insert | %s delete | %s undo | %s redo | %s save | %s filter",
+		"Records: %s tables | %s edit | %s insert | %s delete | %s undo | %s redo | %s save | %s filter | %s sort",
 		keyLabel(keyRuntimeEsc),
 		keyLabel(keyRuntimeEnter),
 		keyLabel(keyRuntimeInsert),
@@ -377,6 +391,7 @@ func runtimeStatusRecordsShortcuts() string {
 		keyLabel(keyRuntimeRedo),
 		keyLabel(keyRuntimeSave),
 		keyLabel(keyRuntimeFilter),
+		keyLabel(keyRuntimeSort),
 	)
 }
 

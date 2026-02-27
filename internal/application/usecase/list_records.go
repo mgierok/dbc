@@ -16,7 +16,7 @@ func NewListRecords(engine port.Engine) *ListRecords {
 	return &ListRecords{engine: engine}
 }
 
-func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, limit int, filter *dto.Filter) (dto.RecordPage, error) {
+func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort) (dto.RecordPage, error) {
 	var domainFilter *model.Filter
 	if filter != nil {
 		domainFilter = &model.Filter{
@@ -30,7 +30,15 @@ func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, li
 		}
 	}
 
-	page, err := uc.engine.ListRecords(ctx, tableName, offset, limit, domainFilter)
+	var domainSort *model.Sort
+	if sort != nil {
+		domainSort = &model.Sort{
+			Column:    sort.Column,
+			Direction: model.SortDirection(sort.Direction),
+		}
+	}
+
+	page, err := uc.engine.ListRecords(ctx, tableName, offset, limit, domainFilter, domainSort)
 	if err != nil {
 		return dto.RecordPage{}, err
 	}

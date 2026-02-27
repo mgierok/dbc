@@ -51,6 +51,7 @@ Core user value in current state:
 - Schema inspection for selected table columns.
 - Record browsing with continuous scrolling behavior.
 - Single active filter per selected table.
+- Single active sort (one column + direction) per selected table.
 - Staged data operations for current table:
   - Insert record.
   - Edit record fields.
@@ -145,6 +146,17 @@ Core user value in current state:
 - Row selection is visible in the focused records panel.
 - Field focus mode is supported for cell-level editing navigation.
 - Record cell content is width-constrained in the UI (truncated when needed).
+- Users can open a guided sort popup in records view with `Shift+S`.
+- Sort flow is step-based:
+  - Select one column.
+  - Select direction (`ASC` or `DESC`).
+- Exactly one sort can be active at a time for the selected table.
+- Re-running sort replaces the previously active sort.
+- Sort is reset when switching to a different table.
+- Pending insert rows (`[INS]`) stay at the top of records view and are not reordered by sort.
+- Records header shows active sort indicator on the sorted column:
+  - `↑` for `ASC`.
+  - `↓` for `DESC`.
 
 ### 4.5 Filtering
 
@@ -222,6 +234,7 @@ Core user value in current state:
   - Current view (Schema or Records).
   - Current table.
   - Active filter summary.
+  - Active sort summary.
   - Contextual shortcut hints.
   - Runtime status/error messages.
 - Every active editable text field in the app displays a visible caret (`|`) at the insertion point.
@@ -251,13 +264,17 @@ Core user value in current state:
 - Record list loads progressively as users navigate deeper.
 - Users can navigate rows and jump/page efficiently.
 
-### Step 4: Focused Inspection with Filters
+### Step 4: Focused Inspection with Filters and Sorting
 
 - Users open the filter flow and select:
   - Column.
   - Operator.
   - Value (when required by operator).
 - Product applies one active filter for the currently selected table.
+- Users open the sort flow and select:
+  - One column.
+  - `ASC` or `DESC`.
+- Product applies one active sort for the currently selected table.
 
 ### Step 5: Controlled Data Change Workflow
 
@@ -300,6 +317,7 @@ Core user value in current state:
 | Open runtime help popup reference (command mode) | `:help`, `:h` |
 | Exit runtime session (command mode) | `:quit`, `:q` |
 | Open filter popup | `F` |
+| Open sort popup | `Shift+S` |
 | Stage insert | `i` |
 | Toggle delete marker / remove pending insert | `d` |
 | Undo staged action | `u` |
@@ -312,6 +330,7 @@ Core user value in current state:
 | Context | Key Behavior |
 | --- | --- |
 | Filter popup | `j/k` selection, `Enter` confirm step, `Esc` close |
+| Sort popup | `j/k` selection, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` (nullable fields) |
 | Confirm popup (binary) | `Enter` or `y` confirm, `Esc` or `n` cancel |
 | Dirty table-switch decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
@@ -340,6 +359,7 @@ Current user-visible constraints:
 - Only SQLite is supported.
 - Editing/deleting existing records requires a primary key in the table.
 - Only one active filter is supported at a time.
+- Only one active sort is supported at a time.
 - There is no shortcut to switch from Records view back to Schema view while keeping right-panel focus.
 - No dedicated command exists to clear filter directly (filter resets on table switch or is replaced by applying a new filter).
 - Quit action does not prompt to preserve unsaved staged changes.
@@ -372,5 +392,6 @@ For capability boundaries and scope classification, see Section 3.
 - Schema View: right-panel mode showing table columns and types.
 - Records View: right-panel mode showing table data rows.
 - Filter: active condition applied to records of selected table.
+- Sort: active single-column ordering (`ASC`/`DESC`) applied to records of selected table.
 - Staged Change: pending insert/edit/delete not yet saved to the database.
 - Dirty State: staged changes exist, and write mode with an unsaved changes count is active.

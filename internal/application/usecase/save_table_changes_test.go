@@ -22,7 +22,7 @@ func (s *spyEngine) GetSchema(ctx context.Context, tableName string) (model.Sche
 	return model.Schema{}, nil
 }
 
-func (s *spyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter) (model.RecordPage, error) {
+func (s *spyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter, sort *model.Sort) (model.RecordPage, error) {
 	return model.RecordPage{}, nil
 }
 

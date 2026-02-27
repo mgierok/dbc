@@ -108,7 +108,7 @@ func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (schema 
 	}, nil
 }
 
-func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter) (page model.RecordPage, err error) {
+func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter, sort *model.Sort) (page model.RecordPage, err error) {
 	if limit <= 0 {
 		return model.RecordPage{}, nil
 	}
@@ -124,6 +124,13 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 	}
 	if clause != "" {
 		query = query + " " + clause
+	}
+	sortClause, err := e.buildSortClause(ctx, tableName, sort)
+	if err != nil {
+		return model.RecordPage{}, err
+	}
+	if sortClause != "" {
+		query = query + " " + sortClause
 	}
 	query += " LIMIT ? OFFSET ?"
 	args = append(args, limit+1, offset)

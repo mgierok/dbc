@@ -41,6 +41,13 @@ const (
 	filterInputValue
 )
 
+type sortStep int
+
+const (
+	sortSelectColumn sortStep = iota
+	sortSelectDirection
+)
+
 type filterPopup struct {
 	active        bool
 	step          filterStep
@@ -49,6 +56,13 @@ type filterPopup struct {
 	input         string
 	operators     []dto.Operator
 	cursor        int
+}
+
+type sortPopup struct {
+	active         bool
+	step           sortStep
+	columnIndex    int
+	directionIndex int
 }
 
 type commandInput struct {
@@ -207,12 +221,15 @@ type Model struct {
 	future           []stagedOperation
 
 	currentFilter     *dto.Filter
+	currentSort       *dto.Sort
 	filterPopup       filterPopup
+	sortPopup         sortPopup
 	commandInput      commandInput
 	helpPopup         helpPopup
 	editPopup         editPopup
 	confirmPopup      confirmPopup
 	pendingFilterOpen bool
+	pendingSortOpen   bool
 	pendingG          bool
 	pendingTableIndex int
 	pendingConfigOpen bool
@@ -296,6 +313,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.pendingFilterOpen = false
 			m.openFilterPopup()
 		}
+		if m.pendingSortOpen {
+			m.pendingSortOpen = false
+			m.openSortPopup()
+		}
 		return m, nil
 	case recordsMsg:
 		if msg.tableName != m.currentTableName() {
@@ -346,6 +367,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.filterPopup.active {
 		return m.handleFilterPopupKey(msg)
 	}
+	if m.sortPopup.active {
+		return m.handleSortPopupKey(msg)
+	}
 	if m.helpPopup.active {
 		return m.handleHelpPopupKey(msg)
 	}
@@ -390,6 +414,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case keyMatches(keyRuntimeFilter, key):
 		return m.startFilterPopup()
+	case keyMatches(keyRuntimeSort, key):
+		return m.startSortPopup()
 	case keyMatches(keyRuntimeSave, key):
 		return m.requestSaveChanges()
 	case keyMatches(keyRuntimeInsert, key):
@@ -455,6 +481,25 @@ func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.filterPopup.input, m.filterPopup.cursor = insertAtCursor(m.filterPopup.input, insert, m.filterPopup.cursor)
 	}
 	return m, nil
+}
+
+func (m *Model) handleSortPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
+	switch {
+	case keyMatches(keyRuntimeEsc, key):
+		m.closeSortPopup()
+		return m, nil
+	case keyMatches(keyRuntimeEnter, key):
+		return m.confirmSortPopupSelection()
+	case keyMatches(keyRuntimeMoveDown, key):
+		m.moveSortPopupSelection(1)
+		return m, nil
+	case keyMatches(keyRuntimeMoveUp, key):
+		m.moveSortPopupSelection(-1)
+		return m, nil
+	default:
+		return m, nil
+	}
 }
 
 func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -960,6 +1005,21 @@ func (m *Model) startFilterPopup() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *Model) startSortPopup() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent {
+		return m, nil
+	}
+	if m.currentTableName() == "" {
+		return m, nil
+	}
+	if len(m.schema.Columns) == 0 {
+		m.pendingSortOpen = true
+		return m, m.loadSchemaCmd()
+	}
+	m.openSortPopup()
+	return m, nil
+}
+
 func (m *Model) openFilterPopup() {
 	m.filterPopup = filterPopup{
 		active:        true,
@@ -974,6 +1034,32 @@ func (m *Model) openFilterPopup() {
 
 func (m *Model) closeFilterPopup() {
 	m.filterPopup = filterPopup{}
+}
+
+func (m *Model) openSortPopup() {
+	directionIndex := 0
+	columnIndex := 0
+	if m.currentSort != nil {
+		for i, column := range m.schema.Columns {
+			if column.Name == m.currentSort.Column {
+				columnIndex = i
+				break
+			}
+		}
+		if m.currentSort.Direction == dto.SortDirectionDesc {
+			directionIndex = 1
+		}
+	}
+	m.sortPopup = sortPopup{
+		active:         true,
+		step:           sortSelectColumn,
+		columnIndex:    columnIndex,
+		directionIndex: directionIndex,
+	}
+}
+
+func (m *Model) closeSortPopup() {
+	m.sortPopup = sortPopup{}
 }
 
 func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
@@ -1094,6 +1180,30 @@ func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
 	}
 }
 
+func (m *Model) confirmSortPopupSelection() (tea.Model, tea.Cmd) {
+	switch m.sortPopup.step {
+	case sortSelectColumn:
+		if len(m.schema.Columns) == 0 {
+			return m, nil
+		}
+		m.sortPopup.step = sortSelectDirection
+		return m, nil
+	case sortSelectDirection:
+		if len(m.schema.Columns) == 0 {
+			return m, nil
+		}
+		directions := sortDirections()
+		if len(directions) == 0 {
+			return m, nil
+		}
+		column := m.schema.Columns[m.sortPopup.columnIndex]
+		direction := directions[clamp(m.sortPopup.directionIndex, 0, len(directions)-1)]
+		return m.applySort(column.Name, direction)
+	default:
+		return m, nil
+	}
+}
+
 func (m *Model) movePopupSelection(delta int) {
 	switch m.filterPopup.step {
 	case filterSelectColumn:
@@ -1106,6 +1216,22 @@ func (m *Model) movePopupSelection(delta int) {
 			return
 		}
 		m.filterPopup.operatorIndex = clamp(m.filterPopup.operatorIndex+delta, 0, len(m.filterPopup.operators)-1)
+	}
+}
+
+func (m *Model) moveSortPopupSelection(delta int) {
+	switch m.sortPopup.step {
+	case sortSelectColumn:
+		if len(m.schema.Columns) == 0 {
+			return
+		}
+		m.sortPopup.columnIndex = clamp(m.sortPopup.columnIndex+delta, 0, len(m.schema.Columns)-1)
+	case sortSelectDirection:
+		directions := sortDirections()
+		if len(directions) == 0 {
+			return
+		}
+		m.sortPopup.directionIndex = clamp(m.sortPopup.directionIndex+delta, 0, len(directions)-1)
 	}
 }
 
@@ -1132,8 +1258,18 @@ func (m *Model) applyFilter(operator dto.Operator, value string) (tea.Model, tea
 	return m, nil
 }
 
+func (m *Model) applySort(column string, direction dto.SortDirection) (tea.Model, tea.Cmd) {
+	m.currentSort = &dto.Sort{
+		Column:    column,
+		Direction: direction,
+	}
+	m.closeSortPopup()
+	return m, m.loadRecordsCmd(true)
+}
+
 func (m *Model) resetTableContext() {
 	m.currentFilter = nil
+	m.currentSort = nil
 	m.schema = dto.Schema{}
 	m.schemaIndex = 0
 	m.records = nil
@@ -1144,12 +1280,14 @@ func (m *Model) resetTableContext() {
 	m.recordLoading = false
 	m.recordFieldFocus = false
 	m.filterPopup = filterPopup{}
+	m.sortPopup = sortPopup{}
 	m.helpPopup = helpPopup{}
 	m.editPopup = editPopup{}
 	m.confirmPopup = confirmPopup{}
 	m.clearStagedState()
 	m.pendingTableIndex = -1
 	m.pendingFilterOpen = false
+	m.pendingSortOpen = false
 }
 
 func (m *Model) loadViewForSelection() tea.Cmd {
@@ -1184,7 +1322,7 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 	}
 	m.recordLoading = true
 	m.recordRequestID++
-	return loadRecordsCmd(m.ctx, m.listRecords, tableName, m.recordOffset, recordPageSize, m.currentFilter, m.recordRequestID)
+	return loadRecordsCmd(m.ctx, m.listRecords, tableName, m.recordOffset, recordPageSize, m.currentFilter, m.currentSort, m.recordRequestID)
 }
 
 func (m *Model) maybeLoadMoreRecords() tea.Cmd {
@@ -1268,17 +1406,6 @@ func (m *Model) commandPrompt() string {
 
 func (m *Model) ShouldOpenConfigSelector() bool {
 	return m.openConfigSelector
-}
-
-func (m *Model) schemaColumns() []string {
-	if len(m.schema.Columns) == 0 {
-		return nil
-	}
-	columns := make([]string, len(m.schema.Columns))
-	for i, column := range m.schema.Columns {
-		columns[i] = column.Name
-	}
-	return columns
 }
 
 func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
@@ -2112,6 +2239,10 @@ func optionIndex(options []string, value string) int {
 	return 0
 }
 
+func sortDirections() []dto.SortDirection {
+	return []dto.SortDirection{dto.SortDirectionAsc, dto.SortDirectionDesc}
+}
+
 func containsInt(values []int, target int) bool {
 	return indexOfInt(values, target) >= 0
 }
@@ -2173,9 +2304,9 @@ func loadSchemaCmd(ctx context.Context, uc *usecase.GetSchema, tableName string)
 	}
 }
 
-func loadRecordsCmd(ctx context.Context, uc *usecase.ListRecords, tableName string, offset, limit int, filter *dto.Filter, requestID int) tea.Cmd {
+func loadRecordsCmd(ctx context.Context, uc *usecase.ListRecords, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort, requestID int) tea.Cmd {
 	return func() tea.Msg {
-		page, err := uc.Execute(ctx, tableName, offset, limit, filter)
+		page, err := uc.Execute(ctx, tableName, offset, limit, filter, sort)
 		if err != nil {
 			return errMsg{err: err}
 		}
