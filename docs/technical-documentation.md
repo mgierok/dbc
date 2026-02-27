@@ -165,11 +165,17 @@ Package responsibilities:
    - sort apply triggers records reload from offset `0`,
    - sort state resets on table switch as part of table-context reset,
    - pending inserts remain rendered before persisted rows and are not SQL-sorted.
-12. Runtime popup rendering standardization:
+12. Runtime single-record detail behavior:
+   - `Shift+V` opens selected-row detail state only when records panel context is active,
+   - detail renderer uses effective row values (persisted values overridden by staged edits/inserts),
+   - detail layout is vertical and wraps values without truncation,
+   - detail supports keyboard scrolling (`j/k`, `Ctrl+f`/`Ctrl+b`, `g`/`G`) and closes with `Esc`,
+   - detail state resets on table-context resets and records reload resets.
+13. Runtime popup rendering standardization:
    - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by runtime help, filter, sort, edit, and confirm popup variants,
    - shared popup spec includes title/summary rows, optional selectable list rows, optional scroll window/indicator, and width clamping,
    - `View()` renders runtime popup overlays via `centerBoxLines` for help, filter, sort, edit, and confirm popup variants.
-13. Unsupported runtime commands keep existing fallback:
+14. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,
    - runtime session remains active.
 

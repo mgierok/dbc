@@ -36,6 +36,7 @@ const (
 	keyRuntimeEsc              keyBindingID = "runtime.esc"
 	keyRuntimeFilter           keyBindingID = "runtime.filter"
 	keyRuntimeSort             keyBindingID = "runtime.sort"
+	keyRuntimeRecordDetail     keyBindingID = "runtime.record_detail"
 	keyRuntimeSave             keyBindingID = "runtime.save"
 	keyRuntimeInsert           keyBindingID = "runtime.insert"
 	keyRuntimeDelete           keyBindingID = "runtime.delete"
@@ -91,6 +92,7 @@ var keyBindings = map[keyBindingID]keyBinding{
 	keyRuntimeEsc:              {keys: []string{"esc"}, label: "Esc"},
 	keyRuntimeFilter:           {keys: []string{"F"}, label: "F"},
 	keyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
+	keyRuntimeRecordDetail:     {keys: []string{"V"}, label: "Shift+V"},
 	keyRuntimeSave:             {keys: []string{"w"}, label: "w"},
 	keyRuntimeInsert:           {keys: []string{"i"}, label: "i"},
 	keyRuntimeDelete:           {keys: []string{"d"}, label: "d"},
@@ -197,6 +199,10 @@ var runtimeHelpKeywordSpecs = []runtimeHelpKeywordSpec{
 	{
 		bindings:    []keyBindingID{keyRuntimeSort},
 		description: "Open sort flow for current table.",
+	},
+	{
+		bindings:    []keyBindingID{keyRuntimeRecordDetail},
+		description: "Open selected record detail view.",
 	},
 	{
 		bindings:    []keyBindingID{keyRuntimeInsert},
@@ -382,9 +388,10 @@ func runtimeStatusSchemaShortcuts() string {
 
 func runtimeStatusRecordsShortcuts() string {
 	return fmt.Sprintf(
-		"Records: %s tables | %s edit | %s insert | %s delete | %s undo | %s redo | %s save | %s filter | %s sort",
+		"Records: %s tables | %s edit | %s detail | %s insert | %s delete | %s undo | %s redo | %s save | %s filter | %s sort",
 		keyLabel(keyRuntimeEsc),
 		keyLabel(keyRuntimeEnter),
+		keyLabel(keyRuntimeRecordDetail),
 		keyLabel(keyRuntimeInsert),
 		keyLabel(keyRuntimeDelete),
 		keyLabel(keyRuntimeUndo),
@@ -392,6 +399,15 @@ func runtimeStatusRecordsShortcuts() string {
 		keyLabel(keyRuntimeSave),
 		keyLabel(keyRuntimeFilter),
 		keyLabel(keyRuntimeSort),
+	)
+}
+
+func runtimeStatusRecordDetailShortcuts() string {
+	return fmt.Sprintf(
+		"Detail: %s back | %s scroll | %s page",
+		keyLabel(keyRuntimeEsc),
+		joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp),
+		joinKeyLabels("/", keyRuntimePageDown, keyRuntimePageUp),
 	)
 }
 

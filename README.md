@@ -46,6 +46,7 @@ Records and staged changes:
 - `Esc`: return to tables (right panel neutral) / exit field focus / close popup
 - `F`: open filter popup
 - `Shift+S`: open sort popup (single column + `ASC`/`DESC`)
+- `Shift+V`: open selected record detail view in vertical layout; field values are wrapped (no truncation)
 - `i`: stage insert
 - `d`: toggle delete marker or remove pending insert
 - `u`: undo staged action

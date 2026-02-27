@@ -65,8 +65,27 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	shortcuts := model.statusShortcuts()
 
 	// Assert
-	if shortcuts != "Records: Esc tables | Enter edit | i insert | d delete | u undo | Ctrl+r redo | w save | F filter | Shift+S sort" {
+	if shortcuts != "Records: Esc tables | Enter edit | Shift+V detail | i insert | d delete | u undo | Ctrl+r redo | w save | F filter | Shift+S sort" {
 		t.Fatalf("expected records shortcuts, got %q", shortcuts)
+	}
+}
+
+func TestStatusShortcuts_RecordDetailPanel(t *testing.T) {
+	// Arrange
+	model := &Model{
+		focus:    FocusContent,
+		viewMode: ViewRecords,
+		recordDetail: recordDetailState{
+			active: true,
+		},
+	}
+
+	// Act
+	shortcuts := model.statusShortcuts()
+
+	// Assert
+	if shortcuts != "Detail: Esc back | j/k scroll | Ctrl+f/Ctrl+b page" {
+		t.Fatalf("expected detail shortcuts, got %q", shortcuts)
 	}
 }
 
@@ -199,6 +218,42 @@ func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 	}
 }
 
+func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
+	// Arrange
+	longValue := "abcdefghijklmnopqrstuvwxyz0123456789"
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		recordDetail: recordDetailState{
+			active: true,
+		},
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "payload", Type: "TEXT"},
+			},
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", longValue}},
+		},
+	}
+
+	// Act
+	lines := model.renderContent(20, 8)
+	content := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(content, "[COL] id (INTEGER)") {
+		t.Fatalf("expected id header in detail layout, got %q", content)
+	}
+	if !strings.Contains(content, "[COL] payload (TEXT)") {
+		t.Fatalf("expected payload header in detail layout, got %q", content)
+	}
+	if strings.Contains(content, "...") {
+		t.Fatalf("expected no truncation marker in detail layout, got %q", content)
+	}
+}
+
 func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -281,6 +336,9 @@ func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testi
 	}
 	if !strings.Contains(popup, ":quit / :q - Quit the application.") {
 		t.Fatalf("expected help popup to include :quit alias one-line description, got %q", popup)
+	}
+	if !strings.Contains(strings.Join(helpPopupContentLines(), "\n"), "Shift+V - Open selected record detail view.") {
+		t.Fatalf("expected help content to include Shift+V one-line description, got %q", popup)
 	}
 	if strings.Contains(popup, "q / Ctrl+c - Quit the application.") {
 		t.Fatalf("expected help popup to avoid runtime q/Ctrl+c quit shortcut, got %q", popup)

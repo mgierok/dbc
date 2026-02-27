@@ -116,6 +116,9 @@ func (m *Model) renderTables(width, height int) []string {
 func (m *Model) renderContent(width, height int) []string {
 	switch m.viewMode {
 	case ViewRecords:
+		if m.recordDetail.active {
+			return m.renderRecordDetail(width, height)
+		}
 		return m.renderRecords(width, height)
 	default:
 		return m.renderSchema(width, height)
@@ -214,6 +217,93 @@ func (m *Model) renderRecords(width, height int) []string {
 		lines = append(lines, padRight(prefix+rowTag+row, width))
 	}
 	return padLines(lines, height, width)
+}
+
+func (m *Model) renderRecordDetail(width, height int) []string {
+	title := "Record Detail"
+	if m.focus == FocusContent && m.viewMode == ViewRecords {
+		title = "Record Detail *"
+	}
+	lines := []string{padRight(title, width)}
+
+	listHeight := height - 1
+	if listHeight < 1 {
+		return padLines(lines, height, width)
+	}
+
+	contentLines := m.recordDetailContentLines(width)
+	if len(contentLines) == 0 {
+		lines = append(lines, padRight("No detail available.", width))
+		return padLines(lines, height, width)
+	}
+
+	maxOffset := len(contentLines) - listHeight
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	offset := clamp(m.recordDetail.scrollOffset, 0, maxOffset)
+	end := minInt(len(contentLines), offset+listHeight)
+
+	for i := offset; i < end; i++ {
+		lines = append(lines, padRight(contentLines[i], width))
+	}
+
+	return padLines(lines, height, width)
+}
+
+func (m *Model) recordDetailContentLines(width int) []string {
+	if m.totalRecordRows() == 0 {
+		return []string{"No records."}
+	}
+	if len(m.schema.Columns) == 0 {
+		return []string{"No columns loaded."}
+	}
+
+	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
+	lines := make([]string, 0, len(m.schema.Columns)*4)
+	rowLine := "[ROW] Persisted record"
+	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
+		rowLine = "[ROW] [INS] Pending insert"
+	} else if m.isRowMarkedDelete(rowIndex) {
+		rowLine = "[ROW] [DEL] Marked for delete"
+	}
+	lines = append(lines, wrapTextToWidth(rowLine, width)...)
+	lines = append(lines, "")
+
+	valueWidth := width - 2
+	if valueWidth < 1 {
+		valueWidth = 1
+	}
+
+	for columnIndex, column := range m.schema.Columns {
+		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
+		header := fmt.Sprintf("[COL] %s (%s)", column.Name, column.Type)
+		if edited {
+			header += " *"
+		}
+		lines = append(lines, wrapTextToWidth(header, width)...)
+
+		for _, wrappedLine := range wrapTextToWidth(value, valueWidth) {
+			lines = append(lines, "  "+wrappedLine)
+		}
+		if columnIndex < len(m.schema.Columns)-1 {
+			lines = append(lines, "")
+		}
+	}
+	return lines
+}
+
+func (m *Model) effectiveRecordDetailValue(rowIndex, columnIndex int) (string, bool) {
+	if insertIndex, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
+		if value, ok := m.pendingInserts[insertIndex].values[columnIndex]; ok {
+			return displayValue(value.Value), false
+		}
+		return "", false
+	}
+	if staged, ok := m.stagedEditForRow(rowIndex, columnIndex); ok {
+		return displayValue(staged.Value), true
+	}
+	return m.visibleRowValue(rowIndex, columnIndex), false
 }
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
@@ -488,6 +578,8 @@ func (m *Model) statusShortcuts() string {
 		return runtimeStatusHelpPopupShortcuts()
 	case m.commandInput.active:
 		return runtimeStatusCommandInputShortcuts()
+	case m.recordDetail.active:
+		return runtimeStatusRecordDetailShortcuts()
 	case m.focus == FocusTables:
 		return runtimeStatusTablesShortcuts()
 	case m.focus == FocusContent && m.viewMode == ViewSchema:
@@ -691,6 +783,34 @@ func truncate(text string, width int) string {
 		return string(runes[:width])
 	}
 	return string(runes[:width-3]) + "..."
+}
+
+func wrapTextToWidth(text string, width int) []string {
+	if width <= 0 {
+		return []string{""}
+	}
+	if text == "" {
+		return []string{""}
+	}
+
+	segments := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+	lines := make([]string, 0, len(segments))
+	for _, segment := range segments {
+		runes := []rune(segment)
+		if len(runes) == 0 {
+			lines = append(lines, "")
+			continue
+		}
+		for len(runes) > width {
+			lines = append(lines, string(runes[:width]))
+			runes = runes[width:]
+		}
+		lines = append(lines, string(runes))
+	}
+	if len(lines) == 0 {
+		return []string{""}
+	}
+	return lines
 }
 
 func textWidth(text string) int {

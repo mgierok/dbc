@@ -50,6 +50,7 @@ Core user value in current state:
   - Right panel: schema view or records view for selected table.
 - Schema inspection for selected table columns.
 - Record browsing with continuous scrolling behavior.
+- Single-record detail inspection in right panel (`Shift+V`) with vertical field layout.
 - Single active filter per selected table.
 - Single active sort (one column + direction) per selected table.
 - Staged data operations for current table:
@@ -146,6 +147,12 @@ Core user value in current state:
 - Row selection is visible in the focused records panel.
 - Field focus mode is supported for cell-level editing navigation.
 - Record cell content is width-constrained in the UI (truncated when needed).
+- Users can open a single-record detail view in records context with `Shift+V`.
+- Single-record detail view behavior:
+  - Renders selected row vertically as `column -> value`.
+  - Uses effective row state (includes staged insert/edit values).
+  - Does not truncate field content; values are wrapped and scrollable.
+  - Closes with `Esc` and returns to records list context.
 - Users can open a guided sort popup in records view with `Shift+S`.
 - Sort flow is step-based:
   - Select one column.
@@ -264,7 +271,7 @@ Core user value in current state:
 - Record list loads progressively as users navigate deeper.
 - Users can navigate rows and jump/page efficiently.
 
-### Step 4: Focused Inspection with Filters and Sorting
+### Step 4: Focused Inspection with Filters, Sorting, and Row Detail
 
 - Users open the filter flow and select:
   - Column.
@@ -275,6 +282,8 @@ Core user value in current state:
   - One column.
   - `ASC` or `DESC`.
 - Product applies one active sort for the currently selected table.
+- Users can open single-record detail with `Shift+V` to inspect full field values without truncation.
+- Users can leave single-record detail with `Esc` and continue records browsing.
 
 ### Step 5: Controlled Data Change Workflow
 
@@ -318,6 +327,7 @@ Core user value in current state:
 | Exit runtime session (command mode) | `:quit`, `:q` |
 | Open filter popup | `F` |
 | Open sort popup | `Shift+S` |
+| Open selected row detail view | `Shift+V` |
 | Stage insert | `i` |
 | Toggle delete marker / remove pending insert | `d` |
 | Undo staged action | `u` |
@@ -336,6 +346,7 @@ Core user value in current state:
 | Dirty table-switch decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Dirty `:config` / `:c` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Help popup | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
+| Single-record detail view | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 
 ### 6.5 Startup Selector

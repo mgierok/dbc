@@ -76,6 +76,11 @@ type helpPopup struct {
 	scrollOffset int
 }
 
+type recordDetailState struct {
+	active       bool
+	scrollOffset int
+}
+
 type stagedEdit struct {
 	Value model.Value
 }
@@ -226,6 +231,7 @@ type Model struct {
 	sortPopup         sortPopup
 	commandInput      commandInput
 	helpPopup         helpPopup
+	recordDetail      recordDetailState
 	editPopup         editPopup
 	confirmPopup      confirmPopup
 	pendingFilterOpen bool
@@ -376,6 +382,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.commandInput.active {
 		return m.handleCommandInputKey(msg)
 	}
+	if m.recordDetail.active {
+		return m.handleRecordDetailKey(msg)
+	}
 
 	if m.pendingG {
 		if keyMatches(keyRuntimeJumpTopPending, key) {
@@ -416,6 +425,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.startFilterPopup()
 	case keyMatches(keyRuntimeSort, key):
 		return m.startSortPopup()
+	case keyMatches(keyRuntimeRecordDetail, key):
+		return m.openRecordDetail()
 	case keyMatches(keyRuntimeSave, key):
 		return m.requestSaveChanges()
 	case keyMatches(keyRuntimeInsert, key):
@@ -976,6 +987,7 @@ func (m *Model) switchToRecords() (tea.Model, tea.Cmd) {
 	m.viewMode = ViewRecords
 	m.focus = FocusContent
 	m.recordFieldFocus = false
+	m.closeRecordDetail()
 	if m.currentTableName() == "" {
 		return m, nil
 	}
@@ -1115,6 +1127,75 @@ func (m *Model) openHelpPopup() {
 
 func (m *Model) closeHelpPopup() {
 	m.helpPopup = helpPopup{}
+}
+
+func (m *Model) openRecordDetail() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent {
+		return m, nil
+	}
+	if m.totalRecordRows() == 0 {
+		return m, nil
+	}
+	m.recordDetail = recordDetailState{
+		active:       true,
+		scrollOffset: 0,
+	}
+	return m, nil
+}
+
+func (m *Model) closeRecordDetail() {
+	m.recordDetail = recordDetailState{}
+}
+
+func (m *Model) handleRecordDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
+	switch {
+	case keyMatches(keyRuntimeEsc, key):
+		m.closeRecordDetail()
+		return m, nil
+	case keyMatches(keyPopupMoveDown, key):
+		m.moveRecordDetailScroll(1)
+		return m, nil
+	case keyMatches(keyPopupMoveUp, key):
+		m.moveRecordDetailScroll(-1)
+		return m, nil
+	case keyMatches(keyRuntimePageDown, key):
+		m.moveRecordDetailScroll(m.recordDetailVisibleLines())
+		return m, nil
+	case keyMatches(keyRuntimePageUp, key):
+		m.moveRecordDetailScroll(-m.recordDetailVisibleLines())
+		return m, nil
+	case keyMatches(keyPopupJumpTop, key):
+		m.recordDetail.scrollOffset = 0
+		return m, nil
+	case keyMatches(keyPopupJumpBottom, key):
+		m.recordDetail.scrollOffset = m.recordDetailMaxOffset()
+		return m, nil
+	default:
+		return m, nil
+	}
+}
+
+func (m *Model) moveRecordDetailScroll(delta int) {
+	maxOffset := m.recordDetailMaxOffset()
+	m.recordDetail.scrollOffset = clamp(m.recordDetail.scrollOffset+delta, 0, maxOffset)
+}
+
+func (m *Model) recordDetailVisibleLines() int {
+	visible := m.contentHeight() - 1
+	if visible < 1 {
+		return 1
+	}
+	return visible
+}
+
+func (m *Model) recordDetailMaxOffset() int {
+	_, rightWidth := m.panelWidths()
+	maxOffset := len(m.recordDetailContentLines(rightWidth)) - m.recordDetailVisibleLines()
+	if maxOffset < 0 {
+		return 0
+	}
+	return maxOffset
 }
 
 func (m *Model) moveHelpPopupScroll(delta int) {
@@ -1282,6 +1363,7 @@ func (m *Model) resetTableContext() {
 	m.filterPopup = filterPopup{}
 	m.sortPopup = sortPopup{}
 	m.helpPopup = helpPopup{}
+	m.recordDetail = recordDetailState{}
 	m.editPopup = editPopup{}
 	m.confirmPopup = confirmPopup{}
 	m.clearStagedState()
@@ -1316,6 +1398,7 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 		m.recordSelection = 0
 		m.recordFieldFocus = false
 		m.recordHasMore = true
+		m.closeRecordDetail()
 	}
 	if !m.recordHasMore || m.recordLoading {
 		return nil
