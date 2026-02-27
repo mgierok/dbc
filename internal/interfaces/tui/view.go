@@ -270,11 +270,13 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
 	lines := make([]string, 0, len(m.schema.Columns)*4)
-	rowLine := "ⓘ Persisted record"
+	rowLine := "ⓘ  Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		rowLine = "ⓘ [INS] Pending insert"
+		rowLine = "ⓘ  Pending insert"
 	} else if m.isRowMarkedDelete(rowIndex) {
-		rowLine = "ⓘ [DEL] Marked for delete"
+		rowLine = "ⓘ  Marked for delete"
+	} else if m.isRowEdited(rowIndex) {
+		rowLine = "ⓘ  Edited record"
 	}
 	lines = append(lines, wrapTextToWidth(rowLine, width)...)
 	lines = append(lines, "")
@@ -313,6 +315,22 @@ func (m *Model) effectiveRecordDetailValue(rowIndex, columnIndex int) (string, b
 		return displayValue(staged.Value), true
 	}
 	return m.visibleRowValue(rowIndex, columnIndex), false
+}
+
+func (m *Model) isRowEdited(rowIndex int) bool {
+	persistedIndex := m.persistedRowIndex(rowIndex)
+	if persistedIndex < 0 {
+		return false
+	}
+	key, ok := m.recordKeyForPersistedRow(persistedIndex)
+	if !ok {
+		return false
+	}
+	edits, ok := m.pendingUpdates[key]
+	if !ok {
+		return false
+	}
+	return len(edits.changes) > 0
 }
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {

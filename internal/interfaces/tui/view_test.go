@@ -243,7 +243,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	content := strings.Join(lines, "\n")
 
 	// Assert
-	if !strings.Contains(content, "ⓘ Persisted record") {
+	if !strings.Contains(content, "ⓘ  Persisted record") {
 		t.Fatalf("expected information marker in detail layout, got %q", content)
 	}
 	if strings.Contains(content, "[ROW]") {
@@ -281,7 +281,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ Persisted record") {
+		if !strings.Contains(lines[0], "ⓘ  Persisted record") {
 			t.Fatalf("expected persisted information marker, got %q", lines[0])
 		}
 	})
@@ -303,7 +303,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ [INS] Pending insert") {
+		if !strings.Contains(lines[0], "ⓘ  Pending insert") {
 			t.Fatalf("expected pending insert information marker, got %q", lines[0])
 		}
 	})
@@ -332,8 +332,42 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ [DEL] Marked for delete") {
+		if !strings.Contains(lines[0], "ⓘ  Marked for delete") {
 			t.Fatalf("expected delete information marker, got %q", lines[0])
+		}
+	})
+
+	t.Run("edited persisted row", func(t *testing.T) {
+		// Arrange
+		model := &Model{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+		}
+		key, ok := model.recordKeyForPersistedRow(0)
+		if !ok {
+			t.Fatal("expected persisted row key")
+		}
+		model.pendingUpdates = map[string]recordEdits{
+			key: {
+				changes: map[int]stagedEdit{
+					1: {Value: domainmodel.Value{Text: "alice2", Raw: "alice2"}},
+				},
+			},
+		}
+
+		// Act
+		lines := model.recordDetailContentLines(40)
+
+		// Assert
+		if !strings.Contains(lines[0], "ⓘ  Edited record") {
+			t.Fatalf("expected edited information marker, got %q", lines[0])
 		}
 	})
 }
