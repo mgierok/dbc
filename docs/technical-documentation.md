@@ -164,7 +164,10 @@ Package responsibilities:
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
 10. `:quit` / `:q` routing behavior:
    - command exits runtime loop immediately without save/discard confirmation.
-11. Runtime records sort behavior:
+11. Runtime records filter and sort behavior:
+   - filter popup open path is restricted to records-panel context (`ViewRecords` + `FocusContent`) and uses `Shift+F`,
+   - filter apply triggers records reload from offset `0`,
+   - filter state resets on table switch as part of table-context reset,
    - records sort state is kept in runtime model as optional single-column sort (`column` + `ASC`/`DESC`),
    - sort apply triggers records reload from offset `0`,
    - sort state resets on table switch as part of table-context reset,

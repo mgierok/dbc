@@ -168,7 +168,7 @@ Core user value in current state:
 
 ### 4.5 Filtering
 
-- Users can open a guided filter popup from main browsing contexts.
+- Users can open a guided filter popup in records view with `Shift+F`.
 - Filter flow is step-based:
   - Select column.
   - Select operator.
@@ -274,7 +274,7 @@ Core user value in current state:
 
 ### Step 4: Focused Inspection with Filters, Sorting, and Row Detail
 
-- Users open the filter flow and select:
+- Users open the filter flow in records view and select:
   - Column.
   - Operator.
   - Value (when required by operator).
@@ -327,7 +327,7 @@ Core user value in current state:
 | Open selector/config management (command mode) | `:config`, `:c` |
 | Open runtime context help popup (command-mode alias) | `:help`, `:h` |
 | Exit runtime session (command mode) | `:quit`, `:q` |
-| Open filter popup | `F` |
+| Open filter popup | `Shift+F` |
 | Open sort popup | `Shift+S` |
 | Open selected row detail view | `Enter` (in records context) |
 | Stage insert | `i` |
