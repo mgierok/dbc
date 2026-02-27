@@ -34,17 +34,6 @@ Deep-dive references SHOULD be loaded only when task complexity requires normati
   - when designing or updating test strategy/coverage,
   - when deciding Red-Green-Refactor execution details for non-trivial changes.
 
-### 2.1 Mandatory Commit-Message Skill Invocation
-
-You MUST explicitly invoke skill `write-commit-messages` when at least one of these situations is true:
-
-- user asks to create/propose/write a commit message
-- user asks to run `commit` without providing a message
-- user asks to improve or validate an existing commit message
-- user asks to classify commit type/scope according to Conventional Commits
-
-When this skill is invoked, commit messages MUST use Conventional Commits format and SHOULD use the changed files/diff as primary context.
-
 ## 3. Agent Workflow Standard
 
 ### 3.1 Planning
@@ -101,11 +90,6 @@ For multi-step tasks, the agent MUST include short checkpoints in this format:
 - `STEP`: what will be done now
 - `VERIFY`: how success will be checked
 - `DECISION`: what needs user confirmation before next step
-
-### 3.2.2 Reference Integrity
-
-- Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
-- Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
 ### 3.3 Completion
 
@@ -251,7 +235,10 @@ For trigger evaluation, documentation files MUST include Markdown/governance doc
 
 ## 6. Misc Rules
 
+- For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
+- Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change set; exclude completed PRD and TASK artifacts.
+- Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 
 ## 7. Quick Reference
 
