@@ -9,7 +9,6 @@
 If any documentation conflicts with current code behavior:
 
 1. You MUST treat current code as factual state.
-2. You MUST resolve the documentation update through the applicable documentation skill(s) in the same change set.
 
 ## 2. Mandatory Context Loading
 
