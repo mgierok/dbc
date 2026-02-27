@@ -62,6 +62,18 @@ func TestRuntimeHelpPopupSummaryLine_IsDeterministic(t *testing.T) {
 	}
 }
 
+func TestRuntimeStatusContextHelpHint_IsDeterministic(t *testing.T) {
+	// Arrange
+
+	// Act
+	hint := runtimeStatusContextHelpHint()
+
+	// Assert
+	if hint != "Context help: ?" {
+		t.Fatalf("expected deterministic context-help hint, got %q", hint)
+	}
+}
+
 func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	// Arrange
 

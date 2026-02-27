@@ -74,7 +74,24 @@ type commandInput struct {
 type helpPopup struct {
 	active       bool
 	scrollOffset int
+	context      helpPopupContext
 }
+
+type helpPopupContext int
+
+const (
+	helpPopupContextUnknown helpPopupContext = iota
+	helpPopupContextTables
+	helpPopupContextSchema
+	helpPopupContextRecords
+	helpPopupContextRecordDetail
+	helpPopupContextFilterPopup
+	helpPopupContextSortPopup
+	helpPopupContextEditPopup
+	helpPopupContextConfirmPopup
+	helpPopupContextCommandInput
+	helpPopupContextHelpPopup
+)
 
 type recordDetailState struct {
 	active       bool
@@ -364,6 +381,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 
+	if keyMatches(keyRuntimeOpenContextHelp, key) {
+		if m.helpPopup.active {
+			return m, nil
+		}
+		m.openHelpPopup(m.currentHelpPopupContext())
+		return m, nil
+	}
+
+	if m.helpPopup.active {
+		return m.handleHelpPopupKey(msg)
+	}
 	if m.editPopup.active {
 		return m.handleEditPopupKey(msg)
 	}
@@ -375,9 +403,6 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.sortPopup.active {
 		return m.handleSortPopupKey(msg)
-	}
-	if m.helpPopup.active {
-		return m.handleHelpPopupKey(msg)
 	}
 	if m.commandInput.active {
 		return m.handleCommandInputKey(msg)
@@ -1100,7 +1125,7 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 
 	switch commandSpec.action {
 	case runtimeCommandActionOpenHelp:
-		m.openHelpPopup()
+		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	case runtimeCommandActionQuit:
 		return m, tea.Quit
@@ -1126,8 +1151,13 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *Model) openHelpPopup() {
-	m.helpPopup = helpPopup{active: true}
+func (m *Model) openHelpPopup(context helpPopupContext) {
+	m.commandInput = commandInput{}
+	m.helpPopup = helpPopup{
+		active:       true,
+		scrollOffset: 0,
+		context:      context,
+	}
 }
 
 func (m *Model) closeHelpPopup() {
@@ -1223,11 +1253,112 @@ func (m *Model) helpPopupVisibleLines() int {
 }
 
 func (m *Model) helpPopupMaxOffset() int {
-	maxOffset := len(helpPopupContentLines()) - m.helpPopupVisibleLines()
+	maxOffset := len(m.helpPopupContentLines()) - m.helpPopupVisibleLines()
 	if maxOffset < 0 {
 		return 0
 	}
 	return maxOffset
+}
+
+func (m *Model) currentHelpPopupContext() helpPopupContext {
+	switch {
+	case m.editPopup.active:
+		return helpPopupContextEditPopup
+	case m.confirmPopup.active:
+		return helpPopupContextConfirmPopup
+	case m.filterPopup.active:
+		return helpPopupContextFilterPopup
+	case m.sortPopup.active:
+		return helpPopupContextSortPopup
+	case m.helpPopup.active:
+		return helpPopupContextHelpPopup
+	case m.commandInput.active:
+		return helpPopupContextCommandInput
+	case m.recordDetail.active:
+		return helpPopupContextRecordDetail
+	case m.focus == FocusTables:
+		return helpPopupContextTables
+	case m.focus == FocusContent && m.viewMode == ViewSchema:
+		return helpPopupContextSchema
+	case m.focus == FocusContent && m.viewMode == ViewRecords:
+		return helpPopupContextRecords
+	default:
+		return helpPopupContextUnknown
+	}
+}
+
+func (m *Model) helpPopupContextTitle() string {
+	switch m.helpPopup.context {
+	case helpPopupContextTables:
+		return "Context Help: Tables"
+	case helpPopupContextSchema:
+		return "Context Help: Schema"
+	case helpPopupContextRecords:
+		return "Context Help: Records"
+	case helpPopupContextRecordDetail:
+		return "Context Help: Record Detail"
+	case helpPopupContextFilterPopup:
+		return "Context Help: Filter Popup"
+	case helpPopupContextSortPopup:
+		return "Context Help: Sort Popup"
+	case helpPopupContextEditPopup:
+		return "Context Help: Edit Popup"
+	case helpPopupContextConfirmPopup:
+		return "Context Help: Confirm Popup"
+	case helpPopupContextCommandInput:
+		return "Context Help: Command Input"
+	case helpPopupContextHelpPopup:
+		return "Context Help: Help Popup"
+	default:
+		return "Context Help"
+	}
+}
+
+func (m *Model) helpPopupContentLines() []string {
+	shortcuts := m.helpPopupContextShortcuts()
+	if strings.TrimSpace(shortcuts) == "" {
+		return []string{"No keybindings available in this context."}
+	}
+	parts := strings.Split(shortcuts, "|")
+	lines := make([]string, 0, len(parts))
+	for _, part := range parts {
+		line := strings.TrimSpace(part)
+		if line == "" {
+			continue
+		}
+		lines = append(lines, line)
+	}
+	if len(lines) == 0 {
+		return []string{"No keybindings available in this context."}
+	}
+	return lines
+}
+
+func (m *Model) helpPopupContextShortcuts() string {
+	switch m.helpPopup.context {
+	case helpPopupContextEditPopup:
+		return runtimeStatusEditShortcuts()
+	case helpPopupContextConfirmPopup:
+		return runtimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
+	case helpPopupContextFilterPopup:
+		return runtimeStatusFilterPopupShortcuts()
+	case helpPopupContextSortPopup:
+		return runtimeStatusSortPopupShortcuts()
+	case helpPopupContextHelpPopup:
+		return runtimeStatusHelpPopupShortcuts()
+	case helpPopupContextCommandInput:
+		return runtimeStatusCommandInputShortcuts()
+	case helpPopupContextRecordDetail:
+		return runtimeStatusRecordDetailShortcuts()
+	case helpPopupContextTables:
+		return runtimeStatusTablesShortcuts()
+	case helpPopupContextSchema:
+		return runtimeStatusSchemaShortcuts()
+	case helpPopupContextRecords:
+		return runtimeStatusRecordsShortcuts()
+	default:
+		return ""
+	}
 }
 
 func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {

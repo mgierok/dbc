@@ -29,6 +29,7 @@ type runtimeCommandSpec struct {
 
 const (
 	keyRuntimeOpenCommandInput keyBindingID = "runtime.open_command_input"
+	keyRuntimeOpenContextHelp  keyBindingID = "runtime.open_context_help"
 	keyRuntimeJumpTopPending   keyBindingID = "runtime.jump_top_pending"
 	keyRuntimeJumpTopDisplay   keyBindingID = "runtime.jump_top_display"
 	keyRuntimeJumpBottom       keyBindingID = "runtime.jump_bottom"
@@ -86,6 +87,7 @@ const (
 
 var keyBindings = map[keyBindingID]keyBinding{
 	keyRuntimeOpenCommandInput: {keys: []string{":"}, label: ":"},
+	keyRuntimeOpenContextHelp:  {keys: []string{"?"}, label: "?"},
 	keyRuntimeJumpTopPending:   {keys: []string{"g"}, label: "g"},
 	keyRuntimeJumpTopDisplay:   {label: "gg"},
 	keyRuntimeJumpBottom:       {keys: []string{"G"}, label: "G"},
@@ -415,6 +417,10 @@ func runtimeStatusRecordDetailShortcuts() string {
 		joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp),
 		joinKeyLabels("/", keyRuntimePageDown, keyRuntimePageUp),
 	)
+}
+
+func runtimeStatusContextHelpHint() string {
+	return fmt.Sprintf("Context help: %s", keyLabel(keyRuntimeOpenContextHelp))
 }
 
 func selectorContextLinesBrowseDefault() []string {

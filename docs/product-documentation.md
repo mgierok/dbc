@@ -110,10 +110,11 @@ Core user value in current state:
 - After such startup connection error, a user must select another reachable entry or edit the selected entry before the main view can open.
 - Startup selector displays active configuration file path.
 - During active database session, users can open command entry with `:` and execute `:config` / `:c` to return to selector/management.
-- During active database session, users can execute `:help` / `:h` to open runtime help popup reference.
+- During active database session, users can press `?` to open runtime context help popup for the active panel/state.
+- During active database session, users can execute `:help` / `:h` as an alias that also opens runtime context help popup.
 - During active database session, users can execute `:quit` / `:q` to exit the application.
 - Re-running `:help` or `:h` while help popup is already open keeps popup open.
-- Help popup content is split into `Supported Commands` and `Supported Keywords` sections with one-line descriptions.
+- Help popup content lists only keybindings available in the context where help was opened (active panel/state).
 - When help content exceeds visible popup height, users can scroll to reach final entries.
 - Help popup closes only with `Esc`; unrelated keys keep it open.
 - Unsupported runtime commands continue to show unknown-command status while session remains active.
@@ -242,7 +243,7 @@ Core user value in current state:
   - Current table.
   - Active filter summary.
   - Active sort summary.
-  - Contextual shortcut hints.
+  - Right-aligned context-help hint (`Context help: ?`).
   - Runtime status/error messages.
 - Every active editable text field in the app displays a visible caret (`|`) at the insertion point.
 
@@ -300,7 +301,7 @@ Core user value in current state:
 - Fast orientation: panel layout keeps navigation context visible.
 - Safe-by-design editing: data changes are staged before save.
 - Explicit commitment: save requires user confirmation.
-- Visible state: status line communicates mode, view, selected table, filter, and key actions.
+- Visible state: status line communicates mode, view, selected table, filter, sort, runtime status, and right-aligned context-help access.
 - Consistent interaction language: vim-like motions and commands are reused across key contexts.
 
 ### 6.2 Global/Main Navigation
@@ -312,6 +313,7 @@ Core user value in current state:
 | Jump to top | `gg` |
 | Jump to bottom | `G` |
 | Page down/up | `Ctrl+f`, `Ctrl+b` |
+| Open runtime context help popup for current panel/state | `?` |
 | Open selected table in records panel | `Enter` (from left panel) |
 | Return to tables panel and force Table Discovery in right panel | `Esc` (from neutral right panel) |
 
@@ -323,7 +325,7 @@ Core user value in current state:
 | Exit nested right-panel context | `Esc` |
 | Open command entry | `:` |
 | Open selector/config management (command mode) | `:config`, `:c` |
-| Open runtime help popup reference (command mode) | `:help`, `:h` |
+| Open runtime context help popup (command-mode alias) | `:help`, `:h` |
 | Exit runtime session (command mode) | `:quit`, `:q` |
 | Open filter popup | `F` |
 | Open sort popup | `Shift+S` |
@@ -345,7 +347,7 @@ Core user value in current state:
 | Confirm popup (binary) | `Enter` or `y` confirm, `Esc` or `n` cancel |
 | Dirty table-switch decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Dirty `:config` / `:c` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
-| Help popup | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
+| Help popup | Shows keybindings for the context captured on open; `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Single-record detail view | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 

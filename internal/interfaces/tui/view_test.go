@@ -10,51 +10,7 @@ import (
 	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
 
-func TestStatusShortcuts_TablesPanel(t *testing.T) {
-	// Arrange
-	model := &Model{focus: FocusTables}
-
-	// Act
-	shortcuts := model.statusShortcuts()
-
-	// Assert
-	if shortcuts != "Tables: Enter records | F filter" {
-		t.Fatalf("expected table shortcuts, got %q", shortcuts)
-	}
-}
-
-func TestStatusShortcuts_SchemaPanel(t *testing.T) {
-	// Arrange
-	model := &Model{
-		focus:    FocusContent,
-		viewMode: ViewSchema,
-	}
-
-	// Act
-	shortcuts := model.statusShortcuts()
-
-	// Assert
-	if shortcuts != "Schema: Esc tables | F filter" {
-		t.Fatalf("expected schema shortcuts, got %q", shortcuts)
-	}
-}
-
-func TestStatusShortcuts_Popup(t *testing.T) {
-	// Arrange
-	model := &Model{
-		filterPopup: filterPopup{active: true},
-	}
-
-	// Act
-	shortcuts := model.statusShortcuts()
-
-	// Assert
-	if shortcuts != "Popup: Enter apply | Esc close" {
-		t.Fatalf("expected popup shortcuts, got %q", shortcuts)
-	}
-}
-
-func TestStatusShortcuts_RecordsPanel(t *testing.T) {
+func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
 	// Arrange
 	model := &Model{
 		focus:    FocusContent,
@@ -62,30 +18,43 @@ func TestStatusShortcuts_RecordsPanel(t *testing.T) {
 	}
 
 	// Act
-	shortcuts := model.statusShortcuts()
+	status := model.renderStatus(120)
 
 	// Assert
-	if shortcuts != "Records: Esc tables | e edit | Enter detail | i insert | d delete | u undo | Ctrl+r redo | w save | F filter | Shift+S sort" {
-		t.Fatalf("expected records shortcuts, got %q", shortcuts)
+	if !strings.HasSuffix(status, "Context help: ?") {
+		t.Fatalf("expected right-aligned context-help hint suffix, got %q", status)
 	}
 }
 
-func TestStatusShortcuts_RecordDetailPanel(t *testing.T) {
+func TestRenderStatus_DoesNotIncludeContextShortcutList(t *testing.T) {
 	// Arrange
 	model := &Model{
 		focus:    FocusContent,
 		viewMode: ViewRecords,
-		recordDetail: recordDetailState{
-			active: true,
-		},
 	}
 
 	// Act
-	shortcuts := model.statusShortcuts()
+	status := model.renderStatus(200)
 
 	// Assert
-	if shortcuts != "Detail: Esc back | j/k scroll | Ctrl+f/Ctrl+b page" {
-		t.Fatalf("expected detail shortcuts, got %q", shortcuts)
+	if strings.Contains(status, "Records: Esc tables | e edit | Enter detail") {
+		t.Fatalf("expected context shortcut list to be removed from status line, got %q", status)
+	}
+}
+
+func TestRenderStatus_RightHintPriorityOnNarrowWidth(t *testing.T) {
+	// Arrange
+	model := &Model{
+		focus:    FocusContent,
+		viewMode: ViewRecords,
+	}
+
+	// Act
+	status := model.renderStatus(20)
+
+	// Assert
+	if !strings.HasSuffix(status, "Context help: ?") {
+		t.Fatalf("expected narrow status line to keep full right hint, got %q", status)
 	}
 }
 
@@ -429,48 +398,39 @@ func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 	}
 }
 
-func TestRenderHelpPopup_IncludesRequiredSectionsAndOneLineDescriptions(t *testing.T) {
+func TestRenderHelpPopup_ShowsOnlyCurrentContextBindings(t *testing.T) {
 	// Arrange
 	model := &Model{
-		height:    40,
-		helpPopup: helpPopup{active: true},
+		height: 40,
+		helpPopup: helpPopup{
+			active:  true,
+			context: helpPopupContextRecords,
+		},
 	}
 
 	// Act
 	popup := strings.Join(model.renderHelpPopup(60), "\n")
 
 	// Assert
-	if !strings.Contains(popup, "Supported Commands") {
-		t.Fatalf("expected help popup to include Supported Commands section, got %q", popup)
+	if !strings.Contains(popup, "Records: Esc tables") {
+		t.Fatalf("expected records context shortcut row in help popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "Supported Keywords") {
-		t.Fatalf("expected help popup to include Supported Keywords section, got %q", popup)
+	if !strings.Contains(popup, "w save") {
+		t.Fatalf("expected records save shortcut in help popup, got %q", popup)
 	}
-	if !strings.Contains(popup, ":config / :c - Open database selector and config manager.") {
-		t.Fatalf("expected help popup to include :config alias one-line description, got %q", popup)
-	}
-	if !strings.Contains(popup, ":help / :h - Open runtime help popup reference.") {
-		t.Fatalf("expected help popup to include :help alias one-line description, got %q", popup)
-	}
-	if !strings.Contains(popup, ":quit / :q - Quit the application.") {
-		t.Fatalf("expected help popup to include :quit alias one-line description, got %q", popup)
-	}
-	if !strings.Contains(strings.Join(helpPopupContentLines(), "\n"), "Enter - Open selected record detail view.") {
-		t.Fatalf("expected help content to include Enter one-line description, got %q", popup)
-	}
-	if strings.Contains(popup, "q / Ctrl+c - Quit the application.") {
-		t.Fatalf("expected help popup to avoid runtime q/Ctrl+c quit shortcut, got %q", popup)
-	}
-	if !strings.Contains(strings.Join(helpPopupContentLines(), "\n"), "Esc - Close active popup/context.") {
-		t.Fatalf("expected help popup to include Esc one-line description, got %q", popup)
+	if strings.Contains(popup, "Supported Commands") || strings.Contains(popup, "Supported Keywords") {
+		t.Fatalf("expected context-help popup without global help sections, got %q", popup)
 	}
 }
 
 func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
 	// Arrange
 	model := &Model{
-		height:    40,
-		helpPopup: helpPopup{active: true},
+		height: 40,
+		helpPopup: helpPopup{
+			active:  true,
+			context: helpPopupContextTables,
+		},
 	}
 
 	// Act
@@ -479,6 +439,11 @@ func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
 	// Assert
 	if len(lines) < 5 {
 		t.Fatalf("expected help popup to include framed header and content, got %q", strings.Join(lines, "\n"))
+	}
+
+	title := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[1], "|"), "|"))
+	if title != "Context Help: Tables" {
+		t.Fatalf("expected context-specific help title, got %q", title)
 	}
 
 	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[2], "|"), "|"))
@@ -496,7 +461,7 @@ func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 	// Arrange
 	model := &Model{
 		height:        12,
-		helpPopup:     helpPopup{active: true},
+		helpPopup:     helpPopup{active: true, context: helpPopupContextRecords},
 		statusMessage: "",
 	}
 	initial := strings.Join(model.renderHelpPopup(60), "\n")
@@ -508,10 +473,10 @@ func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 	scrolled := strings.Join(model.renderHelpPopup(60), "\n")
 
 	// Assert
-	if strings.Contains(initial, "Ctrl+a - Toggle auto field visibility for inserts.") {
+	if strings.Contains(initial, "Shift+S sort") {
 		t.Fatalf("expected final help item to be hidden before scrolling, got %q", initial)
 	}
-	if !strings.Contains(scrolled, "Ctrl+a - Toggle auto field visibility for inserts.") {
+	if !strings.Contains(scrolled, "Shift+S sort") {
 		t.Fatalf("expected final help item to be reachable after scrolling, got %q", scrolled)
 	}
 }
@@ -520,7 +485,7 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 	// Arrange
 	model := &Model{
 		height:    12,
-		helpPopup: helpPopup{active: true},
+		helpPopup: helpPopup{active: true, context: helpPopupContextRecords},
 	}
 	for range 5 {
 		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
@@ -542,26 +507,26 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	model := &Model{
 		width:     80,
 		height:    24,
-		helpPopup: helpPopup{active: true},
+		helpPopup: helpPopup{active: true, context: helpPopupContextTables},
 	}
 
 	// Act
 	view := model.View()
 
 	// Assert
-	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
+	if strings.Contains(view, "Tables *") || strings.Contains(view, "Schema *") || strings.Contains(view, "Records *") {
 		t.Fatalf("expected help modal view without background panels, got %q", view)
 	}
-	if !strings.Contains(view, "|Help") {
+	if !strings.Contains(view, "|Context Help: Tables") {
 		t.Fatalf("expected help modal frame in view, got %q", view)
 	}
 
 	lines := strings.Split(view, "\n")
 	helpLine := -1
 	for i, line := range lines {
-		if strings.Contains(line, "|Help") {
+		if strings.Contains(line, "|Context Help: Tables") {
 			helpLine = i
-			if strings.Index(line, "|Help") == 0 {
+			if strings.Index(line, "|Context Help: Tables") == 0 {
 				t.Fatalf("expected centered modal line with left padding, got %q", line)
 			}
 			break

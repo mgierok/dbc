@@ -40,6 +40,7 @@ Global/main navigation:
 - `h` / `l`: move left/right (field focus in records)
 - `gg` / `G`: jump top/bottom
 - `Ctrl+f` / `Ctrl+b`: page down/up
+- `?`: open context help popup for active panel/state
 
 Records and staged changes:
 - `Enter`: open records view (from tables) / open selected record detail (in records)
@@ -58,7 +59,7 @@ Records and staged changes:
 Command mode:
 - `:`: open command entry
 - `:config` / `:c`: return to startup selector/config management from active session
-- `:help` / `:h`: open runtime help popup reference
+- `:help` / `:h`: open runtime context help popup (command alias)
 - `:quit` / `:q`: quit application from active runtime session
 - `Enter`: execute command
 - `Esc`: cancel command entry

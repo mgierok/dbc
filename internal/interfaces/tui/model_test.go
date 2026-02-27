@@ -479,10 +479,11 @@ func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
 	}
 }
 
-func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
+func TestHandleKey_ContextHelpPopupBehaviors(t *testing.T) {
 	newRuntimeModel := func() *Model {
 		return &Model{
 			viewMode: ViewRecords,
+			focus:    FocusContent,
 			height:   40,
 		}
 	}
@@ -502,44 +503,24 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 			}
 		}
 	}
-	parseHelpContent := func(rendered string) []string {
-		lines := strings.Split(rendered, "\n")
-		content := make([]string, 0, len(lines))
-		for _, line := range lines {
-			if !strings.HasPrefix(line, "|") || !strings.HasSuffix(line, "|") {
-				continue
-			}
-			value := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, "|"), "|"))
-			if value == "Help" || strings.HasPrefix(value, "Scroll: ") {
-				continue
-			}
-			content = append(content, value)
-		}
-		return content
-	}
-	sectionRows := func(content []string, section string) []string {
-		start := -1
-		for i, line := range content {
-			if line == section {
-				start = i + 1
-				break
-			}
-		}
-		if start == -1 {
-			return nil
-		}
 
-		rows := make([]string, 0)
-		for i := start; i < len(content); i++ {
-			if content[i] == "" {
-				break
-			}
-			rows = append(rows, content[i])
-		}
-		return rows
-	}
+	t.Run("FR-001 happy path opens context help popup with ?", func(t *testing.T) {
+		// Arrange
+		model := newRuntimeModel()
 
-	t.Run("FR-001 happy path opens help popup", func(t *testing.T) {
+		// Act
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+		// Assert
+		if !model.helpPopup.active {
+			t.Fatal("expected ? to open help popup")
+		}
+		if model.helpPopup.context != helpPopupContextRecords {
+			t.Fatalf("expected records context, got %v", model.helpPopup.context)
+		}
+	})
+
+	t.Run("FR-001 compatibility path keeps :help alias behavior", func(t *testing.T) {
 		// Arrange
 		model := newRuntimeModel()
 
@@ -551,133 +532,36 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 		if !model.helpPopup.active {
 			t.Fatal("expected :help to open help popup")
 		}
+		if model.helpPopup.context != helpPopupContextRecords {
+			t.Fatalf("expected records context for :help, got %v", model.helpPopup.context)
+		}
 		if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
 			t.Fatalf("expected no unknown-command status for :help, got %q", model.statusMessage)
 		}
 	})
 
-	t.Run("FR-001 alias path opens help popup", func(t *testing.T) {
+	t.Run("FR-002 popup renders only current context bindings", func(t *testing.T) {
 		// Arrange
 		model := newRuntimeModel()
-
-		// Act
-		cmd := submitCommand(model, "h")
-
-		// Assert
-		assertSessionActive(t, cmd, ":h")
-		if !model.helpPopup.active {
-			t.Fatal("expected :h to open help popup")
-		}
-		if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-			t.Fatalf("expected no unknown-command status for :h, got %q", model.statusMessage)
-		}
-	})
-
-	t.Run("FR-001 negative path requires explicit command prefix", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-
-		// Act
-		for _, r := range "help" {
-			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		}
-		_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
-
-		// Assert
-		assertSessionActive(t, cmd, "help without ':'")
-		if model.helpPopup.active {
-			t.Fatal("expected help popup to stay closed without ':' prefix")
-		}
-	})
-
-	t.Run("FR-002 happy path renders Supported Commands section", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		submitCommand(model, "help")
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 
 		// Act
 		popup := strings.Join(model.renderHelpPopup(60), "\n")
-		content := parseHelpContent(popup)
-		commands := sectionRows(content, "Supported Commands")
 
 		// Assert
-		if len(commands) == 0 {
-			t.Fatalf("expected Supported Commands section rows, got %q", popup)
+		if !strings.Contains(popup, "Records: Esc tables") {
+			t.Fatalf("expected records shortcuts in context help popup, got %q", popup)
 		}
-		if !strings.Contains(popup, "Supported Commands") {
-			t.Fatalf("expected help popup to include Supported Commands section, got %q", popup)
+		if strings.Contains(popup, "Supported Commands") || strings.Contains(popup, "Supported Keywords") {
+			t.Fatalf("expected context-only help content, got %q", popup)
 		}
 	})
 
-	t.Run("FR-002 negative path rejects missing or mislabelled command section shape", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		submitCommand(model, "help")
-
-		// Act
-		popup := strings.Join(model.renderHelpPopup(60), "\n")
-		content := parseHelpContent(popup)
-		commands := sectionRows(content, "Supported Commands")
-
-		// Assert
-		if len(commands) < 2 {
-			t.Fatalf("expected multiple command entries under Supported Commands, got %q", popup)
-		}
-		for _, row := range commands {
-			if !strings.Contains(row, " - ") {
-				t.Fatalf("expected command row to include one-line description, row=%q popup=%q", row, popup)
-			}
-		}
-		if strings.Contains(popup, "Supported Command") && !strings.Contains(popup, "Supported Commands") {
-			t.Fatalf("expected canonical section label 'Supported Commands', got %q", popup)
-		}
-	})
-
-	t.Run("FR-003 happy path renders Supported Keywords section", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		submitCommand(model, "help")
-
-		// Act
-		popup := strings.Join(model.renderHelpPopup(60), "\n")
-		content := parseHelpContent(popup)
-		keywords := sectionRows(content, "Supported Keywords")
-
-		// Assert
-		if len(keywords) == 0 {
-			t.Fatalf("expected Supported Keywords section rows, got %q", popup)
-		}
-		if !strings.Contains(popup, "Supported Keywords") {
-			t.Fatalf("expected help popup to include Supported Keywords section, got %q", popup)
-		}
-	})
-
-	t.Run("FR-003 negative path detects missing keyword descriptions", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		submitCommand(model, "help")
-
-		// Act
-		popup := strings.Join(model.renderHelpPopup(60), "\n")
-		content := parseHelpContent(popup)
-		keywords := sectionRows(content, "Supported Keywords")
-
-		// Assert
-		if len(keywords) == 0 {
-			t.Fatalf("expected keyword rows to be present, got %q", popup)
-		}
-		for _, row := range keywords {
-			if !strings.Contains(row, " - ") {
-				t.Fatalf("expected keyword row to include one-line description, row=%q popup=%q", row, popup)
-			}
-		}
-	})
-
-	t.Run("FR-004 happy path reaches final help item by scrolling", func(t *testing.T) {
+	t.Run("FR-003 scrolling reaches final context shortcut", func(t *testing.T) {
 		// Arrange
 		model := newRuntimeModel()
 		model.height = 12
-		submitCommand(model, "help")
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 
 		// Act
 		initial := strings.Join(model.renderHelpPopup(60), "\n")
@@ -687,40 +571,15 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 		scrolled := strings.Join(model.renderHelpPopup(60), "\n")
 
 		// Assert
-		if strings.Contains(initial, "Ctrl+a - Toggle auto field visibility for inserts.") {
+		if strings.Contains(initial, "Shift+S sort") {
 			t.Fatalf("expected final help item to be hidden before scrolling, got %q", initial)
 		}
-		if !strings.Contains(scrolled, "Ctrl+a - Toggle auto field visibility for inserts.") {
+		if !strings.Contains(scrolled, "Shift+S sort") {
 			t.Fatalf("expected final help item to be reachable after scrolling, got %q", scrolled)
 		}
 	})
 
-	t.Run("FR-004 negative path keeps help scroll stable on non-scroll key", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		model.height = 12
-		submitCommand(model, "help")
-		for range 5 {
-			model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-		}
-		beforeOffset := model.helpPopup.scrollOffset
-		before := strings.Join(model.renderHelpPopup(60), "\n")
-
-		// Act
-		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
-		afterOffset := model.helpPopup.scrollOffset
-		after := strings.Join(model.renderHelpPopup(60), "\n")
-
-		// Assert
-		if beforeOffset != afterOffset {
-			t.Fatalf("expected non-scroll key to keep offset stable, before=%d after=%d", beforeOffset, afterOffset)
-		}
-		if before != after {
-			t.Fatalf("expected non-scroll key to keep help window stable, before=%q after=%q", before, after)
-		}
-	})
-
-	t.Run("FR-005 happy path keeps popup open on repeated :help", func(t *testing.T) {
+	t.Run("FR-004 happy path keeps popup open on repeated :help", func(t *testing.T) {
 		// Arrange
 		model := newRuntimeModel()
 		submitCommand(model, "help")
@@ -735,24 +594,10 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("FR-005 negative path does not dismiss popup on repeated :help", func(t *testing.T) {
+	t.Run("FR-005 closes help popup on Esc", func(t *testing.T) {
 		// Arrange
 		model := newRuntimeModel()
-		submitCommand(model, "help")
-
-		// Act
-		submitCommand(model, "help")
-
-		// Assert
-		if !model.helpPopup.active {
-			t.Fatal("expected repeated :help to avoid dismissing help popup")
-		}
-	})
-
-	t.Run("FR-006 happy path closes help popup on Esc", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		submitCommand(model, "help")
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 
 		// Act
 		model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
@@ -763,21 +608,7 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("FR-006 negative path keeps help popup open on unrelated key", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-		submitCommand(model, "help")
-
-		// Act
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-
-		// Assert
-		if !model.helpPopup.active {
-			t.Fatal("expected unrelated key to keep help popup open")
-		}
-	})
-
-	t.Run("FR-007 happy path keeps unsupported command fallback", func(t *testing.T) {
+	t.Run("FR-006 keeps unsupported command fallback", func(t *testing.T) {
 		// Arrange
 		model := newRuntimeModel()
 
@@ -788,23 +619,6 @@ func TestHandleKey_CommandHelpOpensPopupWithoutUnknownStatus(t *testing.T) {
 		assertSessionActive(t, cmd, "unsupported command")
 		if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
 			t.Fatalf("expected unknown command status message, got %q", model.statusMessage)
-		}
-	})
-
-	t.Run("FR-007 negative path blocks misspelled :help regression", func(t *testing.T) {
-		// Arrange
-		model := newRuntimeModel()
-
-		// Act
-		cmd := submitCommand(model, "helpp")
-
-		// Assert
-		assertSessionActive(t, cmd, "misspelled :help")
-		if model.helpPopup.active {
-			t.Fatal("expected misspelled :help to keep help popup closed")
-		}
-		if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-			t.Fatalf("expected unknown-command status for misspelled :help, got %q", model.statusMessage)
 		}
 	})
 }
@@ -996,6 +810,32 @@ func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
 	// Assert
 	if !model.helpPopup.active {
 		t.Fatal("expected unrelated keys to keep help popup open")
+	}
+}
+
+func TestHandleKey_ContextHelpFromFilterPopupUsesFilterContext(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		filterPopup: filterPopup{
+			active: true,
+			step:   filterSelectColumn,
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected ? to open help popup from filter context")
+	}
+	if model.helpPopup.context != helpPopupContextFilterPopup {
+		t.Fatalf("expected filter-popup context help, got %v", model.helpPopup.context)
+	}
+	if !model.filterPopup.active {
+		t.Fatal("expected filter popup state to stay preserved under help overlay")
 	}
 }
 

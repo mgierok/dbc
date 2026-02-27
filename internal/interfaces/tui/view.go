@@ -335,9 +335,9 @@ func (m *Model) isRowEdited(rowIndex int) bool {
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
 	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
-		title:               "Help",
+		title:               m.helpPopupContextTitle(),
 		summary:             runtimeHelpPopupSummaryLine(),
-		rows:                helpPopupContentLines(),
+		rows:                m.helpPopupContentLines(),
 		selected:            -1,
 		scrollOffset:        m.helpPopup.scrollOffset,
 		visibleRows:         m.helpPopupVisibleLines(),
@@ -346,10 +346,6 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 		minWidth:            20,
 		maxWidth:            60,
 	})
-}
-
-func helpPopupContentLines() []string {
-	return runtimeHelpPopupContentLines()
 }
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
@@ -536,15 +532,11 @@ func (m *Model) renderStatus(width int) string {
 	if m.commandInput.active {
 		parts = append(parts, "Command: "+m.commandPrompt())
 	}
-	shortcuts := m.statusShortcuts()
-	if strings.TrimSpace(shortcuts) != "" {
-		parts = append(parts, shortcuts)
-	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		parts = append(parts, m.statusMessage)
 	}
-	status := strings.Join(parts, " | ")
-	return padRight(status, width)
+	left := strings.Join(parts, " | ")
+	return renderStatusWithRightHint(left, runtimeStatusContextHelpHint(), width)
 }
 
 func (m *Model) viewModeLabel() string {
@@ -591,31 +583,33 @@ func (m *Model) schemaColumnsForRecordsHeader() []string {
 	return columns
 }
 
-func (m *Model) statusShortcuts() string {
-	switch {
-	case m.editPopup.active:
-		return runtimeStatusEditShortcuts()
-	case m.confirmPopup.active:
-		return runtimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
-	case m.filterPopup.active:
-		return runtimeStatusFilterPopupShortcuts()
-	case m.sortPopup.active:
-		return runtimeStatusSortPopupShortcuts()
-	case m.helpPopup.active:
-		return runtimeStatusHelpPopupShortcuts()
-	case m.commandInput.active:
-		return runtimeStatusCommandInputShortcuts()
-	case m.recordDetail.active:
-		return runtimeStatusRecordDetailShortcuts()
-	case m.focus == FocusTables:
-		return runtimeStatusTablesShortcuts()
-	case m.focus == FocusContent && m.viewMode == ViewSchema:
-		return runtimeStatusSchemaShortcuts()
-	case m.focus == FocusContent && m.viewMode == ViewRecords:
-		return runtimeStatusRecordsShortcuts()
-	default:
-		return ""
+func renderStatusWithRightHint(left, right string, width int) string {
+	if width <= 0 {
+		width = 80
 	}
+
+	left = strings.TrimSpace(left)
+	right = strings.TrimSpace(right)
+	if right == "" {
+		return padRight(left, width)
+	}
+
+	right = truncate(right, width)
+	rightWidth := textWidth(right)
+	if rightWidth >= width {
+		return padRight(right, width)
+	}
+
+	leftWidth := width - rightWidth - 1
+	if leftWidth <= 0 {
+		return padRight(right, width)
+	}
+
+	if left == "" {
+		return padRight(strings.Repeat(" ", leftWidth+1)+right, width)
+	}
+
+	return padRight(truncate(left, leftWidth), leftWidth) + " " + right
 }
 
 func renderList(items []string, selected, height, width int, focused bool) []string {
