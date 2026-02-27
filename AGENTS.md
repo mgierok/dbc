@@ -21,6 +21,13 @@ This requirement MUST NOT apply when the task scope is limited to governance-onl
 
 This section MUST be applied only to project tasks that can result in project-code changes.
 This section MUST NOT be applied to documentation-only or governance-only tasks.
+The high-level workflow order MUST be interpreted as:
+
+1. `3.1 Intent Alignment`
+2. `3.2 Planning` (with change-set definition and decomposition into `CS-01..CS-N`)
+3. `3.3 Implementation` iteratively per change set: complete one full change-set cycle, then continue with the next
+4. `3.4 Completion` (full-plan verification + mapping `1 change set = 1 commit`)
+5. Final Completion Report with change-set execution log
 
 ### 3.1 Intent Alignment
 
