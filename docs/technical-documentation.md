@@ -309,6 +309,7 @@ Current implementation-level characteristics:
 - Direct-launch validation failure exits non-zero without selector fallback.
 - Runtime can return to selector without process restart via `ErrOpenConfigSelector`.
 - Active DB connection is explicitly closed before selector re-entry.
+- Terminal with UTF-8 Unicode rendering support for box-drawing glyphs used by the TUI.
 
 ### 7.2 Operational Error Handling Characteristics
 
