@@ -25,14 +25,14 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 		title = "Popup"
 	}
 
-	topBorder := borderTopLeft + strings.Repeat(dividerRow, width-2) + borderTopRight
-	bottomBorder := borderBottomLeft + strings.Repeat(dividerRow, width-2) + borderBottomRight
-	sectionDivider := borderJoinLeft + strings.Repeat(dividerRow, width-2) + borderJoinRight
+	topBorder := outerFrameTopLeft + strings.Repeat(outerFrameHorizontal, width-2) + outerFrameTopRight
+	bottomBorder := outerFrameBottomLeft + strings.Repeat(outerFrameHorizontal, width-2) + outerFrameBottomRight
+	sectionDivider := outerFrameJoinLeft + strings.Repeat(outerFrameHorizontal, width-2) + outerFrameJoinRight
 
 	lines := []string{topBorder}
-	lines = append(lines, dividerColumn+padRight(title, width-2)+dividerColumn)
+	lines = append(lines, outerFrameVertical+padRight(title, width-2)+outerFrameVertical)
 	if strings.TrimSpace(spec.summary) != "" {
-		lines = append(lines, dividerColumn+padRight(spec.summary, width-2)+dividerColumn)
+		lines = append(lines, outerFrameVertical+padRight(spec.summary, width-2)+outerFrameVertical)
 	}
 	lines = append(lines, sectionDivider)
 
@@ -67,15 +67,15 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 			}
 			row = prefix + row
 		}
-		lines = append(lines, dividerColumn+padRight(row, width-2)+dividerColumn)
+		lines = append(lines, outerFrameVertical+padRight(row, width-2)+outerFrameVertical)
 	}
 	for i := end - offset; i < visibleRows; i++ {
-		lines = append(lines, dividerColumn+padRight("", width-2)+dividerColumn)
+		lines = append(lines, outerFrameVertical+padRight("", width-2)+outerFrameVertical)
 	}
 
 	if spec.showScrollIndicator && maxOffset > 0 {
 		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
-		lines = append(lines, dividerColumn+padRight(indicator, width-2)+dividerColumn)
+		lines = append(lines, outerFrameVertical+padRight(indicator, width-2)+outerFrameVertical)
 	}
 
 	lines = append(lines, bottomBorder)

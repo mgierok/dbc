@@ -11,18 +11,37 @@ const (
 	iconInfo         = "ℹ"
 	iconActivePrefix = "➤"
 
-	dividerColumn = "┃"
-	dividerRow    = "━"
+	// Outer frame uses the existing heavy style.
+	outerFrameVertical   = "┃"
+	outerFrameHorizontal = "━"
 
-	borderTopLeft     = "┏"
-	borderTopRight    = "┓"
-	borderBottomLeft  = "┗"
-	borderBottomRight = "┛"
-	borderJoinLeft    = "┣"
-	borderJoinRight   = "┫"
-	borderJoinTop     = "┳"
-	borderJoinBottom  = "┻"
-	borderJoinCenter  = "╋"
+	outerFrameTopLeft     = "┏"
+	outerFrameTopRight    = "┓"
+	outerFrameBottomLeft  = "┗"
+	outerFrameBottomRight = "┛"
+	outerFrameJoinLeft    = "┣"
+	outerFrameJoinRight   = "┫"
+	outerFrameJoinTop     = "┳"
+	outerFrameJoinBottom  = "┻"
+	outerFrameJoinCenter  = "╋"
 
-	segmentSeparator = " ┃ "
+	outerFrameSegmentSeparator = " ┃ "
+)
+
+// Inner frame provides a separate light-style set for future use.
+//
+//nolint:unused // reserved for future light inner-frame rendering variants.
+const (
+	innerFrameVertical   = "│"
+	innerFrameHorizontal = "─"
+
+	innerFrameTopLeft     = "┌"
+	innerFrameTopRight    = "┐"
+	innerFrameBottomLeft  = "└"
+	innerFrameBottomRight = "┘"
+	innerFrameJoinLeft    = "├"
+	innerFrameJoinRight   = "┤"
+	innerFrameJoinTop     = "┬"
+	innerFrameJoinBottom  = "┴"
+	innerFrameJoinCenter  = "┼"
 )

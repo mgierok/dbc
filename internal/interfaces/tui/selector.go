@@ -444,19 +444,19 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 		contentWidth = maxInner
 	}
 
-	topBorder := borderTopLeft + strings.Repeat(dividerRow, contentWidth) + borderTopRight
-	bottomBorder := borderBottomLeft + strings.Repeat(dividerRow, contentWidth) + borderBottomRight
-	sectionDivider := borderJoinLeft + strings.Repeat(dividerRow, contentWidth) + borderJoinRight
+	topBorder := outerFrameTopLeft + strings.Repeat(outerFrameHorizontal, contentWidth) + outerFrameTopRight
+	bottomBorder := outerFrameBottomLeft + strings.Repeat(outerFrameHorizontal, contentWidth) + outerFrameBottomRight
+	sectionDivider := outerFrameJoinLeft + strings.Repeat(outerFrameHorizontal, contentWidth) + outerFrameJoinRight
 	lines := []string{
 		topBorder,
-		dividerColumn + padRight(title, contentWidth) + dividerColumn,
-		dividerColumn + padRight(pathLine, contentWidth) + dividerColumn,
+		outerFrameVertical + padRight(title, contentWidth) + outerFrameVertical,
+		outerFrameVertical + padRight(pathLine, contentWidth) + outerFrameVertical,
 		sectionDivider,
 	}
 
 	if m.mode == selectorModeAdd || m.mode == selectorModeEdit {
 		for _, line := range m.formLines() {
-			lines = append(lines, dividerColumn+padRight(line, contentWidth)+dividerColumn)
+			lines = append(lines, outerFrameVertical+padRight(line, contentWidth)+outerFrameVertical)
 		}
 		lines = append(lines, bottomBorder)
 		return lines
@@ -464,14 +464,14 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 
 	if m.mode == selectorModeConfirmDelete {
 		for _, line := range m.deleteConfirmationLines() {
-			lines = append(lines, dividerColumn+padRight(line, contentWidth)+dividerColumn)
+			lines = append(lines, outerFrameVertical+padRight(line, contentWidth)+outerFrameVertical)
 		}
 		lines = append(lines, bottomBorder)
 		return lines
 	}
 
 	if len(items) == 0 {
-		lines = append(lines, dividerColumn+padRight("No databases configured.", contentWidth)+dividerColumn)
+		lines = append(lines, outerFrameVertical+padRight("No databases configured.", contentWidth)+outerFrameVertical)
 	} else {
 		start := scrollStart(m.selected, listHeight, len(items))
 		end := minInt(len(items), start+listHeight)
@@ -480,12 +480,12 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 			if i == m.selected {
 				prefix = "> "
 			}
-			lines = append(lines, dividerColumn+padRight(prefix+items[i], contentWidth)+dividerColumn)
+			lines = append(lines, outerFrameVertical+padRight(prefix+items[i], contentWidth)+outerFrameVertical)
 		}
 	}
 
 	for _, line := range m.contextLines() {
-		lines = append(lines, dividerColumn+padRight(line, contentWidth)+dividerColumn)
+		lines = append(lines, outerFrameVertical+padRight(line, contentWidth)+outerFrameVertical)
 	}
 	lines = append(lines, bottomBorder)
 	return lines
@@ -494,7 +494,7 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 func (m *databaseSelectorModel) optionLines() []string {
 	items := make([]string, len(m.options))
 	for i, option := range m.options {
-		items[i] = option.marker() + " " + option.Name + segmentSeparator + option.ConnString
+		items[i] = option.marker() + " " + option.Name + outerFrameSegmentSeparator + option.ConnString
 	}
 	return items
 }
@@ -733,7 +733,7 @@ func (m *databaseSelectorModel) contextLines() []string {
 		lines = append(lines, selectorContextLinesBrowseFirstSetup()...)
 	} else {
 		lines = append(lines, selectorContextLinesBrowseDefault()...)
-		lines = append(lines, "Legend: "+iconConfigSource+" config"+segmentSeparator+iconCLISource+" CLI session")
+		lines = append(lines, "Legend: "+iconConfigSource+" config"+outerFrameSegmentSeparator+iconCLISource+" CLI session")
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		lines = append(lines, "Status: "+m.statusMessage)
@@ -795,7 +795,7 @@ func (m *databaseSelectorModel) deleteConfirmationLines() []string {
 	return []string{
 		"Delete database entry?",
 		"",
-		selected.Name + segmentSeparator + selected.ConnString,
+		selected.Name + outerFrameSegmentSeparator + selected.ConnString,
 		"",
 		selectorDeleteConfirmationLine(),
 	}

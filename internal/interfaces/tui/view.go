@@ -52,7 +52,7 @@ func (m *Model) panelWidths() (int, int) {
 	if width <= 0 {
 		width = 80
 	}
-	separatorWidth := textWidth(dividerColumn)
+	separatorWidth := textWidth(outerFrameVertical)
 
 	left := width / 3
 	if left < 18 {
@@ -487,7 +487,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 
 	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
 		title:        "Edit Cell",
-		summary:      columnLabel + segmentSeparator + nullableLabel,
+		summary:      columnLabel + outerFrameSegmentSeparator + nullableLabel,
 		rows:         rows,
 		selected:     selected,
 		defaultWidth: 60,
@@ -549,7 +549,7 @@ func (m *Model) renderStatus(width int) string {
 	if strings.TrimSpace(m.statusMessage) != "" {
 		parts = append(parts, m.statusMessage)
 	}
-	left := strings.Join(parts, segmentSeparator)
+	left := strings.Join(parts, outerFrameSegmentSeparator)
 	return renderStatusWithRightHint(left, runtimeStatusContextHelpHint(), width)
 }
 
@@ -673,7 +673,7 @@ func mergePanels(left, right []string, leftWidth, rightWidth int) []string {
 		if i < len(right) {
 			rightLine = right[i]
 		}
-		combined := padRight(leftLine, leftWidth) + dividerColumn + padRight(rightLine, rightWidth)
+		combined := padRight(leftLine, leftWidth) + outerFrameVertical + padRight(rightLine, rightWidth)
 		lines = append(lines, combined)
 	}
 	return lines
@@ -726,7 +726,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	if columns <= 0 {
 		return nil
 	}
-	separatorWidth := (columns - 1) * textWidth(dividerColumn)
+	separatorWidth := (columns - 1) * textWidth(outerFrameVertical)
 	available := totalWidth - separatorWidth
 	if available < columns {
 		available = columns
@@ -752,7 +752,7 @@ func formatRow(values []string, widths []int) string {
 		}
 		parts[i] = padRight(value, width)
 	}
-	return strings.Join(parts, dividerColumn)
+	return strings.Join(parts, outerFrameVertical)
 }
 
 func formatRecordRow(values []string, widths []int, focusColumn int) string {
@@ -765,7 +765,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int) string {
 		focused := i == focusColumn
 		parts[i] = formatRecordCell(value, width, focused)
 	}
-	return strings.Join(parts, dividerColumn)
+	return strings.Join(parts, outerFrameVertical)
 }
 
 func formatRecordCell(value string, width int, focused bool) string {
