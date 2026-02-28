@@ -21,13 +21,13 @@ func TestRenderStandardizedPopup_RendersSelectableRows(t *testing.T) {
 	popup := strings.Join(renderStandardizedPopup(60, spec), "\n")
 
 	// Assert
-	if !strings.Contains(popup, outerFrameVertical+"Config") {
+	if !strings.Contains(popup, frameVertical+"Config") {
 		t.Fatalf("expected title row, got %q", popup)
 	}
-	if !strings.Contains(popup, outerFrameVertical+"  Save") {
+	if !strings.Contains(popup, frameVertical+"  Save") {
 		t.Fatalf("expected unselected row prefix, got %q", popup)
 	}
-	if !strings.Contains(popup, outerFrameVertical+"> Discard") {
+	if !strings.Contains(popup, frameVertical+"> Discard") {
 		t.Fatalf("expected selected row prefix, got %q", popup)
 	}
 }

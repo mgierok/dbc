@@ -808,13 +808,13 @@ func formatRecordsHeaderCell(value string, columnWidth int) (string, string, str
 	rightPadding := columnWidth - boxWidth - leftPadding
 
 	top := strings.Repeat(" ", leftPadding) +
-		renderInnerFrameEdge(boxWidth, frameTopLeft, frameHorizontal, frameTopRight) +
+		renderFrameEdge(boxWidth, frameTopLeft, frameHorizontal, frameTopRight) +
 		strings.Repeat(" ", rightPadding)
 	middle := strings.Repeat(" ", leftPadding) +
-		renderInnerFrameContent(value, boxWidth) +
+		renderFrameContent(value, boxWidth) +
 		strings.Repeat(" ", rightPadding)
 	bottom := strings.Repeat(" ", leftPadding) +
-		renderInnerFrameEdge(boxWidth, frameBottomLeft, frameHorizontal, frameBottomRight) +
+		renderFrameEdge(boxWidth, frameBottomLeft, frameHorizontal, frameBottomRight) +
 		strings.Repeat(" ", rightPadding)
 
 	return top, middle, bottom
@@ -834,7 +834,7 @@ func boxWidthForRecordHeaderColumn(columnWidth int) int {
 	return boxWidth
 }
 
-func renderInnerFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
+func renderFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
 	switch {
 	case width <= 0:
 		return ""
@@ -847,7 +847,7 @@ func renderInnerFrameEdge(width int, leftCorner, horizontal, rightCorner string)
 	}
 }
 
-func renderInnerFrameContent(value string, width int) string {
+func renderFrameContent(value string, width int) string {
 	switch {
 	case width <= 0:
 		return ""

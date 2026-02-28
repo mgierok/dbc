@@ -484,7 +484,7 @@ func TestDatabaseSelector_ForcedSetupFormShowsEscExitAppHint(t *testing.T) {
 	lines := strings.Join(model.formLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "Enter save"+outerFrameSegmentSeparator+"Esc exit app") {
+	if !strings.Contains(lines, "Enter save"+frameSegmentSeparator+"Esc exit app") {
 		t.Fatalf("expected forced setup Esc hint to exit app, got %q", lines)
 	}
 }
@@ -684,10 +684,10 @@ func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
 	lines := strings.Join(model.optionLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, iconConfigSource+" local"+outerFrameSegmentSeparator+"/tmp/local.sqlite") {
+	if !strings.Contains(lines, iconConfigSource+" local"+frameSegmentSeparator+"/tmp/local.sqlite") {
 		t.Fatalf("expected config marker in option lines, got %q", lines)
 	}
-	if !strings.Contains(lines, iconCLISource+" /tmp/direct.sqlite"+outerFrameSegmentSeparator+"/tmp/direct.sqlite") {
+	if !strings.Contains(lines, iconCLISource+" /tmp/direct.sqlite"+frameSegmentSeparator+"/tmp/direct.sqlite") {
 		t.Fatalf("expected CLI marker in option lines, got %q", lines)
 	}
 }
@@ -795,10 +795,10 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	hasRightBorderColumn := false
 	for _, line := range lines {
 		trimmed := strings.TrimLeft(line, " ")
-		if trimmed == "" || !strings.HasPrefix(trimmed, outerFrameVertical) {
+		if trimmed == "" || !strings.HasPrefix(trimmed, frameVertical) {
 			continue
 		}
-		col := lastRuneIndex(line, []rune(outerFrameVertical)[0])
+		col := lastRuneIndex(line, []rune(frameVertical)[0])
 		if col < 0 {
 			t.Fatalf("expected right border in line %q", line)
 		}
@@ -814,7 +814,7 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	if !hasRightBorderColumn {
 		t.Fatalf("expected popup content lines in view, got %q", view)
 	}
-	if !strings.Contains(view, "Legend: "+iconConfigSource+" config"+outerFrameSegmentSeparator+iconCLISource+" CLI session") {
+	if !strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
 		t.Fatalf("expected legend with unicode markers in view, got %q", view)
 	}
 }
