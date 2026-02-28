@@ -253,10 +253,10 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 	lines := strings.Join(model.formLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "> Name: |") {
+	if !strings.Contains(lines, iconSelection+" Name: |") {
 		t.Fatalf("expected caret in active name field, got %q", lines)
 	}
-	if strings.Contains(lines, "> Path: |") {
+	if strings.Contains(lines, iconSelection+" Path: |") {
 		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
 	}
 
@@ -265,7 +265,7 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 	lines = strings.Join(model.formLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "> Path: |") {
+	if !strings.Contains(lines, iconSelection+" Path: |") {
 		t.Fatalf("expected caret in active path field after tab, got %q", lines)
 	}
 }
@@ -287,10 +287,10 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 	lines := strings.Join(model.formLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "> Name: local|") {
+	if !strings.Contains(lines, iconSelection+" Name: local|") {
 		t.Fatalf("expected caret in active edit name field, got %q", lines)
 	}
-	if strings.Contains(lines, "> Path: /tmp/local.sqlite|") {
+	if strings.Contains(lines, iconSelection+" Path: /tmp/local.sqlite|") {
 		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
 	}
 
@@ -299,7 +299,7 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 	lines = strings.Join(model.formLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "> Path: /tmp/local.sqlite|") {
+	if !strings.Contains(lines, iconSelection+" Path: /tmp/local.sqlite|") {
 		t.Fatalf("expected caret in active edit path field after tab, got %q", lines)
 	}
 }

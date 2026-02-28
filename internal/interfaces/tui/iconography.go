@@ -9,7 +9,7 @@ const (
 	iconConfigSource = "⚙"
 	iconCLISource    = "⌨"
 	iconInfo         = "ℹ"
-	iconActivePrefix = "➤"
+	iconSelection    = "➤"
 
 	frameVertical   = "│"
 	frameHorizontal = "─"

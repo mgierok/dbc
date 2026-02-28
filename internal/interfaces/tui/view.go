@@ -88,7 +88,7 @@ func (m *Model) maxTablePanelWidth() int {
 		nameMargin       = 1
 	)
 
-	maxWidth := maxInt(textWidth(activePanelTitle("Tables")), textWidth("No items."))
+	maxWidth := maxInt(textWidth("Tables"), textWidth("No items."))
 	longestNameWidth := 0
 	for _, table := range m.tables {
 		longestNameWidth = maxInt(longestNameWidth, textWidth(table.Name))
@@ -103,9 +103,6 @@ func (m *Model) maxTablePanelWidth() int {
 
 func (m *Model) renderTables(width, height int) []string {
 	title := "Tables"
-	if m.focus == FocusTables {
-		title = activePanelTitle(title)
-	}
 	lines := []string{padRight(title, width)}
 
 	items := make([]string, len(m.tables))
@@ -141,9 +138,6 @@ func (m *Model) renderContent(width, height int) []string {
 
 func (m *Model) renderSchema(width, height int) []string {
 	title := "Schema"
-	if m.focus == FocusContent && m.viewMode == ViewSchema {
-		title = activePanelTitle(title)
-	}
 	lines := []string{padRight(title, width)}
 
 	if len(m.schema.Columns) == 0 {
@@ -162,9 +156,6 @@ func (m *Model) renderSchema(width, height int) []string {
 
 func (m *Model) renderRecords(width, height int) []string {
 	title := "Records"
-	if m.focus == FocusContent && m.viewMode == ViewRecords {
-		title = activePanelTitle(title)
-	}
 	lines := []string{padRight(title, width)}
 
 	columns := m.schemaColumnsForRecordsHeader()
@@ -203,9 +194,9 @@ func (m *Model) renderRecords(width, height int) []string {
 	start := scrollStart(m.recordSelection, listHeight, totalRows)
 	end := minInt(totalRows, start+listHeight)
 	for i := start; i < end; i++ {
-		prefix := "  "
+		prefix := selectionUnselectedPrefix()
 		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
-			prefix = "> "
+			prefix = selectionSelectedPrefix()
 		}
 		displayValues := make([]string, len(columns))
 		if insertIndex, isInsert := m.pendingInsertIndex(i); isInsert {
@@ -249,9 +240,6 @@ func (m *Model) recordRowMarker(rowIndex int) string {
 
 func (m *Model) renderRecordDetail(width, height int) []string {
 	title := "Record Detail"
-	if m.focus == FocusContent && m.viewMode == ViewRecords {
-		title = activePanelTitle(title)
-	}
 	lines := []string{padRight(title, width)}
 
 	listHeight := height - 1
@@ -642,10 +630,6 @@ func renderStatusWithRightHint(left, right string, width int) string {
 	return padRight(truncate(left, leftWidth), leftWidth) + " " + right
 }
 
-func activePanelTitle(title string) string {
-	return iconActivePrefix + " " + title
-}
-
 func renderList(items []string, selected, height, width int, focused bool) []string {
 	if height < 1 {
 		return nil
@@ -658,14 +642,22 @@ func renderList(items []string, selected, height, width int, focused bool) []str
 	end := minInt(len(items), start+height)
 	lines := make([]string, 0, height)
 	for i := start; i < end; i++ {
-		prefix := "  "
+		prefix := selectionUnselectedPrefix()
 		if focused && i == selected {
-			prefix = "> "
+			prefix = selectionSelectedPrefix()
 		}
 		line := prefix + items[i]
 		lines = append(lines, padRight(line, width))
 	}
 	return padLines(lines, height, width)
+}
+
+func selectionSelectedPrefix() string {
+	return iconSelection + " "
+}
+
+func selectionUnselectedPrefix() string {
+	return strings.Repeat(" ", textWidth(selectionSelectedPrefix()))
 }
 
 func mergePanels(left, right []string, leftWidth, rightWidth int) []string {

@@ -61,9 +61,9 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 	for i := offset; i < end; i++ {
 		row := rows[i]
 		if selected >= 0 {
-			prefix := "  "
+			prefix := selectionUnselectedPrefix()
 			if i == selected {
-				prefix = "> "
+				prefix = selectionSelectedPrefix()
 			}
 			row = prefix + row
 		}

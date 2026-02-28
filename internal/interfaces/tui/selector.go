@@ -476,9 +476,9 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 		start := scrollStart(m.selected, listHeight, len(items))
 		end := minInt(len(items), start+listHeight)
 		for i := start; i < end; i++ {
-			prefix := "  "
+			prefix := selectionUnselectedPrefix()
 			if i == m.selected {
-				prefix = "> "
+				prefix = selectionSelectedPrefix()
 			}
 			lines = append(lines, frameVertical+padRight(prefix+items[i], contentWidth)+frameVertical)
 		}
@@ -749,15 +749,15 @@ func (m *databaseSelectorModel) formLines() []string {
 	if m.mode == selectorModeEdit {
 		title = "Edit database"
 	}
-	namePrefix := "  "
-	pathPrefix := "  "
+	namePrefix := selectionUnselectedPrefix()
+	pathPrefix := selectionUnselectedPrefix()
 	nameValue := m.form.nameValue
 	pathValue := m.form.pathValue
 	if m.form.activeField == selectorInputName {
-		namePrefix = "> "
+		namePrefix = selectionSelectedPrefix()
 		nameValue += "|"
 	} else {
-		pathPrefix = "> "
+		pathPrefix = selectionSelectedPrefix()
 		pathValue += "|"
 	}
 

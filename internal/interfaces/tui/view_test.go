@@ -487,7 +487,7 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	content := strings.Join(model.renderRecords(80, 6), "\n")
 
 	// Assert
-	if !strings.Contains(content, "> "+iconEdit+" ") {
+	if !strings.Contains(content, iconSelection+" "+iconEdit+" ") {
 		t.Fatalf("expected edited row icon marker in row prefix, got %q", content)
 	}
 	if strings.Contains(content, "alice2"+iconEdit) {
@@ -547,21 +547,22 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	if len(lines) < 7 {
 		t.Fatalf("expected records output with header and rows, got %v", lines)
 	}
-	secondColumnIndices := make([]int, 0, 3)
+	secondColumnStarts := make([]int, 0, 3)
 	rowLines := lines[4:7]
 	secondColumnTokens := []string{"inserted", "alice2", "bob"}
 	for i, line := range rowLines {
-		colStart := strings.Index(line, secondColumnTokens[i])
-		if colStart < 0 {
+		colStartByteIndex := strings.Index(line, secondColumnTokens[i])
+		if colStartByteIndex < 0 {
 			t.Fatalf("expected second column token %q in row line, got %q", secondColumnTokens[i], line)
 		}
-		secondColumnIndices = append(secondColumnIndices, colStart)
+		colStartDisplayWidth := textWidth(line[:colStartByteIndex])
+		secondColumnStarts = append(secondColumnStarts, colStartDisplayWidth)
 	}
-	for i := 1; i < len(secondColumnIndices); i++ {
-		if secondColumnIndices[i] != secondColumnIndices[0] {
+	for i := 1; i < len(secondColumnStarts); i++ {
+		if secondColumnStarts[i] != secondColumnStarts[0] {
 			t.Fatalf(
 				"expected aligned second-column start positions, got %v in lines %q",
-				secondColumnIndices,
+				secondColumnStarts,
 				rowLines,
 			)
 		}
@@ -906,7 +907,7 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	view := model.View()
 
 	// Assert
-	if strings.Contains(view, activePanelTitle("Tables")) || strings.Contains(view, activePanelTitle("Schema")) || strings.Contains(view, activePanelTitle("Records")) {
+	if strings.Contains(view, iconSelection+" Tables") || strings.Contains(view, iconSelection+" Schema") || strings.Contains(view, iconSelection+" Records") {
 		t.Fatalf("expected help modal view without background panels, got %q", view)
 	}
 	if !strings.Contains(view, frameVertical+"Context Help: Tables") {
@@ -1097,7 +1098,7 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 	if separatorInner == "" || strings.Trim(separatorInner, frameHorizontal) != "" {
 		t.Fatalf("expected separator row after summary, got %q", separator)
 	}
-	if !strings.Contains(popup, "> Save and open config") {
+	if !strings.Contains(popup, iconSelection+" Save and open config") {
 		t.Fatalf("expected selected option marker in popup, got %q", popup)
 	}
 }
@@ -1129,7 +1130,7 @@ func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitA
 	if !strings.Contains(popup, "Switching tables will cause loss of unsaved data") {
 		t.Fatalf("expected informational switch-table summary in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "> (y) Yes, discard changes and switch table") {
+	if !strings.Contains(popup, iconSelection+" (y) Yes, discard changes and switch table") {
 		t.Fatalf("expected explicit yes action in popup, got %q", popup)
 	}
 	if !strings.Contains(popup, "(n) No, continue editing") {
@@ -1286,7 +1287,7 @@ func TestRenderTables_BoldsSelectedTableWithoutTableFocus(t *testing.T) {
 	if !strings.Contains(selectedLine, "\x1b[1m") || !strings.Contains(selectedLine, "\x1b[0m") {
 		t.Fatalf("expected selected table to be bold, got %q", selectedLine)
 	}
-	if strings.Contains(selectedLine, "> ") {
+	if strings.Contains(selectedLine, iconSelection+" ") {
 		t.Fatalf("expected no focus marker when tables panel is not focused, got %q", selectedLine)
 	}
 }
