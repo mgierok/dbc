@@ -136,7 +136,8 @@ func TestListRecords_MapsValues(t *testing.T) {
 			Records: []model.Record{
 				{Values: []model.Value{{Text: "1"}, {Text: "alice"}, {IsNull: true}}},
 			},
-			HasMore: true,
+			HasMore:    true,
+			TotalCount: 37,
 		},
 	}
 	uc := usecase.NewListRecords(engine)
@@ -152,7 +153,8 @@ func TestListRecords_MapsValues(t *testing.T) {
 		Rows: []dto.RecordRow{
 			{Values: []string{"1", "alice", "NULL"}},
 		},
-		HasMore: true,
+		HasMore:    true,
+		TotalCount: 37,
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Fatalf("expected %v, got %v", expected, result)

@@ -1,6 +1,7 @@
 package model
 
 type RecordPage struct {
-	Records []Record
-	HasMore bool
+	Records    []Record
+	HasMore    bool
+	TotalCount int
 }

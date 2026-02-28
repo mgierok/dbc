@@ -117,25 +117,36 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 	}
 
 	// #nosec G202 -- table name is treated as an SQL identifier and escaped via quoteIdentifier.
-	query := "SELECT * FROM " + quoteIdentifier(tableName)
+	baseQuery := "FROM " + quoteIdentifier(tableName)
 	clause, args, err := buildFilterClause(filter)
 	if err != nil {
 		return model.RecordPage{}, err
-	}
-	if clause != "" {
-		query = query + " " + clause
 	}
 	sortClause, err := e.buildSortClause(ctx, tableName, sort)
 	if err != nil {
 		return model.RecordPage{}, err
 	}
+
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	if clause != "" {
+		countQuery = countQuery + " " + clause
+	}
+	var totalCount int
+	if err := e.db.QueryRowContext(ctx, countQuery, args...).Scan(&totalCount); err != nil {
+		return model.RecordPage{}, err
+	}
+
+	query := "SELECT * " + baseQuery
+	if clause != "" {
+		query = query + " " + clause
+	}
 	if sortClause != "" {
 		query = query + " " + sortClause
 	}
 	query += " LIMIT ? OFFSET ?"
-	args = append(args, limit+1, offset)
+	queryArgs := append(append([]any{}, args...), limit+1, offset)
 
-	rows, err := e.db.QueryContext(ctx, query, args...)
+	rows, err := e.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return model.RecordPage{}, err
 	}
@@ -185,7 +196,11 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		records = records[:limit]
 	}
 
-	return model.RecordPage{Records: records, HasMore: hasMore}, nil
+	return model.RecordPage{
+		Records:    records,
+		HasMore:    hasMore,
+		TotalCount: totalCount,
+	}, nil
 }
 
 func (e *SQLiteEngine) ListOperators(ctx context.Context, columnType string) ([]model.Operator, error) {

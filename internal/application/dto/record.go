@@ -5,6 +5,7 @@ type RecordRow struct {
 }
 
 type RecordPage struct {
-	Rows    []RecordRow
-	HasMore bool
+	Rows       []RecordRow
+	HasMore    bool
+	TotalCount int
 }

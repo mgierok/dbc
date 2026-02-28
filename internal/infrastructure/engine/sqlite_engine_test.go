@@ -82,6 +82,9 @@ func TestSQLiteEngine_ListRecords_AppliesFilterAndPagination(t *testing.T) {
 	if !page.HasMore {
 		t.Fatal("expected hasMore to be true when filtered result exceeds page size")
 	}
+	if page.TotalCount != 2 {
+		t.Fatalf("expected total count 2 for filtered result, got %d", page.TotalCount)
+	}
 	if got := page.Records[0].Values[1].Text; got != "alice" {
 		t.Fatalf("expected name alice, got %q", got)
 	}
@@ -111,6 +114,9 @@ func TestSQLiteEngine_ListRecords_SupportsQuotedTableName(t *testing.T) {
 	}
 	if page.HasMore {
 		t.Fatal("expected hasMore to be false for single row result")
+	}
+	if page.TotalCount != 1 {
+		t.Fatalf("expected total count 1, got %d", page.TotalCount)
 	}
 	if got := page.Records[0].Values[1].Text; got != "entry" {
 		t.Fatalf("expected note entry, got %q", got)
@@ -243,6 +249,9 @@ func TestSQLiteEngine_ListRecords_FilterSortAndPagination(t *testing.T) {
 	}
 	if !page.HasMore {
 		t.Fatal("expected hasMore for remaining filtered sorted rows")
+	}
+	if page.TotalCount != 3 {
+		t.Fatalf("expected total count 3 for filtered result, got %d", page.TotalCount)
 	}
 }
 

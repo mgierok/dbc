@@ -56,5 +56,9 @@ func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, li
 		rows[i] = dto.RecordRow{Values: values}
 	}
 
-	return dto.RecordPage{Rows: rows, HasMore: page.HasMore}, nil
+	return dto.RecordPage{
+		Rows:       rows,
+		HasMore:    page.HasMore,
+		TotalCount: page.TotalCount,
+	}, nil
 }
