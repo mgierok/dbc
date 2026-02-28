@@ -25,13 +25,16 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 		title = "Popup"
 	}
 
-	border := "+" + strings.Repeat("-", width-2) + "+"
-	lines := []string{border}
-	lines = append(lines, "|"+padRight(title, width-2)+"|")
+	topBorder := borderTopLeft + strings.Repeat(dividerRow, width-2) + borderTopRight
+	bottomBorder := borderBottomLeft + strings.Repeat(dividerRow, width-2) + borderBottomRight
+	sectionDivider := borderJoinLeft + strings.Repeat(dividerRow, width-2) + borderJoinRight
+
+	lines := []string{topBorder}
+	lines = append(lines, dividerColumn+padRight(title, width-2)+dividerColumn)
 	if strings.TrimSpace(spec.summary) != "" {
-		lines = append(lines, "|"+padRight(spec.summary, width-2)+"|")
+		lines = append(lines, dividerColumn+padRight(spec.summary, width-2)+dividerColumn)
 	}
-	lines = append(lines, "|"+strings.Repeat("-", width-2)+"|")
+	lines = append(lines, sectionDivider)
 
 	rows := spec.rows
 	selected := spec.selected
@@ -64,18 +67,18 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 			}
 			row = prefix + row
 		}
-		lines = append(lines, "|"+padRight(row, width-2)+"|")
+		lines = append(lines, dividerColumn+padRight(row, width-2)+dividerColumn)
 	}
 	for i := end - offset; i < visibleRows; i++ {
-		lines = append(lines, "|"+padRight("", width-2)+"|")
+		lines = append(lines, dividerColumn+padRight("", width-2)+dividerColumn)
 	}
 
 	if spec.showScrollIndicator && maxOffset > 0 {
 		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
-		lines = append(lines, "|"+padRight(indicator, width-2)+"|")
+		lines = append(lines, dividerColumn+padRight(indicator, width-2)+dividerColumn)
 	}
 
-	lines = append(lines, border)
+	lines = append(lines, bottomBorder)
 	return lines
 }
 

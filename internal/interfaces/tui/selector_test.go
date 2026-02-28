@@ -484,7 +484,7 @@ func TestDatabaseSelector_ForcedSetupFormShowsEscExitAppHint(t *testing.T) {
 	lines := strings.Join(model.formLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "Enter save | Esc exit app") {
+	if !strings.Contains(lines, "Enter save"+segmentSeparator+"Esc exit app") {
 		t.Fatalf("expected forced setup Esc hint to exit app, got %q", lines)
 	}
 }
@@ -684,10 +684,10 @@ func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
 	lines := strings.Join(model.optionLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, iconConfigSource+" local | /tmp/local.sqlite") {
+	if !strings.Contains(lines, iconConfigSource+" local"+segmentSeparator+"/tmp/local.sqlite") {
 		t.Fatalf("expected config marker in option lines, got %q", lines)
 	}
-	if !strings.Contains(lines, iconCLISource+" /tmp/direct.sqlite | /tmp/direct.sqlite") {
+	if !strings.Contains(lines, iconCLISource+" /tmp/direct.sqlite"+segmentSeparator+"/tmp/direct.sqlite") {
 		t.Fatalf("expected CLI marker in option lines, got %q", lines)
 	}
 }
@@ -795,10 +795,10 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	hasRightBorderColumn := false
 	for _, line := range lines {
 		trimmed := strings.TrimLeft(line, " ")
-		if trimmed == "" || trimmed[0] != '|' {
+		if trimmed == "" || !strings.HasPrefix(trimmed, dividerColumn) {
 			continue
 		}
-		col := lastRuneIndex(line, '|')
+		col := lastRuneIndex(line, []rune(dividerColumn)[0])
 		if col < 0 {
 			t.Fatalf("expected right border in line %q", line)
 		}
@@ -814,7 +814,7 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	if !hasRightBorderColumn {
 		t.Fatalf("expected popup content lines in view, got %q", view)
 	}
-	if !strings.Contains(view, "Legend: "+iconConfigSource+" config | "+iconCLISource+" CLI session") {
+	if !strings.Contains(view, "Legend: "+iconConfigSource+" config"+segmentSeparator+iconCLISource+" CLI session") {
 		t.Fatalf("expected legend with unicode markers in view, got %q", view)
 	}
 }

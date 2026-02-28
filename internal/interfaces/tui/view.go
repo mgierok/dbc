@@ -696,7 +696,10 @@ func centerBoxLines(lines []string, width, height int) string {
 		lines = lines[:boxHeight]
 	}
 
-	boxWidth := len(lines[0])
+	boxWidth := 0
+	for _, line := range lines {
+		boxWidth = maxInt(boxWidth, textWidth(line))
+	}
 	leftPad := 0
 	if width > boxWidth {
 		leftPad = (width - boxWidth) / 2

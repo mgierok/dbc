@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -445,32 +444,34 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 		contentWidth = maxInner
 	}
 
-	border := "+" + strings.Repeat("-", contentWidth) + "+"
+	topBorder := borderTopLeft + strings.Repeat(dividerRow, contentWidth) + borderTopRight
+	bottomBorder := borderBottomLeft + strings.Repeat(dividerRow, contentWidth) + borderBottomRight
+	sectionDivider := borderJoinLeft + strings.Repeat(dividerRow, contentWidth) + borderJoinRight
 	lines := []string{
-		border,
-		"|" + padRight(title, contentWidth) + "|",
-		"|" + padRight(pathLine, contentWidth) + "|",
-		"|" + strings.Repeat("-", contentWidth) + "|",
+		topBorder,
+		dividerColumn + padRight(title, contentWidth) + dividerColumn,
+		dividerColumn + padRight(pathLine, contentWidth) + dividerColumn,
+		sectionDivider,
 	}
 
 	if m.mode == selectorModeAdd || m.mode == selectorModeEdit {
 		for _, line := range m.formLines() {
-			lines = append(lines, "|"+padRight(line, contentWidth)+"|")
+			lines = append(lines, dividerColumn+padRight(line, contentWidth)+dividerColumn)
 		}
-		lines = append(lines, border)
+		lines = append(lines, bottomBorder)
 		return lines
 	}
 
 	if m.mode == selectorModeConfirmDelete {
 		for _, line := range m.deleteConfirmationLines() {
-			lines = append(lines, "|"+padRight(line, contentWidth)+"|")
+			lines = append(lines, dividerColumn+padRight(line, contentWidth)+dividerColumn)
 		}
-		lines = append(lines, border)
+		lines = append(lines, bottomBorder)
 		return lines
 	}
 
 	if len(items) == 0 {
-		lines = append(lines, "|"+padRight("No databases configured.", contentWidth)+"|")
+		lines = append(lines, dividerColumn+padRight("No databases configured.", contentWidth)+dividerColumn)
 	} else {
 		start := scrollStart(m.selected, listHeight, len(items))
 		end := minInt(len(items), start+listHeight)
@@ -479,21 +480,21 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 			if i == m.selected {
 				prefix = "> "
 			}
-			lines = append(lines, "|"+padRight(prefix+items[i], contentWidth)+"|")
+			lines = append(lines, dividerColumn+padRight(prefix+items[i], contentWidth)+dividerColumn)
 		}
 	}
 
 	for _, line := range m.contextLines() {
-		lines = append(lines, "|"+padRight(line, contentWidth)+"|")
+		lines = append(lines, dividerColumn+padRight(line, contentWidth)+dividerColumn)
 	}
-	lines = append(lines, border)
+	lines = append(lines, bottomBorder)
 	return lines
 }
 
 func (m *databaseSelectorModel) optionLines() []string {
 	items := make([]string, len(m.options))
 	for i, option := range m.options {
-		items[i] = fmt.Sprintf("%s %s | %s", option.marker(), option.Name, option.ConnString)
+		items[i] = option.marker() + " " + option.Name + segmentSeparator + option.ConnString
 	}
 	return items
 }
@@ -732,7 +733,7 @@ func (m *databaseSelectorModel) contextLines() []string {
 		lines = append(lines, selectorContextLinesBrowseFirstSetup()...)
 	} else {
 		lines = append(lines, selectorContextLinesBrowseDefault()...)
-		lines = append(lines, fmt.Sprintf("Legend: %s config | %s CLI session", iconConfigSource, iconCLISource))
+		lines = append(lines, "Legend: "+iconConfigSource+" config"+segmentSeparator+iconCLISource+" CLI session")
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		lines = append(lines, "Status: "+m.statusMessage)
@@ -794,7 +795,7 @@ func (m *databaseSelectorModel) deleteConfirmationLines() []string {
 	return []string{
 		"Delete database entry?",
 		"",
-		selected.Name + " | " + selected.ConnString,
+		selected.Name + segmentSeparator + selected.ConnString,
 		"",
 		selectorDeleteConfirmationLine(),
 	}

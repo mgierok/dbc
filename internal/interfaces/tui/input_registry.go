@@ -268,6 +268,10 @@ func joinKeyLabels(joinWith string, bindingIDs ...keyBindingID) string {
 	return strings.Join(labels, joinWith)
 }
 
+func joinShortcutSegments(parts ...string) string {
+	return strings.Join(parts, segmentSeparator)
+}
+
 func runtimeHelpPopupSummaryLine() string {
 	return fmt.Sprintf(
 		"Use %s, %s to scroll. %s closes.",
@@ -322,59 +326,52 @@ func runtimeCommandLabel(command runtimeCommandSpec) string {
 }
 
 func runtimeStatusEditShortcuts() string {
-	return fmt.Sprintf(
-		"Edit: %s confirm | %s cancel | %s null",
-		keyLabel(keyRuntimeEnter),
-		keyLabel(keyRuntimeEsc),
-		keyLabel(keyEditSetNull),
+	return joinShortcutSegments(
+		fmt.Sprintf("Edit: %s confirm", keyLabel(keyRuntimeEnter)),
+		fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("%s null", keyLabel(keyEditSetNull)),
 	)
 }
 
 func runtimeStatusConfirmShortcuts(withOptions bool) string {
 	if withOptions {
-		return fmt.Sprintf(
-			"Confirm: %s choose | %s select | %s cancel",
-			joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp),
-			keyLabel(keyRuntimeEnter),
-			keyLabel(keyRuntimeEsc),
+		return joinShortcutSegments(
+			fmt.Sprintf("Confirm: %s choose", joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp)),
+			fmt.Sprintf("%s select", keyLabel(keyRuntimeEnter)),
+			fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
 		)
 	}
-	return fmt.Sprintf(
-		"Confirm: %s yes | %s no",
-		keyLabel(keyRuntimeEnter),
-		keyLabel(keyRuntimeEsc),
+	return joinShortcutSegments(
+		fmt.Sprintf("Confirm: %s yes", keyLabel(keyRuntimeEnter)),
+		fmt.Sprintf("%s no", keyLabel(keyRuntimeEsc)),
 	)
 }
 
 func runtimeStatusFilterPopupShortcuts() string {
-	return fmt.Sprintf(
-		"Popup: %s apply | %s close",
-		keyLabel(keyRuntimeEnter),
-		keyLabel(keyRuntimeEsc),
+	return joinShortcutSegments(
+		fmt.Sprintf("Popup: %s apply", keyLabel(keyRuntimeEnter)),
+		fmt.Sprintf("%s close", keyLabel(keyRuntimeEsc)),
 	)
 }
 
 func runtimeStatusSortPopupShortcuts() string {
-	return fmt.Sprintf(
-		"Popup: %s apply | %s close",
-		keyLabel(keyRuntimeEnter),
-		keyLabel(keyRuntimeEsc),
+	return joinShortcutSegments(
+		fmt.Sprintf("Popup: %s apply", keyLabel(keyRuntimeEnter)),
+		fmt.Sprintf("%s close", keyLabel(keyRuntimeEsc)),
 	)
 }
 
 func runtimeStatusHelpPopupShortcuts() string {
-	return fmt.Sprintf(
-		"Help: %s scroll | %s close",
-		joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp),
-		keyLabel(keyRuntimeEsc),
+	return joinShortcutSegments(
+		fmt.Sprintf("Help: %s scroll", joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp)),
+		fmt.Sprintf("%s close", keyLabel(keyRuntimeEsc)),
 	)
 }
 
 func runtimeStatusCommandInputShortcuts() string {
-	return fmt.Sprintf(
-		"Command: %s run | %s cancel",
-		keyLabel(keyRuntimeEnter),
-		keyLabel(keyRuntimeEsc),
+	return joinShortcutSegments(
+		fmt.Sprintf("Command: %s run", keyLabel(keyRuntimeEnter)),
+		fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
 	)
 }
 
@@ -393,29 +390,27 @@ func runtimeStatusSchemaShortcuts() string {
 }
 
 func runtimeStatusRecordsShortcuts() string {
-	return fmt.Sprintf(
-		"Records: %s tables | %s edit | %s detail | %s insert | %s delete | %s undo | %s redo | %s save | %s next page | %s prev page | %s filter | %s sort",
-		keyLabel(keyRuntimeEsc),
-		keyLabel(keyRuntimeEdit),
-		keyLabel(keyRuntimeRecordDetail),
-		keyLabel(keyRuntimeInsert),
-		keyLabel(keyRuntimeDelete),
-		keyLabel(keyRuntimeUndo),
-		keyLabel(keyRuntimeRedo),
-		keyLabel(keyRuntimeSave),
-		keyLabel(keyRuntimePageDown),
-		keyLabel(keyRuntimePageUp),
-		keyLabel(keyRuntimeFilter),
-		keyLabel(keyRuntimeSort),
+	return joinShortcutSegments(
+		fmt.Sprintf("Records: %s tables", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("%s edit", keyLabel(keyRuntimeEdit)),
+		fmt.Sprintf("%s detail", keyLabel(keyRuntimeRecordDetail)),
+		fmt.Sprintf("%s insert", keyLabel(keyRuntimeInsert)),
+		fmt.Sprintf("%s delete", keyLabel(keyRuntimeDelete)),
+		fmt.Sprintf("%s undo", keyLabel(keyRuntimeUndo)),
+		fmt.Sprintf("%s redo", keyLabel(keyRuntimeRedo)),
+		fmt.Sprintf("%s save", keyLabel(keyRuntimeSave)),
+		fmt.Sprintf("%s next page", keyLabel(keyRuntimePageDown)),
+		fmt.Sprintf("%s prev page", keyLabel(keyRuntimePageUp)),
+		fmt.Sprintf("%s filter", keyLabel(keyRuntimeFilter)),
+		fmt.Sprintf("%s sort", keyLabel(keyRuntimeSort)),
 	)
 }
 
 func runtimeStatusRecordDetailShortcuts() string {
-	return fmt.Sprintf(
-		"Detail: %s back | %s scroll | %s page",
-		keyLabel(keyRuntimeEsc),
-		joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp),
-		joinKeyLabels("/", keyRuntimePageDown, keyRuntimePageUp),
+	return joinShortcutSegments(
+		fmt.Sprintf("Detail: %s back", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("%s scroll", joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp)),
+		fmt.Sprintf("%s page", joinKeyLabels("/", keyRuntimePageDown, keyRuntimePageUp)),
 	)
 }
 
@@ -425,53 +420,47 @@ func runtimeStatusContextHelpHint() string {
 
 func selectorContextLinesBrowseDefault() []string {
 	return []string{
-		fmt.Sprintf(
-			"%s navigate | %s select | %s add | %s edit | %s delete",
-			joinKeyLabels("/", keySelectorMoveDown, keySelectorMoveUp),
-			keyLabel(keySelectorEnter),
-			keyLabel(keySelectorAdd),
-			keyLabel(keySelectorEdit),
-			keyLabel(keySelectorDelete),
+		joinShortcutSegments(
+			fmt.Sprintf("%s navigate", joinKeyLabels("/", keySelectorMoveDown, keySelectorMoveUp)),
+			fmt.Sprintf("%s select", keyLabel(keySelectorEnter)),
+			fmt.Sprintf("%s add", keyLabel(keySelectorAdd)),
+			fmt.Sprintf("%s edit", keyLabel(keySelectorEdit)),
+			fmt.Sprintf("%s delete", keyLabel(keySelectorDelete)),
 		),
-		fmt.Sprintf(
-			"%s cancel | %s quit",
-			keyLabel(keyRuntimeEsc),
-			keyLabel(keySelectorQuit),
+		joinShortcutSegments(
+			fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
+			fmt.Sprintf("%s quit", keyLabel(keySelectorQuit)),
 		),
 	}
 }
 
 func selectorContextLinesBrowseFirstSetup() []string {
 	return []string{
-		fmt.Sprintf(
-			"First setup: %s continue | %s add database",
-			keyLabel(keySelectorEnter),
-			keyLabel(keySelectorAdd),
+		joinShortcutSegments(
+			fmt.Sprintf("First setup: %s continue", keyLabel(keySelectorEnter)),
+			fmt.Sprintf("%s add database", keyLabel(keySelectorAdd)),
 		),
-		fmt.Sprintf(
-			"%s navigate | %s quit",
-			joinKeyLabels("/", keySelectorMoveDown, keySelectorMoveUp),
-			keyLabel(keySelectorQuit),
+		joinShortcutSegments(
+			fmt.Sprintf("%s navigate", joinKeyLabels("/", keySelectorMoveDown, keySelectorMoveUp)),
+			fmt.Sprintf("%s quit", keyLabel(keySelectorQuit)),
 		),
 	}
 }
 
 func selectorFormSwitchLine() string {
-	return fmt.Sprintf(
-		"%s switch field | %s clear field",
-		keyLabel(keySelectorFormSwitch),
-		keyLabel(keySelectorFormClear),
+	return joinShortcutSegments(
+		fmt.Sprintf("%s switch field", keyLabel(keySelectorFormSwitch)),
+		fmt.Sprintf("%s clear field", keyLabel(keySelectorFormClear)),
 	)
 }
 
 func selectorFormSubmitLine(escLabel string) string {
-	return fmt.Sprintf("%s save | %s", keyLabel(keySelectorEnter), escLabel)
+	return joinShortcutSegments(fmt.Sprintf("%s save", keyLabel(keySelectorEnter)), escLabel)
 }
 
 func selectorDeleteConfirmationLine() string {
-	return fmt.Sprintf(
-		"%s confirm delete | %s cancel",
-		keyLabel(keySelectorDeleteConfirm),
-		keyLabel(keySelectorDeleteCancel),
+	return joinShortcutSegments(
+		fmt.Sprintf("%s confirm delete", keyLabel(keySelectorDeleteConfirm)),
+		fmt.Sprintf("%s cancel", keyLabel(keySelectorDeleteCancel)),
 	)
 }

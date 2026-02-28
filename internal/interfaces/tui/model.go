@@ -1352,7 +1352,7 @@ func (m *Model) helpPopupContentLines() []string {
 	if strings.TrimSpace(shortcuts) == "" {
 		return []string{"No keybindings available in this context."}
 	}
-	parts := strings.Split(shortcuts, "|")
+	parts := strings.Split(shortcuts, segmentSeparator)
 	lines := make([]string, 0, len(parts))
 	for _, part := range parts {
 		line := strings.TrimSpace(part)

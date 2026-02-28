@@ -1,6 +1,5 @@
 package tui
 
-//nolint:unused // Keep the full separator vocabulary centralized; some symbols are introduced before all renderers consume them.
 const (
 	iconInsert       = "✚"
 	iconEdit         = "✱"
