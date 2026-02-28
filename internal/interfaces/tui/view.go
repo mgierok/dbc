@@ -281,13 +281,13 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
 	lines := make([]string, 0, len(m.schema.Columns)*4)
-	rowLine := iconInfo + "  Persisted record"
+	rowLine := iconInfo + " Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		rowLine = iconInfo + "  Pending insert"
+		rowLine = iconInfo + " Pending insert"
 	} else if m.isRowMarkedDelete(rowIndex) {
-		rowLine = iconInfo + "  Marked for delete"
+		rowLine = iconInfo + " Marked for delete"
 	} else if m.isRowEdited(rowIndex) {
-		rowLine = iconInfo + "  Edited record"
+		rowLine = iconInfo + " Edited record"
 	}
 	lines = append(lines, wrapTextToWidth(rowLine, width)...)
 	lines = append(lines, "")
