@@ -18,17 +18,21 @@ func TestRenderStandardizedPopup_RendersSelectableRows(t *testing.T) {
 	}
 
 	// Act
-	popup := strings.Join(renderStandardizedPopup(60, spec), "\n")
+	lines := renderStandardizedPopup(60, 24, spec)
+	popup := strings.Join(lines, "\n")
 
 	// Assert
-	if !strings.Contains(popup, frameVertical+"Config") {
-		t.Fatalf("expected title row, got %q", popup)
+	if !strings.Contains(lines[0], frameTopLeft+"Config") {
+		t.Fatalf("expected title in top border, got %q", lines[0])
 	}
-	if !strings.Contains(popup, frameVertical+selectionUnselectedPrefix()+"Save") {
-		t.Fatalf("expected unselected row prefix, got %q", popup)
+	if !strings.Contains(popup, frameVertical+" "+selectionUnselectedPrefix()+"Save") {
+		t.Fatalf("expected one-space left padding for rows, got %q", popup)
 	}
-	if !strings.Contains(popup, frameVertical+selectionSelectedPrefix()+"Discard") {
+	if !strings.Contains(popup, selectionSelectedPrefix()+"Discard") {
 		t.Fatalf("expected selected row prefix, got %q", popup)
+	}
+	if !strings.Contains(popup, " "+frameVertical) {
+		t.Fatalf("expected one-space right padding before right border, got %q", popup)
 	}
 }
 
@@ -48,7 +52,7 @@ func TestRenderStandardizedPopup_ShowsScrollIndicatorForOverflow(t *testing.T) {
 	}
 
 	// Act
-	popup := strings.Join(renderStandardizedPopup(60, spec), "\n")
+	popup := strings.Join(renderStandardizedPopup(60, 24, spec), "\n")
 
 	// Assert
 	if !strings.Contains(popup, "two") || !strings.Contains(popup, "three") {
@@ -59,5 +63,27 @@ func TestRenderStandardizedPopup_ShowsScrollIndicatorForOverflow(t *testing.T) {
 	}
 	if !strings.Contains(popup, "Scroll: 2/3") {
 		t.Fatalf("expected scroll indicator, got %q", popup)
+	}
+}
+
+func TestRenderStandardizedPopup_EnforcesMinimumHeight40Percent(t *testing.T) {
+	// Arrange
+	spec := standardizedPopupSpec{
+		title:        "Confirm",
+		summary:      "Save changes?",
+		rows:         []string{"Yes", "No"},
+		selected:     0,
+		defaultWidth: 50,
+		minWidth:     20,
+		maxWidth:     60,
+	}
+
+	// Act
+	lines := renderStandardizedPopup(60, 24, spec)
+
+	// Assert
+	minExpectedHeight := (24*40 + 99) / 100
+	if len(lines) < minExpectedHeight {
+		t.Fatalf("expected min popup height %d, got %d", minExpectedHeight, len(lines))
 	}
 }

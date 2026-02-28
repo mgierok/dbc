@@ -342,7 +342,7 @@ func (m *Model) isRowEdited(rowIndex int) bool {
 }
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
-	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:               m.helpPopupContextTitle(),
 		summary:             runtimeHelpPopupSummaryLine(),
 		rows:                m.helpPopupContentLines(),
@@ -387,7 +387,7 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 		rows = append(rows, "Value: "+value)
 	}
 
-	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        "Filter",
 		summary:      stepLabel,
 		rows:         rows,
@@ -424,7 +424,7 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 		}
 	}
 
-	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        "Sort",
 		summary:      stepLabel,
 		rows:         rows,
@@ -481,7 +481,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 		rows = append(rows, "Error: "+m.editPopup.errorMessage)
 	}
 
-	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        "Edit Cell",
 		summary:      columnLabel + frameSegmentSeparator + nullableLabel,
 		rows:         rows,
@@ -511,7 +511,7 @@ func (m *Model) renderConfirmPopup(totalWidth int) []string {
 		selected = clamp(m.confirmPopup.selected, 0, len(options)-1)
 	}
 
-	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
+	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        title,
 		summary:      message,
 		rows:         options,

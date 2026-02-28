@@ -18,21 +18,47 @@ type standardizedPopupSpec struct {
 	maxWidth            int
 }
 
-func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []string {
+const (
+	popupContentSidePadding = 1
+	popupMinHeightPercent   = 40
+)
+
+func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopupSpec) []string {
 	width := clampPopupWidth(totalWidth, spec.defaultWidth, spec.minWidth, spec.maxWidth)
 	title := strings.TrimSpace(spec.title)
 	if title == "" {
 		title = "Popup"
 	}
 
-	topBorder := frameTopLeft + strings.Repeat(frameHorizontal, width-2) + frameTopRight
+	contentInnerWidth := width - 2
+	if contentInnerWidth < 1 {
+		contentInnerWidth = 1
+	}
+
+	leftPadding := popupContentSidePadding
+	rightPadding := popupContentSidePadding
+	if contentInnerWidth <= (popupContentSidePadding * 2) {
+		leftPadding = 0
+		rightPadding = 0
+	}
+	contentWidth := contentInnerWidth - leftPadding - rightPadding
+	if contentWidth < 0 {
+		contentWidth = 0
+	}
+
+	buildContentLine := func(text string) string {
+		content := strings.Repeat(" ", leftPadding) + padRight(text, contentWidth) + strings.Repeat(" ", rightPadding)
+		content = padRight(content, contentInnerWidth)
+		return frameVertical + content + frameVertical
+	}
+
+	topBorder := renderTitledTopBorder(title, width-2)
 	bottomBorder := frameBottomLeft + strings.Repeat(frameHorizontal, width-2) + frameBottomRight
 	sectionDivider := frameJoinLeft + strings.Repeat(frameHorizontal, width-2) + frameJoinRight
 
 	lines := []string{topBorder}
-	lines = append(lines, frameVertical+padRight(title, width-2)+frameVertical)
 	if strings.TrimSpace(spec.summary) != "" {
-		lines = append(lines, frameVertical+padRight(spec.summary, width-2)+frameVertical)
+		lines = append(lines, buildContentLine(spec.summary))
 	}
 	lines = append(lines, sectionDivider)
 
@@ -67,19 +93,35 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 			}
 			row = prefix + row
 		}
-		lines = append(lines, frameVertical+padRight(row, width-2)+frameVertical)
+		lines = append(lines, buildContentLine(row))
 	}
 	for i := end - offset; i < visibleRows; i++ {
-		lines = append(lines, frameVertical+padRight("", width-2)+frameVertical)
+		lines = append(lines, buildContentLine(""))
 	}
 
 	if spec.showScrollIndicator && maxOffset > 0 {
 		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
-		lines = append(lines, frameVertical+padRight(indicator, width-2)+frameVertical)
+		lines = append(lines, buildContentLine(indicator))
+	}
+
+	minHeight := popupMinHeight(totalHeight)
+	for len(lines)+1 < minHeight {
+		lines = append(lines, buildContentLine(""))
 	}
 
 	lines = append(lines, bottomBorder)
 	return lines
+}
+
+func popupMinHeight(totalHeight int) int {
+	if totalHeight <= 0 {
+		totalHeight = 24
+	}
+	minHeight := (totalHeight*popupMinHeightPercent + 99) / 100
+	if minHeight < 1 {
+		minHeight = 1
+	}
+	return minHeight
 }
 
 func clampPopupWidth(totalWidth, defaultWidth, minWidth, maxWidth int) int {
