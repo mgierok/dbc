@@ -117,7 +117,7 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 	}
 
 	// #nosec G202 -- table name is treated as an SQL identifier and escaped via quoteIdentifier.
-	baseQuery := "FROM " + quoteIdentifier(tableName)
+	query := "SELECT * FROM " + quoteIdentifier(tableName)
 	clause, args, err := buildFilterClause(filter)
 	if err != nil {
 		return model.RecordPage{}, err
@@ -127,8 +127,9 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		return model.RecordPage{}, err
 	}
 
-	countQuery := "SELECT COUNT(*) " + baseQuery
+	countQuery := strings.Replace(query, "SELECT *", "SELECT COUNT(*)", 1)
 	if clause != "" {
+		query = query + " " + clause
 		countQuery = countQuery + " " + clause
 	}
 	var totalCount int
@@ -136,11 +137,6 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		return model.RecordPage{}, err
 	}
 
-	// #nosec G202 -- table name is treated as an SQL identifier and escaped via quoteIdentifier.
-	query := "SELECT * " + baseQuery
-	if clause != "" {
-		query = query + " " + clause
-	}
 	if sortClause != "" {
 		query = query + " " + sortClause
 	}
