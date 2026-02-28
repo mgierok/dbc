@@ -1,7 +1,7 @@
 package tui
 
 const (
-	iconInsert       = "＋"
+	iconInsert       = "✚"
 	iconEdit         = "✎"
 	iconDelete       = "✖"
 	iconSortNeutral  = "↕"
