@@ -1258,7 +1258,7 @@ func TestRenderTables_DoesNotTruncateLongestNameAtComputedMaxWidth(t *testing.T)
 	}
 }
 
-func TestRenderTables_BoldsSelectedTableWithoutTableFocus(t *testing.T) {
+func TestRenderTables_ShowsSelectionMarkerWithoutBoldWhenTablePanelIsNotFocused(t *testing.T) {
 	// Arrange
 	model := &Model{
 		width:         80,
@@ -1284,11 +1284,11 @@ func TestRenderTables_BoldsSelectedTableWithoutTableFocus(t *testing.T) {
 	if selectedLine == "" {
 		t.Fatalf("expected selected table line to be rendered, got %q", strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(selectedLine, "\x1b[1m") || !strings.Contains(selectedLine, "\x1b[0m") {
-		t.Fatalf("expected selected table to be bold, got %q", selectedLine)
+	if !strings.Contains(selectedLine, iconSelection+" ") {
+		t.Fatalf("expected selection marker for selected table, got %q", selectedLine)
 	}
-	if strings.Contains(selectedLine, iconSelection+" ") {
-		t.Fatalf("expected no focus marker when tables panel is not focused, got %q", selectedLine)
+	if strings.Contains(selectedLine, "\x1b[1m") || strings.Contains(selectedLine, "\x1b[0m") {
+		t.Fatalf("expected selected table without bold formatting, got %q", selectedLine)
 	}
 }
 

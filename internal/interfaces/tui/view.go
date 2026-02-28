@@ -111,15 +111,7 @@ func (m *Model) renderTables(width, height int) []string {
 	}
 
 	listHeight := height - 1
-	listLines := renderList(items, m.selectedTable, listHeight, width, m.focus == FocusTables)
-	if len(items) > 0 && len(listLines) > 0 && listHeight > 0 {
-		selected := clamp(m.selectedTable, 0, len(items)-1)
-		start := scrollStart(selected, listHeight, len(items))
-		selectedLine := selected - start
-		if selectedLine >= 0 && selectedLine < len(listLines) {
-			listLines[selectedLine] = bold(listLines[selectedLine])
-		}
-	}
+	listLines := renderList(items, m.selectedTable, listHeight, width, true)
 	lines = append(lines, listLines...)
 	return padLines(lines, height, width)
 }
