@@ -394,7 +394,7 @@ func runtimeStatusSchemaShortcuts() string {
 
 func runtimeStatusRecordsShortcuts() string {
 	return fmt.Sprintf(
-		"Records: %s tables | %s edit | %s detail | %s insert | %s delete | %s undo | %s redo | %s save | %s filter | %s sort",
+		"Records: %s tables | %s edit | %s detail | %s insert | %s delete | %s undo | %s redo | %s save | %s next page | %s prev page | %s filter | %s sort",
 		keyLabel(keyRuntimeEsc),
 		keyLabel(keyRuntimeEdit),
 		keyLabel(keyRuntimeRecordDetail),
@@ -403,6 +403,8 @@ func runtimeStatusRecordsShortcuts() string {
 		keyLabel(keyRuntimeUndo),
 		keyLabel(keyRuntimeRedo),
 		keyLabel(keyRuntimeSave),
+		keyLabel(keyRuntimePageDown),
+		keyLabel(keyRuntimePageUp),
 		keyLabel(keyRuntimeFilter),
 		keyLabel(keyRuntimeSort),
 	)

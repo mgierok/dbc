@@ -49,7 +49,7 @@ Core user value in current state:
   - Left panel: table list.
   - Right panel: schema view or records view for selected table.
 - Schema inspection for selected table columns.
-- Record browsing with continuous scrolling behavior.
+- Record browsing with fixed-page pagination (20 records per page).
 - Single-record detail inspection in right panel (`Enter`) with vertical field layout.
 - Single active filter per selected table.
 - Single active sort (one column + direction) per selected table.
@@ -144,7 +144,10 @@ Core user value in current state:
 ### 4.4 Records View and Navigation
 
 - Records view shows table data for the selected table.
-- Records are fetched and displayed incrementally for continuous browsing.
+- Records are fetched and displayed in fixed pages of 20 persisted records.
+- Users switch persisted-record pages with `Ctrl+f` (next page) and `Ctrl+b` (previous page).
+- Page navigation is bounded to the available page range.
+- Pending insert rows (`[INS]`) remain rendered at the top and are outside persisted-record page-size counting.
 - Row selection is visible in the focused records panel.
 - Field focus mode is supported for cell-level editing navigation.
 - Record cell content is width-constrained in the UI (truncated when needed).
@@ -241,6 +244,8 @@ Core user value in current state:
   - Current mode.
   - Current view (Schema or Records).
   - Current table.
+  - Persisted-record count summary for current page and filtered total (`Records: current/total`).
+  - Persisted-record pagination summary (`Page: current/total`).
   - Active filter summary.
   - Active sort summary.
   - Right-aligned context-help hint (`Context help: ?`).
@@ -269,7 +274,8 @@ Core user value in current state:
 ### Step 3: Record Exploration
 
 - Users switch to records view for the selected table.
-- Record list loads progressively as users navigate deeper.
+- Record list loads one fixed page at a time (`20` persisted records per page).
+- Users move between pages with `Ctrl+f` and `Ctrl+b`.
 - Users can navigate rows and jump/page efficiently.
 
 ### Step 4: Focused Inspection with Filters, Sorting, and Row Detail
@@ -301,7 +307,7 @@ Core user value in current state:
 - Fast orientation: panel layout keeps navigation context visible.
 - Safe-by-design editing: data changes are staged before save.
 - Explicit commitment: save requires user confirmation.
-- Visible state: status line communicates mode, view, selected table, filter, sort, runtime status, and right-aligned context-help access.
+- Visible state: status line communicates mode, view, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
 - Consistent interaction language: vim-like motions and commands are reused across key contexts.
 
 ### 6.2 Global/Main Navigation
@@ -312,7 +318,7 @@ Core user value in current state:
 | Move left/right (field focus in records) | `h`, `l` |
 | Jump to top | `gg` |
 | Jump to bottom | `G` |
-| Page down/up | `Ctrl+f`, `Ctrl+b` |
+| Page down/up (records: next/previous persisted-record page) | `Ctrl+f`, `Ctrl+b` |
 | Open runtime context help popup for current panel/state | `?` |
 | Open selected table in records panel | `Enter` (from left panel) |
 | Return to tables panel and force Table Discovery in right panel | `Esc` (from neutral right panel) |
@@ -330,6 +336,7 @@ Core user value in current state:
 | Open filter popup | `Shift+F` |
 | Open sort popup | `Shift+S` |
 | Open selected row detail view | `Enter` (in records context) |
+| Next/previous persisted-record page | `Ctrl+f`, `Ctrl+b` (in records context) |
 | Stage insert | `i` |
 | Toggle delete marker / remove pending insert | `d` |
 | Undo staged action | `u` |

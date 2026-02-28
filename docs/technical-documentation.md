@@ -135,36 +135,37 @@ Package responsibilities:
 
 1. TUI model initializes by loading tables.
 2. Selected table schema is loaded.
-3. Records are loaded in pages (`offset`, `limit`) with optional filter and optional single-column sort.
-4. Additional records load when selection approaches loaded tail.
-5. Runtime panel transitions are handled in `internal/interfaces/tui/model.go`:
+3. Records are loaded per explicit page request (`offset`, `limit`) with optional filter and optional single-column sort.
+4. Runtime uses fixed records page size (`20`) and tracks page index + total page count in TUI state.
+5. `Ctrl+f` and `Ctrl+b` in records-content context trigger next/previous page reload instead of incremental tail loading.
+6. Runtime panel transitions are handled in `internal/interfaces/tui/model.go`:
    - runtime key dispatch branches match physical keys via centralized binding definitions from `internal/interfaces/tui/input_registry.go` (`keyBindingID` + `keyMatches`),
    - `?` opens a runtime context-help popup that captures the currently active panel/state,
    - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
    - `Esc` from neutral right-panel content focus returns focus to tables and forces `ViewSchema` (Table Discovery) in the right panel.
-6. Dirty table-switch routing behavior:
+7. Dirty table-switch routing behavior:
    - when table selection changes while staged edits exist, TUI opens a modal decision popup,
    - popup summary includes current dirty-change count (`dirtyEditCount()`),
    - discard action clears staged state and switches to pending table selection,
    - cancel action keeps current table selection and preserves staged state.
-7. Command entry (`:`) is handled inside the TUI model.
+8. Command entry (`:`) is handled inside the TUI model.
    - runtime command parsing delegates to `resolveRuntimeCommand` in `internal/interfaces/tui/input_registry.go`,
    - command aliases are defined once (`:config`/`:c`, `:help`/`:h`, `:q`/`:quit`) and matched case-insensitively after trimming optional `:` prefix.
-8. `:config` / `:c` routing behavior:
+9. `:config` / `:c` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
    - if staged changes exist: open modal dirty-state decision popup (`Config`) with `save`, `discard`, `cancel`,
    - `save` executes save flow first and exits to selector only after successful save,
    - `discard` clears staged state and exits to selector immediately,
    - `cancel` keeps runtime session active with staged state unchanged.
-9. `:help` / `:h` routing behavior:
+10. `:help` / `:h` routing behavior:
    - command remains supported and opens the same runtime context-help popup used by `?`,
    - re-entering `:help` or `:h` while popup is already open keeps popup open (idempotent open),
    - popup title/content are generated from captured context metadata (`helpPopupContextTitle`, `helpPopupContentLines`) so shown keybindings stay aligned with the originating panel/state,
    - help popup maintains internal scroll offset for overflow content and supports keyboard scrolling (`j/k`, `down/up`, `Ctrl+f`/`Ctrl+b`, `g`/`G`, `home`/`end`),
    - popup closes on `Esc`; unrelated keys do not dismiss popup.
-10. `:quit` / `:q` routing behavior:
+11. `:quit` / `:q` routing behavior:
    - command exits runtime loop immediately without save/discard confirmation.
-11. Runtime records filter and sort behavior:
+12. Runtime records filter and sort behavior:
    - filter popup open path is restricted to records-panel context (`ViewRecords` + `FocusContent`) and uses `Shift+F`,
    - filter apply triggers records reload from offset `0`,
    - filter state resets on table switch as part of table-context reset,
@@ -172,19 +173,19 @@ Package responsibilities:
    - sort apply triggers records reload from offset `0`,
    - sort state resets on table switch as part of table-context reset,
    - pending inserts remain rendered before persisted rows and are not SQL-sorted.
-12. Runtime single-record detail behavior:
+13. Runtime single-record detail behavior:
    - `Enter` opens selected-row detail state only when records panel context is active,
    - detail renderer uses effective row values (persisted values overridden by staged edits/inserts),
    - detail layout is vertical and wraps values without truncation,
    - detail supports keyboard scrolling (`j/k`, `Ctrl+f`/`Ctrl+b`, `g`/`G`) and closes with `Esc`,
    - detail state resets on table-context resets and records reload resets.
-13. Runtime popup rendering standardization:
+14. Runtime popup rendering standardization:
    - `internal/interfaces/tui/popup_component.go` provides shared frame rendering (`renderStandardizedPopup`) used by runtime help, filter, sort, edit, and confirm popup variants,
    - shared popup spec includes title/summary rows, optional selectable list rows, optional scroll window/indicator, and width clamping,
    - `View()` renders runtime popup overlays via `centerBoxLines` for help, filter, sort, edit, and confirm popup variants.
-14. Runtime status-line composition uses split rendering (`renderStatusWithRightHint`) so the right-aligned `Context help: ?` hint remains visible under narrow widths.
-15. Selector browse/form/delete context lines are generated by input-registry helper functions (`selectorContextLinesBrowseDefault`, `selectorContextLinesBrowseFirstSetup`, `selectorFormSwitchLine`, `selectorFormSubmitLine`, `selectorDeleteConfirmationLine`) to keep on-screen hints synchronized with selector key handling.
-16. Unsupported runtime commands keep existing fallback:
+15. Runtime status-line composition includes persisted-record page summary (`Records: current/total`, `Page: current/total`) and uses split rendering (`renderStatusWithRightHint`) so the right-aligned `Context help: ?` hint remains visible under narrow widths.
+16. Selector browse/form/delete context lines are generated by input-registry helper functions (`selectorContextLinesBrowseDefault`, `selectorContextLinesBrowseFirstSetup`, `selectorFormSwitchLine`, `selectorFormSubmitLine`, `selectorDeleteConfirmationLine`) to keep on-screen hints synchronized with selector key handling.
+17. Unsupported runtime commands keep existing fallback:
    - status message shows unknown command text,
    - runtime session remains active.
 
@@ -272,6 +273,10 @@ Current implementation-level characteristics:
 
 - Engine contract is defined in `internal/application/port/engine.go`.
 - `Engine.ListRecords` accepts optional filter and optional sort payload.
+- Record page contract (`model.RecordPage` -> `dto.RecordPage`) includes:
+  - current-page rows,
+  - `HasMore` look-ahead flag,
+  - `TotalCount` for filtered persisted-record total.
 - Database connection validation boundary is defined in `internal/application/port/database_connection_checker.go`.
 - Use cases call ports and remain independent from concrete SQLite implementation.
 - Infrastructure adapters implement these contracts in:

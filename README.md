@@ -39,7 +39,7 @@ Global/main navigation:
 - `j` / `k`: move down/up
 - `h` / `l`: move left/right (field focus in records)
 - `gg` / `G`: jump top/bottom
-- `Ctrl+f` / `Ctrl+b`: page down/up
+- `Ctrl+f` / `Ctrl+b`: page down/up (`Records`: next/previous persisted-record page)
 - `?`: open context help popup for active panel/state
 
 Records and staged changes:
@@ -55,6 +55,7 @@ Records and staged changes:
 - `w`: save staged changes
 - `Ctrl+a`: toggle auto-increment fields for pending insert row
 - records header marks active sort column with `↑` (`ASC`) or `↓` (`DESC`)
+- status line in `Records` shows persisted-record summary and pagination (`Records: current/total | Page: current/total`)
 
 Command mode:
 - `:`: open command entry

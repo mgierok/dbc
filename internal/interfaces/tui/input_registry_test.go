@@ -104,3 +104,18 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 		t.Fatalf("expected sort keyword in help content, got %q", joined)
 	}
 }
+
+func TestRuntimeStatusRecordsShortcuts_IncludesPaginationBindings(t *testing.T) {
+	// Arrange
+
+	// Act
+	shortcuts := runtimeStatusRecordsShortcuts()
+
+	// Assert
+	if !strings.Contains(shortcuts, "Ctrl+f next page") {
+		t.Fatalf("expected next-page shortcut in records shortcuts, got %q", shortcuts)
+	}
+	if !strings.Contains(shortcuts, "Ctrl+b prev page") {
+		t.Fatalf("expected prev-page shortcut in records shortcuts, got %q", shortcuts)
+	}
+}
