@@ -127,8 +127,9 @@ Core user value in current state:
 ### 4.2 Main Layout and Focus Model
 
 - Layout is permanently two-panel in current state.
-- Left panel shows tables.
-- Right panel shows schema or records for the selected table.
+- Left panel shows tables in an independent framed box (`Tables` title in the top border).
+- Right panel shows schema or records for the selected table in an independent framed box (context title in the top border).
+- Panel boxes are visually separate and do not use shared frame joins.
 - Left-panel `Enter` transitions to right panel in Records view.
 - Neutral right-panel `Esc` returns focus to left-panel table selection and forces right panel to Table Discovery (Schema view).
 - In nested right-panel contexts, `Esc` exits local context first before any panel transition.
@@ -242,7 +243,8 @@ Core user value in current state:
   - `✱` marker on edited rows in Records view.
 - Record detail information indicator:
   - `ℹ` marker on row-state summary lines.
-- Status line communicates:
+- Status bar is rendered as an independent 3-row framed box, and its content row keeps one-space horizontal padding from both frame edges.
+- Status bar communicates:
   - Current mode.
   - Current view (Schema or Records).
   - Current table.
@@ -309,7 +311,7 @@ Core user value in current state:
 - Fast orientation: panel layout keeps navigation context visible.
 - Safe-by-design editing: data changes are staged before save.
 - Explicit commitment: save requires user confirmation.
-- Visible state: status line communicates mode, view, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
+- Visible state: status bar communicates mode, view, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
 - Consistent interaction language: vim-like motions and commands are reused across key contexts.
 
 ### 6.2 Global/Main Navigation

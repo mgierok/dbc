@@ -6,6 +6,7 @@ Database Commander is a terminal-first application for browsing and managing dat
 - Stay in CLI while inspecting schema and records.
 - Use vim-like navigation for fast movement across tables and rows.
 - Stage writes before save for a safer edit workflow.
+- Keep navigation context clear with independent boxed panels and a framed status bar.
 
 ## Supported databases
 - SQLite (only supported engine).
@@ -56,7 +57,7 @@ Records and staged changes:
 - `w`: save staged changes
 - `Ctrl+a`: toggle auto-increment fields for pending insert row
 - records header marks active sort column with `↑` (`ASC`) or `↓` (`DESC`)
-- status line in `Records` shows persisted-record summary and pagination (`Records: current/total | Page: current/total`)
+- status bar in `Records` shows persisted-record summary and pagination (`Records: current/total | Page: current/total`)
 
 Command mode:
 - `:`: open command entry

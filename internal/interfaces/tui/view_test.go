@@ -143,7 +143,7 @@ func TestRenderStatus_RecordsViewShowsSinglePageSummaryForEmptyResult(t *testing
 	}
 }
 
-func TestView_RuntimeInsertsHeaderAndStatusSeparators(t *testing.T) {
+func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 	// Arrange
 	model := &Model{
 		width:    80,
@@ -171,30 +171,94 @@ func TestView_RuntimeInsertsHeaderAndStatusSeparators(t *testing.T) {
 	if len(lines) < 4 {
 		t.Fatalf("expected at least 4 lines in runtime view, got %d", len(lines))
 	}
-	if !strings.Contains(lines[0], "Tables") || !strings.Contains(lines[0], "Schema") {
-		t.Fatalf("expected runtime panel headers on first line, got %q", lines[0])
+	topLine := lines[0]
+	if !strings.Contains(topLine, frameTopLeft+"Tables") || !strings.Contains(topLine, frameTopLeft+"Schema") {
+		t.Fatalf("expected titled top borders for both panels, got %q", topLine)
+	}
+	if strings.Contains(topLine, frameJoinCenter) || strings.Contains(topLine, frameJoinTop) || strings.Contains(topLine, frameJoinBottom) {
+		t.Fatalf("expected independent panel boxes without shared joins, got %q", topLine)
 	}
 
-	headerSeparator := lines[1]
-	if !strings.Contains(headerSeparator, frameJoinCenter) {
-		t.Fatalf("expected header separator with center join, got %q", headerSeparator)
+	statusTop := lines[len(lines)-3]
+	statusContent := lines[len(lines)-2]
+	statusBottom := lines[len(lines)-1]
+
+	if !strings.HasPrefix(statusTop, frameTopLeft) || !strings.HasSuffix(statusTop, frameTopRight) {
+		t.Fatalf("expected framed status top border, got %q", statusTop)
 	}
-	if strings.Trim(headerSeparator, frameHorizontal+frameJoinCenter) != "" {
-		t.Fatalf("expected header separator to contain only frame glyphs, got %q", headerSeparator)
+	if !strings.HasPrefix(statusContent, frameVertical+" ") || !strings.HasSuffix(statusContent, " "+frameVertical) {
+		t.Fatalf("expected status content with one-space side padding, got %q", statusContent)
 	}
-	if textWidth(headerSeparator) != model.width {
-		t.Fatalf("expected header separator width %d, got %d", model.width, textWidth(headerSeparator))
+	if !strings.HasPrefix(statusBottom, frameBottomLeft) || !strings.HasSuffix(statusBottom, frameBottomRight) {
+		t.Fatalf("expected framed status bottom border, got %q", statusBottom)
+	}
+	for _, line := range []string{statusTop, statusContent, statusBottom} {
+		if textWidth(line) != model.width {
+			t.Fatalf("expected status row width %d, got %d for %q", model.width, textWidth(line), line)
+		}
+	}
+}
+
+func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
+	testCases := []struct {
+		name     string
+		model    Model
+		expected string
+	}{
+		{
+			name: "schema view",
+			model: Model{
+				width:    80,
+				height:   24,
+				viewMode: ViewSchema,
+				tables:   []dto.Table{{Name: "users"}},
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+				},
+			},
+			expected: frameTopLeft + "Schema",
+		},
+		{
+			name: "records view",
+			model: Model{
+				width:    80,
+				height:   24,
+				viewMode: ViewRecords,
+				tables:   []dto.Table{{Name: "users"}},
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+				},
+				records: []dto.RecordRow{{Values: []string{"1"}}},
+			},
+			expected: frameTopLeft + "Records",
+		},
+		{
+			name: "record detail view",
+			model: Model{
+				width:    80,
+				height:   24,
+				viewMode: ViewRecords,
+				tables:   []dto.Table{{Name: "users"}},
+				recordDetail: recordDetailState{
+					active: true,
+				},
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+				},
+				records: []dto.RecordRow{{Values: []string{"1"}}},
+			},
+			expected: frameTopLeft + "Record Detail",
+		},
 	}
 
-	statusSeparator := lines[len(lines)-2]
-	if !strings.Contains(statusSeparator, frameJoinBottom) {
-		t.Fatalf("expected status separator with bottom join, got %q", statusSeparator)
-	}
-	if strings.Trim(statusSeparator, frameHorizontal+frameJoinBottom) != "" {
-		t.Fatalf("expected status separator to contain only frame glyphs, got %q", statusSeparator)
-	}
-	if textWidth(statusSeparator) != model.width {
-		t.Fatalf("expected status separator width %d, got %d", model.width, textWidth(statusSeparator))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			view := tc.model.View()
+			topLine := strings.Split(view, "\n")[0]
+			if !strings.Contains(topLine, tc.expected) {
+				t.Fatalf("expected top line to contain %q, got %q", tc.expected, topLine)
+			}
+		})
 	}
 }
 
@@ -244,7 +308,7 @@ func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 	if len(lines) < 3 {
 		t.Fatalf("expected header row, got %v", lines)
 	}
-	header := lines[2]
+	header := lines[1]
 	if !strings.Contains(header, "name "+iconSortAsc) {
 		t.Fatalf("expected asc sort indicator in header, got %q", header)
 	}
@@ -279,7 +343,7 @@ func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 	if len(lines) < 3 {
 		t.Fatalf("expected header row, got %v", lines)
 	}
-	header := lines[2]
+	header := lines[1]
 	if !strings.Contains(header, "name "+iconSortDesc) {
 		t.Fatalf("expected desc sort indicator in header, got %q", header)
 	}
@@ -366,17 +430,17 @@ func TestRenderRecords_RendersThreeLineFrameHeader(t *testing.T) {
 	lines := model.renderRecords(80, 8)
 
 	// Assert
-	if len(lines) < 4 {
-		t.Fatalf("expected title and 3-line header, got %v", lines)
+	if len(lines) < 3 {
+		t.Fatalf("expected 3-line header, got %v", lines)
 	}
-	if !strings.Contains(lines[1], frameTopLeft) || !strings.Contains(lines[1], frameTopRight) {
-		t.Fatalf("expected top header frame row, got %q", lines[1])
+	if !strings.Contains(lines[0], frameTopLeft) || !strings.Contains(lines[0], frameTopRight) {
+		t.Fatalf("expected top header frame row, got %q", lines[0])
 	}
-	if !strings.Contains(lines[2], frameVertical) {
-		t.Fatalf("expected middle header frame row, got %q", lines[2])
+	if !strings.Contains(lines[1], frameVertical) {
+		t.Fatalf("expected middle header frame row, got %q", lines[1])
 	}
-	if !strings.Contains(lines[3], frameBottomLeft) || !strings.Contains(lines[3], frameBottomRight) {
-		t.Fatalf("expected bottom header frame row, got %q", lines[3])
+	if !strings.Contains(lines[2], frameBottomLeft) || !strings.Contains(lines[2], frameBottomRight) {
+		t.Fatalf("expected bottom header frame row, got %q", lines[2])
 	}
 }
 
@@ -544,11 +608,11 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	lines := model.renderRecords(90, 8)
 
 	// Assert
-	if len(lines) < 7 {
+	if len(lines) < 6 {
 		t.Fatalf("expected records output with header and rows, got %v", lines)
 	}
 	secondColumnStarts := make([]int, 0, 3)
-	rowLines := lines[4:7]
+	rowLines := lines[3:6]
 	secondColumnTokens := []string{"inserted", "alice2", "bob"}
 	for i, line := range rowLines {
 		colStartByteIndex := strings.Index(line, secondColumnTokens[i])
@@ -1223,13 +1287,13 @@ func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
 		tablePrefixWidth = 2
 		nameMargin       = 1
 	)
-	separatorWidth := textWidth(frameVertical)
+	nonContentWidth := (panelBoxBorderWidth * 2) + panelBoxGapWidth
 	expectedLeftWidth := tablePrefixWidth + textWidth(longName) + nameMargin
 	if leftWidth != expectedLeftWidth {
 		t.Fatalf("expected left panel width %d, got %d", expectedLeftWidth, leftWidth)
 	}
-	if rightWidth != model.width-leftWidth-separatorWidth {
-		t.Fatalf("expected right panel width %d, got %d", model.width-leftWidth-separatorWidth, rightWidth)
+	if rightWidth != model.width-leftWidth-nonContentWidth {
+		t.Fatalf("expected right panel width %d, got %d", model.width-leftWidth-nonContentWidth, rightWidth)
 	}
 }
 
@@ -1250,11 +1314,11 @@ func TestRenderTables_DoesNotTruncateLongestNameAtComputedMaxWidth(t *testing.T)
 	lines := model.renderTables(leftWidth, 4)
 
 	// Assert
-	if !strings.Contains(lines[1], longName) {
-		t.Fatalf("expected full table name in rendered line, got %q", lines[1])
+	if !strings.Contains(lines[0], longName) {
+		t.Fatalf("expected full table name in rendered line, got %q", lines[0])
 	}
-	if strings.Contains(lines[1], "...") {
-		t.Fatalf("expected no truncation in rendered line, got %q", lines[1])
+	if strings.Contains(lines[0], "...") {
+		t.Fatalf("expected no truncation in rendered line, got %q", lines[0])
 	}
 }
 
@@ -1305,13 +1369,13 @@ func TestPanelWidths_PreservesMinimumRightPanelWidthInNarrowWindow(t *testing.T)
 	leftWidth, rightWidth := model.panelWidths()
 
 	// Assert
-	if rightWidth != 11 {
-		t.Fatalf("expected minimum right panel width 11, got %d", rightWidth)
+	if rightWidth != 10 {
+		t.Fatalf("expected minimum right panel width 10, got %d", rightWidth)
 	}
-	if leftWidth != 18 {
-		t.Fatalf("expected adjusted left panel width 18, got %d", leftWidth)
+	if leftWidth != 16 {
+		t.Fatalf("expected adjusted left panel width 16, got %d", leftWidth)
 	}
-	if leftWidth+rightWidth+textWidth(frameVertical) != model.width {
+	if leftWidth+rightWidth+(panelBoxBorderWidth*2)+panelBoxGapWidth != model.width {
 		t.Fatalf("expected panel widths to match available width, got left=%d right=%d total=%d", leftWidth, rightWidth, model.width)
 	}
 }

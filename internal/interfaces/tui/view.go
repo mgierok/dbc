@@ -8,7 +8,12 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
-const recordsColumnSeparator = "  "
+const (
+	recordsColumnSeparator = "  "
+	panelBoxGapWidth       = 0
+	panelBoxBorderWidth    = 2
+	statusBoxSidePadding   = 1
+)
 
 func (m *Model) View() string {
 	width := m.width
@@ -39,15 +44,11 @@ func (m *Model) View() string {
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
-	left := m.renderTables(leftWidth, bodyHeight)
-	right := m.renderContent(rightWidth, bodyHeight)
-	lines := mergePanels(left, right, leftWidth, rightWidth)
-	lines = insertHeaderSeparator(lines, leftWidth, rightWidth)
-
-	status := m.renderStatus(width)
-	lines = append(lines, renderStatusSeparator(leftWidth, rightWidth))
-	lines = append(lines, status)
-
+	left := renderPanelBox("Tables", m.renderTables(leftWidth, bodyHeight), leftWidth)
+	right := renderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth)
+	lines := mergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
+	lines = append(lines, m.renderStatusBox(width)...)
+	lines = fitLinesToHeight(lines, height, width)
 	return strings.Join(lines, "\n")
 }
 
@@ -56,9 +57,12 @@ func (m *Model) panelWidths() (int, int) {
 	if width <= 0 {
 		width = 80
 	}
-	separatorWidth := textWidth(frameVertical)
+	available := width - (panelBoxBorderWidth * 2) - panelBoxGapWidth
+	if available < 2 {
+		available = 2
+	}
 
-	left := width / 3
+	left := available / 3
 	if left < 18 {
 		left = 18
 	}
@@ -71,15 +75,37 @@ func (m *Model) panelWidths() (int, int) {
 		left = maxLeft
 	}
 
-	right := width - left - separatorWidth
+	right := available - left
 	if right < 10 {
 		right = 10
-		left = width - right - separatorWidth
+		left = available - right
 		if left < 10 {
 			left = 10
+			right = available - left
 		}
 	}
+	if right < 1 {
+		right = 1
+		left = available - right
+	}
+	if left < 1 {
+		left = 1
+		right = available - left
+	}
+	if right < 1 {
+		right = 1
+	}
 	return left, right
+}
+
+func (m *Model) contentPanelTitle() string {
+	if m.viewMode == ViewRecords {
+		if m.recordDetail.active {
+			return "Record Detail"
+		}
+		return "Records"
+	}
+	return "Schema"
 }
 
 func (m *Model) maxTablePanelWidth() int {
@@ -102,18 +128,13 @@ func (m *Model) maxTablePanelWidth() int {
 }
 
 func (m *Model) renderTables(width, height int) []string {
-	title := "Tables"
-	lines := []string{padRight(title, width)}
-
 	items := make([]string, len(m.tables))
 	for i, table := range m.tables {
 		items[i] = table.Name
 	}
 
-	listHeight := height - 1
-	listLines := renderList(items, m.selectedTable, listHeight, width, true)
-	lines = append(lines, listLines...)
-	return padLines(lines, height, width)
+	listLines := renderList(items, m.selectedTable, height, width, true)
+	return padLines(listLines, height, width)
 }
 
 func (m *Model) renderContent(width, height int) []string {
@@ -129,26 +150,20 @@ func (m *Model) renderContent(width, height int) []string {
 }
 
 func (m *Model) renderSchema(width, height int) []string {
-	title := "Schema"
-	lines := []string{padRight(title, width)}
-
 	if len(m.schema.Columns) == 0 {
-		lines = append(lines, padRight("No schema loaded.", width))
-		return padLines(lines, height, width)
+		return padLines([]string{padRight("No schema loaded.", width)}, height, width)
 	}
 
 	items := make([]string, len(m.schema.Columns))
 	for i, column := range m.schema.Columns {
 		items[i] = fmt.Sprintf("%s : %s", column.Name, column.Type)
 	}
-	listHeight := height - 1
-	lines = append(lines, renderList(items, m.schemaIndex, listHeight, width, m.focus == FocusContent && m.viewMode == ViewSchema)...)
+	lines := renderList(items, m.schemaIndex, height, width, m.focus == FocusContent && m.viewMode == ViewSchema)
 	return padLines(lines, height, width)
 }
 
 func (m *Model) renderRecords(width, height int) []string {
-	title := "Records"
-	lines := []string{padRight(title, width)}
+	lines := make([]string, 0, height)
 
 	columns := m.schemaColumnsForRecordsHeader()
 	if len(columns) == 0 {
@@ -172,7 +187,7 @@ func (m *Model) renderRecords(width, height int) []string {
 		lines = append(lines, padRight(headerPrefix+headerRow, width))
 	}
 
-	listHeight := height - 1 - len(headerRows)
+	listHeight := height - len(headerRows)
 	if listHeight < 1 {
 		return padLines(lines, height, width)
 	}
@@ -231,13 +246,7 @@ func (m *Model) recordRowMarker(rowIndex int) string {
 }
 
 func (m *Model) renderRecordDetail(width, height int) []string {
-	title := "Record Detail"
-	lines := []string{padRight(title, width)}
-
-	listHeight := height - 1
-	if listHeight < 1 {
-		return padLines(lines, height, width)
-	}
+	lines := make([]string, 0, height)
 
 	contentLines := m.recordDetailContentLines(width)
 	if len(contentLines) == 0 {
@@ -245,12 +254,12 @@ func (m *Model) renderRecordDetail(width, height int) []string {
 		return padLines(lines, height, width)
 	}
 
-	maxOffset := len(contentLines) - listHeight
+	maxOffset := len(contentLines) - height
 	if maxOffset < 0 {
 		maxOffset = 0
 	}
 	offset := clamp(m.recordDetail.scrollOffset, 0, maxOffset)
-	end := minInt(len(contentLines), offset+listHeight)
+	end := minInt(len(contentLines), offset+height)
 
 	for i := offset; i < end; i++ {
 		lines = append(lines, padRight(contentLines[i], width))
@@ -652,46 +661,100 @@ func selectionUnselectedPrefix() string {
 	return strings.Repeat(" ", textWidth(selectionSelectedPrefix()))
 }
 
-func mergePanels(left, right []string, leftWidth, rightWidth int) []string {
+func renderPanelBox(title string, content []string, contentWidth int) []string {
+	if contentWidth < 1 {
+		contentWidth = 1
+	}
+	top := renderTitledTopBorder(title, contentWidth)
+	bottom := frameBottomLeft + strings.Repeat(frameHorizontal, contentWidth) + frameBottomRight
+
+	lines := make([]string, 0, len(content)+2)
+	lines = append(lines, top)
+	for _, line := range content {
+		lines = append(lines, frameVertical+padRight(line, contentWidth)+frameVertical)
+	}
+	lines = append(lines, bottom)
+	return lines
+}
+
+func renderTitledTopBorder(title string, contentWidth int) string {
+	if contentWidth < 1 {
+		contentWidth = 1
+	}
+	title = truncate(strings.TrimSpace(title), contentWidth)
+	fillWidth := contentWidth - textWidth(title)
+	if fillWidth < 0 {
+		fillWidth = 0
+	}
+	return frameTopLeft + title + strings.Repeat(frameHorizontal, fillWidth) + frameTopRight
+}
+
+func mergePanelBoxes(left, right []string, leftWidth, rightWidth, gapWidth int) []string {
+	if gapWidth < 0 {
+		gapWidth = 0
+	}
+	gap := strings.Repeat(" ", gapWidth)
+
 	maxLines := maxInt(len(left), len(right))
 	lines := make([]string, 0, maxLines)
 	for i := 0; i < maxLines; i++ {
-		leftLine := ""
+		leftLine := strings.Repeat(" ", leftWidth)
 		if i < len(left) {
-			leftLine = left[i]
+			leftLine = padRight(left[i], leftWidth)
 		}
-		rightLine := ""
+		rightLine := strings.Repeat(" ", rightWidth)
 		if i < len(right) {
-			rightLine = right[i]
+			rightLine = padRight(right[i], rightWidth)
 		}
-		combined := padRight(leftLine, leftWidth) + frameVertical + padRight(rightLine, rightWidth)
+		combined := leftLine + gap + rightLine
 		lines = append(lines, combined)
 	}
 	return lines
 }
 
-func insertHeaderSeparator(lines []string, leftWidth, rightWidth int) []string {
-	separator := renderHeaderSeparator(leftWidth, rightWidth)
-	if len(lines) == 0 {
-		return []string{separator}
+func (m *Model) renderStatusBox(width int) []string {
+	if width <= 0 {
+		width = 80
 	}
-	withSeparator := make([]string, 0, len(lines)+1)
-	withSeparator = append(withSeparator, lines[0])
-	withSeparator = append(withSeparator, separator)
-	withSeparator = append(withSeparator, lines[1:]...)
-	return withSeparator
+	innerWidth := width - panelBoxBorderWidth
+	if innerWidth < 1 {
+		innerWidth = 1
+	}
+	leftPadding := statusBoxSidePadding
+	rightPadding := statusBoxSidePadding
+	if innerWidth == 1 {
+		leftPadding = 0
+		rightPadding = 0
+	}
+	statusWidth := innerWidth - leftPadding - rightPadding
+	if statusWidth < 0 {
+		statusWidth = 0
+	}
+
+	status := m.renderStatus(statusWidth)
+	content := strings.Repeat(" ", leftPadding) + padRight(status, statusWidth) + strings.Repeat(" ", rightPadding)
+	content = padRight(content, innerWidth)
+	return []string{
+		frameTopLeft + strings.Repeat(frameHorizontal, innerWidth) + frameTopRight,
+		frameVertical + content + frameVertical,
+		frameBottomLeft + strings.Repeat(frameHorizontal, innerWidth) + frameBottomRight,
+	}
 }
 
-func renderHeaderSeparator(leftWidth, rightWidth int) string {
-	return strings.Repeat(frameHorizontal, maxInt(0, leftWidth)) +
-		frameJoinCenter +
-		strings.Repeat(frameHorizontal, maxInt(0, rightWidth))
-}
-
-func renderStatusSeparator(leftWidth, rightWidth int) string {
-	return strings.Repeat(frameHorizontal, maxInt(0, leftWidth)) +
-		frameJoinBottom +
-		strings.Repeat(frameHorizontal, maxInt(0, rightWidth))
+func fitLinesToHeight(lines []string, height, width int) []string {
+	if height < 1 {
+		return nil
+	}
+	if len(lines) > height {
+		lines = lines[:height]
+	}
+	for i := range lines {
+		lines[i] = padRight(lines[i], width)
+	}
+	for len(lines) < height {
+		lines = append(lines, strings.Repeat(" ", width))
+	}
+	return lines
 }
 
 func centerBoxLines(lines []string, width, height int) string {
