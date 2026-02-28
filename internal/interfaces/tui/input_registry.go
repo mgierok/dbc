@@ -65,24 +65,25 @@ const (
 	keyConfirmCancel keyBindingID = "confirm.cancel"
 	keyConfirmAccept keyBindingID = "confirm.accept"
 
-	keySelectorCancel        keyBindingID = "selector.cancel"
-	keySelectorQuit          keyBindingID = "selector.quit"
-	keySelectorEnter         keyBindingID = "selector.enter"
-	keySelectorMoveDown      keyBindingID = "selector.move_down"
-	keySelectorMoveUp        keyBindingID = "selector.move_up"
-	keySelectorJumpTop       keyBindingID = "selector.jump_top"
-	keySelectorJumpBottom    keyBindingID = "selector.jump_bottom"
-	keySelectorPageDown      keyBindingID = "selector.page_down"
-	keySelectorPageUp        keyBindingID = "selector.page_up"
-	keySelectorAdd           keyBindingID = "selector.add"
-	keySelectorEdit          keyBindingID = "selector.edit"
-	keySelectorDelete        keyBindingID = "selector.delete"
-	keySelectorFormEsc       keyBindingID = "selector.form_esc"
-	keySelectorFormSwitch    keyBindingID = "selector.form_switch"
-	keySelectorFormClear     keyBindingID = "selector.form_clear"
-	keySelectorFormBackspace keyBindingID = "selector.form_backspace"
-	keySelectorDeleteCancel  keyBindingID = "selector.delete_cancel"
-	keySelectorDeleteConfirm keyBindingID = "selector.delete_confirm"
+	keySelectorCancel          keyBindingID = "selector.cancel"
+	keySelectorQuit            keyBindingID = "selector.quit"
+	keySelectorEnter           keyBindingID = "selector.enter"
+	keySelectorMoveDown        keyBindingID = "selector.move_down"
+	keySelectorMoveUp          keyBindingID = "selector.move_up"
+	keySelectorJumpTop         keyBindingID = "selector.jump_top"
+	keySelectorJumpBottom      keyBindingID = "selector.jump_bottom"
+	keySelectorPageDown        keyBindingID = "selector.page_down"
+	keySelectorPageUp          keyBindingID = "selector.page_up"
+	keySelectorOpenContextHelp keyBindingID = "selector.open_context_help"
+	keySelectorAdd             keyBindingID = "selector.add"
+	keySelectorEdit            keyBindingID = "selector.edit"
+	keySelectorDelete          keyBindingID = "selector.delete"
+	keySelectorFormEsc         keyBindingID = "selector.form_esc"
+	keySelectorFormSwitch      keyBindingID = "selector.form_switch"
+	keySelectorFormClear       keyBindingID = "selector.form_clear"
+	keySelectorFormBackspace   keyBindingID = "selector.form_backspace"
+	keySelectorDeleteCancel    keyBindingID = "selector.delete_cancel"
+	keySelectorDeleteConfirm   keyBindingID = "selector.delete_confirm"
 )
 
 var keyBindings = map[keyBindingID]keyBinding{
@@ -123,24 +124,25 @@ var keyBindings = map[keyBindingID]keyBinding{
 	keyConfirmCancel: {keys: []string{"esc", "n"}, label: "Esc"},
 	keyConfirmAccept: {keys: []string{"enter", "y"}, label: "Enter"},
 
-	keySelectorCancel:        {keys: []string{"ctrl+c", "q", "esc"}, label: "Esc"},
-	keySelectorQuit:          {keys: []string{"q"}, label: "q"},
-	keySelectorEnter:         {keys: []string{"enter"}, label: "Enter"},
-	keySelectorMoveDown:      {keys: []string{"j", "down"}, label: "j"},
-	keySelectorMoveUp:        {keys: []string{"k", "up"}, label: "k"},
-	keySelectorJumpTop:       {keys: []string{"g", "home"}, label: "g"},
-	keySelectorJumpBottom:    {keys: []string{"G", "end"}, label: "G"},
-	keySelectorPageDown:      {keys: []string{"ctrl+f", "pgdown"}, label: "Ctrl+f"},
-	keySelectorPageUp:        {keys: []string{"ctrl+b", "pgup"}, label: "Ctrl+b"},
-	keySelectorAdd:           {keys: []string{"a"}, label: "a"},
-	keySelectorEdit:          {keys: []string{"e"}, label: "e"},
-	keySelectorDelete:        {keys: []string{"d"}, label: "d"},
-	keySelectorFormEsc:       {keys: []string{"esc"}, label: "Esc"},
-	keySelectorFormSwitch:    {keys: []string{"tab", "shift+tab"}, label: "Tab"},
-	keySelectorFormClear:     {keys: []string{"ctrl+u"}, label: "Ctrl+u"},
-	keySelectorFormBackspace: {keys: []string{"backspace", "ctrl+h"}, label: "Backspace"},
-	keySelectorDeleteCancel:  {keys: []string{"esc"}, label: "Esc"},
-	keySelectorDeleteConfirm: {keys: []string{"enter"}, label: "Enter"},
+	keySelectorCancel:          {keys: []string{"ctrl+c", "q", "esc"}, label: "Esc"},
+	keySelectorQuit:            {keys: []string{"q"}, label: "q"},
+	keySelectorEnter:           {keys: []string{"enter"}, label: "Enter"},
+	keySelectorMoveDown:        {keys: []string{"j", "down"}, label: "j"},
+	keySelectorMoveUp:          {keys: []string{"k", "up"}, label: "k"},
+	keySelectorJumpTop:         {keys: []string{"g", "home"}, label: "g"},
+	keySelectorJumpBottom:      {keys: []string{"G", "end"}, label: "G"},
+	keySelectorPageDown:        {keys: []string{"ctrl+f", "pgdown"}, label: "Ctrl+f"},
+	keySelectorPageUp:          {keys: []string{"ctrl+b", "pgup"}, label: "Ctrl+b"},
+	keySelectorOpenContextHelp: {keys: []string{"?"}, label: "?"},
+	keySelectorAdd:             {keys: []string{"a"}, label: "a"},
+	keySelectorEdit:            {keys: []string{"e"}, label: "e"},
+	keySelectorDelete:          {keys: []string{"d"}, label: "d"},
+	keySelectorFormEsc:         {keys: []string{"esc"}, label: "Esc"},
+	keySelectorFormSwitch:      {keys: []string{"tab", "shift+tab"}, label: "Tab"},
+	keySelectorFormClear:       {keys: []string{"ctrl+u"}, label: "Ctrl+u"},
+	keySelectorFormBackspace:   {keys: []string{"backspace", "ctrl+h"}, label: "Backspace"},
+	keySelectorDeleteCancel:    {keys: []string{"esc"}, label: "Esc"},
+	keySelectorDeleteConfirm:   {keys: []string{"enter"}, label: "Enter"},
 }
 
 var runtimeCommandSpecs = []runtimeCommandSpec{

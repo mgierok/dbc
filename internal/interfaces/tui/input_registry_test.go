@@ -131,3 +131,15 @@ func TestJoinShortcutSegments_UsesASCIIPipeSeparator(t *testing.T) {
 		t.Fatalf("expected ASCII separator, got %q", joined)
 	}
 }
+
+func TestSelectorContextHelpBinding_IsQuestionMark(t *testing.T) {
+	// Arrange
+
+	// Act + Assert
+	if !keyMatches(keySelectorOpenContextHelp, "?") {
+		t.Fatalf("expected selector context-help binding to match question mark")
+	}
+	if keyLabel(keySelectorOpenContextHelp) != "?" {
+		t.Fatalf("expected selector context-help label ?, got %q", keyLabel(keySelectorOpenContextHelp))
+	}
+}

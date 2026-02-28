@@ -470,7 +470,7 @@ func TestDatabaseSelector_ForcedSetupAllowsContinueAfterFirstEntry(t *testing.T)
 	}
 }
 
-func TestDatabaseSelector_ForcedSetupFormShowsEscExitAppHint(t *testing.T) {
+func TestDatabaseSelector_ForcedSetupFormHidesShortcutLegendFromMainContent(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{},
@@ -481,11 +481,14 @@ func TestDatabaseSelector_ForcedSetupFormShowsEscExitAppHint(t *testing.T) {
 	}
 
 	// Act
-	lines := strings.Join(model.formLines(), "\n")
+	view := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "Enter save"+frameSegmentSeparator+"Esc exit app") {
-		t.Fatalf("expected forced setup Esc hint to exit app, got %q", lines)
+	if strings.Contains(view, selectorFormSubmitLine("Esc exit app")) {
+		t.Fatalf("expected forced setup form to hide shortcut line from main content, got %q", view)
+	}
+	if strings.Contains(view, selectorFormSwitchLine()) {
+		t.Fatalf("expected forced setup form to hide switch shortcut line from main content, got %q", view)
 	}
 }
 
@@ -814,8 +817,182 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	if !hasRightBorderColumn {
 		t.Fatalf("expected popup content lines in view, got %q", view)
 	}
-	if !strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
-		t.Fatalf("expected legend with unicode markers in view, got %q", view)
+	if strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
+		t.Fatalf("expected legend to be removed from selector main content, got %q", view)
+	}
+	if !strings.Contains(view, frameTopLeft+"Select database") {
+		t.Fatalf("expected selector title in top border, got %q", view)
+	}
+	if !strings.Contains(view, "Context help: ?") {
+		t.Fatalf("expected context-help hint in selector, got %q", view)
+	}
+}
+
+func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act + Assert: browse mode.
+	browse := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+	if strings.Contains(browse, selectorContextLinesBrowseDefault()[0]) || strings.Contains(browse, selectorContextLinesBrowseDefault()[1]) {
+		t.Fatalf("expected browse shortcuts to be removed from main content, got %q", browse)
+	}
+
+	// Act + Assert: add mode.
+	model.openAddForm()
+	addView := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+	if strings.Contains(addView, selectorFormSwitchLine()) || strings.Contains(addView, selectorFormSubmitLine("Esc cancel")) {
+		t.Fatalf("expected add-form shortcuts to be removed from main content, got %q", addView)
+	}
+
+	// Act + Assert: delete-confirm mode.
+	model.mode = selectorModeBrowse
+	model.openDeleteConfirmation()
+	deleteView := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+	if strings.Contains(deleteView, selectorDeleteConfirmationLine()) {
+		t.Fatalf("expected delete-confirm shortcuts to be removed from main content, got %q", deleteView)
+	}
+}
+
+func TestDatabaseSelector_BoxLinesEnforceMinimumHeight40Percent(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.height = 50
+
+	// Act
+	lines := model.boxLines(model.listHeight(model.height), 100)
+
+	// Assert
+	minExpectedHeight := (model.height*40 + 99) / 100
+	if len(lines) < minExpectedHeight {
+		t.Fatalf("expected selector min height %d, got %d", minExpectedHeight, len(lines))
+	}
+}
+
+func TestDatabaseSelector_ContextHelpPopupOpensWithQuestionMarkInBrowseMode(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected context help popup to open with ? in browse mode")
+	}
+	if model.helpPopup.context != selectorModeBrowse {
+		t.Fatalf("expected browse help context, got %v", model.helpPopup.context)
+	}
+}
+
+func TestDatabaseSelector_ContextHelpPopupCapturesFormContext(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.openAddForm()
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected context help popup to open in add form mode")
+	}
+	if model.helpPopup.context != selectorModeAdd {
+		t.Fatalf("expected add-form help context, got %v", model.helpPopup.context)
+	}
+}
+
+func TestDatabaseSelector_ContextHelpPopupEscClosesAndRestoresSelectorMode(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.mode = selectorModeConfirmDelete
+	model.confirmDelete = selectorDeleteConfirm{active: true, optionIndex: 0, managerIndex: 0}
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if !model.helpPopup.active {
+		t.Fatal("expected context help popup to open before close check")
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.helpPopup.active {
+		t.Fatal("expected Esc to close selector context help popup")
+	}
+	if model.mode != selectorModeConfirmDelete {
+		t.Fatalf("expected selector mode to stay unchanged after closing help popup, got %v", model.mode)
+	}
+}
+
+func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.openAddForm()
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if !strings.Contains(view, "Context Help: Config") {
+		t.Fatalf("expected selector help title, got %q", view)
+	}
+	if !strings.Contains(view, selectorFormSwitchLine()) || !strings.Contains(view, selectorFormSubmitLine("Esc cancel")) {
+		t.Fatalf("expected form shortcuts in help popup, got %q", view)
+	}
+	if strings.Contains(view, selectorContextLinesBrowseDefault()[0]) {
+		t.Fatalf("expected help popup to exclude browse shortcuts in form context, got %q", view)
+	}
+	if strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
+		t.Fatalf("expected help popup to exclude legend, got %q", view)
 	}
 }
 
