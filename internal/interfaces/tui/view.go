@@ -8,6 +8,8 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
+const recordsColumnSeparator = "  "
+
 func (m *Model) View() string {
 	width := m.width
 	if width <= 0 {
@@ -755,7 +757,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	if columns <= 0 {
 		return nil
 	}
-	separatorWidth := (columns - 1) * textWidth(frameVertical)
+	separatorWidth := (columns - 1) * textWidth(recordsColumnSeparator)
 	available := totalWidth - separatorWidth
 	if available < columns {
 		available = columns
@@ -792,9 +794,9 @@ func formatRecordsHeaderRows(values []string, widths []int) []string {
 	}
 
 	return []string{
-		strings.Join(topParts, frameVertical),
-		strings.Join(middleParts, frameVertical),
-		strings.Join(bottomParts, frameVertical),
+		strings.Join(topParts, recordsColumnSeparator),
+		strings.Join(middleParts, recordsColumnSeparator),
+		strings.Join(bottomParts, recordsColumnSeparator),
 	}
 }
 
@@ -885,7 +887,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int) string {
 		focused := i == focusColumn
 		parts[i] = formatRecordCell(value, width, focused)
 	}
-	return strings.Join(parts, frameVertical)
+	return strings.Join(parts, recordsColumnSeparator)
 }
 
 func formatRecordCell(value string, width int, focused bool) string {

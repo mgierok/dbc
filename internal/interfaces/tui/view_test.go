@@ -380,6 +380,39 @@ func TestRenderRecords_RendersThreeLineFrameHeader(t *testing.T) {
 	}
 }
 
+func TestFormatRecordRow_UsesDoubleSpaceSeparatorBetweenColumns(t *testing.T) {
+	// Arrange
+	values := []string{"A", "B"}
+	widths := []int{1, 1}
+
+	// Act
+	row := formatRecordRow(values, widths, -1)
+
+	// Assert
+	if row != "A  B" {
+		t.Fatalf("expected two-space separator between columns, got %q", row)
+	}
+}
+
+func TestFormatRecordsHeaderRows_UsesDoubleSpaceSeparatorBetweenColumns(t *testing.T) {
+	// Arrange
+	values := []string{"id", "name"}
+	widths := []int{6, 6}
+
+	// Act
+	rows := formatRecordsHeaderRows(values, widths)
+
+	// Assert
+	if len(rows) != 3 {
+		t.Fatalf("expected 3 header rows, got %d", len(rows))
+	}
+	for _, row := range rows {
+		if !strings.Contains(row, "  ") {
+			t.Fatalf("expected two-space separator in header row, got %q", row)
+		}
+	}
+}
+
 func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -514,17 +547,23 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	if len(lines) < 7 {
 		t.Fatalf("expected records output with header and rows, got %v", lines)
 	}
-	separatorColumns := make([]int, 0, 3)
-	for _, line := range lines[4:7] {
-		sep := strings.Index(line, frameVertical)
-		if sep < 0 {
-			t.Fatalf("expected column separator in row line, got %q", line)
+	secondColumnIndices := make([]int, 0, 3)
+	rowLines := lines[4:7]
+	secondColumnTokens := []string{"inserted", "alice2", "bob"}
+	for i, line := range rowLines {
+		colStart := strings.Index(line, secondColumnTokens[i])
+		if colStart < 0 {
+			t.Fatalf("expected second column token %q in row line, got %q", secondColumnTokens[i], line)
 		}
-		separatorColumns = append(separatorColumns, sep)
+		secondColumnIndices = append(secondColumnIndices, colStart)
 	}
-	for i := 1; i < len(separatorColumns); i++ {
-		if separatorColumns[i] != separatorColumns[0] {
-			t.Fatalf("expected aligned column separators, got %v in lines %q", separatorColumns, lines[4:7])
+	for i := 1; i < len(secondColumnIndices); i++ {
+		if secondColumnIndices[i] != secondColumnIndices[0] {
+			t.Fatalf(
+				"expected aligned second-column start positions, got %v in lines %q",
+				secondColumnIndices,
+				rowLines,
+			)
 		}
 	}
 }
