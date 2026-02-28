@@ -366,7 +366,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	}
 	separatorColumns := make([]int, 0, 3)
 	for _, line := range lines[2:5] {
-		sep := strings.Index(line, " | ")
+		sep := strings.Index(line, dividerColumn)
 		if sep < 0 {
 			t.Fatalf("expected column separator in row line, got %q", line)
 		}
@@ -592,7 +592,7 @@ func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 	popup := strings.Join(model.renderEditPopup(60), "\n")
 
 	// Assert
-	if !strings.Contains(popup, "name (TEXT) | NULLABLE") {
+	if !strings.Contains(popup, "name (TEXT)"+segmentSeparator+"NULLABLE") {
 		t.Fatalf("expected combined summary row for column metadata, got %q", popup)
 	}
 }
@@ -1020,8 +1020,8 @@ func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
 	const (
 		tablePrefixWidth = 2
 		nameMargin       = 1
-		separatorWidth   = 3
 	)
+	separatorWidth := textWidth(dividerColumn)
 	expectedLeftWidth := tablePrefixWidth + textWidth(longName) + nameMargin
 	if leftWidth != expectedLeftWidth {
 		t.Fatalf("expected left panel width %d, got %d", expectedLeftWidth, leftWidth)
@@ -1103,13 +1103,13 @@ func TestPanelWidths_PreservesMinimumRightPanelWidthInNarrowWindow(t *testing.T)
 	leftWidth, rightWidth := model.panelWidths()
 
 	// Assert
-	if rightWidth != 10 {
-		t.Fatalf("expected minimum right panel width 10, got %d", rightWidth)
+	if rightWidth != 11 {
+		t.Fatalf("expected minimum right panel width 11, got %d", rightWidth)
 	}
-	if leftWidth != 17 {
-		t.Fatalf("expected adjusted left panel width 17, got %d", leftWidth)
+	if leftWidth != 18 {
+		t.Fatalf("expected adjusted left panel width 18, got %d", leftWidth)
 	}
-	if leftWidth+rightWidth+3 != model.width {
+	if leftWidth+rightWidth+textWidth(dividerColumn) != model.width {
 		t.Fatalf("expected panel widths to match available width, got left=%d right=%d total=%d", leftWidth, rightWidth, model.width)
 	}
 }
