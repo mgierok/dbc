@@ -394,7 +394,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+"  "+iconInsert+" Pending insert") {
+		if !strings.Contains(lines[0], iconInfo+"  Pending insert") {
 			t.Fatalf("expected pending insert information marker, got %q", lines[0])
 		}
 	})
@@ -423,7 +423,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+"  "+iconDelete+" Marked for delete") {
+		if !strings.Contains(lines[0], iconInfo+"  Marked for delete") {
 			t.Fatalf("expected delete information marker, got %q", lines[0])
 		}
 	})
@@ -457,8 +457,11 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+"  "+iconEdit+" Edited record") {
+		if !strings.Contains(lines[0], iconInfo+"  Edited record") {
 			t.Fatalf("expected edited information marker, got %q", lines[0])
+		}
+		if strings.Contains(strings.Join(lines, "\n"), iconEdit) {
+			t.Fatalf("expected no edit icon in record detail content, got %q", strings.Join(lines, "\n"))
 		}
 	})
 }

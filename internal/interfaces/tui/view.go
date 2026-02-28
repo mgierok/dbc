@@ -272,11 +272,11 @@ func (m *Model) recordDetailContentLines(width int) []string {
 	lines := make([]string, 0, len(m.schema.Columns)*4)
 	rowLine := iconInfo + "  Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		rowLine = fmt.Sprintf("%s  %s Pending insert", iconInfo, iconInsert)
+		rowLine = iconInfo + "  Pending insert"
 	} else if m.isRowMarkedDelete(rowIndex) {
-		rowLine = fmt.Sprintf("%s  %s Marked for delete", iconInfo, iconDelete)
+		rowLine = iconInfo + "  Marked for delete"
 	} else if m.isRowEdited(rowIndex) {
-		rowLine = fmt.Sprintf("%s  %s Edited record", iconInfo, iconEdit)
+		rowLine = iconInfo + "  Edited record"
 	}
 	lines = append(lines, wrapTextToWidth(rowLine, width)...)
 	lines = append(lines, "")
@@ -287,11 +287,8 @@ func (m *Model) recordDetailContentLines(width int) []string {
 	}
 
 	for columnIndex, column := range m.schema.Columns {
-		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
+		value, _ := m.effectiveRecordDetailValue(rowIndex, columnIndex)
 		header := fmt.Sprintf("%s (%s)", bold(column.Name), column.Type)
-		if edited {
-			header += " " + iconEdit
-		}
 		lines = append(lines, wrapTextToWidth(header, width)...)
 
 		for _, wrappedLine := range wrapTextToWidth(value, valueWidth) {
