@@ -241,10 +241,10 @@ func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 	lines := model.renderRecords(80, 6)
 
 	// Assert
-	if len(lines) < 2 {
+	if len(lines) < 3 {
 		t.Fatalf("expected header row, got %v", lines)
 	}
-	header := lines[1]
+	header := lines[2]
 	if !strings.Contains(header, "name "+iconSortAsc) {
 		t.Fatalf("expected asc sort indicator in header, got %q", header)
 	}
@@ -276,12 +276,107 @@ func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 	lines := model.renderRecords(80, 6)
 
 	// Assert
-	if len(lines) < 2 {
+	if len(lines) < 3 {
 		t.Fatalf("expected header row, got %v", lines)
 	}
-	header := lines[1]
+	header := lines[2]
 	if !strings.Contains(header, "name "+iconSortDesc) {
 		t.Fatalf("expected desc sort indicator in header, got %q", header)
+	}
+}
+
+func TestBoxWidthForRecordHeaderColumn_UsesFloorEightyPercent(t *testing.T) {
+	// Arrange
+	testCases := []struct {
+		name      string
+		width     int
+		wantWidth int
+	}{
+		{name: "odd width", width: 25, wantWidth: 20},
+		{name: "even width", width: 24, wantWidth: 19},
+		{name: "small width", width: 5, wantWidth: 4},
+		{name: "minimum width", width: 1, wantWidth: 1},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Act
+			gotWidth := boxWidthForRecordHeaderColumn(tc.width)
+
+			// Assert
+			if gotWidth != tc.wantWidth {
+				t.Fatalf("expected box width %d, got %d", tc.wantWidth, gotWidth)
+			}
+		})
+	}
+}
+
+func TestFormatRecordsHeaderRows_CentersLabelInsideBox(t *testing.T) {
+	// Arrange
+	label := "name " + iconSortAsc
+
+	// Act
+	rows := formatRecordsHeaderRows([]string{label}, []int{20})
+
+	// Assert
+	if len(rows) != 3 {
+		t.Fatalf("expected 3 header rows, got %d", len(rows))
+	}
+	for _, row := range rows {
+		if textWidth(row) != 20 {
+			t.Fatalf("expected header row width 20, got %d for row %q", textWidth(row), row)
+		}
+	}
+
+	middleRow := rows[1]
+	leftBorder := strings.Index(middleRow, innerFrameVertical)
+	rightBorder := strings.LastIndex(middleRow, innerFrameVertical)
+	if leftBorder < 0 || rightBorder <= leftBorder {
+		t.Fatalf("expected framed middle row, got %q", middleRow)
+	}
+	inside := middleRow[leftBorder+len(innerFrameVertical) : rightBorder]
+	if strings.TrimSpace(inside) != label {
+		t.Fatalf("expected centered label %q, got %q", label, inside)
+	}
+
+	leftPadding := len(inside) - len(strings.TrimLeft(inside, " "))
+	rightPadding := len(inside) - len(strings.TrimRight(inside, " "))
+	paddingDiff := leftPadding - rightPadding
+	if paddingDiff < -1 || paddingDiff > 1 {
+		t.Fatalf("expected balanced centering paddings, got left=%d right=%d in %q", leftPadding, rightPadding, inside)
+	}
+}
+
+func TestRenderRecords_RendersThreeLineInnerFrameHeader(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", "alice"}},
+		},
+	}
+
+	// Act
+	lines := model.renderRecords(80, 8)
+
+	// Assert
+	if len(lines) < 4 {
+		t.Fatalf("expected title and 3-line header, got %v", lines)
+	}
+	if !strings.Contains(lines[1], innerFrameTopLeft) || !strings.Contains(lines[1], innerFrameTopRight) {
+		t.Fatalf("expected top header frame row, got %q", lines[1])
+	}
+	if !strings.Contains(lines[2], innerFrameVertical) {
+		t.Fatalf("expected middle header frame row, got %q", lines[2])
+	}
+	if !strings.Contains(lines[3], innerFrameBottomLeft) || !strings.Contains(lines[3], innerFrameBottomRight) {
+		t.Fatalf("expected bottom header frame row, got %q", lines[3])
 	}
 }
 
@@ -416,12 +511,12 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	lines := model.renderRecords(90, 8)
 
 	// Assert
-	if len(lines) < 5 {
+	if len(lines) < 7 {
 		t.Fatalf("expected records output with header and rows, got %v", lines)
 	}
 	separatorColumns := make([]int, 0, 3)
-	for _, line := range lines[2:5] {
-		sep := strings.Index(line, outerFrameVertical)
+	for _, line := range lines[4:7] {
+		sep := strings.Index(line, innerFrameVertical)
 		if sep < 0 {
 			t.Fatalf("expected column separator in row line, got %q", line)
 		}
@@ -429,7 +524,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	}
 	for i := 1; i < len(separatorColumns); i++ {
 		if separatorColumns[i] != separatorColumns[0] {
-			t.Fatalf("expected aligned column separators, got %v in lines %q", separatorColumns, lines[2:5])
+			t.Fatalf("expected aligned column separators, got %v in lines %q", separatorColumns, lines[4:7])
 		}
 	}
 }

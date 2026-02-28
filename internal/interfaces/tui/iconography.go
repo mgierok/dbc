@@ -28,9 +28,7 @@ const (
 	outerFrameSegmentSeparator = " ┃ "
 )
 
-// Inner frame provides a separate light-style set for future use.
-//
-//nolint:unused // reserved for future light inner-frame rendering variants.
+// Inner frame provides a separate light-style set.
 const (
 	innerFrameVertical   = "│"
 	innerFrameHorizontal = "─"

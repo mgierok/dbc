@@ -181,10 +181,13 @@ func (m *Model) renderRecords(width, height int) []string {
 		rowWidth = 1
 	}
 	columnWidths := allocateColumnWidths(rowWidth, len(columns))
-	header := strings.Repeat(" ", recordSelectionPrefixWidth+recordMarkerSlotWidth) + formatRow(columns, columnWidths)
-	lines = append(lines, padRight(header, width))
+	headerPrefix := strings.Repeat(" ", recordSelectionPrefixWidth+recordMarkerSlotWidth)
+	headerRows := formatRecordsHeaderRows(columns, columnWidths)
+	for _, headerRow := range headerRows {
+		lines = append(lines, padRight(headerPrefix+headerRow, width))
+	}
 
-	listHeight := height - 2
+	listHeight := height - 1 - len(headerRows)
 	if listHeight < 1 {
 		return padLines(lines, height, width)
 	}
@@ -752,7 +755,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	if columns <= 0 {
 		return nil
 	}
-	separatorWidth := (columns - 1) * textWidth(outerFrameVertical)
+	separatorWidth := (columns - 1) * textWidth(innerFrameVertical)
 	available := totalWidth - separatorWidth
 	if available < columns {
 		available = columns
@@ -769,16 +772,107 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	return widths
 }
 
-func formatRow(values []string, widths []int) string {
-	parts := make([]string, len(widths))
+func formatRecordsHeaderRows(values []string, widths []int) []string {
+	if len(widths) == 0 {
+		return nil
+	}
+
+	topParts := make([]string, len(widths))
+	middleParts := make([]string, len(widths))
+	bottomParts := make([]string, len(widths))
 	for i, width := range widths {
 		value := ""
 		if i < len(values) {
 			value = values[i]
 		}
-		parts[i] = padRight(value, width)
+		top, middle, bottom := formatRecordsHeaderCell(value, width)
+		topParts[i] = top
+		middleParts[i] = middle
+		bottomParts[i] = bottom
 	}
-	return strings.Join(parts, outerFrameVertical)
+
+	return []string{
+		strings.Join(topParts, innerFrameVertical),
+		strings.Join(middleParts, innerFrameVertical),
+		strings.Join(bottomParts, innerFrameVertical),
+	}
+}
+
+func formatRecordsHeaderCell(value string, columnWidth int) (string, string, string) {
+	if columnWidth <= 0 {
+		return "", "", ""
+	}
+
+	boxWidth := boxWidthForRecordHeaderColumn(columnWidth)
+	leftPadding := (columnWidth - boxWidth) / 2
+	rightPadding := columnWidth - boxWidth - leftPadding
+
+	top := strings.Repeat(" ", leftPadding) +
+		renderInnerFrameEdge(boxWidth, innerFrameTopLeft, innerFrameHorizontal, innerFrameTopRight) +
+		strings.Repeat(" ", rightPadding)
+	middle := strings.Repeat(" ", leftPadding) +
+		renderInnerFrameContent(value, boxWidth) +
+		strings.Repeat(" ", rightPadding)
+	bottom := strings.Repeat(" ", leftPadding) +
+		renderInnerFrameEdge(boxWidth, innerFrameBottomLeft, innerFrameHorizontal, innerFrameBottomRight) +
+		strings.Repeat(" ", rightPadding)
+
+	return top, middle, bottom
+}
+
+func boxWidthForRecordHeaderColumn(columnWidth int) int {
+	if columnWidth <= 0 {
+		return 0
+	}
+	boxWidth := (columnWidth * 8) / 10
+	if boxWidth < 1 {
+		boxWidth = 1
+	}
+	if boxWidth > columnWidth {
+		boxWidth = columnWidth
+	}
+	return boxWidth
+}
+
+func renderInnerFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
+	switch {
+	case width <= 0:
+		return ""
+	case width == 1:
+		return truncate(leftCorner, 1)
+	case width == 2:
+		return truncate(leftCorner+rightCorner, 2)
+	default:
+		return leftCorner + strings.Repeat(horizontal, width-2) + rightCorner
+	}
+}
+
+func renderInnerFrameContent(value string, width int) string {
+	switch {
+	case width <= 0:
+		return ""
+	case width == 1:
+		return truncate(innerFrameVertical, 1)
+	case width == 2:
+		return innerFrameVertical + innerFrameVertical
+	default:
+		innerWidth := width - 2
+		return innerFrameVertical + centerText(value, innerWidth) + innerFrameVertical
+	}
+}
+
+func centerText(value string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	value = truncate(value, width)
+	valueWidth := textWidth(value)
+	if valueWidth >= width {
+		return value
+	}
+	leftPadding := (width - valueWidth) / 2
+	rightPadding := width - valueWidth - leftPadding
+	return strings.Repeat(" ", leftPadding) + value + strings.Repeat(" ", rightPadding)
 }
 
 func formatRecordRow(values []string, widths []int, focusColumn int) string {
@@ -791,7 +885,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int) string {
 		focused := i == focusColumn
 		parts[i] = formatRecordCell(value, width, focused)
 	}
-	return strings.Join(parts, outerFrameVertical)
+	return strings.Join(parts, innerFrameVertical)
 }
 
 func formatRecordCell(value string, width int, focused bool) string {
