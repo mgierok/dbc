@@ -99,6 +99,9 @@ Core user value in current state:
   - `db_path` (SQLite connection path/string).
 - Startup selector displays entries in configuration order.
 - Startup selector shows source marker for each option: `⚙` for config-backed entries and `⌨` for direct-launch session-scoped entry (in-memory only for current process, no auto-persistence).
+- Startup selector main content shows database options and status without inline shortcut/legend rows.
+- Startup selector keeps a right-aligned context-help hint: `Context help: ?`.
+- Startup selector supports `?` to open context-help popup for the current selector mode (`browse`, `add/edit form`, or `delete confirmation`).
 - Startup selector supports in-app add/edit/delete management:
   - Add and edit require non-empty `name` and `db_path`.
   - Add and edit validate database target before config save.
@@ -117,6 +120,7 @@ Core user value in current state:
 - Help popup content lists only keybindings available in the context where help was opened (active panel/state).
 - When help content exceeds visible popup height, users can scroll to reach final entries.
 - Help popup closes only with `Esc`; unrelated keys keep it open.
+- Selector context-help popup closes with `Esc`; if content overflows, users can scroll with `j/k`, `Ctrl+f`/`Ctrl+b`, and `g`/`G`.
 - Unsupported runtime commands continue to show unknown-command status while session remains active.
 - If `:config` or `:c` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
   - `save`: persist staged changes, then open selector/management only on success.
@@ -244,6 +248,7 @@ Core user value in current state:
 - Record detail information indicator:
   - `ℹ` marker on row-state summary lines.
 - Status bar is rendered as an independent 3-row framed box, and its content row keeps one-space horizontal padding from both frame edges.
+- Runtime and selector popup windows keep title text in the top frame border, one-space horizontal side padding in content rows, and minimum height equal to `40%` of terminal height.
 - Status bar communicates:
   - Current mode.
   - Current view (Schema or Records).
@@ -265,8 +270,10 @@ Core user value in current state:
   - Default: centered database selector.
   - Direct launch: pass `-d` / `--database` with a SQLite path to bypass selector on successful validation.
 - Selector displays active config file path.
+- Selector displays right-aligned `Context help: ?` in the bottom content row.
 - Each database option is presented as `Name | Connection String`.
 - Users can manage entries in place (`add`, `edit`, `delete` with confirmation).
+- Selector main content does not display inline shortcut or legend rows; users open selector-specific shortcut help with `?`.
 - Users can confirm selection or cancel startup.
 
 ### Step 2: Table Discovery and Schema Orientation
@@ -359,6 +366,7 @@ Core user value in current state:
 | Dirty table-switch decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Dirty `:config` / `:c` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
 | Help popup | Shows keybindings for the context captured on open; `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
+| Selector context-help popup | Shows shortcuts for current selector mode (`browse`, `add/edit form`, or `delete confirmation`); `j/k`, `Ctrl+f`/`Ctrl+b`, `g`/`G` scroll, `Esc` close |
 | Single-record detail view | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 
@@ -371,6 +379,7 @@ Core user value in current state:
 | Move selection | `j/k` and arrow keys |
 | Jump to top/bottom | `g`/`G` and `Home`/`End` |
 | Page navigation | `Ctrl+f`/`Ctrl+b` and `PgDown`/`PgUp` |
+| Open selector context help popup | `?` |
 | Add entry | `a` |
 | Edit selected entry | `e` |
 | Delete selected entry (confirm required) | `d`, then `Enter` |

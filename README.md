@@ -42,7 +42,7 @@ Global/main navigation:
 - `h` / `l`: move left/right (field focus in records)
 - `gg` / `G`: jump top/bottom
 - `Ctrl+f` / `Ctrl+b`: page down/up (`Records`: next/previous persisted-record page)
-- `?`: open context help popup for active panel/state
+- `?`: open context help popup for active runtime panel/state or current selector mode
 
 Records and staged changes:
 - `Enter`: open records view (from tables) / open selected record detail (in records)
@@ -66,6 +66,12 @@ Command mode:
 - `:quit` / `:q`: quit application from active runtime session
 - `Enter`: execute command
 - `Esc`: cancel command entry
+
+Startup selector:
+- selector main content shows options/status and keeps right-aligned `Context help: ?`
+- selector main content does not show inline shortcuts or legend rows
+- `?`: open selector context-help popup (mode-specific shortcuts for browse/add-edit/delete-confirm)
+- `Esc`: close selector context-help popup
 
 ## License
 Licensed under Apache License 2.0. See `LICENSE`.
