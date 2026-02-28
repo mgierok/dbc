@@ -176,10 +176,10 @@ func TestView_RuntimeInsertsHeaderAndStatusSeparators(t *testing.T) {
 	}
 
 	headerSeparator := lines[1]
-	if !strings.Contains(headerSeparator, innerFrameJoinCenter) {
+	if !strings.Contains(headerSeparator, outerFrameJoinCenter) {
 		t.Fatalf("expected header separator with center join, got %q", headerSeparator)
 	}
-	if strings.Trim(headerSeparator, innerFrameHorizontal+innerFrameJoinCenter) != "" {
+	if strings.Trim(headerSeparator, outerFrameHorizontal+outerFrameJoinCenter) != "" {
 		t.Fatalf("expected header separator to contain only frame glyphs, got %q", headerSeparator)
 	}
 	if textWidth(headerSeparator) != model.width {
@@ -187,10 +187,10 @@ func TestView_RuntimeInsertsHeaderAndStatusSeparators(t *testing.T) {
 	}
 
 	statusSeparator := lines[len(lines)-2]
-	if !strings.Contains(statusSeparator, innerFrameJoinBottom) {
+	if !strings.Contains(statusSeparator, outerFrameJoinBottom) {
 		t.Fatalf("expected status separator with bottom join, got %q", statusSeparator)
 	}
-	if strings.Trim(statusSeparator, innerFrameHorizontal+innerFrameJoinBottom) != "" {
+	if strings.Trim(statusSeparator, outerFrameHorizontal+outerFrameJoinBottom) != "" {
 		t.Fatalf("expected status separator to contain only frame glyphs, got %q", statusSeparator)
 	}
 	if textWidth(statusSeparator) != model.width {

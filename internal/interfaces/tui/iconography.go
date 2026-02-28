@@ -29,6 +29,8 @@ const (
 )
 
 // Inner frame provides a separate light-style set for future use.
+//
+//nolint:unused // reserved for future light inner-frame rendering variants.
 const (
 	innerFrameVertical   = "│"
 	innerFrameHorizontal = "─"

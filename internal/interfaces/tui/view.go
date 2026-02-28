@@ -54,7 +54,7 @@ func (m *Model) panelWidths() (int, int) {
 	if width <= 0 {
 		width = 80
 	}
-	separatorWidth := textWidth(innerFrameVertical)
+	separatorWidth := textWidth(outerFrameVertical)
 
 	left := width / 3
 	if left < 18 {
@@ -675,7 +675,7 @@ func mergePanels(left, right []string, leftWidth, rightWidth int) []string {
 		if i < len(right) {
 			rightLine = right[i]
 		}
-		combined := padRight(leftLine, leftWidth) + innerFrameVertical + padRight(rightLine, rightWidth)
+		combined := padRight(leftLine, leftWidth) + outerFrameVertical + padRight(rightLine, rightWidth)
 		lines = append(lines, combined)
 	}
 	return lines
@@ -694,15 +694,15 @@ func insertHeaderSeparator(lines []string, leftWidth, rightWidth int) []string {
 }
 
 func renderHeaderSeparator(leftWidth, rightWidth int) string {
-	return strings.Repeat(innerFrameHorizontal, maxInt(0, leftWidth)) +
-		innerFrameJoinCenter +
-		strings.Repeat(innerFrameHorizontal, maxInt(0, rightWidth))
+	return strings.Repeat(outerFrameHorizontal, maxInt(0, leftWidth)) +
+		outerFrameJoinCenter +
+		strings.Repeat(outerFrameHorizontal, maxInt(0, rightWidth))
 }
 
 func renderStatusSeparator(leftWidth, rightWidth int) string {
-	return strings.Repeat(innerFrameHorizontal, maxInt(0, leftWidth)) +
-		innerFrameJoinBottom +
-		strings.Repeat(innerFrameHorizontal, maxInt(0, rightWidth))
+	return strings.Repeat(outerFrameHorizontal, maxInt(0, leftWidth)) +
+		outerFrameJoinBottom +
+		strings.Repeat(outerFrameHorizontal, maxInt(0, rightWidth))
 }
 
 func centerBoxLines(lines []string, width, height int) string {
