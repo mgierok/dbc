@@ -349,16 +349,16 @@ func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 	}
 }
 
-func TestBoxWidthForRecordHeaderColumn_UsesFloorEightyPercent(t *testing.T) {
+func TestBoxWidthForRecordHeaderColumn_UsesFullColumnWidth(t *testing.T) {
 	// Arrange
 	testCases := []struct {
 		name      string
 		width     int
 		wantWidth int
 	}{
-		{name: "odd width", width: 25, wantWidth: 20},
-		{name: "even width", width: 24, wantWidth: 19},
-		{name: "small width", width: 5, wantWidth: 4},
+		{name: "odd width", width: 25, wantWidth: 25},
+		{name: "even width", width: 24, wantWidth: 24},
+		{name: "small width", width: 5, wantWidth: 5},
 		{name: "minimum width", width: 1, wantWidth: 1},
 	}
 
@@ -375,7 +375,7 @@ func TestBoxWidthForRecordHeaderColumn_UsesFloorEightyPercent(t *testing.T) {
 	}
 }
 
-func TestFormatRecordsHeaderRows_CentersLabelInsideBox(t *testing.T) {
+func TestFormatRecordsHeaderRows_UsesFullWidthBoxWithCenteredLabel(t *testing.T) {
 	// Arrange
 	label := "name " + iconSortAsc
 
@@ -397,6 +397,12 @@ func TestFormatRecordsHeaderRows_CentersLabelInsideBox(t *testing.T) {
 	rightBorder := strings.LastIndex(middleRow, frameVertical)
 	if leftBorder < 0 || rightBorder <= leftBorder {
 		t.Fatalf("expected framed middle row, got %q", middleRow)
+	}
+	if leftBorder != 0 {
+		t.Fatalf("expected left border at column start, got index %d in %q", leftBorder, middleRow)
+	}
+	if textWidth(middleRow[:rightBorder+len(frameVertical)]) != 20 {
+		t.Fatalf("expected right border at column end, got %q", middleRow)
 	}
 	inside := middleRow[leftBorder+len(frameVertical) : rightBorder]
 	if strings.TrimSpace(inside) != label {

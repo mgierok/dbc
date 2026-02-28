@@ -873,14 +873,7 @@ func boxWidthForRecordHeaderColumn(columnWidth int) int {
 	if columnWidth <= 0 {
 		return 0
 	}
-	boxWidth := (columnWidth * 8) / 10
-	if boxWidth < 1 {
-		boxWidth = 1
-	}
-	if boxWidth > columnWidth {
-		boxWidth = columnWidth
-	}
-	return boxWidth
+	return columnWidth
 }
 
 func renderFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
