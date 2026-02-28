@@ -11,8 +11,8 @@
 
 ## 2. Scenario
 
-- Subject under test: records view entry, row navigation, paging motions, guided sort flow, field-focus transitions, and single-row detail inspection for selected table.
-- Expected result: records view remains interactive with deterministic single-sort behavior, visible row/cell navigation state, and selected-row detail that closes cleanly back to records list.
+- Subject under test: records view entry, row navigation, fixed-page pagination motions (`Ctrl+f`/`Ctrl+b`), guided sort flow, field-focus transitions, and single-row detail inspection for selected table.
+- Expected result: records view remains interactive with deterministic single-sort behavior, bounded pagination behavior, visible row/cell navigation state, and selected-row detail that closes cleanly back to records list.
 
 ## 3. Preconditions
 
@@ -27,7 +27,7 @@
 | S1 | Run `bash scripts/start-direct-launch.sh`. | App opens main two-panel runtime view directly (no selector). | `A1` |
 | S2 | Select table `products`, then press `Enter` to open records. | Right panel switches from schema to records view with visible row selection. | `A2` |
 | S3 | Press `j` and `k` in records view. | Row selection moves down/up while remaining in records view. | `A3` |
-| S4 | Press `Ctrl+f`, then `Ctrl+b`. | Records list pages down/up and remains interactive. | `A4` |
+| S4 | Press `Ctrl+f`, then `Ctrl+b` in records view for `products`. | Pagination shortcuts stay bounded for single-page data (`Page 1/1`) and records context remains interactive. | `A4` |
 | S5 | Press `Shift+S`, choose column `name`, choose direction `ASC`, then confirm. | Sort is applied for selected table and records header marks active sorted column with `↑`. | `A5` |
 | S6 | Open sort again with `Shift+S`, choose column `name`, choose direction `DESC`, then confirm. | New sort replaces previous sort so only one active sort remains, and header indicator switches to `↓`. | `A6` |
 | S7 | Press `i` to stage a pending insert, then apply sort again with `Shift+S` (for example `id ASC`). | Pending insert row remains at top and is not reordered by SQL sort. | `A7` |
@@ -46,7 +46,7 @@
 | A1 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Startup reaches runtime context that allows opening records for selected table. | `PASS` | Main runtime layout is visible and selected table is ready for records entry. |
 | A2 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Enter` opens records view with visible selected row. | `PASS` | Right panel switches to record rows and highlights active row. |
 | A3 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Row navigation keys move selected record while staying in records view. | `PASS` | Selection changes as `j`/`k` are pressed with no context loss. |
-| A4 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Paging motions keep records browsing interactive and stable. | `PASS` | Records list responds to page motions and remains navigable. |
+| A4 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Ctrl+f`/`Ctrl+b` execute pagination motions without leaving records context, and page navigation stays bounded when only one page exists. | `PASS` | For fixture table `products` (`5` persisted rows), `Ctrl+f`/`Ctrl+b` keep records view interactive and remain on `Page 1/1`. |
 | A5 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Sort popup supports column and direction steps, and applying sort marks selected column with `↑` for `ASC`. | `PASS` | `Shift+S` opens guided flow; after apply, header shows active sort indicator `↑` on `name`. |
 | A6 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Re-running sort replaces previous sort and keeps one active sort with updated direction indicator. | `PASS` | Second apply changes active sort to `name DESC`; header indicator is `↓` and previous `ASC` state is gone. |
 | A7 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Pending insert rows remain pinned at top even when SQL sort is applied. | `PASS` | Pending `[INS]` row stays first after sort apply and persisted rows are ordered below it. |
@@ -63,7 +63,7 @@
 - Test Result: `PASS`
 - Failed Assertions: `none`
 - Failure Reason: `N/A`
-- Notes: `Scenario is intentionally limited to area 4.4 records navigation, guided sort behavior, and detail-view ownership.`
+- Notes: `Scenario is intentionally limited to area 4.4 records navigation, bounded fixed-page motions, guided sort behavior, and detail-view ownership.`
 
 ## 7. Cleanup
 
