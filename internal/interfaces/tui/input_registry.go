@@ -269,7 +269,7 @@ func joinKeyLabels(joinWith string, bindingIDs ...keyBindingID) string {
 }
 
 func joinShortcutSegments(parts ...string) string {
-	return strings.Join(parts, outerFrameSegmentSeparator)
+	return strings.Join(parts, frameSegmentSeparator)
 }
 
 func runtimeHelpPopupSummaryLine() string {

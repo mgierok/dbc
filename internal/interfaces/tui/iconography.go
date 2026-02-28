@@ -11,35 +11,50 @@ const (
 	iconInfo         = "ℹ"
 	iconActivePrefix = "➤"
 
-	// Outer frame uses the existing heavy style.
-	outerFrameVertical   = "┃"
-	outerFrameHorizontal = "━"
+	frameVertical   = "│"
+	frameHorizontal = "─"
 
-	outerFrameTopLeft     = "┏"
-	outerFrameTopRight    = "┓"
-	outerFrameBottomLeft  = "┗"
-	outerFrameBottomRight = "┛"
-	outerFrameJoinLeft    = "┣"
-	outerFrameJoinRight   = "┫"
-	outerFrameJoinTop     = "┳"
-	outerFrameJoinBottom  = "┻"
-	outerFrameJoinCenter  = "╋"
+	frameTopLeft     = "┌"
+	frameTopRight    = "┐"
+	frameBottomLeft  = "└"
+	frameBottomRight = "┘"
+	frameJoinLeft    = "├"
+	frameJoinRight   = "┤"
+	frameJoinTop     = "┬"
+	frameJoinBottom  = "┴"
+	frameJoinCenter  = "┼"
 
-	outerFrameSegmentSeparator = " ┃ "
+	frameSegmentSeparator = " | "
 )
 
-// Inner frame provides a separate light-style set.
 const (
-	innerFrameVertical   = "│"
-	innerFrameHorizontal = "─"
+	outerFrameVertical   = frameVertical
+	outerFrameHorizontal = frameHorizontal
 
-	innerFrameTopLeft     = "┌"
-	innerFrameTopRight    = "┐"
-	innerFrameBottomLeft  = "└"
-	innerFrameBottomRight = "┘"
-	innerFrameJoinLeft    = "├"
-	innerFrameJoinRight   = "┤"
-	innerFrameJoinTop     = "┬"
-	innerFrameJoinBottom  = "┴"
-	innerFrameJoinCenter  = "┼"
+	outerFrameTopLeft     = frameTopLeft
+	outerFrameTopRight    = frameTopRight
+	outerFrameBottomLeft  = frameBottomLeft
+	outerFrameBottomRight = frameBottomRight
+	outerFrameJoinLeft    = frameJoinLeft
+	outerFrameJoinRight   = frameJoinRight
+	outerFrameJoinTop     = frameJoinTop
+	outerFrameJoinBottom  = frameJoinBottom
+	outerFrameJoinCenter  = frameJoinCenter
+
+	outerFrameSegmentSeparator = frameSegmentSeparator
+)
+
+const (
+	innerFrameVertical   = frameVertical
+	innerFrameHorizontal = frameHorizontal
+
+	innerFrameTopLeft     = frameTopLeft
+	innerFrameTopRight    = frameTopRight
+	innerFrameBottomLeft  = frameBottomLeft
+	innerFrameBottomRight = frameBottomRight
+	innerFrameJoinLeft    = frameJoinLeft
+	innerFrameJoinRight   = frameJoinRight
+	innerFrameJoinTop     = frameJoinTop
+	innerFrameJoinBottom  = frameJoinBottom
+	innerFrameJoinCenter  = frameJoinCenter
 )

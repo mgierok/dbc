@@ -54,7 +54,7 @@ func (m *Model) panelWidths() (int, int) {
 	if width <= 0 {
 		width = 80
 	}
-	separatorWidth := textWidth(outerFrameVertical)
+	separatorWidth := textWidth(frameVertical)
 
 	left := width / 3
 	if left < 18 {
@@ -492,7 +492,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 
 	return renderStandardizedPopup(totalWidth, standardizedPopupSpec{
 		title:        "Edit Cell",
-		summary:      columnLabel + outerFrameSegmentSeparator + nullableLabel,
+		summary:      columnLabel + frameSegmentSeparator + nullableLabel,
 		rows:         rows,
 		selected:     selected,
 		defaultWidth: 60,
@@ -554,7 +554,7 @@ func (m *Model) renderStatus(width int) string {
 	if strings.TrimSpace(m.statusMessage) != "" {
 		parts = append(parts, m.statusMessage)
 	}
-	left := strings.Join(parts, outerFrameSegmentSeparator)
+	left := strings.Join(parts, frameSegmentSeparator)
 	return renderStatusWithRightHint(left, runtimeStatusContextHelpHint(), width)
 }
 
@@ -678,7 +678,7 @@ func mergePanels(left, right []string, leftWidth, rightWidth int) []string {
 		if i < len(right) {
 			rightLine = right[i]
 		}
-		combined := padRight(leftLine, leftWidth) + outerFrameVertical + padRight(rightLine, rightWidth)
+		combined := padRight(leftLine, leftWidth) + frameVertical + padRight(rightLine, rightWidth)
 		lines = append(lines, combined)
 	}
 	return lines
@@ -697,15 +697,15 @@ func insertHeaderSeparator(lines []string, leftWidth, rightWidth int) []string {
 }
 
 func renderHeaderSeparator(leftWidth, rightWidth int) string {
-	return strings.Repeat(outerFrameHorizontal, maxInt(0, leftWidth)) +
-		outerFrameJoinCenter +
-		strings.Repeat(outerFrameHorizontal, maxInt(0, rightWidth))
+	return strings.Repeat(frameHorizontal, maxInt(0, leftWidth)) +
+		frameJoinCenter +
+		strings.Repeat(frameHorizontal, maxInt(0, rightWidth))
 }
 
 func renderStatusSeparator(leftWidth, rightWidth int) string {
-	return strings.Repeat(outerFrameHorizontal, maxInt(0, leftWidth)) +
-		outerFrameJoinBottom +
-		strings.Repeat(outerFrameHorizontal, maxInt(0, rightWidth))
+	return strings.Repeat(frameHorizontal, maxInt(0, leftWidth)) +
+		frameJoinBottom +
+		strings.Repeat(frameHorizontal, maxInt(0, rightWidth))
 }
 
 func centerBoxLines(lines []string, width, height int) string {
@@ -755,7 +755,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	if columns <= 0 {
 		return nil
 	}
-	separatorWidth := (columns - 1) * textWidth(innerFrameVertical)
+	separatorWidth := (columns - 1) * textWidth(frameVertical)
 	available := totalWidth - separatorWidth
 	if available < columns {
 		available = columns
@@ -792,9 +792,9 @@ func formatRecordsHeaderRows(values []string, widths []int) []string {
 	}
 
 	return []string{
-		strings.Join(topParts, innerFrameVertical),
-		strings.Join(middleParts, innerFrameVertical),
-		strings.Join(bottomParts, innerFrameVertical),
+		strings.Join(topParts, frameVertical),
+		strings.Join(middleParts, frameVertical),
+		strings.Join(bottomParts, frameVertical),
 	}
 }
 
@@ -808,13 +808,13 @@ func formatRecordsHeaderCell(value string, columnWidth int) (string, string, str
 	rightPadding := columnWidth - boxWidth - leftPadding
 
 	top := strings.Repeat(" ", leftPadding) +
-		renderInnerFrameEdge(boxWidth, innerFrameTopLeft, innerFrameHorizontal, innerFrameTopRight) +
+		renderInnerFrameEdge(boxWidth, frameTopLeft, frameHorizontal, frameTopRight) +
 		strings.Repeat(" ", rightPadding)
 	middle := strings.Repeat(" ", leftPadding) +
 		renderInnerFrameContent(value, boxWidth) +
 		strings.Repeat(" ", rightPadding)
 	bottom := strings.Repeat(" ", leftPadding) +
-		renderInnerFrameEdge(boxWidth, innerFrameBottomLeft, innerFrameHorizontal, innerFrameBottomRight) +
+		renderInnerFrameEdge(boxWidth, frameBottomLeft, frameHorizontal, frameBottomRight) +
 		strings.Repeat(" ", rightPadding)
 
 	return top, middle, bottom
@@ -852,12 +852,12 @@ func renderInnerFrameContent(value string, width int) string {
 	case width <= 0:
 		return ""
 	case width == 1:
-		return truncate(innerFrameVertical, 1)
+		return truncate(frameVertical, 1)
 	case width == 2:
-		return innerFrameVertical + innerFrameVertical
+		return frameVertical + frameVertical
 	default:
 		innerWidth := width - 2
-		return innerFrameVertical + centerText(value, innerWidth) + innerFrameVertical
+		return frameVertical + centerText(value, innerWidth) + frameVertical
 	}
 }
 
@@ -885,7 +885,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int) string {
 		focused := i == focusColumn
 		parts[i] = formatRecordCell(value, width, focused)
 	}
-	return strings.Join(parts, innerFrameVertical)
+	return strings.Join(parts, frameVertical)
 }
 
 func formatRecordCell(value string, width int, focused bool) string {

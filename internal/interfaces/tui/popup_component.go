@@ -25,14 +25,14 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 		title = "Popup"
 	}
 
-	topBorder := outerFrameTopLeft + strings.Repeat(outerFrameHorizontal, width-2) + outerFrameTopRight
-	bottomBorder := outerFrameBottomLeft + strings.Repeat(outerFrameHorizontal, width-2) + outerFrameBottomRight
-	sectionDivider := outerFrameJoinLeft + strings.Repeat(outerFrameHorizontal, width-2) + outerFrameJoinRight
+	topBorder := frameTopLeft + strings.Repeat(frameHorizontal, width-2) + frameTopRight
+	bottomBorder := frameBottomLeft + strings.Repeat(frameHorizontal, width-2) + frameBottomRight
+	sectionDivider := frameJoinLeft + strings.Repeat(frameHorizontal, width-2) + frameJoinRight
 
 	lines := []string{topBorder}
-	lines = append(lines, outerFrameVertical+padRight(title, width-2)+outerFrameVertical)
+	lines = append(lines, frameVertical+padRight(title, width-2)+frameVertical)
 	if strings.TrimSpace(spec.summary) != "" {
-		lines = append(lines, outerFrameVertical+padRight(spec.summary, width-2)+outerFrameVertical)
+		lines = append(lines, frameVertical+padRight(spec.summary, width-2)+frameVertical)
 	}
 	lines = append(lines, sectionDivider)
 
@@ -67,15 +67,15 @@ func renderStandardizedPopup(totalWidth int, spec standardizedPopupSpec) []strin
 			}
 			row = prefix + row
 		}
-		lines = append(lines, outerFrameVertical+padRight(row, width-2)+outerFrameVertical)
+		lines = append(lines, frameVertical+padRight(row, width-2)+frameVertical)
 	}
 	for i := end - offset; i < visibleRows; i++ {
-		lines = append(lines, outerFrameVertical+padRight("", width-2)+outerFrameVertical)
+		lines = append(lines, frameVertical+padRight("", width-2)+frameVertical)
 	}
 
 	if spec.showScrollIndicator && maxOffset > 0 {
 		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
-		lines = append(lines, outerFrameVertical+padRight(indicator, width-2)+outerFrameVertical)
+		lines = append(lines, frameVertical+padRight(indicator, width-2)+frameVertical)
 	}
 
 	lines = append(lines, bottomBorder)

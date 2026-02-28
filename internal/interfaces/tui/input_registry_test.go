@@ -119,3 +119,15 @@ func TestRuntimeStatusRecordsShortcuts_IncludesPaginationBindings(t *testing.T) 
 		t.Fatalf("expected prev-page shortcut in records shortcuts, got %q", shortcuts)
 	}
 }
+
+func TestJoinShortcutSegments_UsesASCIIPipeSeparator(t *testing.T) {
+	// Arrange
+
+	// Act
+	joined := joinShortcutSegments("A", "B")
+
+	// Assert
+	if joined != "A | B" {
+		t.Fatalf("expected ASCII separator, got %q", joined)
+	}
+}
