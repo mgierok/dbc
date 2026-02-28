@@ -273,7 +273,7 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 	}
 }
 
-func TestRenderRecords_UsesEditIconForEditedCells(t *testing.T) {
+func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	// Arrange
 	model := &Model{
 		viewMode: ViewRecords,
@@ -304,8 +304,78 @@ func TestRenderRecords_UsesEditIconForEditedCells(t *testing.T) {
 	content := strings.Join(model.renderRecords(80, 6), "\n")
 
 	// Assert
-	if !strings.Contains(content, "alice2"+iconEdit) {
-		t.Fatalf("expected edited cell icon marker, got %q", content)
+	if !strings.Contains(content, "> "+iconEdit+" ") {
+		t.Fatalf("expected edited row icon marker in row prefix, got %q", content)
+	}
+	if strings.Contains(content, "alice2"+iconEdit) {
+		t.Fatalf("expected no edited icon marker inside cell value, got %q", content)
+	}
+}
+
+func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER", PrimaryKey: true},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: domainmodel.Value{Text: "10", Raw: "10"}},
+					1: {Value: domainmodel.Value{Text: "inserted", Raw: "inserted"}},
+				},
+			},
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", "alice"}},
+			{Values: []string{"2", "bob"}},
+		},
+	}
+
+	editedKey, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected edited row key")
+	}
+	model.pendingUpdates = map[string]recordEdits{
+		editedKey: {
+			changes: map[int]stagedEdit{
+				1: {Value: domainmodel.Value{Text: "alice2", Raw: "alice2"}},
+			},
+		},
+	}
+
+	deleteKey, ok := model.recordKeyForPersistedRow(1)
+	if !ok {
+		t.Fatal("expected delete row key")
+	}
+	model.pendingDeletes = map[string]recordDelete{
+		deleteKey: {},
+	}
+
+	// Act
+	lines := model.renderRecords(90, 8)
+
+	// Assert
+	if len(lines) < 5 {
+		t.Fatalf("expected records output with header and rows, got %v", lines)
+	}
+	separatorColumns := make([]int, 0, 3)
+	for _, line := range lines[2:5] {
+		sep := strings.Index(line, " | ")
+		if sep < 0 {
+			t.Fatalf("expected column separator in row line, got %q", line)
+		}
+		separatorColumns = append(separatorColumns, sep)
+	}
+	for i := 1; i < len(separatorColumns); i++ {
+		if separatorColumns[i] != separatorColumns[0] {
+			t.Fatalf("expected aligned column separators, got %v in lines %q", separatorColumns, lines[2:5])
+		}
 	}
 }
 

@@ -238,8 +238,8 @@ Core user value in current state:
 - Visual row markers:
   - `✚` pending insert.
   - `✖` pending delete.
-- Edited cell indicator:
-  - `✎` marker on edited values.
+- Edited row indicator:
+  - `✎` marker on edited rows in Records view.
 - Record detail information indicator:
   - `ℹ` marker on row-state summary lines.
 - Status line communicates:

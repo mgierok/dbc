@@ -168,12 +168,17 @@ func (m *Model) renderRecords(width, height int) []string {
 		return padLines(lines, height, width)
 	}
 
-	rowWidth := width - 2
+	const (
+		recordSelectionPrefixWidth = 2
+		recordMarkerSlotWidth      = 2 // marker + trailing space
+	)
+
+	rowWidth := width - recordSelectionPrefixWidth - recordMarkerSlotWidth
 	if rowWidth < 1 {
 		rowWidth = 1
 	}
 	columnWidths := allocateColumnWidths(rowWidth, len(columns))
-	header := "  " + formatRow(columns, columnWidths)
+	header := strings.Repeat(" ", recordSelectionPrefixWidth+recordMarkerSlotWidth) + formatRow(columns, columnWidths)
 	lines = append(lines, padRight(header, width))
 
 	listHeight := height - 2
@@ -195,7 +200,6 @@ func (m *Model) renderRecords(width, height int) []string {
 			prefix = "> "
 		}
 		displayValues := make([]string, len(columns))
-		edited := make([]bool, len(columns))
 		if insertIndex, isInsert := m.pendingInsertIndex(i); isInsert {
 			for colIndex := range columns {
 				if value, ok := m.pendingInserts[insertIndex].values[colIndex]; ok {
@@ -206,7 +210,6 @@ func (m *Model) renderRecords(width, height int) []string {
 			for colIndex := range columns {
 				if staged, ok := m.stagedEditForRow(i, colIndex); ok {
 					displayValues[colIndex] = displayValue(staged.Value)
-					edited[colIndex] = true
 				} else {
 					displayValues[colIndex] = m.visibleRowValue(i, colIndex)
 				}
@@ -216,16 +219,24 @@ func (m *Model) renderRecords(width, height int) []string {
 		if m.recordFieldFocus && i == m.recordSelection {
 			focusColumn = m.recordColumn
 		}
-		row := formatRecordRow(displayValues, columnWidths, focusColumn, edited)
-		rowTag := ""
-		if _, isInsert := m.pendingInsertIndex(i); isInsert {
-			rowTag = iconInsert + " "
-		} else if m.isRowMarkedDelete(i) {
-			rowTag = iconDelete + " "
-		}
-		lines = append(lines, padRight(prefix+rowTag+row, width))
+		row := formatRecordRow(displayValues, columnWidths, focusColumn)
+		rowMarker := m.recordRowMarker(i)
+		lines = append(lines, padRight(prefix+rowMarker+" "+row, width))
 	}
 	return padLines(lines, height, width)
+}
+
+func (m *Model) recordRowMarker(rowIndex int) string {
+	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
+		return iconInsert
+	}
+	if m.isRowMarkedDelete(rowIndex) {
+		return iconDelete
+	}
+	if m.isRowEdited(rowIndex) {
+		return iconEdit
+	}
+	return " "
 }
 
 func (m *Model) renderRecordDetail(width, height int) []string {
@@ -733,27 +744,20 @@ func formatRow(values []string, widths []int) string {
 	return strings.Join(parts, " | ")
 }
 
-func formatRecordRow(values []string, widths []int, focusColumn int, edited []bool) string {
+func formatRecordRow(values []string, widths []int, focusColumn int) string {
 	parts := make([]string, len(widths))
 	for i, width := range widths {
 		value := ""
 		if i < len(values) {
 			value = values[i]
 		}
-		editedCell := false
-		if i < len(edited) {
-			editedCell = edited[i]
-		}
 		focused := i == focusColumn
-		parts[i] = formatRecordCell(value, width, focused, editedCell)
+		parts[i] = formatRecordCell(value, width, focused)
 	}
 	return strings.Join(parts, " | ")
 }
 
-func formatRecordCell(value string, width int, focused, edited bool) string {
-	if edited && width > 0 {
-		value += iconEdit
-	}
+func formatRecordCell(value string, width int, focused bool) string {
 	if focused {
 		if width <= 1 {
 			return padRight(">", width)
