@@ -526,9 +526,11 @@ func (m *Model) renderStatus(width int) string {
 		mode,
 		fmt.Sprintf("View: %s", m.viewModeLabel()),
 		fmt.Sprintf("Table: %s", m.currentTableName()),
-		m.filterSummary(),
-		m.sortSummary(),
 	}
+	if m.viewMode == ViewRecords {
+		parts = append(parts, m.recordsSummary(), m.pageSummary())
+	}
+	parts = append(parts, m.filterSummary(), m.sortSummary())
 	if m.commandInput.active {
 		parts = append(parts, "Command: "+m.commandPrompt())
 	}
@@ -561,6 +563,15 @@ func (m *Model) sortSummary() string {
 		return "Sort: none"
 	}
 	return fmt.Sprintf("Sort: %s %s", m.currentSort.Column, m.currentSort.Direction)
+}
+
+func (m *Model) recordsSummary() string {
+	return fmt.Sprintf("Records: %d/%d", len(m.records), m.recordTotalCount)
+}
+
+func (m *Model) pageSummary() string {
+	currentPage := clamp(m.recordPageIndex+1, 1, maxInt(1, m.recordTotalPages))
+	return fmt.Sprintf("Page: %d/%d", currentPage, maxInt(1, m.recordTotalPages))
 }
 
 func (m *Model) schemaColumnsForRecordsHeader() []string {

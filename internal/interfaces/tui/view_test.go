@@ -100,6 +100,49 @@ func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
 	}
 }
 
+func TestRenderStatus_RecordsViewShowsTotalAndPagination(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:         ViewRecords,
+		recordPageIndex:  0,
+		recordTotalPages: 7,
+		recordTotalCount: 137,
+		records:          make([]dto.RecordRow, 20),
+	}
+
+	// Act
+	status := model.renderStatus(220)
+
+	// Assert
+	if !strings.Contains(status, "Records: 20/137") {
+		t.Fatalf("expected records total summary in status, got %q", status)
+	}
+	if !strings.Contains(status, "Page: 1/7") {
+		t.Fatalf("expected pagination summary in status, got %q", status)
+	}
+}
+
+func TestRenderStatus_RecordsViewShowsSinglePageSummaryForEmptyResult(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:         ViewRecords,
+		recordPageIndex:  0,
+		recordTotalPages: 1,
+		recordTotalCount: 0,
+	}
+
+	// Act
+	status := model.renderStatus(220)
+
+	// Assert
+	if !strings.Contains(status, "Records: 0/0") {
+		t.Fatalf("expected empty records summary in status, got %q", status)
+	}
+	if !strings.Contains(status, "Page: 1/1") {
+		t.Fatalf("expected single-page summary in status, got %q", status)
+	}
+}
+
 func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{

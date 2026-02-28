@@ -1688,11 +1688,140 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 	}
 }
 
+func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
+	// Arrange
+	engine := &tuiSpyEngine{
+		recordPage: domainmodel.RecordPage{
+			Records: []domainmodel.Record{
+				{Values: []domainmodel.Value{{Text: "21"}, {Text: "alice"}}},
+			},
+			TotalCount: 45,
+		},
+	}
+	model := &Model{
+		ctx:              context.Background(),
+		viewMode:         ViewRecords,
+		focus:            FocusContent,
+		listRecords:      usecase.NewListRecords(engine),
+		tables:           []dto.Table{{Name: "users"}},
+		recordPageIndex:  0,
+		recordTotalPages: 3,
+		recordTotalCount: 45,
+	}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlF})
+	if cmd == nil {
+		t.Fatal("expected command to load next page")
+	}
+	msg := cmd()
+	model.Update(msg)
+
+	// Assert
+	if model.recordPageIndex != 1 {
+		t.Fatalf("expected current page index 1, got %d", model.recordPageIndex)
+	}
+	if engine.lastRecordsOffset != 20 {
+		t.Fatalf("expected offset 20 for second page, got %d", engine.lastRecordsOffset)
+	}
+	if engine.lastRecordsLimit != 20 {
+		t.Fatalf("expected limit 20, got %d", engine.lastRecordsLimit)
+	}
+	if model.recordTotalPages != 3 {
+		t.Fatalf("expected 3 pages, got %d", model.recordTotalPages)
+	}
+}
+
+func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
+	// Arrange
+	engine := &tuiSpyEngine{
+		recordPage: domainmodel.RecordPage{
+			Records: []domainmodel.Record{
+				{Values: []domainmodel.Value{{Text: "1"}, {Text: "alice"}}},
+			},
+			TotalCount: 45,
+		},
+	}
+	model := &Model{
+		ctx:              context.Background(),
+		viewMode:         ViewRecords,
+		focus:            FocusContent,
+		listRecords:      usecase.NewListRecords(engine),
+		tables:           []dto.Table{{Name: "users"}},
+		recordPageIndex:  1,
+		recordTotalPages: 3,
+		recordTotalCount: 45,
+	}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlB})
+	if cmd == nil {
+		t.Fatal("expected command to load previous page")
+	}
+	msg := cmd()
+	model.Update(msg)
+
+	// Assert
+	if model.recordPageIndex != 0 {
+		t.Fatalf("expected current page index 0, got %d", model.recordPageIndex)
+	}
+	if engine.lastRecordsOffset != 0 {
+		t.Fatalf("expected offset 0 for first page, got %d", engine.lastRecordsOffset)
+	}
+	if engine.lastRecordsLimit != 20 {
+		t.Fatalf("expected limit 20, got %d", engine.lastRecordsLimit)
+	}
+}
+
+func TestHandleKey_CtrlBDoesNotGoBeforeFirstPage(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:         ViewRecords,
+		focus:            FocusContent,
+		recordPageIndex:  0,
+		recordTotalPages: 3,
+	}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlB})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no load command on first page")
+	}
+	if model.recordPageIndex != 0 {
+		t.Fatalf("expected to stay on first page, got %d", model.recordPageIndex)
+	}
+}
+
+func TestHandleKey_CtrlFDoesNotGoBeyondLastPage(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode:         ViewRecords,
+		focus:            FocusContent,
+		recordPageIndex:  2,
+		recordTotalPages: 3,
+	}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlF})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no load command on last page")
+	}
+	if model.recordPageIndex != 2 {
+		t.Fatalf("expected to stay on last page, got %d", model.recordPageIndex)
+	}
+}
+
 type tuiSpyEngine struct {
-	lastChanges domainmodel.TableChanges
-	saveErr     error
-	lastSort    *domainmodel.Sort
-	recordPage  domainmodel.RecordPage
+	lastChanges       domainmodel.TableChanges
+	saveErr           error
+	lastSort          *domainmodel.Sort
+	lastRecordsOffset int
+	lastRecordsLimit  int
+	recordPage        domainmodel.RecordPage
 }
 
 func (s *tuiSpyEngine) ListTables(ctx context.Context) ([]domainmodel.Table, error) {
@@ -1705,6 +1834,8 @@ func (s *tuiSpyEngine) GetSchema(ctx context.Context, tableName string) (domainm
 
 func (s *tuiSpyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *domainmodel.Filter, sort *domainmodel.Sort) (domainmodel.RecordPage, error) {
 	s.lastSort = sort
+	s.lastRecordsOffset = offset
+	s.lastRecordsLimit = limit
 	return s.recordPage, nil
 }
 

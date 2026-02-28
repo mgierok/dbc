@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	recordPageSize     = 50
-	recordLoadDistance = 5
+	recordPageSize = 20
 )
 
 type PanelFocus int
@@ -229,8 +228,9 @@ type Model struct {
 	schemaIndex int
 
 	records          []dto.RecordRow
-	recordOffset     int
-	recordHasMore    bool
+	recordPageIndex  int
+	recordTotalPages int
+	recordTotalCount int
 	recordSelection  int
 	recordColumn     int
 	recordRequestID  int
@@ -300,7 +300,7 @@ func NewModel(ctx context.Context, listTables *usecase.ListTables, getSchema *us
 		saveChanges:       saveChanges,
 		focus:             FocusTables,
 		viewMode:          ViewSchema,
-		recordHasMore:     true,
+		recordTotalPages:  1,
 		pendingTableIndex: -1,
 	}
 }
@@ -349,9 +349,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.recordLoading = false
-		m.records = append(m.records, msg.page.Rows...)
-		m.recordOffset += len(msg.page.Rows)
-		m.recordHasMore = msg.page.HasMore
+		m.records = msg.page.Rows
+		m.recordTotalCount = msg.page.TotalCount
+		m.recordTotalPages = m.computeTotalPages(msg.page.TotalCount)
+		m.recordPageIndex = clamp(m.recordPageIndex, 0, m.recordTotalPages-1)
+		m.normalizeRecordSelection()
 		return m, nil
 	case saveChangesMsg:
 		if msg.err != nil {
@@ -910,6 +912,9 @@ func (m *Model) moveRight() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) pageDown() (tea.Model, tea.Cmd) {
+	if m.focus == FocusContent && m.viewMode == ViewRecords {
+		return m.nextRecordPage()
+	}
 	page := m.pageSize()
 	switch m.focus {
 	case FocusTables:
@@ -922,6 +927,9 @@ func (m *Model) pageDown() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) pageUp() (tea.Model, tea.Cmd) {
+	if m.focus == FocusContent && m.viewMode == ViewRecords {
+		return m.prevRecordPage()
+	}
 	page := m.pageSize()
 	switch m.focus {
 	case FocusTables:
@@ -931,6 +939,28 @@ func (m *Model) pageUp() (tea.Model, tea.Cmd) {
 	default:
 		return m, nil
 	}
+}
+
+func (m *Model) nextRecordPage() (tea.Model, tea.Cmd) {
+	if m.recordTotalPages <= 1 {
+		return m, nil
+	}
+	if m.recordPageIndex >= m.recordTotalPages-1 {
+		return m, nil
+	}
+	m.recordPageIndex++
+	return m, m.loadRecordsCmd(false)
+}
+
+func (m *Model) prevRecordPage() (tea.Model, tea.Cmd) {
+	if m.recordTotalPages <= 1 {
+		return m, nil
+	}
+	if m.recordPageIndex <= 0 {
+		return m, nil
+	}
+	m.recordPageIndex--
+	return m, m.loadRecordsCmd(false)
 }
 
 func (m *Model) jumpTop() (tea.Model, tea.Cmd) {
@@ -1007,7 +1037,7 @@ func (m *Model) setContentSelection(index int) (tea.Model, tea.Cmd) {
 	case ViewRecords:
 		m.recordSelection = index
 		m.syncRecordColumnForSelection()
-		return m, m.maybeLoadMoreRecords()
+		return m, nil
 	default:
 		return m, nil
 	}
@@ -1493,10 +1523,11 @@ func (m *Model) resetTableContext() {
 	m.schema = dto.Schema{}
 	m.schemaIndex = 0
 	m.records = nil
-	m.recordOffset = 0
+	m.recordPageIndex = 0
+	m.recordTotalPages = 1
+	m.recordTotalCount = 0
 	m.recordSelection = 0
 	m.recordColumn = 0
-	m.recordHasMore = true
 	m.recordLoading = false
 	m.recordFieldFocus = false
 	m.filterPopup = filterPopup{}
@@ -1532,36 +1563,33 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 		return nil
 	}
 	if reset {
-		m.records = nil
-		m.recordOffset = 0
-		m.recordSelection = 0
-		m.recordFieldFocus = false
-		m.recordHasMore = true
-		m.closeRecordDetail()
+		m.recordPageIndex = 0
 	}
-	if !m.recordHasMore || m.recordLoading {
+	if m.recordLoading {
 		return nil
 	}
+	m.records = nil
+	m.recordSelection = 0
+	m.recordFieldFocus = false
+	m.closeRecordDetail()
 	m.recordLoading = true
 	m.recordRequestID++
-	return loadRecordsCmd(m.ctx, m.listRecords, tableName, m.recordOffset, recordPageSize, m.currentFilter, m.currentSort, m.recordRequestID)
+	offset := m.recordPageIndex * recordPageSize
+	return loadRecordsCmd(m.ctx, m.listRecords, tableName, offset, recordPageSize, m.currentFilter, m.currentSort, m.recordRequestID)
 }
 
-func (m *Model) maybeLoadMoreRecords() tea.Cmd {
-	if m.viewMode != ViewRecords || !m.recordHasMore {
-		return nil
+func (m *Model) computeTotalPages(totalCount int) int {
+	if totalCount <= 0 {
+		return 1
 	}
-	if len(m.records) == 0 {
-		return m.loadRecordsCmd(true)
+	pages := totalCount / recordPageSize
+	if totalCount%recordPageSize != 0 {
+		pages++
 	}
-	persistedIndex := m.persistedRowIndex(m.recordSelection)
-	if persistedIndex < 0 {
-		return nil
+	if pages < 1 {
+		return 1
 	}
-	if persistedIndex >= len(m.records)-recordLoadDistance {
-		return m.loadRecordsCmd(false)
-	}
-	return nil
+	return pages
 }
 
 func (m *Model) pageSize() int {

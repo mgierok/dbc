@@ -136,6 +136,7 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		return model.RecordPage{}, err
 	}
 
+	// #nosec G202 -- table name is treated as an SQL identifier and escaped via quoteIdentifier.
 	query := "SELECT * " + baseQuery
 	if clause != "" {
 		query = query + " " + clause
