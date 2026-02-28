@@ -530,8 +530,12 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !strings.Contains(lines[0], iconInfo+"  Edited record") {
 			t.Fatalf("expected edited information marker, got %q", lines[0])
 		}
-		if strings.Contains(strings.Join(lines, "\n"), iconEdit) {
-			t.Fatalf("expected no edit icon in record detail content, got %q", strings.Join(lines, "\n"))
+		content := strings.Join(lines, "\n")
+		if !strings.Contains(content, "\x1b[1mname\x1b[0m (TEXT) "+iconEdit) {
+			t.Fatalf("expected edit icon on modified field header in detail content, got %q", content)
+		}
+		if strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER) "+iconEdit) {
+			t.Fatalf("expected no edit icon on unmodified field header in detail content, got %q", content)
 		}
 	})
 }

@@ -298,8 +298,11 @@ func (m *Model) recordDetailContentLines(width int) []string {
 	}
 
 	for columnIndex, column := range m.schema.Columns {
-		value, _ := m.effectiveRecordDetailValue(rowIndex, columnIndex)
+		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
 		header := fmt.Sprintf("%s (%s)", bold(column.Name), column.Type)
+		if edited {
+			header += " " + iconEdit
+		}
 		lines = append(lines, wrapTextToWidth(header, width)...)
 
 		for _, wrappedLine := range wrapTextToWidth(value, valueWidth) {
