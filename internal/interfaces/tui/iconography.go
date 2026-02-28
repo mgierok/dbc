@@ -2,7 +2,7 @@ package tui
 
 const (
 	iconInsert       = "✚"
-	iconEdit         = "✎"
+	iconEdit         = "✱"
 	iconDelete       = "✖"
 	iconSortAsc      = "↑"
 	iconSortDesc     = "↓"
