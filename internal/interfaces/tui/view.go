@@ -40,8 +40,10 @@ func (m *Model) View() string {
 	left := m.renderTables(leftWidth, bodyHeight)
 	right := m.renderContent(rightWidth, bodyHeight)
 	lines := mergePanels(left, right, leftWidth, rightWidth)
+	lines = insertHeaderSeparator(lines, leftWidth, rightWidth)
 
 	status := m.renderStatus(width)
+	lines = append(lines, renderStatusSeparator(leftWidth, rightWidth))
 	lines = append(lines, status)
 
 	return strings.Join(lines, "\n")
@@ -677,6 +679,30 @@ func mergePanels(left, right []string, leftWidth, rightWidth int) []string {
 		lines = append(lines, combined)
 	}
 	return lines
+}
+
+func insertHeaderSeparator(lines []string, leftWidth, rightWidth int) []string {
+	separator := renderHeaderSeparator(leftWidth, rightWidth)
+	if len(lines) == 0 {
+		return []string{separator}
+	}
+	withSeparator := make([]string, 0, len(lines)+1)
+	withSeparator = append(withSeparator, lines[0])
+	withSeparator = append(withSeparator, separator)
+	withSeparator = append(withSeparator, lines[1:]...)
+	return withSeparator
+}
+
+func renderHeaderSeparator(leftWidth, rightWidth int) string {
+	return strings.Repeat(outerFrameHorizontal, maxInt(0, leftWidth)) +
+		outerFrameJoinCenter +
+		strings.Repeat(outerFrameHorizontal, maxInt(0, rightWidth))
+}
+
+func renderStatusSeparator(leftWidth, rightWidth int) string {
+	return strings.Repeat(outerFrameHorizontal, maxInt(0, leftWidth)) +
+		outerFrameJoinBottom +
+		strings.Repeat(outerFrameHorizontal, maxInt(0, rightWidth))
 }
 
 func centerBoxLines(lines []string, width, height int) string {

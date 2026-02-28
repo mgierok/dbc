@@ -1605,12 +1605,12 @@ func (m *Model) pageSize() int {
 
 func (m *Model) contentHeight() int {
 	if m.height <= 0 {
-		return 20
+		return 18
 	}
-	if m.height <= 2 {
+	if m.height <= 4 {
 		return 1
 	}
-	return m.height - 1
+	return m.height - 3
 }
 
 func (m *Model) contentSelection() int {

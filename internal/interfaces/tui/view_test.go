@@ -143,6 +143,61 @@ func TestRenderStatus_RecordsViewShowsSinglePageSummaryForEmptyResult(t *testing
 	}
 }
 
+func TestView_RuntimeInsertsHeaderAndStatusSeparators(t *testing.T) {
+	// Arrange
+	model := &Model{
+		width:    80,
+		height:   24,
+		focus:    FocusTables,
+		viewMode: ViewSchema,
+		tables: []dto.Table{
+			{Name: "users"},
+		},
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+			},
+		},
+	}
+
+	// Act
+	view := model.View()
+	lines := strings.Split(view, "\n")
+
+	// Assert
+	if len(lines) != model.height {
+		t.Fatalf("expected runtime view height %d, got %d", model.height, len(lines))
+	}
+	if len(lines) < 4 {
+		t.Fatalf("expected at least 4 lines in runtime view, got %d", len(lines))
+	}
+	if !strings.Contains(lines[0], "Tables") || !strings.Contains(lines[0], "Schema") {
+		t.Fatalf("expected runtime panel headers on first line, got %q", lines[0])
+	}
+
+	headerSeparator := lines[1]
+	if !strings.Contains(headerSeparator, outerFrameJoinCenter) {
+		t.Fatalf("expected header separator with center join, got %q", headerSeparator)
+	}
+	if strings.Trim(headerSeparator, outerFrameHorizontal+outerFrameJoinCenter) != "" {
+		t.Fatalf("expected header separator to contain only frame glyphs, got %q", headerSeparator)
+	}
+	if textWidth(headerSeparator) != model.width {
+		t.Fatalf("expected header separator width %d, got %d", model.width, textWidth(headerSeparator))
+	}
+
+	statusSeparator := lines[len(lines)-2]
+	if !strings.Contains(statusSeparator, outerFrameJoinBottom) {
+		t.Fatalf("expected status separator with bottom join, got %q", statusSeparator)
+	}
+	if strings.Trim(statusSeparator, outerFrameHorizontal+outerFrameJoinBottom) != "" {
+		t.Fatalf("expected status separator to contain only frame glyphs, got %q", statusSeparator)
+	}
+	if textWidth(statusSeparator) != model.width {
+		t.Fatalf("expected status separator width %d, got %d", model.width, textWidth(statusSeparator))
+	}
+}
+
 func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{
