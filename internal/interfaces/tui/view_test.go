@@ -713,7 +713,7 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	view := model.View()
 
 	// Assert
-	if strings.Contains(view, "Tables *") || strings.Contains(view, "Schema *") || strings.Contains(view, "Records *") {
+	if strings.Contains(view, activePanelTitle("Tables")) || strings.Contains(view, activePanelTitle("Schema")) || strings.Contains(view, activePanelTitle("Records")) {
 		t.Fatalf("expected help modal view without background panels, got %q", view)
 	}
 	if !strings.Contains(view, "|Context Help: Tables") {

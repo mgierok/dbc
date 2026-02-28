@@ -83,7 +83,7 @@ func (m *Model) maxTablePanelWidth() int {
 		nameMargin       = 1
 	)
 
-	maxWidth := maxInt(textWidth("Tables *"), textWidth("No items."))
+	maxWidth := maxInt(textWidth(activePanelTitle("Tables")), textWidth("No items."))
 	longestNameWidth := 0
 	for _, table := range m.tables {
 		longestNameWidth = maxInt(longestNameWidth, textWidth(table.Name))
@@ -99,7 +99,7 @@ func (m *Model) maxTablePanelWidth() int {
 func (m *Model) renderTables(width, height int) []string {
 	title := "Tables"
 	if m.focus == FocusTables {
-		title = "Tables *"
+		title = activePanelTitle(title)
 	}
 	lines := []string{padRight(title, width)}
 
@@ -137,7 +137,7 @@ func (m *Model) renderContent(width, height int) []string {
 func (m *Model) renderSchema(width, height int) []string {
 	title := "Schema"
 	if m.focus == FocusContent && m.viewMode == ViewSchema {
-		title = "Schema *"
+		title = activePanelTitle(title)
 	}
 	lines := []string{padRight(title, width)}
 
@@ -158,7 +158,7 @@ func (m *Model) renderSchema(width, height int) []string {
 func (m *Model) renderRecords(width, height int) []string {
 	title := "Records"
 	if m.focus == FocusContent && m.viewMode == ViewRecords {
-		title = "Records *"
+		title = activePanelTitle(title)
 	}
 	lines := []string{padRight(title, width)}
 
@@ -242,7 +242,7 @@ func (m *Model) recordRowMarker(rowIndex int) string {
 func (m *Model) renderRecordDetail(width, height int) []string {
 	title := "Record Detail"
 	if m.focus == FocusContent && m.viewMode == ViewRecords {
-		title = "Record Detail *"
+		title = activePanelTitle(title)
 	}
 	lines := []string{padRight(title, width)}
 
@@ -632,6 +632,10 @@ func renderStatusWithRightHint(left, right string, width int) string {
 	}
 
 	return padRight(truncate(left, leftWidth), leftWidth) + " " + right
+}
+
+func activePanelTitle(title string) string {
+	return iconActivePrefix + " " + title
 }
 
 func renderList(items []string, selected, height, width int, focused bool) []string {

@@ -11,4 +11,5 @@ const (
 	iconCLISource    = "⌨"
 	iconInfo         = "ℹ"
 	iconDirty        = "●"
+	iconActivePrefix = "➤"
 )
