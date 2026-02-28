@@ -732,7 +732,7 @@ func (m *databaseSelectorModel) contextLines() []string {
 		lines = append(lines, selectorContextLinesBrowseFirstSetup()...)
 	} else {
 		lines = append(lines, selectorContextLinesBrowseDefault()...)
-		lines = append(lines, "Legend: ⚙ config | ⌨ CLI session")
+		lines = append(lines, fmt.Sprintf("Legend: %s config | %s CLI session", iconConfigSource, iconCLISource))
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
 		lines = append(lines, "Status: "+m.statusMessage)
@@ -809,9 +809,9 @@ func (o DatabaseOption) source() DatabaseOptionSource {
 
 func (o DatabaseOption) marker() string {
 	if o.source() == DatabaseOptionSourceCLI {
-		return "⌨"
+		return iconCLISource
 	}
-	return "⚙"
+	return iconConfigSource
 }
 
 func (o DatabaseOption) isConfigBacked() bool {

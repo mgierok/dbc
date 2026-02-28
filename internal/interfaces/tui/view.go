@@ -219,9 +219,9 @@ func (m *Model) renderRecords(width, height int) []string {
 		row := formatRecordRow(displayValues, columnWidths, focusColumn, edited)
 		rowTag := ""
 		if _, isInsert := m.pendingInsertIndex(i); isInsert {
-			rowTag = "[INS] "
+			rowTag = iconInsert + " "
 		} else if m.isRowMarkedDelete(i) {
-			rowTag = "[DEL] "
+			rowTag = iconDelete + " "
 		}
 		lines = append(lines, padRight(prefix+rowTag+row, width))
 	}
@@ -270,13 +270,13 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
 	lines := make([]string, 0, len(m.schema.Columns)*4)
-	rowLine := "ⓘ  Persisted record"
+	rowLine := iconInfo + "  Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		rowLine = "ⓘ  Pending insert"
+		rowLine = fmt.Sprintf("%s  %s Pending insert", iconInfo, iconInsert)
 	} else if m.isRowMarkedDelete(rowIndex) {
-		rowLine = "ⓘ  Marked for delete"
+		rowLine = fmt.Sprintf("%s  %s Marked for delete", iconInfo, iconDelete)
 	} else if m.isRowEdited(rowIndex) {
-		rowLine = "ⓘ  Edited record"
+		rowLine = fmt.Sprintf("%s  %s Edited record", iconInfo, iconEdit)
 	}
 	lines = append(lines, wrapTextToWidth(rowLine, width)...)
 	lines = append(lines, "")
@@ -290,7 +290,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
 		header := fmt.Sprintf("%s (%s)", bold(column.Name), column.Type)
 		if edited {
-			header += " *"
+			header += " " + iconEdit
 		}
 		lines = append(lines, wrapTextToWidth(header, width)...)
 
@@ -584,9 +584,9 @@ func (m *Model) schemaColumnsForRecordsHeader() []string {
 		if m.currentSort != nil && column.Name == m.currentSort.Column {
 			switch m.currentSort.Direction {
 			case dto.SortDirectionAsc:
-				label += " ↑"
+				label += " " + iconSortAsc
 			case dto.SortDirectionDesc:
-				label += " ↓"
+				label += " " + iconSortDesc
 			}
 		}
 		columns[i] = label
@@ -755,7 +755,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int, edited []bo
 
 func formatRecordCell(value string, width int, focused, edited bool) string {
 	if edited && width > 0 {
-		value += "*"
+		value += iconEdit
 	}
 	if focused {
 		if width <= 1 {

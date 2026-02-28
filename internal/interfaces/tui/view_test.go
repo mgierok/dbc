@@ -190,10 +190,10 @@ func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 		t.Fatalf("expected header row, got %v", lines)
 	}
 	header := lines[1]
-	if !strings.Contains(header, "name ↑") {
+	if !strings.Contains(header, "name "+iconSortAsc) {
 		t.Fatalf("expected asc sort indicator in header, got %q", header)
 	}
-	if strings.Contains(header, "id ↑") || strings.Contains(header, "id ↓") {
+	if strings.Contains(header, "id "+iconSortAsc) || strings.Contains(header, "id "+iconSortDesc) {
 		t.Fatalf("expected indicator only on sorted column, got %q", header)
 	}
 }
@@ -225,8 +225,87 @@ func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 		t.Fatalf("expected header row, got %v", lines)
 	}
 	header := lines[1]
-	if !strings.Contains(header, "name ↓") {
+	if !strings.Contains(header, "name "+iconSortDesc) {
 		t.Fatalf("expected desc sort indicator in header, got %q", header)
+	}
+}
+
+func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER", PrimaryKey: true},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: domainmodel.Value{Text: "2", Raw: "2"}},
+					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+				},
+			},
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", "alice"}},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	content := strings.Join(model.renderRecords(80, 8), "\n")
+
+	// Assert
+	if !strings.Contains(content, iconInsert+" ") {
+		t.Fatalf("expected insert icon row prefix, got %q", content)
+	}
+	if !strings.Contains(content, iconDelete+" ") {
+		t.Fatalf("expected delete icon row prefix, got %q", content)
+	}
+}
+
+func TestRenderRecords_UsesEditIconForEditedCells(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER", PrimaryKey: true},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		records: []dto.RecordRow{
+			{Values: []string{"1", "alice"}},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.pendingUpdates = map[string]recordEdits{
+		key: {
+			changes: map[int]stagedEdit{
+				1: {Value: domainmodel.Value{Text: "alice2", Raw: "alice2"}},
+			},
+		},
+	}
+
+	// Act
+	content := strings.Join(model.renderRecords(80, 6), "\n")
+
+	// Assert
+	if !strings.Contains(content, "alice2"+iconEdit) {
+		t.Fatalf("expected edited cell icon marker, got %q", content)
 	}
 }
 
@@ -255,7 +334,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	content := strings.Join(lines, "\n")
 
 	// Assert
-	if !strings.Contains(content, "ⓘ  Persisted record") {
+	if !strings.Contains(content, iconInfo+"  Persisted record") {
 		t.Fatalf("expected information marker in detail layout, got %q", content)
 	}
 	if strings.Contains(content, "[ROW]") {
@@ -293,7 +372,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ  Persisted record") {
+		if !strings.Contains(lines[0], iconInfo+"  Persisted record") {
 			t.Fatalf("expected persisted information marker, got %q", lines[0])
 		}
 	})
@@ -315,7 +394,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ  Pending insert") {
+		if !strings.Contains(lines[0], iconInfo+"  "+iconInsert+" Pending insert") {
 			t.Fatalf("expected pending insert information marker, got %q", lines[0])
 		}
 	})
@@ -344,7 +423,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ  Marked for delete") {
+		if !strings.Contains(lines[0], iconInfo+"  "+iconDelete+" Marked for delete") {
 			t.Fatalf("expected delete information marker, got %q", lines[0])
 		}
 	})
@@ -378,7 +457,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], "ⓘ  Edited record") {
+		if !strings.Contains(lines[0], iconInfo+"  "+iconEdit+" Edited record") {
 			t.Fatalf("expected edited information marker, got %q", lines[0])
 		}
 	})

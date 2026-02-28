@@ -684,10 +684,10 @@ func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
 	lines := strings.Join(model.optionLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, "⚙ local | /tmp/local.sqlite") {
+	if !strings.Contains(lines, iconConfigSource+" local | /tmp/local.sqlite") {
 		t.Fatalf("expected config marker in option lines, got %q", lines)
 	}
-	if !strings.Contains(lines, "⌨ /tmp/direct.sqlite | /tmp/direct.sqlite") {
+	if !strings.Contains(lines, iconCLISource+" /tmp/direct.sqlite | /tmp/direct.sqlite") {
 		t.Fatalf("expected CLI marker in option lines, got %q", lines)
 	}
 }
@@ -814,7 +814,7 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	if !hasRightBorderColumn {
 		t.Fatalf("expected popup content lines in view, got %q", view)
 	}
-	if !strings.Contains(view, "Legend: ⚙ config | ⌨ CLI session") {
+	if !strings.Contains(view, "Legend: "+iconConfigSource+" config | "+iconCLISource+" CLI session") {
 		t.Fatalf("expected legend with unicode markers in view, got %q", view)
 	}
 }

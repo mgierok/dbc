@@ -147,7 +147,7 @@ Core user value in current state:
 - Records are fetched and displayed in fixed pages of 20 persisted records.
 - Users switch persisted-record pages with `Ctrl+f` (next page) and `Ctrl+b` (previous page).
 - Page navigation is bounded to the available page range.
-- Pending insert rows (`[INS]`) remain rendered at the top and are outside persisted-record page-size counting.
+- Pending insert rows (`＋`) remain rendered at the top and are outside persisted-record page-size counting.
 - Row selection is visible in the focused records panel.
 - Field focus mode is supported for cell-level editing navigation.
 - Record cell content is width-constrained in the UI (truncated when needed).
@@ -164,7 +164,7 @@ Core user value in current state:
 - Exactly one sort can be active at a time for the selected table.
 - Re-running sort replaces the previously active sort.
 - Sort is reset when switching to a different table.
-- Pending insert rows (`[INS]`) stay at the top of records view and are not reordered by sort.
+- Pending insert rows (`＋`) stay at the top of records view and are not reordered by sort.
 - Records header shows active sort indicator on the sorted column:
   - `↑` for `ASC`.
   - `↓` for `DESC`.
@@ -236,10 +236,12 @@ Core user value in current state:
   - `READ-ONLY` when no staged changes.
   - `WRITE (dirty: N)` when staged changes exist.
 - Visual row markers:
-  - `[INS]` pending insert.
-  - `[DEL]` pending delete.
+  - `＋` pending insert.
+  - `✖` pending delete.
 - Edited cell indicator:
-  - `*` marker on edited values.
+  - `✎` marker on edited values.
+- Record detail information indicator:
+  - `ℹ` marker on row-state summary lines.
 - Status line communicates:
   - Current mode.
   - Current view (Schema or Records).
