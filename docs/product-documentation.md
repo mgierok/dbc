@@ -251,7 +251,6 @@ Core user value in current state:
 - Runtime and selector popup windows keep title text in the top frame border, one-space horizontal side padding in content rows, and minimum height equal to `40%` of terminal height.
 - Status bar communicates:
   - Current mode.
-  - Current view (Schema or Records).
   - Current table.
   - Persisted-record count summary for current page and filtered total (`Records: current/total`).
   - Persisted-record pagination summary (`Page: current/total`).
@@ -318,7 +317,7 @@ Core user value in current state:
 - Fast orientation: panel layout keeps navigation context visible.
 - Safe-by-design editing: data changes are staged before save.
 - Explicit commitment: save requires user confirmation.
-- Visible state: status bar communicates mode, view, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
+- Visible state: status bar communicates mode, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
 - Consistent interaction language: vim-like motions and commands are reused across key contexts.
 
 ### 6.2 Global/Main Navigation

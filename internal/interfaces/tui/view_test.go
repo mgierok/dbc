@@ -81,6 +81,21 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	}
 }
 
+func TestRenderStatus_DoesNotShowViewIndicator(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+	}
+
+	// Act
+	status := model.renderStatus(200)
+
+	// Assert
+	if strings.Contains(status, "View: ") {
+		t.Fatalf("expected status without view indicator, got %q", status)
+	}
+}
+
 func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{

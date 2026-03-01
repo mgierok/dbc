@@ -532,7 +532,6 @@ func (m *Model) renderStatus(width int) string {
 	}
 	parts := []string{
 		mode,
-		fmt.Sprintf("View: %s", m.viewModeLabel()),
 		fmt.Sprintf("Table: %s", m.currentTableName()),
 	}
 	if m.viewMode == ViewRecords {
@@ -547,13 +546,6 @@ func (m *Model) renderStatus(width int) string {
 	}
 	left := strings.Join(parts, frameSegmentSeparator)
 	return renderStatusWithRightHint(left, runtimeStatusContextHelpHint(), width)
-}
-
-func (m *Model) viewModeLabel() string {
-	if m.viewMode == ViewRecords {
-		return "Records"
-	}
-	return "Schema"
 }
 
 func (m *Model) filterSummary() string {
