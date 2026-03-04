@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -16,6 +17,11 @@ type fakeEngine struct {
 	records   model.RecordPage
 	operators []model.Operator
 
+	listTablesErr    error
+	getSchemaErr     error
+	listRecordsErr   error
+	listOperatorsErr error
+
 	lastRecordsTable  string
 	lastRecordsOffset int
 	lastRecordsLimit  int
@@ -24,15 +30,24 @@ type fakeEngine struct {
 }
 
 func (f *fakeEngine) ListTables(ctx context.Context) ([]model.Table, error) {
+	if f.listTablesErr != nil {
+		return nil, f.listTablesErr
+	}
 	return f.tables, nil
 }
 
 func (f *fakeEngine) GetSchema(ctx context.Context, tableName string) (model.Schema, error) {
+	if f.getSchemaErr != nil {
+		return model.Schema{}, f.getSchemaErr
+	}
 	f.schema.Table = model.Table{Name: tableName}
 	return f.schema, nil
 }
 
 func (f *fakeEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *model.Filter, sort *model.Sort) (model.RecordPage, error) {
+	if f.listRecordsErr != nil {
+		return model.RecordPage{}, f.listRecordsErr
+	}
 	f.lastRecordsTable = tableName
 	f.lastRecordsOffset = offset
 	f.lastRecordsLimit = limit
@@ -42,6 +57,9 @@ func (f *fakeEngine) ListRecords(ctx context.Context, tableName string, offset, 
 }
 
 func (f *fakeEngine) ListOperators(ctx context.Context, columnType string) ([]model.Operator, error) {
+	if f.listOperatorsErr != nil {
+		return nil, f.listOperatorsErr
+	}
 	return f.operators, nil
 }
 
@@ -248,5 +266,65 @@ func TestListOperators_MapsOperators(t *testing.T) {
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Fatalf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestListTables_PropagatesEngineError(t *testing.T) {
+	// Arrange
+	expectedErr := errors.New("list tables failed")
+	engine := &fakeEngine{listTablesErr: expectedErr}
+	uc := usecase.NewListTables(engine)
+
+	// Act
+	_, err := uc.Execute(context.Background())
+
+	// Assert
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected error %v, got %v", expectedErr, err)
+	}
+}
+
+func TestGetSchema_PropagatesEngineError(t *testing.T) {
+	// Arrange
+	expectedErr := errors.New("get schema failed")
+	engine := &fakeEngine{getSchemaErr: expectedErr}
+	uc := usecase.NewGetSchema(engine)
+
+	// Act
+	_, err := uc.Execute(context.Background(), "users")
+
+	// Assert
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected error %v, got %v", expectedErr, err)
+	}
+}
+
+func TestListRecords_PropagatesEngineError(t *testing.T) {
+	// Arrange
+	expectedErr := errors.New("list records failed")
+	engine := &fakeEngine{listRecordsErr: expectedErr}
+	uc := usecase.NewListRecords(engine)
+
+	// Act
+	_, err := uc.Execute(context.Background(), "users", 0, 10, nil, nil)
+
+	// Assert
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected error %v, got %v", expectedErr, err)
+	}
+}
+
+func TestListOperators_PropagatesEngineError(t *testing.T) {
+	// Arrange
+	expectedErr := errors.New("list operators failed")
+	engine := &fakeEngine{listOperatorsErr: expectedErr}
+	uc := usecase.NewListOperators(engine)
+
+	// Act
+	_, err := uc.Execute(context.Background(), "TEXT")
+
+	// Assert
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected error %v, got %v", expectedErr, err)
 	}
 }
