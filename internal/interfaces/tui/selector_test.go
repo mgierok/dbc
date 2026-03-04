@@ -794,28 +794,42 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	lines := strings.Split(view, "\n")
 
 	// Assert
-	var rightBorderColumn int
-	hasRightBorderColumn := false
+	framedWidth := 0
+	hasFramedLine := false
 	for _, line := range lines {
 		trimmed := strings.TrimLeft(line, " ")
-		if trimmed == "" || !strings.HasPrefix(trimmed, frameVertical) {
+		if trimmed == "" {
 			continue
 		}
-		col := lastRuneIndex(line, []rune(frameVertical)[0])
-		if col < 0 {
-			t.Fatalf("expected right border in line %q", line)
-		}
-		if !hasRightBorderColumn {
-			rightBorderColumn = col
-			hasRightBorderColumn = true
+		if !strings.HasPrefix(trimmed, frameTopLeft) &&
+			!strings.HasPrefix(trimmed, frameVertical) &&
+			!strings.HasPrefix(trimmed, frameJoinLeft) &&
+			!strings.HasPrefix(trimmed, frameBottomLeft) {
 			continue
 		}
-		if col != rightBorderColumn {
-			t.Fatalf("expected right border at rune column %d, got %d for line %q", rightBorderColumn, col, line)
+		framed := strings.TrimRight(trimmed, " ")
+		lineWidth := textWidth(framed)
+		if !hasFramedLine {
+			framedWidth = lineWidth
+			hasFramedLine = true
+		} else if lineWidth != framedWidth {
+			t.Fatalf("expected consistent framed width %d, got %d for line %q", framedWidth, lineWidth, framed)
+		}
+		if !strings.HasSuffix(framed, frameVertical) &&
+			!strings.HasSuffix(framed, frameTopRight) &&
+			!strings.HasSuffix(framed, frameJoinRight) &&
+			!strings.HasSuffix(framed, frameBottomRight) {
+			t.Fatalf("expected framed line to end with right border marker, got %q", framed)
 		}
 	}
-	if !hasRightBorderColumn {
+	if !hasFramedLine {
 		t.Fatalf("expected popup content lines in view, got %q", view)
+	}
+	if !strings.Contains(view, iconConfigSource) {
+		t.Fatalf("expected config source marker in selector view, got %q", view)
+	}
+	if !strings.Contains(view, iconCLISource) {
+		t.Fatalf("expected CLI source marker in selector view, got %q", view)
 	}
 	if strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
 		t.Fatalf("expected legend to be removed from selector main content, got %q", view)
@@ -1007,16 +1021,6 @@ func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel 
 func sendKey(model *databaseSelectorModel, key tea.KeyMsg) *databaseSelectorModel {
 	updated, _ := model.Update(key)
 	return updated.(*databaseSelectorModel)
-}
-
-func lastRuneIndex(s string, target rune) int {
-	index := -1
-	for i, r := range []rune(s) {
-		if r == target {
-			index = i
-		}
-	}
-	return index
 }
 
 type fakeSelectorManager struct {
