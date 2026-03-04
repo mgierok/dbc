@@ -1,6 +1,8 @@
 # AGENTS
 
-## 1. Scope and Priority
+Role and purpose: this file defines repository-wide operating rules for coding agents.
+
+## Scope and Priority
 
 - This file MUST be treated as applying to the whole repository (project root level).
 - Source of truth split:
@@ -8,7 +10,7 @@
   - Technical perspective: `docs/technical-documentation.md`
 - If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
 
-## 2. Mandatory Context Loading
+## Mandatory Context Loading
 
 Before planning or coding project changes (for example feature work, bug fixes, refactors, or future project planning), the agent MUST load both full source-of-truth documents:
 
@@ -17,16 +19,16 @@ Before planning or coding project changes (for example feature work, bug fixes, 
 
 This requirement MUST NOT apply when the task scope is limited to governance-only changes (for example updating `AGENTS.md` or `.agents/skills/**/SKILL.md`) and no project behavior is being changed.
 
-## 3. Engineering Guardrails
+## Engineering Guardrails
 
-### 3.1 Dependencies and Toolchain
+### Dependencies and Toolchain
 
 - Dependency/toolchain baseline MUST be taken from:
   - `docs/technical-documentation.md#9-technology-stack-and-versions`
   - `go.mod`
 - Adding third-party dependencies MUST have explicit approval.
 
-### 3.2 Architecture
+### Architecture
 
 The agent MUST use `docs/technical-documentation.md#3-architecture-and-boundaries` as the primary architecture guide.
 For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
@@ -41,7 +43,7 @@ Non-negotiable summary:
 - The implementation SHOULD prefer interface-driven changes through application ports.
 - Interface adapters MUST NOT bypass use cases.
 
-### 3.2.1 Architecture Rules for New Features
+#### Architecture Rules for New Features
 
 When adding functionality that changes behavior, the agent MUST follow this order:
 
@@ -53,9 +55,9 @@ When adding functionality that changes behavior, the agent MUST follow this orde
 
 For adapter-only or infrastructure-only changes that do not change domain behavior, steps `1` and `2` MAY be no-op, but dependency direction and architecture boundaries MUST still be preserved.
 
-### 3.3 Development Standards
+### Development Standards
 
-#### 3.3.1 General Development Rules
+#### General Development Rules
 
 - The agent MUST use English for identifiers and internal technical documentation.
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
@@ -70,7 +72,7 @@ Quick examples:
 - Good: edit one use case and its tests for one behavior change.
 - Bad: adding new generic helper layers "for future reuse" when only one call site exists.
 
-#### 3.3.2 TDD Rules
+#### TDD Rules
 
 - Before starting unit-test work, the agent MUST invoke skill `create-unit-tests`.
 - This prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests.
@@ -81,7 +83,7 @@ Quick examples:
 - The agent MUST NOT weaken assertions only to make failing behavior pass.
 - The agent MUST NOT skip the `Red` step unless technically impossible; if impossible, the agent MUST document the reason and treat test-after as an explicit exception.
 
-#### 3.3.3 Go-Specific Rules
+#### Go-Specific Rules
 
 - The agent MUST write idiomatic Go.
 - The agent SHOULD keep functions focused and explicit in error handling.
@@ -98,7 +100,7 @@ Quick examples:
 - If an exception is required, the agent MUST apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
 - Every local linter exception MUST have explicit user approval each time (no blanket pre-approval).
 
-## 4. Documentation Policy
+## Documentation Policy
 
 For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
 
@@ -108,22 +110,22 @@ For tasks that directly create or modify documentation files, the agent MUST inv
 
 If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
 
-### 4.1 Product Documentation Policy
+### Product Documentation Policy
 
 - Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-### 4.2 Technical Documentation Policy
+### Technical Documentation Policy
 
 - Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-### 4.3 README Documentation Policy
+### README Documentation Policy
 
 - README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
-## 5. Cross-Cutting Operational Rules
+## Cross-Cutting Operational Rules
 
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
@@ -134,7 +136,7 @@ If multiple documentation perspectives are affected, the agent MUST invoke all a
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change-set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change-set.
 
-## 6. Quick Reference
+## Quick Reference
 
 - Product source of truth: `docs/product-documentation.md`
 - Technical source of truth: `docs/technical-documentation.md`
