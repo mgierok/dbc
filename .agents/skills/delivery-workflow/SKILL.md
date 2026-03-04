@@ -22,12 +22,12 @@ Provide the standard workflow for intent alignment, planning, implementation, an
 ## Workflow
 
 The workflow MUST use `update_plan` from start through completion, update statuses after each workflow step, and finish with all steps marked as `completed`.
-The workflow MUST keep one main `update_plan` that spans all four phases.
-At any point in time, the workflow MUST NOT run more than two active plans: the main plan and at most one nested plan.
-The workflow MAY create a nested plan only to execute one active main-plan step.
-When a nested plan is created, it MUST be a child of exactly one active main-plan step and MUST be closed before another nested plan is created.
-Nested plans MUST NOT replace, reorder, or duplicate the main plan phases.
-For each active plan, exactly one step MUST be `in_progress` at a time.
+The workflow MUST create exactly one `update_plan` before starting `Intent Alignment`.
+The initial plan MUST include exactly four top-level steps in this order: `Intent Alignment`, `Planning`, `Implementation`, `Completion`.
+During execution, the agent MUST iteratively extend the same plan with additional component steps for the currently active top-level step when finer granularity is required.
+Component steps MUST stay explicitly linked to their parent top-level step, for example by a stable prefix such as `2.1`.
+The workflow MUST NOT create any second `update_plan` for nested or parallel tracking.
+At any point in time, exactly one step in the single active plan MUST be `in_progress`.
 
 1. Intent Alignment
 2. Planning
@@ -46,8 +46,7 @@ For each active plan, exactly one step MUST be `in_progress` at a time.
 
 ### Intent Alignment
 
-Intent Alignment MUST use `update_plan` and update statuses after each workflow step in this phase.
-If both main and nested plans are active in this phase, each active plan MUST keep exactly one step `in_progress` at a time.
+Intent Alignment MUST use the single `update_plan` and update statuses after each workflow step in this phase.
 
 1. Intent Understanding
    - The agent MUST NOT treat the user instruction as literal and complete by default.
@@ -60,8 +59,7 @@ If both main and nested plans are active in this phase, each active plan MUST ke
 
 ### Planning
 
-Planning MUST use `update_plan` and update statuses after each workflow step in this phase.
-If both main and nested plans are active in this phase, each active plan MUST keep exactly one step `in_progress` at a time.
+Planning MUST use the single `update_plan` and update statuses after each workflow step in this phase.
 
 1. Measurable Success Criteria
    - The agent MUST define clear, measurable success criteria from a project-development perspective.
@@ -89,8 +87,7 @@ If both main and nested plans are active in this phase, each active plan MUST ke
 ### Implementation
 
 Implementation MUST iterate over all approved change-sets in the defined order.
-Implementation MUST use `update_plan` and update statuses after each workflow step in this phase.
-If both main and nested plans are active in this phase, each active plan MUST keep exactly one step `in_progress` at a time.
+Implementation MUST use the single `update_plan` and update statuses after each workflow step in this phase.
 
 1. Code and Test Execution
    - For project-code implementation, the agent MUST apply all active repository engineering guardrails.
@@ -113,8 +110,7 @@ If both main and nested plans are active in this phase, each active plan MUST ke
 
 ### Completion
 
-Completion MUST use `update_plan` and update statuses after each workflow step in this phase.
-If both main and nested plans are active in this phase, each active plan MUST keep exactly one step `in_progress` at a time.
+Completion MUST use the single `update_plan` and update statuses after each workflow step in this phase.
 
 1. Full-Plan Completion Verification
    - The agent MUST verify that all approved change-sets from the plan were implemented, or that any approved deviation is explicitly documented.
