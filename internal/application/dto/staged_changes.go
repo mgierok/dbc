@@ -12,8 +12,7 @@ type ColumnValue struct {
 }
 
 type RecordIdentity struct {
-	RowID *int64
-	Keys  []ColumnValue
+	Keys []ColumnValue
 }
 
 type RecordUpdate struct {

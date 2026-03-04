@@ -88,7 +88,7 @@ func (uc *StagedChangesTranslator) BuildTableChanges(
 		if len(edits.Changes) == 0 {
 			continue
 		}
-		if edits.Identity.RowID == nil && len(edits.Identity.Keys) == 0 {
+		if len(edits.Identity.Keys) == 0 {
 			return dto.TableChanges{}, fmt.Errorf("record identity missing")
 		}
 		updateChanges := make([]dto.ColumnValue, 0, len(edits.Changes))

@@ -67,8 +67,7 @@ func toDomainTableChanges(changes dto.TableChanges) model.TableChanges {
 
 func toDomainRecordIdentity(identity dto.RecordIdentity) model.RecordIdentity {
 	return model.RecordIdentity{
-		RowID: identity.RowID,
-		Keys:  toDomainColumnValues(identity.Keys),
+		Keys: toDomainColumnValues(identity.Keys),
 	}
 }
 
@@ -97,7 +96,7 @@ func validateTableChanges(changes model.TableChanges) error {
 		}
 	}
 	for _, update := range changes.Updates {
-		if update.Identity.RowID == nil && len(update.Identity.Keys) == 0 {
+		if len(update.Identity.Keys) == 0 {
 			return model.ErrMissingRecordIdentity
 		}
 		if len(update.Changes) == 0 {
@@ -105,7 +104,7 @@ func validateTableChanges(changes model.TableChanges) error {
 		}
 	}
 	for _, deleteChange := range changes.Deletes {
-		if deleteChange.Identity.RowID == nil && len(deleteChange.Identity.Keys) == 0 {
+		if len(deleteChange.Identity.Keys) == 0 {
 			return model.ErrMissingDeleteIdentity
 		}
 	}

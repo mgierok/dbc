@@ -283,6 +283,7 @@ Current implementation-level characteristics:
 
 - Engine contract is defined in `internal/application/port/engine.go`.
 - `Engine.ListRecords` accepts optional filter and optional sort payload.
+- Save/update/delete record identity contract uses non-empty key columns only (`RecordIdentity.Keys`); application/domain contracts do not expose SQLite physical `rowid`.
 - Record page contract (`model.RecordPage` -> `dto.RecordPage`) includes:
   - current-page rows,
   - `HasMore` look-ahead flag,
@@ -475,7 +476,7 @@ Version source: `go.mod`.
 Current technical constraints:
 
 - Only SQLite engine is implemented.
-- Table edit/delete for persisted rows depends on primary key identity.
+- Table edit/delete for persisted rows depends on primary key identity keys (no `rowid` fallback in application/domain contracts).
 - Filter pipeline applies one active predicate for the selected table at a time.
 - Missing or empty config file is tolerated at startup and mapped to mandatory first-entry setup.
 - Invalid config content still stops startup with explicit error.

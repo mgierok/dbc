@@ -157,9 +157,6 @@ func recordIdentitySignature(identity model.RecordIdentity) (string, error) {
 }
 
 func buildRecordIdentityClause(identity model.RecordIdentity) (string, []any, error) {
-	if identity.RowID != nil {
-		return "WHERE rowid = ?", []any{*identity.RowID}, nil
-	}
 	if len(identity.Keys) == 0 {
 		return "", nil, model.ErrMissingRecordIdentity
 	}
