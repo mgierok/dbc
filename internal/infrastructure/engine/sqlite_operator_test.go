@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mgierok/dbc/internal/domain/model"
+)
 
 func TestOperatorsForType_ReturnsSQLiteOperators(t *testing.T) {
 	// Arrange
@@ -15,7 +19,7 @@ func TestOperatorsForType_ReturnsSQLiteOperators(t *testing.T) {
 	}
 	foundIsNull := false
 	for _, operator := range operators {
-		if operator.SQL == "IS NULL" {
+		if operator.Kind == model.OperatorKindIsNull {
 			foundIsNull = true
 			break
 		}

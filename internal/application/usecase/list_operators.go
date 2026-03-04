@@ -24,7 +24,7 @@ func (uc *ListOperators) Execute(ctx context.Context, columnType string) ([]dto.
 	for i, operator := range operators {
 		result[i] = dto.Operator{
 			Name:          operator.Name,
-			SQL:           operator.SQL,
+			Kind:          dto.OperatorKind(operator.Kind),
 			RequiresValue: operator.RequiresValue,
 		}
 	}

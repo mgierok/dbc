@@ -374,7 +374,7 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 		stepLabel = "Select operator"
 		rows = make([]string, len(m.filterPopup.operators))
 		for i, operator := range m.filterPopup.operators {
-			rows[i] = fmt.Sprintf("%s (%s)", operator.Name, operator.SQL)
+			rows[i] = operator.Name
 		}
 		if len(rows) > 0 {
 			selected = clamp(m.filterPopup.operatorIndex, 0, len(rows)-1)
@@ -553,9 +553,9 @@ func (m *Model) filterSummary() string {
 		return "Filter: none"
 	}
 	if m.currentFilter.Operator.RequiresValue {
-		return fmt.Sprintf("Filter: %s %s %s", m.currentFilter.Column, m.currentFilter.Operator.SQL, m.currentFilter.Value)
+		return fmt.Sprintf("Filter: %s %s %s", m.currentFilter.Column, m.currentFilter.Operator.Name, m.currentFilter.Value)
 	}
-	return fmt.Sprintf("Filter: %s %s", m.currentFilter.Column, m.currentFilter.Operator.SQL)
+	return fmt.Sprintf("Filter: %s %s", m.currentFilter.Column, m.currentFilter.Operator.Name)
 }
 
 func (m *Model) sortSummary() string {

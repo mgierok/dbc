@@ -31,7 +31,7 @@ func TestBuildFilterClause_WithValueOperator(t *testing.T) {
 	filter := &model.Filter{
 		Column: "name",
 		Operator: model.Operator{
-			SQL:           "=",
+			Kind:          model.OperatorKindEq,
 			RequiresValue: true,
 		},
 		Value: "alice",
@@ -58,7 +58,7 @@ func TestBuildFilterClause_IsNullOperator(t *testing.T) {
 	filter := &model.Filter{
 		Column: "deleted_at",
 		Operator: model.Operator{
-			SQL:           "IS NULL",
+			Kind:          model.OperatorKindIsNull,
 			RequiresValue: false,
 		},
 	}
@@ -84,7 +84,7 @@ func TestBuildFilterClause_UnknownOperator(t *testing.T) {
 	filter := &model.Filter{
 		Column: "name",
 		Operator: model.Operator{
-			SQL:           "DROP TABLE",
+			Kind:          model.OperatorKind("drop_table"),
 			RequiresValue: true,
 		},
 		Value: "x",
@@ -104,7 +104,7 @@ func TestBuildFilterClause_MissingColumn(t *testing.T) {
 	filter := &model.Filter{
 		Column: " ",
 		Operator: model.Operator{
-			SQL:           "=",
+			Kind:          model.OperatorKindEq,
 			RequiresValue: true,
 		},
 		Value: "x",

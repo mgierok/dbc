@@ -23,7 +23,7 @@ func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, li
 			Column: filter.Column,
 			Operator: model.Operator{
 				Name:          filter.Operator.Name,
-				SQL:           filter.Operator.SQL,
+				Kind:          model.OperatorKind(filter.Operator.Kind),
 				RequiresValue: filter.Operator.RequiresValue,
 			},
 			Value: filter.Value,

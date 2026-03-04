@@ -254,7 +254,7 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	// Arrange
 	operatorsSpy := &spyListOperatorsUseCase{
 		operators: []dto.Operator{
-			{Name: "Equals", SQL: "=", RequiresValue: true},
+			{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
 		},
 	}
 	recordsSpy := &spyListRecordsUseCase{}
@@ -326,8 +326,8 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if model.currentFilter.Value != "alice" {
 		t.Fatalf("expected filter value alice, got %q", model.currentFilter.Value)
 	}
-	if model.currentFilter.Operator.SQL != "=" {
-		t.Fatalf("expected SQL operator =, got %q", model.currentFilter.Operator.SQL)
+	if model.currentFilter.Operator.Kind != dto.OperatorKindEq {
+		t.Fatalf("expected operator kind %q, got %q", dto.OperatorKindEq, model.currentFilter.Operator.Kind)
 	}
 	if model.recordPageIndex != 0 {
 		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.recordPageIndex)

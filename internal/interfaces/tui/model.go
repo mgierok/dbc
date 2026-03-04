@@ -1514,7 +1514,7 @@ func (m *Model) applyFilter(operator dto.Operator, value string) (tea.Model, tea
 		Column: column.Name,
 		Operator: dto.Operator{
 			Name:          operator.Name,
-			SQL:           operator.SQL,
+			Kind:          operator.Kind,
 			RequiresValue: operator.RequiresValue,
 		},
 		Value: value,

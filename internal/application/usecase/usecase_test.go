@@ -187,7 +187,7 @@ func TestListRecords_MapsFilter(t *testing.T) {
 		Column: "name",
 		Operator: dto.Operator{
 			Name:          "Equals",
-			SQL:           "=",
+			Kind:          dto.OperatorKindEq,
 			RequiresValue: true,
 		},
 		Value: "alice",
@@ -210,7 +210,7 @@ func TestListRecords_MapsFilter(t *testing.T) {
 		Column: "name",
 		Operator: model.Operator{
 			Name:          "Equals",
-			SQL:           "=",
+			Kind:          model.OperatorKindEq,
 			RequiresValue: true,
 		},
 		Value: "alice",
@@ -249,7 +249,7 @@ func TestListOperators_MapsOperators(t *testing.T) {
 	// Arrange
 	engine := &fakeEngine{
 		operators: []model.Operator{
-			{Name: "Equals", SQL: "=", RequiresValue: true},
+			{Name: "Equals", Kind: model.OperatorKindEq, RequiresValue: true},
 		},
 	}
 	uc := usecase.NewListOperators(engine)
@@ -262,7 +262,7 @@ func TestListOperators_MapsOperators(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	expected := []dto.Operator{
-		{Name: "Equals", SQL: "=", RequiresValue: true},
+		{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Fatalf("expected %v, got %v", expected, result)

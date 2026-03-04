@@ -1,8 +1,22 @@
 package model
 
+type OperatorKind string
+
+const (
+	OperatorKindEq        OperatorKind = "eq"
+	OperatorKindNeq       OperatorKind = "neq"
+	OperatorKindLt        OperatorKind = "lt"
+	OperatorKindLte       OperatorKind = "lte"
+	OperatorKindGt        OperatorKind = "gt"
+	OperatorKindGte       OperatorKind = "gte"
+	OperatorKindLike      OperatorKind = "like"
+	OperatorKindIsNull    OperatorKind = "is_null"
+	OperatorKindIsNotNull OperatorKind = "is_not_null"
+)
+
 type Operator struct {
 	Name          string
-	SQL           string
+	Kind          OperatorKind
 	RequiresValue bool
 }
 

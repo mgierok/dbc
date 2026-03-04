@@ -128,7 +128,7 @@ func TestSQLiteEngine_ListRecords_AppliesFilterAndPagination(t *testing.T) {
 	filter := &model.Filter{
 		Column: "name",
 		Operator: model.Operator{
-			SQL:           "=",
+			Kind:          model.OperatorKindEq,
 			RequiresValue: true,
 		},
 		Value: "alice",
@@ -289,7 +289,7 @@ func TestSQLiteEngine_ListRecords_FilterSortAndPagination(t *testing.T) {
 	filter := &model.Filter{
 		Column: "name",
 		Operator: model.Operator{
-			SQL:           "=",
+			Kind:          model.OperatorKindEq,
 			RequiresValue: true,
 		},
 		Value: "a",
