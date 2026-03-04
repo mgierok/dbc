@@ -153,3 +153,68 @@ func TestSaveTableChanges_ExecuteDTO_DelegatesChanges(t *testing.T) {
 		t.Fatalf("expected 1 insert, got %d", len(engine.changes.Inserts))
 	}
 }
+
+func TestSaveTableChanges_ValidatesMissingTableName(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+
+	// Act
+	err := uc.Execute(context.Background(), "   ", model.TableChanges{
+		Inserts: []model.RecordInsert{
+			{
+				Values: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "alice", Raw: "alice"}}},
+			},
+		},
+	})
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error for missing table name")
+	}
+	if err.Error() != "table name is required" {
+		t.Fatalf("expected missing-table-name error, got %v", err)
+	}
+}
+
+func TestSaveTableChanges_ValidatesUpdateIdentity(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+
+	// Act
+	err := uc.Execute(context.Background(), "users", model.TableChanges{
+		Updates: []model.RecordUpdate{
+			{
+				Changes: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "bob", Raw: "bob"}}},
+			},
+		},
+	})
+
+	// Assert
+	if !errors.Is(err, model.ErrMissingRecordIdentity) {
+		t.Fatalf("expected error %v, got %v", model.ErrMissingRecordIdentity, err)
+	}
+}
+
+func TestSaveTableChanges_ValidatesUpdateChanges(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+
+	// Act
+	err := uc.Execute(context.Background(), "users", model.TableChanges{
+		Updates: []model.RecordUpdate{
+			{
+				Identity: model.RecordIdentity{
+					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+				},
+			},
+		},
+	})
+
+	// Assert
+	if !errors.Is(err, model.ErrMissingRecordChanges) {
+		t.Fatalf("expected error %v, got %v", model.ErrMissingRecordChanges, err)
+	}
+}
