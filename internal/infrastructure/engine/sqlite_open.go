@@ -10,6 +10,15 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type sqliteDatabaseHandle interface {
+	PingContext(ctx context.Context) error
+	Close() error
+}
+
+var openSQLiteHandle = func(dbPath string) (sqliteDatabaseHandle, error) {
+	return sql.Open("sqlite", dbPath)
+}
+
 // OpenSQLiteDatabase validates the sqlite path and returns an open, reachable DB handle.
 func OpenSQLiteDatabase(ctx context.Context, dbPath string) (*sql.DB, error) {
 	if ctx == nil {
@@ -27,14 +36,18 @@ func OpenSQLiteDatabase(ctx context.Context, dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("database path points to a directory: %s", dbPath)
 	}
 
-	db, err := sql.Open("sqlite", dbPath)
+	db, err := openSQLiteHandle(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite database: %w", err)
 	}
 
 	pingErr := db.PingContext(ctx)
 	if pingErr == nil {
-		return db, nil
+		sqlDB, ok := db.(*sql.DB)
+		if !ok {
+			return nil, fmt.Errorf("open sqlite database: unexpected database handle type %T", db)
+		}
+		return sqlDB, nil
 	}
 
 	closeErr := db.Close()
