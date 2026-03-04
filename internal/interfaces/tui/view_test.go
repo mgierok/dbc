@@ -7,7 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
-	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
 
 func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
@@ -64,7 +63,7 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 		pendingUpdates: map[string]recordEdits{
 			"id=1": {
 				changes: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "bob", Raw: "bob"}},
+					0: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
 				},
 			},
 		},
@@ -512,8 +511,8 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "2", Raw: "2"}},
-					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+					0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 			},
 		},
@@ -563,7 +562,7 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	model.pendingUpdates = map[string]recordEdits{
 		key: {
 			changes: map[int]stagedEdit{
-				1: {Value: domainmodel.Value{Text: "alice2", Raw: "alice2"}},
+				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
 	}
@@ -594,8 +593,8 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "10", Raw: "10"}},
-					1: {Value: domainmodel.Value{Text: "inserted", Raw: "inserted"}},
+					0: {Value: dto.StagedValue{Text: "10", Raw: "10"}},
+					1: {Value: dto.StagedValue{Text: "inserted", Raw: "inserted"}},
 				},
 			},
 		},
@@ -612,7 +611,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	model.pendingUpdates = map[string]recordEdits{
 		editedKey: {
 			changes: map[int]stagedEdit{
-				1: {Value: domainmodel.Value{Text: "alice2", Raw: "alice2"}},
+				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
 	}
@@ -793,7 +792,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		model.pendingUpdates = map[string]recordEdits{
 			key: {
 				changes: map[int]stagedEdit{
-					1: {Value: domainmodel.Value{Text: "alice2", Raw: "alice2"}},
+					1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 				},
 			},
 		}

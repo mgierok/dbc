@@ -108,8 +108,9 @@ func runRuntimeStartup(options startupOptions) {
 		listRecords := usecase.NewListRecords(engine)
 		listOperators := usecase.NewListOperators(engine)
 		saveChanges := usecase.NewSaveTableChanges(engine)
+		translator := usecase.NewStagedChangesTranslator()
 
-		runErr := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges)
+		runErr := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator)
 		if closeErr := db.Close(); closeErr != nil {
 			log.Printf("failed to close database: %v", closeErr)
 		}

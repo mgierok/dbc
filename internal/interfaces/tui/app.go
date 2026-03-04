@@ -11,8 +11,16 @@ import (
 
 var ErrOpenConfigSelector = errors.New("open config selector requested")
 
-func Run(ctx context.Context, listTables *usecase.ListTables, getSchema *usecase.GetSchema, listRecords *usecase.ListRecords, listOperators *usecase.ListOperators, saveChanges *usecase.SaveTableChanges) error {
-	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges)
+func Run(
+	ctx context.Context,
+	listTables *usecase.ListTables,
+	getSchema *usecase.GetSchema,
+	listRecords *usecase.ListRecords,
+	listOperators *usecase.ListOperators,
+	saveChanges *usecase.SaveTableChanges,
+	translator *usecase.StagedChangesTranslator,
+) error {
+	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator)
 	program := tea.NewProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {

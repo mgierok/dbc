@@ -10,8 +10,6 @@ import (
 
 	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/usecase"
-	"github.com/mgierok/dbc/internal/domain/model"
-	"github.com/mgierok/dbc/internal/domain/service"
 )
 
 const (
@@ -98,11 +96,11 @@ type recordDetailState struct {
 }
 
 type stagedEdit struct {
-	Value model.Value
+	Value dto.StagedValue
 }
 
 type recordEdits struct {
-	identity model.RecordIdentity
+	identity dto.RecordIdentity
 	changes  map[int]stagedEdit
 }
 
@@ -113,7 +111,7 @@ type pendingInsertRow struct {
 }
 
 type recordDelete struct {
-	identity model.RecordIdentity
+	identity dto.RecordIdentity
 }
 
 type stagedOperationKind int
@@ -141,7 +139,7 @@ type cellEditOperation struct {
 	target             cellEditTarget
 	insertIndex        int
 	recordKey          string
-	identity           model.RecordIdentity
+	identity           dto.RecordIdentity
 	columnIndex        int
 	before             stagedEdit
 	beforeExists       bool
@@ -153,7 +151,7 @@ type cellEditOperation struct {
 
 type deleteToggleOperation struct {
 	key          string
-	identity     model.RecordIdentity
+	identity     dto.RecordIdentity
 	beforeMarked bool
 	afterMarked  bool
 }
@@ -209,11 +207,12 @@ type pkColumn struct {
 
 type Model struct {
 	ctx           context.Context
-	listTables    *usecase.ListTables
-	getSchema     *usecase.GetSchema
-	listRecords   *usecase.ListRecords
-	listOperators *usecase.ListOperators
-	saveChanges   *usecase.SaveTableChanges
+	listTables    listTablesUseCase
+	getSchema     getSchemaUseCase
+	listRecords   listRecordsUseCase
+	listOperators listOperatorsUseCase
+	saveChanges   saveChangesUseCase
+	translator    *usecase.StagedChangesTranslator
 
 	width  int
 	height int
@@ -287,7 +286,27 @@ type errMsg struct {
 	err error
 }
 
-func NewModel(ctx context.Context, listTables *usecase.ListTables, getSchema *usecase.GetSchema, listRecords *usecase.ListRecords, listOperators *usecase.ListOperators, saveChanges *usecase.SaveTableChanges) *Model {
+type listTablesUseCase interface {
+	Execute(ctx context.Context) ([]dto.Table, error)
+}
+
+type getSchemaUseCase interface {
+	Execute(ctx context.Context, tableName string) (dto.Schema, error)
+}
+
+type listRecordsUseCase interface {
+	Execute(ctx context.Context, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort) (dto.RecordPage, error)
+}
+
+type listOperatorsUseCase interface {
+	Execute(ctx context.Context, columnType string) ([]dto.Operator, error)
+}
+
+type saveChangesUseCase interface {
+	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error
+}
+
+func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator) *Model {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -298,6 +317,7 @@ func NewModel(ctx context.Context, listTables *usecase.ListTables, getSchema *us
 		listRecords:       listRecords,
 		listOperators:     listOperators,
 		saveChanges:       saveChanges,
+		translator:        translator,
 		focus:             FocusTables,
 		viewMode:          ViewSchema,
 		recordTotalPages:  1,
@@ -800,7 +820,7 @@ func (m *Model) confirmEditPopup() (tea.Model, tea.Cmd) {
 		input = column.Input.Options[clamp(m.editPopup.optionIndex, 0, len(column.Input.Options)-1)]
 	}
 
-	value, err := service.ParseValue(column.Type, input, m.editPopup.isNull, column.Nullable)
+	value, err := m.translatorUseCase().ParseStagedValue(column, input, m.editPopup.isNull)
 	if err != nil {
 		m.editPopup.errorMessage = err.Error()
 		return m, nil
@@ -1947,7 +1967,7 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 	}
 }
 
-func (m *Model) setDeleteMark(key string, identity model.RecordIdentity, marked bool) error {
+func (m *Model) setDeleteMark(key string, identity dto.RecordIdentity, marked bool) error {
 	if strings.TrimSpace(key) == "" {
 		return fmt.Errorf("record key missing")
 	}
@@ -1967,7 +1987,7 @@ func (m *Model) recordOperation(op stagedOperation) {
 	m.future = nil
 }
 
-func (m *Model) stageEdit(rowIndex, columnIndex int, value model.Value) error {
+func (m *Model) stageEdit(rowIndex, columnIndex int, value dto.StagedValue) error {
 	if columnIndex < 0 || columnIndex >= len(m.schema.Columns) {
 		return fmt.Errorf("column index out of range")
 	}
@@ -1994,7 +2014,7 @@ func (m *Model) stageEdit(rowIndex, columnIndex int, value model.Value) error {
 	return nil
 }
 
-func (m *Model) stagePersistedEdit(visibleRowIndex, columnIndex int, value model.Value) (stagedOperation, bool, error) {
+func (m *Model) stagePersistedEdit(visibleRowIndex, columnIndex int, value dto.StagedValue) (stagedOperation, bool, error) {
 	key, identity, err := m.recordIdentityForVisibleRow(visibleRowIndex)
 	if err != nil {
 		return stagedOperation{}, false, err
@@ -2043,7 +2063,7 @@ func (m *Model) stagePersistedEdit(visibleRowIndex, columnIndex int, value model
 	}, true, nil
 }
 
-func (m *Model) stageInsertEdit(insertIndex, columnIndex int, value model.Value) (stagedOperation, bool, error) {
+func (m *Model) stageInsertEdit(insertIndex, columnIndex int, value dto.StagedValue) (stagedOperation, bool, error) {
 	if insertIndex < 0 || insertIndex >= len(m.pendingInserts) {
 		return stagedOperation{}, false, fmt.Errorf("insert index out of range")
 	}
@@ -2148,40 +2168,28 @@ func (m *Model) recordKeyForPersistedRow(rowIndex int) (string, bool) {
 	return strings.Join(parts, "|"), true
 }
 
-func (m *Model) recordIdentityForVisibleRow(rowIndex int) (string, model.RecordIdentity, error) {
+func (m *Model) recordIdentityForVisibleRow(rowIndex int) (string, dto.RecordIdentity, error) {
 	persistedIndex := m.persistedRowIndex(rowIndex)
 	if persistedIndex < 0 {
-		return "", model.RecordIdentity{}, fmt.Errorf("record index out of range")
+		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
 	}
 	return m.recordIdentityForPersistedRow(persistedIndex)
 }
 
-func (m *Model) recordIdentityForPersistedRow(rowIndex int) (string, model.RecordIdentity, error) {
-	pkColumns := m.primaryKeyColumns()
-	if len(pkColumns) == 0 {
-		return "", model.RecordIdentity{}, fmt.Errorf("table has no primary key")
-	}
+func (m *Model) recordIdentityForPersistedRow(rowIndex int) (string, dto.RecordIdentity, error) {
 	if rowIndex < 0 || rowIndex >= len(m.records) {
-		return "", model.RecordIdentity{}, fmt.Errorf("record index out of range")
+		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
 	}
-	values := m.records[rowIndex].Values
-	keys := make([]model.ColumnValue, 0, len(pkColumns))
-	parts := make([]string, 0, len(pkColumns))
-	for _, pk := range pkColumns {
-		if pk.index < 0 || pk.index >= len(values) {
-			return "", model.RecordIdentity{}, fmt.Errorf("primary key index out of range")
-		}
-		rawValue := values[pk.index]
-		isNull := strings.EqualFold(rawValue, "NULL")
-		nullable := pk.column.Nullable && !pk.column.PrimaryKey
-		parsed, err := service.ParseValue(pk.column.Type, rawValue, isNull, nullable)
-		if err != nil {
-			return "", model.RecordIdentity{}, err
-		}
-		keys = append(keys, model.ColumnValue{Column: pk.column.Name, Value: parsed})
-		parts = append(parts, fmt.Sprintf("%s=%s", pk.column.Name, rawValue))
-	}
-	return strings.Join(parts, "|"), model.RecordIdentity{Keys: keys}, nil
+	return m.translatorUseCase().BuildRecordIdentity(m.schema, m.records[rowIndex])
+}
+
+func (m *Model) buildTableChanges() (dto.TableChanges, error) {
+	return m.translatorUseCase().BuildTableChanges(
+		m.schema,
+		m.toPendingInsertRowsDTO(),
+		m.toPendingRecordEditsDTO(),
+		m.toPendingRecordDeletesDTO(),
+	)
 }
 
 func (m *Model) primaryKeyColumns() []pkColumn {
@@ -2195,52 +2203,6 @@ func (m *Model) primaryKeyColumns() []pkColumn {
 		}
 	}
 	return pkColumns
-}
-
-func (m *Model) buildTableChanges() (model.TableChanges, error) {
-	changes := model.TableChanges{}
-
-	for _, row := range m.pendingInserts {
-		insert, err := m.buildInsertChange(row)
-		if err != nil {
-			return model.TableChanges{}, err
-		}
-		changes.Inserts = append(changes.Inserts, insert)
-	}
-
-	deleteKeys := make(map[string]struct{}, len(m.pendingDeletes))
-	for key, deleteChange := range m.pendingDeletes {
-		deleteKeys[key] = struct{}{}
-		changes.Deletes = append(changes.Deletes, model.RecordDelete{
-			Identity: deleteChange.identity,
-		})
-	}
-
-	for key, edits := range m.pendingUpdates {
-		if _, deleted := deleteKeys[key]; deleted {
-			continue
-		}
-		if len(edits.changes) == 0 {
-			continue
-		}
-		if edits.identity.RowID == nil && len(edits.identity.Keys) == 0 {
-			return model.TableChanges{}, fmt.Errorf("record identity missing")
-		}
-		updateChanges := make([]model.ColumnValue, 0, len(edits.changes))
-		for colIndex, change := range edits.changes {
-			if colIndex < 0 || colIndex >= len(m.schema.Columns) {
-				return model.TableChanges{}, fmt.Errorf("column index out of range")
-			}
-			column := m.schema.Columns[colIndex]
-			updateChanges = append(updateChanges, model.ColumnValue{Column: column.Name, Value: change.Value})
-		}
-		changes.Updates = append(changes.Updates, model.RecordUpdate{
-			Identity: edits.identity,
-			Changes:  updateChanges,
-		})
-	}
-
-	return changes, nil
 }
 
 func (m *Model) dirtyEditCount() int {
@@ -2406,46 +2368,17 @@ func (m *Model) visibleColumnIndicesForRow(rowIndex int) []int {
 	return columns
 }
 
-func (m *Model) buildInsertChange(row pendingInsertRow) (model.RecordInsert, error) {
-	insert := model.RecordInsert{}
-	for colIndex, column := range m.schema.Columns {
-		value, ok := row.values[colIndex]
-		if !ok {
-			continue
-		}
-		textValue := displayValue(value.Value)
-		if !column.Nullable && column.DefaultValue == nil && !column.AutoIncrement && strings.TrimSpace(textValue) == "" {
-			return model.RecordInsert{}, fmt.Errorf("value for column %q is required", column.Name)
-		}
-		columnValue := model.ColumnValue{
-			Column: column.Name,
-			Value:  value.Value,
-		}
-		if column.AutoIncrement {
-			if row.explicitAuto[colIndex] {
-				insert.ExplicitAutoValues = append(insert.ExplicitAutoValues, columnValue)
-			}
-			continue
-		}
-		insert.Values = append(insert.Values, columnValue)
-	}
-	if len(insert.Values) == 0 && len(insert.ExplicitAutoValues) == 0 {
-		return model.RecordInsert{}, model.ErrMissingInsertValues
-	}
-	return insert, nil
-}
-
-func initialInsertValue(column dto.SchemaColumn) model.Value {
+func initialInsertValue(column dto.SchemaColumn) dto.StagedValue {
 	if column.DefaultValue != nil {
-		return model.Value{Text: *column.DefaultValue, Raw: *column.DefaultValue}
+		return dto.StagedValue{Text: *column.DefaultValue, Raw: *column.DefaultValue}
 	}
 	if column.Nullable {
-		return model.Value{IsNull: true, Text: "NULL"}
+		return dto.StagedValue{IsNull: true, Text: "NULL"}
 	}
-	return model.Value{Text: "", Raw: ""}
+	return dto.StagedValue{Text: "", Raw: ""}
 }
 
-func displayValue(value model.Value) string {
+func displayValue(value dto.StagedValue) string {
 	if value.IsNull {
 		return "NULL"
 	}
@@ -2456,6 +2389,56 @@ func displayValue(value model.Value) string {
 		return fmt.Sprint(value.Raw)
 	}
 	return ""
+}
+
+func (m *Model) translatorUseCase() *usecase.StagedChangesTranslator {
+	if m.translator != nil {
+		return m.translator
+	}
+	return usecase.NewStagedChangesTranslator()
+}
+
+func (m *Model) toPendingInsertRowsDTO() []dto.PendingInsertRow {
+	rows := make([]dto.PendingInsertRow, 0, len(m.pendingInserts))
+	for _, row := range m.pendingInserts {
+		dtoRow := dto.PendingInsertRow{
+			Values:       make(map[int]dto.StagedEdit, len(row.values)),
+			ExplicitAuto: make(map[int]bool, len(row.explicitAuto)),
+		}
+		for index, value := range row.values {
+			dtoRow.Values[index] = dto.StagedEdit{Value: value.Value}
+		}
+		for index, explicit := range row.explicitAuto {
+			dtoRow.ExplicitAuto[index] = explicit
+		}
+		rows = append(rows, dtoRow)
+	}
+	return rows
+}
+
+func (m *Model) toPendingRecordEditsDTO() map[string]dto.PendingRecordEdits {
+	edits := make(map[string]dto.PendingRecordEdits, len(m.pendingUpdates))
+	for key, update := range m.pendingUpdates {
+		dtoChanges := make(map[int]dto.StagedEdit, len(update.changes))
+		for columnIndex, change := range update.changes {
+			dtoChanges[columnIndex] = dto.StagedEdit{Value: change.Value}
+		}
+		edits[key] = dto.PendingRecordEdits{
+			Identity: update.identity,
+			Changes:  dtoChanges,
+		}
+	}
+	return edits
+}
+
+func (m *Model) toPendingRecordDeletesDTO() map[string]dto.PendingRecordDelete {
+	deletes := make(map[string]dto.PendingRecordDelete, len(m.pendingDeletes))
+	for key, deleteChange := range m.pendingDeletes {
+		deletes[key] = dto.PendingRecordDelete{
+			Identity: deleteChange.identity,
+		}
+	}
+	return deletes
 }
 
 func stagedEditEqual(left, right stagedEdit) bool {
@@ -2534,7 +2517,7 @@ func deleteAtCursor(value string, cursor int) (string, int) {
 	return updated, cursor - 1
 }
 
-func loadTablesCmd(ctx context.Context, uc *usecase.ListTables) tea.Cmd {
+func loadTablesCmd(ctx context.Context, uc listTablesUseCase) tea.Cmd {
 	return func() tea.Msg {
 		tables, err := uc.Execute(ctx)
 		if err != nil {
@@ -2544,7 +2527,7 @@ func loadTablesCmd(ctx context.Context, uc *usecase.ListTables) tea.Cmd {
 	}
 }
 
-func loadSchemaCmd(ctx context.Context, uc *usecase.GetSchema, tableName string) tea.Cmd {
+func loadSchemaCmd(ctx context.Context, uc getSchemaUseCase, tableName string) tea.Cmd {
 	return func() tea.Msg {
 		schema, err := uc.Execute(ctx, tableName)
 		if err != nil {
@@ -2554,7 +2537,7 @@ func loadSchemaCmd(ctx context.Context, uc *usecase.GetSchema, tableName string)
 	}
 }
 
-func loadRecordsCmd(ctx context.Context, uc *usecase.ListRecords, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort, requestID int) tea.Cmd {
+func loadRecordsCmd(ctx context.Context, uc listRecordsUseCase, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort, requestID int) tea.Cmd {
 	return func() tea.Msg {
 		page, err := uc.Execute(ctx, tableName, offset, limit, filter, sort)
 		if err != nil {
@@ -2564,9 +2547,9 @@ func loadRecordsCmd(ctx context.Context, uc *usecase.ListRecords, tableName stri
 	}
 }
 
-func saveChangesCmd(ctx context.Context, uc *usecase.SaveTableChanges, tableName string, changes model.TableChanges, count int) tea.Cmd {
+func saveChangesCmd(ctx context.Context, uc saveChangesUseCase, tableName string, changes dto.TableChanges, count int) tea.Cmd {
 	return func() tea.Msg {
-		err := uc.Execute(ctx, tableName, changes)
+		err := uc.ExecuteDTO(ctx, tableName, changes)
 		return saveChangesMsg{count: count, err: err}
 	}
 }

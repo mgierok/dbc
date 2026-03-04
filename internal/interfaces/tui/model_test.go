@@ -9,8 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
-	"github.com/mgierok/dbc/internal/application/usecase"
-	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
 
 func TestHandleKey_EnterFromTablesSwitchesToRecordsAndContentFocus(t *testing.T) {
@@ -254,17 +252,18 @@ func TestHandleKey_ShiftFIgnoredOutsideRecordsContext(t *testing.T) {
 
 func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{
-		operators: []domainmodel.Operator{
+	operatorsSpy := &spyListOperatorsUseCase{
+		operators: []dto.Operator{
 			{Name: "Equals", SQL: "=", RequiresValue: true},
 		},
 	}
+	recordsSpy := &spyListRecordsUseCase{}
 	model := &Model{
 		ctx:           context.Background(),
 		viewMode:      ViewRecords,
 		focus:         FocusContent,
-		listOperators: usecase.NewListOperators(engine),
-		listRecords:   usecase.NewListRecords(engine),
+		listOperators: operatorsSpy,
+		listRecords:   recordsSpy,
 		tables:        []dto.Table{{Name: "users"}},
 		schema: dto.Schema{
 			Columns: []dto.SchemaColumn{
@@ -290,8 +289,8 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if model.filterPopup.step != filterSelectOperator {
 		t.Fatalf("expected operator step, got %v", model.filterPopup.step)
 	}
-	if engine.lastOperatorType != "TEXT" {
-		t.Fatalf("expected operator lookup for TEXT column, got %q", engine.lastOperatorType)
+	if operatorsSpy.lastColumnType != "TEXT" {
+		t.Fatalf("expected operator lookup for TEXT column, got %q", operatorsSpy.lastColumnType)
 	}
 
 	// Act
@@ -333,14 +332,14 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if model.recordPageIndex != 0 {
 		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.recordPageIndex)
 	}
-	if engine.lastFilter == nil {
+	if recordsSpy.lastFilter == nil {
 		t.Fatal("expected filter forwarded to list-records use case")
 	}
-	if engine.lastFilter.Column != "name" {
-		t.Fatalf("expected forwarded filter column name, got %q", engine.lastFilter.Column)
+	if recordsSpy.lastFilter.Column != "name" {
+		t.Fatalf("expected forwarded filter column name, got %q", recordsSpy.lastFilter.Column)
 	}
-	if engine.lastFilter.Value != "alice" {
-		t.Fatalf("expected forwarded filter value alice, got %q", engine.lastFilter.Value)
+	if recordsSpy.lastFilter.Value != "alice" {
+		t.Fatalf("expected forwarded filter value alice, got %q", recordsSpy.lastFilter.Value)
 	}
 }
 
@@ -515,7 +514,7 @@ func TestRecordDetailContentLines_UsesStagedEffectiveValue(t *testing.T) {
 		pendingUpdates: map[string]recordEdits{
 			"id=1": {
 				changes: map[int]stagedEdit{
-					1: {Value: domainmodel.Value{Text: "bob", Raw: "bob"}},
+					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
 				},
 			},
 		},
@@ -535,10 +534,10 @@ func TestRecordDetailContentLines_UsesStagedEffectiveValue(t *testing.T) {
 
 func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{
-		recordPage: domainmodel.RecordPage{
-			Records: []domainmodel.Record{
-				{Values: []domainmodel.Value{{Text: "1"}, {Text: "alice"}}},
+	recordsSpy := &spyListRecordsUseCase{
+		page: dto.RecordPage{
+			Rows: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
 			},
 		},
 	}
@@ -546,7 +545,7 @@ func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 		ctx:         context.Background(),
 		viewMode:    ViewRecords,
 		focus:       FocusContent,
-		listRecords: usecase.NewListRecords(engine),
+		listRecords: recordsSpy,
 		tables:      []dto.Table{{Name: "users"}},
 		schema: dto.Schema{
 			Columns: []dto.SchemaColumn{
@@ -580,11 +579,11 @@ func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 	if model.currentSort.Direction != dto.SortDirectionDesc {
 		t.Fatalf("expected sort direction DESC, got %s", model.currentSort.Direction)
 	}
-	if engine.lastSort == nil {
+	if recordsSpy.lastSort == nil {
 		t.Fatal("expected engine to receive sort")
 	}
-	if engine.lastSort.Column != "id" || engine.lastSort.Direction != domainmodel.SortDirectionDesc {
-		t.Fatalf("expected engine sort id DESC, got %+v", engine.lastSort)
+	if recordsSpy.lastSort.Column != "id" || recordsSpy.lastSort.Direction != dto.SortDirectionDesc {
+		t.Fatalf("expected engine sort id DESC, got %+v", recordsSpy.lastSort)
 	}
 }
 
@@ -1180,8 +1179,7 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 
 func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{}
-	saveChanges := usecase.NewSaveTableChanges(engine)
+	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
 		ctx:         context.Background(),
 		viewMode:    ViewRecords,
@@ -1195,8 +1193,8 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
-					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 				explicitAuto: map[int]bool{},
 			},
@@ -1234,8 +1232,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 
 func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{saveErr: errors.New("boom")}
-	saveChanges := usecase.NewSaveTableChanges(engine)
+	saveChanges := &spySaveChangesUseCase{err: errors.New("boom")}
 	model := &Model{
 		ctx:         context.Background(),
 		viewMode:    ViewRecords,
@@ -1249,8 +1246,8 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
-					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 				explicitAuto: map[int]bool{},
 			},
@@ -1389,26 +1386,26 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
-					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 				explicitAuto: map[int]bool{},
 			},
 		},
 		pendingUpdates: map[string]recordEdits{
 			"id=1": {
-				identity: domainmodel.RecordIdentity{
-					Keys: []domainmodel.ColumnValue{{Column: "id", Value: domainmodel.Value{Text: "1", Raw: int64(1)}}},
+				identity: dto.RecordIdentity{
+					Keys: []dto.ColumnValue{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
 				},
 				changes: map[int]stagedEdit{
-					1: {Value: domainmodel.Value{Text: "bob", Raw: "bob"}},
+					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
 				},
 			},
 		},
 		pendingDeletes: map[string]recordDelete{
 			"id=1": {
-				identity: domainmodel.RecordIdentity{
-					Keys: []domainmodel.ColumnValue{{Column: "id", Value: domainmodel.Value{Text: "1", Raw: int64(1)}}},
+				identity: dto.RecordIdentity{
+					Keys: []dto.ColumnValue{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
 				},
 			},
 		},
@@ -1440,8 +1437,8 @@ func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
 		pendingUpdates: map[string]recordEdits{
 			"id=2": {
 				changes: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "x", Raw: "x"}},
-					1: {Value: domainmodel.Value{Text: "y", Raw: "y"}},
+					0: {Value: dto.StagedValue{Text: "x", Raw: "x"}},
+					1: {Value: dto.StagedValue{Text: "y", Raw: "y"}},
 				},
 			},
 		},
@@ -1458,8 +1455,7 @@ func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
 
 func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{}
-	saveChanges := usecase.NewSaveTableChanges(engine)
+	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
@@ -1472,8 +1468,8 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
-					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 				explicitAuto: map[int]bool{},
 			},
@@ -1493,8 +1489,8 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 	if result.err != nil {
 		t.Fatalf("expected no error, got %v", result.err)
 	}
-	if len(engine.lastChanges.Inserts) != 1 {
-		t.Fatalf("expected one insert payload, got %d", len(engine.lastChanges.Inserts))
+	if len(saveChanges.lastChanges.Inserts) != 1 {
+		t.Fatalf("expected one insert payload, got %d", len(saveChanges.lastChanges.Inserts))
 	}
 }
 
@@ -1504,7 +1500,7 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
 		selectedTable:     0,
 		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: domainmodel.Value{Text: "x", Raw: "x"}}}}},
+		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
 		pendingDeletes:    map[string]recordDelete{"id=2": {}},
 		pendingTableIndex: -1,
 	}
@@ -1548,7 +1544,7 @@ func TestSetTableSelection_WithDirtyStateYesOptionClearsStagingAndSwitches(t *te
 		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
 		selectedTable:     0,
 		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: domainmodel.Value{Text: "x", Raw: "x"}}}}},
+		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
 		pendingDeletes:    map[string]recordDelete{"id=2": {}},
 		pendingTableIndex: -1,
 	}
@@ -1572,7 +1568,7 @@ func TestSetTableSelection_WithDirtyStateNoOptionPreservesStagingAndSelection(t 
 		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
 		selectedTable:     0,
 		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: domainmodel.Value{Text: "x", Raw: "x"}}}}},
+		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
 		pendingDeletes:    map[string]recordDelete{"id=2": {}},
 		pendingTableIndex: -1,
 	}
@@ -1600,7 +1596,7 @@ func TestSetTableSelection_WithDirtyStateNoKeyPreservesStagingAndSelection(t *te
 		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
 		selectedTable:     0,
 		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: domainmodel.Value{Text: "x", Raw: "x"}}}}},
+		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
 		pendingDeletes:    map[string]recordDelete{"id=2": {}},
 		pendingTableIndex: -1,
 	}
@@ -1725,7 +1721,7 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesPersistedCellEdit(t *testing.T) {
 			},
 		},
 	}
-	if err := model.stageEdit(0, 1, domainmodel.Value{Text: "bob", Raw: "bob"}); err != nil {
+	if err := model.stageEdit(0, 1, dto.StagedValue{Text: "bob", Raw: "bob"}); err != nil {
 		t.Fatalf("expected staged edit, got error %v", err)
 	}
 
@@ -1801,8 +1797,8 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 		pendingInserts: []pendingInsertRow{
 			{
 				values: map[int]stagedEdit{
-					0: {Value: domainmodel.Value{Text: "", Raw: ""}},
-					1: {Value: domainmodel.Value{Text: "new", Raw: "new"}},
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 				explicitAuto: map[int]bool{},
 			},
@@ -1832,10 +1828,10 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 
 func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{
-		recordPage: domainmodel.RecordPage{
-			Records: []domainmodel.Record{
-				{Values: []domainmodel.Value{{Text: "21"}, {Text: "alice"}}},
+	recordsSpy := &spyListRecordsUseCase{
+		page: dto.RecordPage{
+			Rows: []dto.RecordRow{
+				{Values: []string{"21", "alice"}},
 			},
 			TotalCount: 45,
 		},
@@ -1844,7 +1840,7 @@ func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 		ctx:              context.Background(),
 		viewMode:         ViewRecords,
 		focus:            FocusContent,
-		listRecords:      usecase.NewListRecords(engine),
+		listRecords:      recordsSpy,
 		tables:           []dto.Table{{Name: "users"}},
 		recordPageIndex:  0,
 		recordTotalPages: 3,
@@ -1863,11 +1859,11 @@ func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 	if model.recordPageIndex != 1 {
 		t.Fatalf("expected current page index 1, got %d", model.recordPageIndex)
 	}
-	if engine.lastRecordsOffset != 20 {
-		t.Fatalf("expected offset 20 for second page, got %d", engine.lastRecordsOffset)
+	if recordsSpy.lastRecordsOffset != 20 {
+		t.Fatalf("expected offset 20 for second page, got %d", recordsSpy.lastRecordsOffset)
 	}
-	if engine.lastRecordsLimit != 20 {
-		t.Fatalf("expected limit 20, got %d", engine.lastRecordsLimit)
+	if recordsSpy.lastRecordsLimit != 20 {
+		t.Fatalf("expected limit 20, got %d", recordsSpy.lastRecordsLimit)
 	}
 	if model.recordTotalPages != 3 {
 		t.Fatalf("expected 3 pages, got %d", model.recordTotalPages)
@@ -1876,10 +1872,10 @@ func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 
 func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
 	// Arrange
-	engine := &tuiSpyEngine{
-		recordPage: domainmodel.RecordPage{
-			Records: []domainmodel.Record{
-				{Values: []domainmodel.Value{{Text: "1"}, {Text: "alice"}}},
+	recordsSpy := &spyListRecordsUseCase{
+		page: dto.RecordPage{
+			Rows: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
 			},
 			TotalCount: 45,
 		},
@@ -1888,7 +1884,7 @@ func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
 		ctx:              context.Background(),
 		viewMode:         ViewRecords,
 		focus:            FocusContent,
-		listRecords:      usecase.NewListRecords(engine),
+		listRecords:      recordsSpy,
 		tables:           []dto.Table{{Name: "users"}},
 		recordPageIndex:  1,
 		recordTotalPages: 3,
@@ -1907,11 +1903,11 @@ func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
 	if model.recordPageIndex != 0 {
 		t.Fatalf("expected current page index 0, got %d", model.recordPageIndex)
 	}
-	if engine.lastRecordsOffset != 0 {
-		t.Fatalf("expected offset 0 for first page, got %d", engine.lastRecordsOffset)
+	if recordsSpy.lastRecordsOffset != 0 {
+		t.Fatalf("expected offset 0 for first page, got %d", recordsSpy.lastRecordsOffset)
 	}
-	if engine.lastRecordsLimit != 20 {
-		t.Fatalf("expected limit 20, got %d", engine.lastRecordsLimit)
+	if recordsSpy.lastRecordsLimit != 20 {
+		t.Fatalf("expected limit 20, got %d", recordsSpy.lastRecordsLimit)
 	}
 }
 
@@ -1957,28 +1953,16 @@ func TestHandleKey_CtrlFDoesNotGoBeyondLastPage(t *testing.T) {
 	}
 }
 
-type tuiSpyEngine struct {
-	lastChanges       domainmodel.TableChanges
-	saveErr           error
-	lastSort          *domainmodel.Sort
-	lastFilter        *domainmodel.Filter
+type spyListRecordsUseCase struct {
+	lastSort          *dto.Sort
+	lastFilter        *dto.Filter
 	lastRecordsOffset int
 	lastRecordsLimit  int
-	recordPage        domainmodel.RecordPage
-	operators         []domainmodel.Operator
-	listOperatorsErr  error
-	lastOperatorType  string
+	page              dto.RecordPage
+	err               error
 }
 
-func (s *tuiSpyEngine) ListTables(ctx context.Context) ([]domainmodel.Table, error) {
-	return nil, nil
-}
-
-func (s *tuiSpyEngine) GetSchema(ctx context.Context, tableName string) (domainmodel.Schema, error) {
-	return domainmodel.Schema{}, nil
-}
-
-func (s *tuiSpyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *domainmodel.Filter, sort *domainmodel.Sort) (domainmodel.RecordPage, error) {
+func (s *spyListRecordsUseCase) Execute(ctx context.Context, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort) (dto.RecordPage, error) {
 	s.lastSort = sort
 	if filter != nil {
 		copied := *filter
@@ -1988,18 +1972,32 @@ func (s *tuiSpyEngine) ListRecords(ctx context.Context, tableName string, offset
 	}
 	s.lastRecordsOffset = offset
 	s.lastRecordsLimit = limit
-	return s.recordPage, nil
-}
-
-func (s *tuiSpyEngine) ListOperators(ctx context.Context, columnType string) ([]domainmodel.Operator, error) {
-	s.lastOperatorType = columnType
-	if s.listOperatorsErr != nil {
-		return nil, s.listOperatorsErr
+	if s.err != nil {
+		return dto.RecordPage{}, s.err
 	}
-	return append([]domainmodel.Operator(nil), s.operators...), nil
+	return s.page, nil
 }
 
-func (s *tuiSpyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes domainmodel.TableChanges) error {
+type spyListOperatorsUseCase struct {
+	operators      []dto.Operator
+	err            error
+	lastColumnType string
+}
+
+func (s *spyListOperatorsUseCase) Execute(ctx context.Context, columnType string) ([]dto.Operator, error) {
+	s.lastColumnType = columnType
+	if s.err != nil {
+		return nil, s.err
+	}
+	return append([]dto.Operator(nil), s.operators...), nil
+}
+
+type spySaveChangesUseCase struct {
+	lastChanges dto.TableChanges
+	err         error
+}
+
+func (s *spySaveChangesUseCase) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error {
 	s.lastChanges = changes
-	return s.saveErr
+	return s.err
 }

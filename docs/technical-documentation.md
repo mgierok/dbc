@@ -201,8 +201,8 @@ Package responsibilities:
 ### 5.3 Write Flow
 
 1. TUI state accumulates insert/edit/delete staging operations.
-2. On save confirmation, TUI builds `model.TableChanges`.
-3. Use case validates payload (`SaveTableChanges`).
+2. On save confirmation, TUI delegates staged-state translation to `StagedChangesTranslator`, which produces application-layer `dto.TableChanges`.
+3. `SaveTableChanges.ExecuteDTO` validates translated payload and maps it to domain command objects before persistence.
 4. Engine applies all changes in one transaction:
    - inserts,
    - updates (skipping rows also marked for delete),
@@ -224,8 +224,8 @@ Read interaction pattern:
 Write interaction pattern:
 
 - TUI accumulates staged changes in session state.
-- Save path builds `model.TableChanges`.
-- `SaveTableChanges` validates payload and delegates persistence to the engine port.
+- Save path delegates to `StagedChangesTranslator` to parse values, resolve persisted-row identity, and translate staged edits into `dto.TableChanges`.
+- `SaveTableChanges.ExecuteDTO` converts validated DTO payload into domain `model.TableChanges` and delegates persistence to the engine port.
 - SQLite adapter executes inserts/updates/deletes in one transaction.
 
 ### 5.5 Testing Strategy and Coverage
@@ -265,6 +265,7 @@ Current implementation-level characteristics:
   - config path resolution,
   - selector/config-management use case wiring,
   - database engine creation,
+  - staged-change translator use case wiring for runtime edit/save paths,
   - TUI runtime startup.
 
 ### 6.2 Runtime Configuration Contract
