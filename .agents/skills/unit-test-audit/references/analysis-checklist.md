@@ -43,6 +43,7 @@ For each coverage gap:
 ## 6. Output Quality Gate
 
 - [ ] Report follows required section structure.
+- [ ] Report is saved to `<project-root>/unit-test-audit.md`.
 - [ ] Evidence is separated from assumptions and open questions.
 - [ ] Limitations are declared (for example partial scope, missing project rules).
 - [ ] Recommendations are actionable and specific, not generic.

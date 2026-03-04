@@ -81,7 +81,8 @@ The skill is language agnostic and project agnostic. It MUST treat project-defin
 - Prioritization SHOULD consider defect risk, maintainability gain, and effort.
 
 7. Produce final report
-- Return a Markdown report using `references/report-template.md`.
+- Generate a Markdown report using `references/report-template.md`.
+- Save the generated report to `unit-test-audit.md` in the project root directory.
 - Follow validation points from `references/analysis-checklist.md`.
 
 ## Decision Rules
@@ -103,10 +104,12 @@ The final output MUST be a Markdown report with these sections:
 - `Evidence and Limitations`
 
 The report MUST include concrete file references and test identifiers wherever possible.
+The skill MUST write the report file to `<project-root>/unit-test-audit.md`.
 
 ## Safety and Boundaries
 
-- This skill MUST remain analysis-only and MUST NOT edit repository files.
+- This skill MUST remain analysis-only for source code and tests.
+- This skill MUST NOT edit repository files except writing `<project-root>/unit-test-audit.md`.
 - This skill MUST NOT infer product behavior from tests alone when code and docs conflict; current code behavior is factual unless project governance states otherwise.
 - This skill MAY provide optional follow-up commands for verification, but MUST label them as optional.
 
