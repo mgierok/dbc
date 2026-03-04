@@ -211,14 +211,6 @@ Quick examples:
 
 ## 5. Documentation Policy
 
-Documentation creation and modification MUST be skill-governed:
-
-For tasks that modify at least one non-documentation file, the agent MUST invoke all of these skills:
-
-- `authoring-technical-documentation`
-- `authoring-product-documentation`
-- `authoring-readme-file`
-
 For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
 
 - For `docs/product-documentation.md`, the agent MUST invoke `authoring-product-documentation`.
