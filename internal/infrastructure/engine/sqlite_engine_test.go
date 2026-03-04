@@ -320,6 +320,131 @@ func TestSQLiteEngine_ListRecords_FilterSortAndPagination(t *testing.T) {
 	}
 }
 
+func TestSQLiteEngine_ListRecords_OffsetBeyondFilteredRange_ReturnsEmptyPageWithTotalCount(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+		INSERT INTO users (id, name)
+		VALUES (1, 'alice'),
+		       (2, 'alice'),
+		       (3, 'bob');
+	`)
+	engine := NewSQLiteEngine(db)
+	filter := &model.Filter{
+		Column: "name",
+		Operator: model.Operator{
+			Kind:          model.OperatorKindEq,
+			RequiresValue: true,
+		},
+		Value: "alice",
+	}
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "users", 20, 10, filter, nil)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(page.Records) != 0 {
+		t.Fatalf("expected no records, got %d", len(page.Records))
+	}
+	if page.HasMore {
+		t.Fatal("expected hasMore to be false for empty out-of-range page")
+	}
+	if page.TotalCount != 2 {
+		t.Fatalf("expected total count 2 for filtered result, got %d", page.TotalCount)
+	}
+}
+
+func BenchmarkSQLiteEngine_ListRecords_PaginatedFilteredSorted(b *testing.B) {
+	const rowCount = 10000
+	db := setupSQLiteBenchmarkDB(b, rowCount)
+	engine := NewSQLiteEngine(db)
+	filter := &model.Filter{
+		Column: "group_name",
+		Operator: model.Operator{
+			Kind:          model.OperatorKindEq,
+			RequiresValue: true,
+		},
+		Value: "group-07",
+	}
+	sort := &model.Sort{
+		Column:    "score",
+		Direction: model.SortDirectionDesc,
+	}
+	const (
+		offset = 40
+		limit  = 20
+	)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		page, err := engine.ListRecords(context.Background(), "users", offset, limit, filter, sort)
+		if err != nil {
+			b.Fatalf("expected no error, got %v", err)
+		}
+		if page.TotalCount <= 0 {
+			b.Fatalf("expected positive total count, got %d", page.TotalCount)
+		}
+	}
+}
+
+func setupSQLiteBenchmarkDB(b *testing.B, rowCount int) *sql.DB {
+	b.Helper()
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", b.Name())
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		b.Fatalf("failed to open sqlite db: %v", err)
+	}
+	b.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			b.Fatalf("failed to close db: %v", err)
+		}
+	})
+	schema := `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			group_name TEXT NOT NULL,
+			score INTEGER NOT NULL
+		);
+	`
+	if _, err := db.Exec(schema); err != nil {
+		b.Fatalf("failed to setup schema: %v", err)
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		b.Fatalf("failed to begin transaction: %v", err)
+	}
+	stmt, err := tx.Prepare("INSERT INTO users (id, group_name, score) VALUES (?, ?, ?)")
+	if err != nil {
+		b.Fatalf("failed to prepare insert statement: %v", err)
+	}
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			b.Fatalf("failed to close insert statement: %v", err)
+		}
+	}()
+	for i := 1; i <= rowCount; i++ {
+		group := fmt.Sprintf("group-%02d", i%50)
+		score := rowCount - i
+		if _, err := stmt.Exec(i, group, score); err != nil {
+			b.Fatalf("failed to insert benchmark row: %v", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		b.Fatalf("failed to commit benchmark data: %v", err)
+	}
+	if _, err := db.Exec("CREATE INDEX idx_users_group_name_score ON users(group_name, score DESC)"); err != nil {
+		b.Fatalf("failed to create benchmark index: %v", err)
+	}
+	return db
+}
+
 func setupSQLiteSchemaDB(t *testing.T, schema string) *sql.DB {
 	t.Helper()
 	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())
