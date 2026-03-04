@@ -137,3 +137,105 @@ func TestParseValue_BlobHex(t *testing.T) {
 		t.Fatalf("expected blob value %v, got %v", []byte{0xff, 0x00}, typed)
 	}
 }
+
+func TestParseValue_BooleanFalse(t *testing.T) {
+	// Act
+	value, err := ParseValue("BOOLEAN", "false", false, true)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	typed, ok := value.Raw.(int64)
+	if !ok {
+		t.Fatalf("expected int64 raw value, got %T", value.Raw)
+	}
+	if typed != 0 {
+		t.Fatalf("expected normalized false value 0, got %d", typed)
+	}
+	if value.Text != "false" {
+		t.Fatalf("expected normalized text false, got %q", value.Text)
+	}
+}
+
+func TestParseValue_RejectsInvalidBoolean(t *testing.T) {
+	// Act
+	_, err := ParseValue("BOOLEAN", "nope", false, true)
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrInvalidValue) {
+		t.Fatalf("expected ErrInvalidValue, got %v", err)
+	}
+}
+
+func TestParseValue_RejectsInvalidInteger(t *testing.T) {
+	// Act
+	_, err := ParseValue("INTEGER", "abc", false, true)
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrInvalidValue) {
+		t.Fatalf("expected ErrInvalidValue, got %v", err)
+	}
+}
+
+func TestParseValue_RejectsInvalidReal(t *testing.T) {
+	// Act
+	_, err := ParseValue("REAL", "abc", false, true)
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrInvalidValue) {
+		t.Fatalf("expected ErrInvalidValue, got %v", err)
+	}
+}
+
+func TestParseValue_RejectsInvalidNumeric(t *testing.T) {
+	// Act
+	_, err := ParseValue("NUMERIC", "12x", false, true)
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrInvalidValue) {
+		t.Fatalf("expected ErrInvalidValue, got %v", err)
+	}
+}
+
+func TestParseValue_RejectsInvalidHexBlob(t *testing.T) {
+	// Act
+	_, err := ParseValue("BLOB", "0xGG", false, true)
+
+	// Assert
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrInvalidValue) {
+		t.Fatalf("expected ErrInvalidValue, got %v", err)
+	}
+}
+
+func TestParseValue_BlobFallsBackToRawBytesForNonHexInput(t *testing.T) {
+	// Act
+	value, err := ParseValue("BLOB", "FF00", false, true)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	typed, ok := value.Raw.([]byte)
+	if !ok {
+		t.Fatalf("expected []byte raw value, got %T", value.Raw)
+	}
+	if !bytes.Equal(typed, []byte("FF00")) {
+		t.Fatalf("expected blob fallback bytes %v, got %v", []byte("FF00"), typed)
+	}
+}

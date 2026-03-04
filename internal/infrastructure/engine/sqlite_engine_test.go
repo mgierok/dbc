@@ -12,6 +12,71 @@ import (
 	"github.com/mgierok/dbc/internal/domain/model"
 )
 
+func TestSQLiteEngine_ListTables_ReturnsUserTablesWithoutSQLiteInternals(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT
+		);
+		CREATE TABLE orders (
+			id INTEGER PRIMARY KEY
+		);
+		INSERT INTO users (id) VALUES (NULL);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	tables, err := engine.ListTables(context.Background())
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(tables) != 2 {
+		t.Fatalf("expected 2 user tables, got %d", len(tables))
+	}
+	names := make(map[string]struct{}, len(tables))
+	for _, table := range tables {
+		names[table.Name] = struct{}{}
+	}
+	if _, ok := names["users"]; !ok {
+		t.Fatalf("expected users table in result, got %+v", tables)
+	}
+	if _, ok := names["orders"]; !ok {
+		t.Fatalf("expected orders table in result, got %+v", tables)
+	}
+	if _, ok := names["sqlite_sequence"]; ok {
+		t.Fatalf("expected sqlite internal tables to be excluded, got %+v", tables)
+	}
+}
+
+func TestSQLiteEngine_ListOperators_ReturnsSQLiteOperatorContract(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	operators, err := engine.ListOperators(context.Background(), "INTEGER")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	expected := operatorsForType("INTEGER")
+	if len(operators) != len(expected) {
+		t.Fatalf("expected %d operators, got %d", len(expected), len(operators))
+	}
+	for i := range expected {
+		if operators[i] != expected[i] {
+			t.Fatalf("expected operator %+v at index %d, got %+v", expected[i], i, operators[i])
+		}
+	}
+}
+
 func TestSQLiteEngine_GetSchema_MapsDefaultValuesAndAutoIncrement(t *testing.T) {
 	// Arrange
 	db := setupSQLiteSchemaDB(t, `

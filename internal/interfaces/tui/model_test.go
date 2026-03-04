@@ -252,6 +252,148 @@ func TestHandleKey_ShiftFIgnoredOutsideRecordsContext(t *testing.T) {
 	}
 }
 
+func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T) {
+	// Arrange
+	engine := &tuiSpyEngine{
+		operators: []domainmodel.Operator{
+			{Name: "Equals", SQL: "=", RequiresValue: true},
+		},
+	}
+	model := &Model{
+		ctx:           context.Background(),
+		viewMode:      ViewRecords,
+		focus:         FocusContent,
+		listOperators: usecase.NewListOperators(engine),
+		listRecords:   usecase.NewListRecords(engine),
+		tables:        []dto.Table{{Name: "users"}},
+		schema: dto.Schema{
+			Columns: []dto.SchemaColumn{
+				{Name: "id", Type: "INTEGER"},
+				{Name: "name", Type: "TEXT"},
+			},
+		},
+		filterPopup: filterPopup{
+			active:      true,
+			step:        filterSelectColumn,
+			columnIndex: 1,
+		},
+		recordPageIndex: 3,
+	}
+
+	// Act
+	_, cmd := model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no command when moving from column to operator step")
+	}
+	if model.filterPopup.step != filterSelectOperator {
+		t.Fatalf("expected operator step, got %v", model.filterPopup.step)
+	}
+	if engine.lastOperatorType != "TEXT" {
+		t.Fatalf("expected operator lookup for TEXT column, got %q", engine.lastOperatorType)
+	}
+
+	// Act
+	_, cmd = model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no command when moving to value-input step")
+	}
+	if model.filterPopup.step != filterInputValue {
+		t.Fatalf("expected value-input step, got %v", model.filterPopup.step)
+	}
+
+	// Act
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("alice")})
+	_, cmd = model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected records reload command after filter apply")
+	}
+	msg := cmd()
+	model.Update(msg)
+
+	// Assert
+	if model.filterPopup.active {
+		t.Fatal("expected filter popup to close after apply")
+	}
+	if model.currentFilter == nil {
+		t.Fatal("expected current filter to be set")
+	}
+	if model.currentFilter.Column != "name" {
+		t.Fatalf("expected filter column name, got %q", model.currentFilter.Column)
+	}
+	if model.currentFilter.Value != "alice" {
+		t.Fatalf("expected filter value alice, got %q", model.currentFilter.Value)
+	}
+	if model.currentFilter.Operator.SQL != "=" {
+		t.Fatalf("expected SQL operator =, got %q", model.currentFilter.Operator.SQL)
+	}
+	if model.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.recordPageIndex)
+	}
+	if engine.lastFilter == nil {
+		t.Fatal("expected filter forwarded to list-records use case")
+	}
+	if engine.lastFilter.Column != "name" {
+		t.Fatalf("expected forwarded filter column name, got %q", engine.lastFilter.Column)
+	}
+	if engine.lastFilter.Value != "alice" {
+		t.Fatalf("expected forwarded filter value alice, got %q", engine.lastFilter.Value)
+	}
+}
+
+func TestHandleFilterPopupKey_InputEditingSupportsCursorMovementAndBackspace(t *testing.T) {
+	// Arrange
+	model := &Model{
+		filterPopup: filterPopup{
+			active: true,
+			step:   filterInputValue,
+			input:  "ac",
+			cursor: 1,
+		},
+	}
+
+	// Act
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}})
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyLeft})
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyBackspace})
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyLeft})
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRight})
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRight})
+	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRight})
+
+	// Assert
+	if model.filterPopup.input != "bc" {
+		t.Fatalf("expected edited input bc, got %q", model.filterPopup.input)
+	}
+	if model.filterPopup.cursor != 2 {
+		t.Fatalf("expected cursor clamped at input end, got %d", model.filterPopup.cursor)
+	}
+}
+
+func TestHandleFilterPopupKey_EscClosesPopup(t *testing.T) {
+	// Arrange
+	model := &Model{
+		filterPopup: filterPopup{
+			active: true,
+			step:   filterSelectOperator,
+		},
+	}
+
+	// Act
+	_, cmd := model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no command when closing filter popup")
+	}
+	if model.filterPopup.active {
+		t.Fatal("expected filter popup to close on Esc")
+	}
+}
+
 func TestHandleKey_EnterOpensRecordDetailInRecordsView(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -1819,9 +1961,13 @@ type tuiSpyEngine struct {
 	lastChanges       domainmodel.TableChanges
 	saveErr           error
 	lastSort          *domainmodel.Sort
+	lastFilter        *domainmodel.Filter
 	lastRecordsOffset int
 	lastRecordsLimit  int
 	recordPage        domainmodel.RecordPage
+	operators         []domainmodel.Operator
+	listOperatorsErr  error
+	lastOperatorType  string
 }
 
 func (s *tuiSpyEngine) ListTables(ctx context.Context) ([]domainmodel.Table, error) {
@@ -1834,13 +1980,23 @@ func (s *tuiSpyEngine) GetSchema(ctx context.Context, tableName string) (domainm
 
 func (s *tuiSpyEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *domainmodel.Filter, sort *domainmodel.Sort) (domainmodel.RecordPage, error) {
 	s.lastSort = sort
+	if filter != nil {
+		copied := *filter
+		s.lastFilter = &copied
+	} else {
+		s.lastFilter = nil
+	}
 	s.lastRecordsOffset = offset
 	s.lastRecordsLimit = limit
 	return s.recordPage, nil
 }
 
 func (s *tuiSpyEngine) ListOperators(ctx context.Context, columnType string) ([]domainmodel.Operator, error) {
-	return nil, nil
+	s.lastOperatorType = columnType
+	if s.listOperatorsErr != nil {
+		return nil, s.listOperatorsErr
+	}
+	return append([]domainmodel.Operator(nil), s.operators...), nil
 }
 
 func (s *tuiSpyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes domainmodel.TableChanges) error {
