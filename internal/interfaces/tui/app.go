@@ -11,6 +11,14 @@ import (
 
 var ErrOpenConfigSelector = errors.New("open config selector requested")
 
+type runtimeProgram interface {
+	Run() (tea.Model, error)
+}
+
+var newRuntimeProgram = func(model tea.Model, options ...tea.ProgramOption) runtimeProgram {
+	return tea.NewProgram(model, options...)
+}
+
 func Run(
 	ctx context.Context,
 	listTables *usecase.ListTables,
@@ -21,7 +29,7 @@ func Run(
 	translator *usecase.StagedChangesTranslator,
 ) error {
 	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator)
-	program := tea.NewProgram(model, tea.WithAltScreen())
+	program := newRuntimeProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {
 		return err
