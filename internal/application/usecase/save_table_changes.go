@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/port"
 	"github.com/mgierok/dbc/internal/domain/model"
 )
@@ -25,6 +26,65 @@ func (uc *SaveTableChanges) Execute(ctx context.Context, tableName string, chang
 		return err
 	}
 	return uc.engine.ApplyRecordChanges(ctx, tableName, changes)
+}
+
+func (uc *SaveTableChanges) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error {
+	return uc.Execute(ctx, tableName, toDomainTableChanges(changes))
+}
+
+func toDomainTableChanges(changes dto.TableChanges) model.TableChanges {
+	mapped := model.TableChanges{
+		Inserts: make([]model.RecordInsert, 0, len(changes.Inserts)),
+		Updates: make([]model.RecordUpdate, 0, len(changes.Updates)),
+		Deletes: make([]model.RecordDelete, 0, len(changes.Deletes)),
+	}
+
+	for _, insert := range changes.Inserts {
+		mappedInsert := model.RecordInsert{
+			Values:             toDomainColumnValues(insert.Values),
+			ExplicitAutoValues: toDomainColumnValues(insert.ExplicitAutoValues),
+		}
+		mapped.Inserts = append(mapped.Inserts, mappedInsert)
+	}
+
+	for _, update := range changes.Updates {
+		mappedUpdate := model.RecordUpdate{
+			Identity: toDomainRecordIdentity(update.Identity),
+			Changes:  toDomainColumnValues(update.Changes),
+		}
+		mapped.Updates = append(mapped.Updates, mappedUpdate)
+	}
+
+	for _, deleteChange := range changes.Deletes {
+		mappedDelete := model.RecordDelete{
+			Identity: toDomainRecordIdentity(deleteChange.Identity),
+		}
+		mapped.Deletes = append(mapped.Deletes, mappedDelete)
+	}
+
+	return mapped
+}
+
+func toDomainRecordIdentity(identity dto.RecordIdentity) model.RecordIdentity {
+	return model.RecordIdentity{
+		RowID: identity.RowID,
+		Keys:  toDomainColumnValues(identity.Keys),
+	}
+}
+
+func toDomainColumnValues(values []dto.ColumnValue) []model.ColumnValue {
+	mapped := make([]model.ColumnValue, 0, len(values))
+	for _, value := range values {
+		mapped = append(mapped, model.ColumnValue{
+			Column: value.Column,
+			Value: model.Value{
+				IsNull: value.Value.IsNull,
+				Text:   value.Value.Text,
+				Raw:    value.Value.Raw,
+			},
+		})
+	}
+	return mapped
 }
 
 func validateTableChanges(changes model.TableChanges) error {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/domain/model"
 )
@@ -126,5 +127,29 @@ func TestSaveTableChanges_ValidatesDeleteIdentity(t *testing.T) {
 	// Assert
 	if !errors.Is(err, model.ErrMissingDeleteIdentity) {
 		t.Fatalf("expected error %v, got %v", model.ErrMissingDeleteIdentity, err)
+	}
+}
+
+func TestSaveTableChanges_ExecuteDTO_DelegatesChanges(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+	changes := dto.TableChanges{
+		Inserts: []dto.RecordInsert{
+			{
+				Values: []dto.ColumnValue{{Column: "name", Value: dto.StagedValue{Text: "new", Raw: "new"}}},
+			},
+		},
+	}
+
+	// Act
+	err := uc.ExecuteDTO(context.Background(), "users", changes)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(engine.changes.Inserts) != 1 {
+		t.Fatalf("expected 1 insert, got %d", len(engine.changes.Inserts))
 	}
 }
