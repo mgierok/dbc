@@ -1,13 +1,13 @@
 ---
 name: architecture-audit
-description: Audit architectural conformance for a full repository or a user-specified directory and produce actionable findings for architecture-safe optimization, quality improvement, and controlled rule-exception candidates. Use only when the user explicitly asks for an architecture audit, boundary-compliance review, dependency-direction review, layering audit, module-level architecture health check, or pattern-based architecture optimization analysis. This skill MUST NOT auto-trigger in standard implementation workflows.
+description: Audit architectural conformance for a full repository or a user-specified directory and produce actionable findings for architecture-safe optimization, quality improvement, and controlled rule-exception candidates. Use only when the user explicitly requests this skill by name; this skill MUST NOT auto-trigger.
 ---
 
 # Architecture Audit
 
 ## Purpose
 
-This skill performs a read-only, periodic architecture audit to:
+This skill performs an analysis-only, periodic architecture audit to:
 - verify conformance with project-defined architectural rules across repository scope or selected module scope,
 - identify confirmed and suspected architectural violations with concrete evidence,
 - propose prioritized, implementable change recommendations that optimize code quality and maintainability while preserving the globally defined architecture,
@@ -32,9 +32,9 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 
 ## Explicit Invocation Policy
 
-- This skill MUST run only on explicit user request.
-- This skill MUST NOT be auto-invoked from standard coding or review workflows.
-- If invocation intent is not explicit, the skill MUST ask the user to confirm whether the audit should run.
+- This skill MUST run only when the user explicitly requests this skill by name.
+- This skill MUST NOT auto-trigger.
+- If the user request does not explicitly name this skill, the skill MUST ask the user whether they want to invoke `architecture-audit` by name.
 - The skill MUST use `update_plan` from workflow start through completion, updating statuses after each workflow step and finishing with all steps marked as `completed`.
 
 ## Inputs
@@ -48,7 +48,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 
 ## Architecture Review Areas (Relevance-Gated)
 
-- The skill MUST evaluate the following 14 areas when they are relevant to the analyzed project or selected scope.
+- The skill MUST evaluate the following 15 areas when they are relevant to the analyzed project or selected scope.
 - For each area, the skill MUST classify status as `APPLICABLE` or `NOT_APPLICABLE`.
 - Every `NOT_APPLICABLE` classification MUST include a concrete one-line reason.
 - Every finding and recommendation SHOULD reference one or more areas by name to keep traceability explicit.
@@ -129,6 +129,12 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The audit SHOULD verify whether architecture-regression detection exists for dependency rules.
 - The audit SHOULD assess API versioning and compatibility discipline (for example SemVer and deprecation policy) when externally consumed contracts exist.
 
+15. Complexity and simplification pressure
+- The audit MUST identify accidental-complexity hotspots (for example over-abstraction, unnecessary indirection, dead layers, and speculative extension points).
+- The audit SHOULD flag duplicated orchestration paths and overlapping module responsibilities.
+- The audit MUST propose simplification actions that preserve architecture boundaries and dependency direction.
+- The audit SHOULD include measurable simplification outcomes (for example fewer dependency edges, smaller change blast radius, and reduced cognitive load in core flows).
+
 ## Audit Workflow
 
 1. Confirm scope and inventory architecture units
@@ -140,7 +146,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - If architecture rules are missing or ambiguous, explicitly state that and continue with heuristic fallback.
 
 3. Classify review-area applicability
-- Evaluate all 14 architecture review areas and set each to `APPLICABLE` or `NOT_APPLICABLE`.
+- Evaluate each architecture review area defined in `Architecture Review Areas (Relevance-Gated)` and set it to `APPLICABLE` or `NOT_APPLICABLE`.
 - If an area is `NOT_APPLICABLE`, record one concrete reason tied to project/scope characteristics.
 - Use the classified applicability set to control audit depth for downstream steps.
 
@@ -198,8 +204,8 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - Prioritization SHOULD consider correctness risk, maintainability gain, migration effort, and blast radius.
 
 10. Produce final report
-- Generate a Markdown report using `references/report-template.md`.
-- Save the generated report to `architecture-audit.md` in the project root directory.
+- Generate a Markdown report using `references/report-template.md` as a baseline structure.
+- The report MUST be extended with any required sections from `Output Requirements` that are missing in the template.
 - Follow validation points from `references/analysis-checklist.md`.
 
 ## Decision Rules
@@ -229,13 +235,13 @@ The final output MUST be a Markdown report with these sections:
 - `Evidence and Limitations`
 
 The report MUST include concrete file references and architecture unit identifiers wherever possible.
-`Architecture Review Area Coverage` MUST list all 14 areas with `APPLICABLE` or `NOT_APPLICABLE` status and one-line rationale for each `NOT_APPLICABLE` area.
+`Architecture Review Area Coverage` MUST reflect the applicability classification produced in `Audit Workflow` step `3`, including one-line rationale for each `NOT_APPLICABLE` area.
 The skill MUST write the report file to `<project-root>/architecture-audit.md`.
 
 ## Safety and Boundaries
 
 - This skill MUST remain analysis-only for source code and configuration.
-- This skill MUST NOT edit repository files except writing `<project-root>/architecture-audit.md`.
+- This skill MUST NOT edit repository files except writing the required report artifact defined in `Output Requirements`.
 - This skill MUST NOT infer authoritative architecture policy from code patterns alone when explicit project rules exist.
 - This skill MAY provide optional follow-up commands for validation, but it MUST label them as optional.
 - This skill MUST NOT treat rule-exception candidates as default recommendations.
