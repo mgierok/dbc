@@ -81,11 +81,24 @@ Planning MUST create and use a stage-local `update_plan`, update statuses after 
    - The agent MUST verify that the full plan achieves the intended goal.
    - The agent MUST verify that the full plan can meet the defined success criteria.
    - If gaps or risks are found, the agent MUST update the plan before implementation starts.
+4. Plan Approval
+   - The generated plan in this stage MUST receive formal user approval.
+   - The agent MUST NOT start `Implementation` before this formal approval is explicitly confirmed.
 
 ### Implementation
 
 Implementation MUST iterate over all approved change-sets in the defined order.
 Implementation MUST create and use a stage-local `update_plan`, update statuses after each workflow step in this phase, and keep exactly one step `in_progress` at a time.
+The Implementation stage-local `update_plan` MUST be organized by change-set.
+For each approved change-set, the plan MUST include one dedicated, contiguous block of implementation steps labeled with that change-set identifier.
+The plan MUST NOT use one aggregate implementation step for multiple change-sets.
+Within each change-set block, steps MUST be atomic and represent one concrete action per step.
+Each change-set block MUST include the following step sequence:
+1. `Code and Test Execution`
+2. `Change-Set Verification`
+3. `Documentation and Test Cases`
+4. `Change-Set Commit`
+5. `Change-Set Closure Report`
 
 1. Code and Test Execution
    - For project-code implementation, the agent MUST apply all active repository engineering guardrails.
@@ -96,6 +109,7 @@ Implementation MUST create and use a stage-local `update_plan`, update statuses 
 3. Documentation and Test Cases
    - If a change-set modifies at least one non-documentation file in the repository, the agent MUST update required documentation according to project-defined rules.
    - If the change-set modifies product documentation, the agent MUST perform test-case impact analysis using project-defined policy.
+   - This step MUST exist for every change-set block, even when the outcome is `no update required`.
 4. Change-Set Commit
    - The agent MUST commit each completed change-set as exactly one commit.
    - The agent MUST NOT mark the change-set as completed before this commit exists.
@@ -104,7 +118,7 @@ Implementation MUST create and use a stage-local `update_plan`, update statuses 
      - change-set identifier,
      - commit hash,
      - mandatory verification command results for that change-set,
-     - podsumowanie dokonanych zmian w dokumentacji.
+     - summary of completed documentation changes.
 
 ### Completion
 
