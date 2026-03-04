@@ -17,147 +17,116 @@ Before planning or coding project changes (for example feature work, bug fixes, 
 
 This requirement MUST NOT apply when the task scope is limited to governance-only changes (for example updating `AGENTS.md` or `.agents/skills/**/SKILL.md`) and no project behavior is being changed.
 
-## 3. Agent Workflow Rules
+## 3. Agent Workflow
 
 This section MUST be applied only to project tasks that can result in project-code changes.
 This section MUST NOT be applied to documentation-only or governance-only tasks.
-For in-scope tasks, the agent MUST follow this workflow literally:
+The workflow MUST use `update_plan` from start through completion, update statuses after each workflow step, and finish with all steps marked as `completed`.
 
-- The agent MUST execute mandatory steps in declared numeric order.
-- The agent MUST NOT skip, merge, reorder, or silently omit any mandatory step artifact.
-- If any mandatory step artifact is missing, the task MUST be treated as incomplete.
+1. Intent Alignment
+2. Planning
+3. Implementation
+4. Completion
 
-The high-level workflow order MUST be interpreted as:
+### Change-Set Definition
 
-1. `3.1 Intent Alignment`
-2. `3.2 Planning` (with change-set definition and decomposition into `CS-01..CS-N`)
-3. `3.3 Implementation` iteratively per change-set: complete one full change-set cycle, then continue with the next
-4. `3.4 Completion` (full-plan verification + mapping `1 change-set = 1 commit`)
-5. Final Completion Report with change-set execution log
+- A change-set MUST be the smallest independently reviewable implementation increment that delivers one coherent value objective and working software.
+- Each change-set MUST have a unique identifier within the full plan.
+- A change-set MUST be executable, verifiable, and reversible as one unit.
+- A change-set MUST NOT mix unrelated value objectives.
+- A change-set MAY contain a mix of code, test, and documentation changes only when those changes are directly connected.
+- A change-set MUST target the smallest change that increases business value.
+- A change-set MUST be complete for code consistency, tests, and documentation.
 
-### 3.1 Intent Alignment
+### Intent Alignment
 
-For each in-scope task, before planning, the agent MUST execute intent alignment in the following order:
+Intent Alignment MUST use `update_plan`, update statuses after each workflow step in this phase, and keep exactly one step `in_progress` at a time.
 
-1. Step 1: Intent Understanding
+1. Intent Understanding
    - The agent MUST NOT treat the user instruction as literal and complete by default.
    - The agent MUST ask focused clarification questions to establish full intent and required context.
    - The agent MUST challenge instructions that appear unusual, inconsistent, risky, or controversial, and MUST explain concrete reasons for doubt.
-   - The agent MUST NOT continue to Step 2 when any ambiguity or contradiction remains.
-2. Step 2: Intent Approval
-   - The step MUST end with an explicit interpretation artifact.
-   - The agent MUST obtain explicit user approval of that artifact before continuing.
+   - The agent MUST NOT continue to planning when any ambiguity or contradiction remains.
+2. Intent Approval
+   - The phase MUST end with an explicit interpretation artifact.
+   - The agent MUST obtain explicit user approval of that artifact before starting planning.
 
-#### 3.1.1 Change-Set Definition
+### Planning
 
-- A `change-set` MUST be the smallest independently reviewable implementation increment that delivers one coherent value objective.
-- A change-set MUST be executable, verifiable, and reversible as one unit.
-- A change-set MUST NOT mix unrelated value objectives.
-- A change-set MUST include all of the following components:
-  - `Identifier`: stable ID (for example `CS-01`) used consistently in planning, implementation, verification evidence, and reporting.
-  - `Value Objective`: one concise statement of product-side or technical value delivered by this change-set.
-  - `Technical Scope`: concrete implementation scope (files/components/contracts affected).
-  - `Test Scope`: tests to add/update and verification commands to run for this change-set.
-  - `Documentation Scope`: required documentation-skill decisions (`UPDATE_REQUIRED` / `NO_UPDATE_REQUIRED`) and touched files when updates are required.
-  - `Verification Evidence`: results of mandatory verification commands for this change-set.
-  - `Commit Artifact`: exactly one commit hash representing the completed change-set.
-- If a component is not applicable for a specific change-set, the plan and closure report MUST state `N/A` with explicit rationale.
+Planning MUST use `update_plan`, update statuses after each workflow step in this phase, and keep exactly one step `in_progress` at a time.
 
-### 3.2 Planning
-
-For each in-scope task, after completing Section 3.1, the agent MUST execute planning in the following order and MUST define every planned change-set according to Section 3.1.1:
-
-1. Step 1: Measurable Success Criteria
-   - Before coding, the agent MUST define clear, measurable success criteria from a project-development perspective.
-   - Criteria MUST be verifiable through engineering evidence (for example behavior, tests, quality gates, architecture constraints, delivery artifacts).
+1. Measurable Success Criteria
+   - The agent MUST define clear, measurable success criteria from a project-development perspective.
+   - Criteria MUST be verifiable through engineering evidence (for example behavior, tests, quality gates, architecture constraints, or delivery artifacts).
    - The agent MUST avoid vague goals like "make it better" or "improve code quality".
-   - Business outcome metrics (for example revenue, adoption, installs) MUST NOT be used as success criteria in this step.
+   - Business outcome metrics (for example revenue, adoption, or installs) MUST NOT be used as success criteria in this phase.
    - For a bug fix, success criteria MUST include a regression test that fails before the fix and passes after the fix.
    - For new behavior, success criteria MUST include happy path, edge case, and error path verification.
    - For a behavior-preserving refactor, success criteria MUST include proof that behavior is unchanged.
    - For optimization, success criteria MUST include a correctness baseline first, then optimization evidence with preserved behavior.
-2. Step 2: Implementation Planning
+2. Implementation Planning
    - The agent MUST create a detailed implementation plan that links product intent to technical execution.
-   - Each planned change-set MUST explicitly include all required components from Section 3.1.1.
-   - For each planned change-set, the agent MUST describe:
-     - product-side value delivered by the change,
-     - corresponding technical implementation vision.
+   - For each planned change-set, the plan MUST describe product-side value delivered by the change and corresponding technical implementation vision.
    - The plan MUST present `Technical Scope` as a dedicated section inside each planned change-set.
    - The agent MUST NOT provide one aggregated technical-scope section shared across multiple change-sets.
+   - The plan SHOULD be iterative and SHOULD split complex work into multiple change-sets.
    - The agent MUST default to multiple change-sets for non-trivial scope.
-   - A single change-set MAY be used only when scope is trivial (for example one tightly-scoped behavior in one layer) or when the user explicitly requests one change-set.
+   - A single change-set MAY be used only when scope is trivial (for example one tightly scoped behavior in one layer) or when the user explicitly requests one change-set.
    - If a single change-set is chosen, the plan MUST include explicit justification why further decomposition would not improve delivery safety or reviewability.
-   - The plan SHOULD be iterative and split complex work into multiple change-sets.
-   - Each change-set MUST deliver working software.
-   - Each change-set MUST target the smallest change that increases business value.
-   - Each change-set MUST be complete for code consistency, tests, and documentation.
-   - Commit-artifact requirements for each change-set are defined by Section 3.1.1 and enforced in Section 3.3 Step 5.
-3. Step 3: Plan Verification
+3. Plan Verification
    - The agent MUST verify that the full plan achieves the intended goal.
    - The agent MUST verify that the full plan can meet the defined success criteria.
    - If gaps or risks are found, the agent MUST update the plan before implementation starts.
 
-### 3.3 Implementation
+### Implementation
 
-For each approved change-set from Section 3.2, the agent MUST execute implementation in the following order and MUST preserve conformance with the change-set definition from Section 3.1.1:
+Implementation MUST iterate over all approved change-sets in the defined order.
+Implementation MUST use `update_plan`, update statuses after each workflow step in this phase, and keep exactly one step `in_progress` at a time.
 
-- Execution loop contract:
-  - For a plan with `N` approved change-sets, the agent MUST execute the full `3.3 Step 1 -> Step 6` sequence for `CS-01`, then `CS-02`, and so on until `CS-N`.
-  - The agent MUST NOT batch implementation work from multiple change-sets into one combined code/test/documentation cycle.
-  - The agent MUST NOT run `3.3 Step 5` as one aggregated commit for multiple change-sets.
-  - If implementation drift crosses approved change-set boundaries, the agent MUST stop and request explicit user approval for a plan update before continuing.
-  - If any required artifact from `3.3 Step 1 -> Step 6` is missing, the current change-set MUST remain open.
-
-1. Step 1: Change-Set Alignment
-   - The agent MUST implement only an approved change-set from Section 3.2 Step 2.
-   - The agent MUST keep implementation aligned with the approved intent artifact (Section 3.1 Step 2) and measurable success criteria (Section 3.2 Step 1).
-   - If any requirement, product behavior, or technical decision is unclear, the agent MUST ask the user before implementing assumptions.
-2. Step 2: Code and Test Execution
+1. Code and Test Execution
    - For project-code implementation, the agent MUST apply all coding rules from Section 4 (`Engineering Guardrails`).
-   - For each change-set, the agent MUST apply TDD approach according to Section `4.3.2 TDD Rules`.
+   - For each change-set, the agent MUST apply TDD according to Section `4.3.2 TDD Rules`.
    - During implementation, the agent MAY run verification tools iteratively for affected scope to speed up feedback.
-3. Step 3: Change-Set Verification
-   - Before finalizing implementation, the agent MUST run all mandatory verification commands defined in Section 4.
+2. Change-Set Verification
+   - Before finalizing a change-set, the agent MUST run all mandatory verification commands defined in Section 4.
    - If mandatory tests cannot run, the agent MUST explicitly report why.
-4. Step 4: Documentation Skill Invocation
-   - If a change-set modifies at least one non-documentation file in the repository, the agent MUST invoke the required documentation skill workflow defined in Section 5 before finalizing that change-set.
+3. Documentation and Test Cases
+   - If a change-set modifies at least one non-documentation file in the repository, the agent MUST invoke one after another:
+     - `authoring-technical-documentation` skill,
+     - `authoring-product-documentation` skill,
+     - `authoring-readme-file` skill.
    - If the change-set modifies `docs/product-documentation.md`, the agent MUST perform test-case impact analysis using `docs/test-case-authoring-specification.md`.
-5. Step 5: Change-Set Commit
-   - The agent MUST commit the full completed change-set as exactly one commit.
+4. Change-Set Commit
+   - The agent MUST commit each completed change-set as exactly one commit.
    - The agent MUST NOT mark the change-set as completed before this commit exists.
-6. Step 6: Change-Set Closure Report
-   - Immediately after Step 5, the agent MUST provide a short closure report for the completed change-set that includes:
+5. Change-Set Closure Report
+   - The agent MUST provide a short closure report for each completed change-set that includes:
      - change-set identifier,
      - commit hash,
      - mandatory verification command results for that change-set,
-     - documentation-skill decisions (`UPDATE_REQUIRED`/`NO_UPDATE_REQUIRED`) with touched files.
-   - The agent MUST NOT start implementation of the next change-set before publishing this closure report.
-   - If any required closure-report field is missing, the change-set MUST remain open.
+     - documentation-skill decisions (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) with touched files.
 
-### 3.4 Completion
+### Completion
 
-For each in-scope task, after completing all planned change-sets from Section 3.2 Step 2, the agent MUST execute completion in the following order:
+Completion MUST use `update_plan`, update statuses after each workflow step in this phase, and keep exactly one step `in_progress` at a time.
 
-1. Step 1: Full-Plan Completion Verification
+1. Full-Plan Completion Verification
    - The agent MUST verify that all approved change-sets from the plan were implemented, or that any approved deviation is explicitly documented.
-   - The agent MUST verify that each completed change-set includes all required components defined in Section 3.1.1.
    - The agent MUST verify `one change-set = one commit` across the full plan and MUST explicitly list this mapping check result.
-   - The agent MUST verify that measurable success criteria from Section 3.2 Step 1 are satisfied for the full planned scope.
-   - The agent MUST verify that required tests were added or updated according to Section 4 TDD rules, or that an exception is explicitly documented.
-   - The agent MUST verify that all mandatory verification commands from Section 4 were completed for the full planned scope, or that a limitation is explicitly documented.
+   - The agent MUST verify that measurable success criteria are satisfied for the full planned scope.
+   - The agent MUST verify that required tests were added or updated according to Engineering Guardrails, or that an exception is explicitly documented.
+   - The agent MUST verify that all mandatory verification commands were completed for the full planned scope, or that a limitation is explicitly documented.
    - The agent MUST verify that mandatory tests pass, or that a limitation is explicitly documented.
    - The agent MUST verify that naming and terminology remain consistent across the full planned scope.
    - If any required verification item fails or is missing, the agent MUST stop completion and finish missing workflow steps first.
-2. Step 2: Final Completion Report
+2. Final Completion Report
    - After completing the full planned scope, the agent MUST provide one final completion report.
-   - The report MUST include `CHANGES MADE`: a file-level summary of what changed and why.
-   - The report MUST include `RISKS / VERIFY`: potential regressions and additional checks to run.
-   - The report MUST include `CHANGE-SET EXECUTION LOG`: ordered `CS-XX` entries with per-change-set closure status.
-   - The report MUST include `CHANGE-SET COMMITS`: each completed change-set mapped to exactly one commit hash.
-   - The report MUST include results of all mandatory verification commands defined in Section 4.
+   - The report MUST include `CHANGES MADE` as a file-level summary of what changed and why.
+   - The report MUST include `RISKS / VERIFY` as potential regressions and additional checks to run, including manual tests.
+   - The report MUST include `CHANGE-SET COMMITS` with each completed change-set mapped to exactly one commit hash.
    - The report MUST include all accepted local exceptions (for example linter or security suppressions) with concrete rationale.
    - The report SHOULD stay short and concrete so a junior engineer can quickly review and validate the result.
-   - The agent MUST NOT publish a final completion response until all mandatory sections in this step are present.
+   - The agent MUST NOT publish a final completion response until all mandatory sections in this phase are present.
 
 ## 4. Engineering Guardrails
 
@@ -246,8 +215,8 @@ Documentation creation and modification MUST be skill-governed:
 
 For tasks that modify at least one non-documentation file, the agent MUST invoke all of these skills:
 
-- `authoring-product-documentation`
 - `authoring-technical-documentation`
+- `authoring-product-documentation`
 - `authoring-readme-file`
 
 For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
@@ -261,7 +230,6 @@ If multiple documentation perspectives are affected, the agent MUST invoke all a
 ### 5.1 Product Documentation Policy
 
 - Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
-- For every change in `docs/product-documentation.md`, the agent MUST verify whether existing test cases require updates and whether new test cases must be added to keep aligned with documented behavior.
 - The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
 
 ### 5.2 Technical Documentation Policy
