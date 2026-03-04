@@ -1,13 +1,13 @@
 ---
 name: unit-test-audit
-description: Audit unit tests for a full repository or a user-specified directory and produce actionable findings for stale or redundant tests plus missing coverage. Use only when the user explicitly asks for a unit-test audit, stale-test review, test-pruning review, or unit-test coverage-gap analysis. This skill MUST NOT auto-trigger in standard implementation workflows.
+description: Audit unit tests for a full repository or a user-specified directory and produce actionable findings for stale or redundant tests plus missing coverage. Use only when the user explicitly requests this skill by name; this skill MUST NOT auto-trigger.
 ---
 
 # Unit Test Audit
 
 ## Purpose
 
-This skill performs a read-only, periodic audit of unit tests to:
+This skill performs an analysis-only, periodic audit of unit tests to:
 - identify redundant, unnecessary, or outdated unit tests with concrete removal recommendations,
 - identify missing unit-test coverage with concrete improvement guidance.
 
@@ -27,6 +27,7 @@ The skill is language agnostic and project agnostic. It MUST treat project-defin
 ## Explicit Invocation Policy
 
 - This skill MUST run only on explicit user request.
+- The user MUST explicitly request this skill by name.
 - This skill MUST NOT be auto-invoked from standard coding or review workflows.
 - If invocation intent is not explicit, the skill MUST ask the user to confirm whether the audit should run.
 - The skill MUST use `update_plan` from workflow start through completion, updating statuses after each workflow step and finishing with all steps marked as `completed`.
@@ -88,7 +89,6 @@ The skill is language agnostic and project agnostic. It MUST treat project-defin
 
 7. Produce final report
 - Generate a Markdown report using `references/report-template.md`.
-- Save the generated report to `unit-test-audit.md` in the project root directory.
 - Follow validation points from `references/analysis-checklist.md`.
 
 ## Decision Rules
@@ -179,7 +179,8 @@ The skill MUST write the report file to `<project-root>/unit-test-audit.md`.
 ## Safety and Boundaries
 
 - This skill MUST remain analysis-only for source code and tests.
-- This skill MUST NOT edit repository files except writing `<project-root>/unit-test-audit.md`.
+- Exception: the skill MAY write `<project-root>/unit-test-audit.md` as the final report artifact.
+- The skill MUST NOT edit any other repository files.
 - This skill MUST NOT infer product behavior from tests alone when code and docs conflict; current code behavior is factual unless project governance states otherwise.
 - This skill MAY provide optional follow-up commands for verification, but MUST label them as optional.
 

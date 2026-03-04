@@ -43,6 +43,8 @@ For each coverage gap:
 ## 6. Output Quality Gate
 
 - [ ] Report follows required section structure.
+- [ ] `Applicability Matrix` is present and covers all mandatory audit areas.
+- [ ] Each mandatory audit area is labeled `Applicable` or `Not applicable` with brief evidence.
 - [ ] Report is saved to `<project-root>/unit-test-audit.md`.
 - [ ] Evidence is separated from assumptions and open questions.
 - [ ] Limitations are declared (for example partial scope, missing project rules).
