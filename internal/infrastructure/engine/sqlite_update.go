@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -27,16 +28,13 @@ func (e *SQLiteEngine) ApplyRecordChanges(ctx context.Context, tableName string,
 	}
 
 	if err := applyRecordInserts(ctx, tx, tableName, changes.Inserts); err != nil {
-		_ = tx.Rollback()
-		return err
+		return withRollbackError(err, tx.Rollback)
 	}
 	if err := applyRecordUpdates(ctx, tx, tableName, changes.Updates, changes.Deletes); err != nil {
-		_ = tx.Rollback()
-		return err
+		return withRollbackError(err, tx.Rollback)
 	}
 	if err := applyRecordDeletes(ctx, tx, tableName, changes.Deletes); err != nil {
-		_ = tx.Rollback()
-		return err
+		return withRollbackError(err, tx.Rollback)
 	}
 
 	return tx.Commit()
@@ -189,4 +187,14 @@ func bindValue(value model.Value) any {
 		return value.Raw
 	}
 	return value.Text
+}
+
+func withRollbackError(cause error, rollback func() error) error {
+	if cause == nil {
+		return nil
+	}
+	if rollbackErr := rollback(); rollbackErr != nil {
+		return errors.Join(cause, rollbackErr)
+	}
+	return cause
 }
