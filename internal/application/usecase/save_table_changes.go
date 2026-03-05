@@ -67,8 +67,23 @@ func toDomainTableChanges(changes dto.TableChanges) model.TableChanges {
 
 func toDomainRecordIdentity(identity dto.RecordIdentity) model.RecordIdentity {
 	return model.RecordIdentity{
-		Keys: toDomainColumnValues(identity.Keys),
+		Keys: toDomainRecordIdentityKeys(identity.Keys),
 	}
+}
+
+func toDomainRecordIdentityKeys(keys []dto.RecordIdentityKey) []model.RecordIdentityKey {
+	mapped := make([]model.RecordIdentityKey, 0, len(keys))
+	for _, key := range keys {
+		mapped = append(mapped, model.RecordIdentityKey{
+			Column: key.Column,
+			Value: model.Value{
+				IsNull: key.Value.IsNull,
+				Text:   key.Value.Text,
+				Raw:    key.Value.Raw,
+			},
+		})
+	}
+	return mapped
 }
 
 func toDomainColumnValues(values []dto.ColumnValue) []model.ColumnValue {

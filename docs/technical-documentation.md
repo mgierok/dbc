@@ -283,7 +283,7 @@ Current implementation-level characteristics:
 
 - Engine contract is defined in `internal/application/port/engine.go`.
 - `Engine.ListRecords` accepts optional filter and optional sort payload.
-- Save/update/delete record identity contract uses non-empty key columns only (`RecordIdentity.Keys`); application/domain contracts do not expose SQLite physical `rowid`.
+- Save/update/delete record identity contract uses non-empty key columns only (`RecordIdentity.Keys`) represented by dedicated typed value objects (`dto.RecordIdentityKey` and `model.RecordIdentityKey`); application/domain contracts do not expose SQLite physical `rowid`.
 - Record page contract (`model.RecordPage` -> `dto.RecordPage`) includes:
   - current-page rows,
   - `HasMore` look-ahead flag,

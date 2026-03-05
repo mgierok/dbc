@@ -41,7 +41,7 @@ func TestSQLiteEngine_ApplyRecordChanges_AppliesInsertUpdateDeleteInOneTransacti
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
 				},
 				Changes: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "bob", Raw: "bob"}}},
 			},
@@ -49,7 +49,7 @@ func TestSQLiteEngine_ApplyRecordChanges_AppliesInsertUpdateDeleteInOneTransacti
 		Deletes: []model.RecordDelete{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "2", Raw: int64(2)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "2", Raw: int64(2)}}},
 				},
 			},
 		},
@@ -113,7 +113,7 @@ func TestSQLiteEngine_ApplyRecordChanges_RollsBackOnError(t *testing.T) {
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
 				},
 				Changes: []model.ColumnValue{{Column: "missing_column", Value: model.Value{Text: "oops", Raw: "oops"}}},
 			},
@@ -160,7 +160,7 @@ func TestSQLiteEngine_ApplyRecordChanges_DeletesByCompositePrimaryKey(t *testing
 		Deletes: []model.RecordDelete{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{
+					Keys: []model.RecordIdentityKey{
 						{Column: "user_id", Value: model.Value{Text: "1", Raw: int64(1)}},
 						{Column: "group_id", Value: model.Value{Text: "2", Raw: int64(2)}},
 					},
@@ -256,7 +256,7 @@ func TestSQLiteEngine_ApplyRecordChanges_SkipsUpdatesForRowsMarkedDelete(t *test
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
 				},
 				Changes: []model.ColumnValue{{Column: "missing_column", Value: model.Value{Text: "x", Raw: "x"}}},
 			},
@@ -264,7 +264,7 @@ func TestSQLiteEngine_ApplyRecordChanges_SkipsUpdatesForRowsMarkedDelete(t *test
 		Deletes: []model.RecordDelete{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
 				},
 			},
 		},

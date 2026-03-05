@@ -11,8 +11,13 @@ type ColumnValue struct {
 	Value  StagedValue
 }
 
+type RecordIdentityKey struct {
+	Column string
+	Value  StagedValue
+}
+
 type RecordIdentity struct {
-	Keys []ColumnValue
+	Keys []RecordIdentityKey
 }
 
 type RecordUpdate struct {

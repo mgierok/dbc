@@ -33,7 +33,7 @@ func (uc *StagedChangesTranslator) BuildRecordIdentity(schema dto.Schema, row dt
 		return "", dto.RecordIdentity{}, fmt.Errorf("table has no primary key")
 	}
 	values := row.Values
-	keys := make([]dto.ColumnValue, 0, len(pkColumns))
+	keys := make([]dto.RecordIdentityKey, 0, len(pkColumns))
 	parts := make([]string, 0, len(pkColumns))
 	for _, pk := range pkColumns {
 		if pk.index < 0 || pk.index >= len(values) {
@@ -46,7 +46,7 @@ func (uc *StagedChangesTranslator) BuildRecordIdentity(schema dto.Schema, row dt
 		if err != nil {
 			return "", dto.RecordIdentity{}, err
 		}
-		keys = append(keys, dto.ColumnValue{
+		keys = append(keys, dto.RecordIdentityKey{
 			Column: pk.column.Name,
 			Value: dto.StagedValue{
 				IsNull: parsed.IsNull,

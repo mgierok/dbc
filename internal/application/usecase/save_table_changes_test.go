@@ -71,7 +71,7 @@ func TestSaveTableChanges_ReturnsError(t *testing.T) {
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
 				},
 				Changes: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "bob", Raw: "bob"}}},
 			},
@@ -207,7 +207,7 @@ func TestSaveTableChanges_ValidatesUpdateChanges(t *testing.T) {
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
-					Keys: []model.ColumnValue{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
 				},
 			},
 		},

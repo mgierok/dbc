@@ -94,7 +94,7 @@ func TestStagedChangesTranslator_BuildTableChanges_IgnoresUpdatesForDeletedRows(
 	pendingUpdates := map[string]dto.PendingRecordEdits{
 		"id=1": {
 			Identity: dto.RecordIdentity{
-				Keys: []dto.ColumnValue{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+				Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
 			},
 			Changes: map[int]dto.StagedEdit{
 				1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
@@ -104,7 +104,7 @@ func TestStagedChangesTranslator_BuildTableChanges_IgnoresUpdatesForDeletedRows(
 	pendingDeletes := map[string]dto.PendingRecordDelete{
 		"id=1": {
 			Identity: dto.RecordIdentity{
-				Keys: []dto.ColumnValue{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+				Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
 			},
 		},
 	}
@@ -241,7 +241,7 @@ func TestStagedChangesTranslator_BuildTableChanges_ReturnsErrorWhenUpdateColumnI
 		map[string]dto.PendingRecordEdits{
 			"id=1": {
 				Identity: dto.RecordIdentity{
-					Keys: []dto.ColumnValue{
+					Keys: []dto.RecordIdentityKey{
 						{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}},
 					},
 				},

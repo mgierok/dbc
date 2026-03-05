@@ -1395,7 +1395,7 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 		pendingUpdates: map[string]recordEdits{
 			"id=1": {
 				identity: dto.RecordIdentity{
-					Keys: []dto.ColumnValue{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+					Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
 				},
 				changes: map[int]stagedEdit{
 					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
@@ -1405,7 +1405,7 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 		pendingDeletes: map[string]recordDelete{
 			"id=1": {
 				identity: dto.RecordIdentity{
-					Keys: []dto.ColumnValue{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+					Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
 				},
 			},
 		},
