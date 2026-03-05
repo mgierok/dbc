@@ -79,7 +79,7 @@ Package responsibilities:
 - `cmd/dbc`: composition root and runtime wiring.
 - `internal/domain/model`: domain entities/value structures and domain errors.
 - `internal/domain/service`: domain-level helper logic (for example value parsing and table sorting).
-- `internal/application/usecase`: use case orchestration.
+- `internal/application/usecase`: use case orchestration, including runtime staging policy (`StagingPolicy`) and dirty-navigation decision policy (`DirtyNavigationPolicy`) used by the TUI adapter.
 - `internal/application/port`: interfaces that infrastructure implements.
 - `internal/application/dto`: data structures exchanged with interface adapters.
 - `internal/interfaces/tui`: terminal adapter (input, state, rendering), including shared popup rendering primitives for runtime overlays, centralized input/command registry definitions for runtime and selector contexts, and a centralized UTF iconography registry for UI symbols.
@@ -147,7 +147,8 @@ Package responsibilities:
    - runtime view rendering uses independent panel frames (`renderPanelBox`) for left and right sections without shared frame joins.
 7. Dirty table-switch routing behavior:
    - when table selection changes while staged edits exist, TUI opens a modal decision popup,
-   - popup summary includes current dirty-change count (`dirtyEditCount()`),
+   - popup summary includes current dirty-change count computed through application `StagingPolicy`,
+   - popup title/message/options are produced by application `DirtyNavigationPolicy` and mapped to adapter actions,
    - discard action clears staged state and switches to pending table selection,
    - cancel action keeps current table selection and preserves staged state.
 8. Command entry (`:`) is handled inside the TUI model.
@@ -155,7 +156,7 @@ Package responsibilities:
    - command aliases are defined once (`:config`/`:c`, `:help`/`:h`, `:q`/`:quit`) and matched case-insensitively after trimming optional `:` prefix.
 9. `:config` / `:c` routing behavior:
    - if no staged changes: set selector-return signal and exit runtime loop,
-   - if staged changes exist: open modal dirty-state decision popup (`Config`) with `save`, `discard`, `cancel`,
+   - if staged changes exist: open modal dirty-state decision popup (`Config`) using options produced by application `DirtyNavigationPolicy` (`save`, `discard`, `cancel`),
    - `save` executes save flow first and exits to selector only after successful save,
    - `discard` clears staged state and exits to selector immediately,
    - `cancel` keeps runtime session active with staged state unchanged.
@@ -201,6 +202,7 @@ Package responsibilities:
 ### 5.3 Write Flow
 
 1. TUI state accumulates insert/edit/delete staging operations.
+   Insert default values and dirty-change counting are delegated to application `StagingPolicy`.
 2. On save confirmation, TUI delegates staged-state translation to `StagedChangesTranslator`, which produces application-layer `dto.TableChanges`.
 3. `SaveTableChanges.ExecuteDTO` validates translated payload and maps it to domain command objects before persistence.
 4. Engine applies all changes in one transaction:
@@ -224,6 +226,8 @@ Read interaction pattern:
 Write interaction pattern:
 
 - TUI accumulates staged changes in session state.
+- TUI delegates runtime staging defaults and dirty-count policy to application `StagingPolicy`.
+- TUI delegates dirty-navigation prompt composition (`Switch Table`, dirty `:config`) to application `DirtyNavigationPolicy`.
 - Save path delegates to `StagedChangesTranslator` to parse values, resolve persisted-row identity, and translate staged edits into `dto.TableChanges`.
 - `SaveTableChanges.ExecuteDTO` converts validated DTO payload into domain `model.TableChanges` and delegates persistence to the engine port.
 - SQLite adapter executes inserts/updates/deletes in one transaction.

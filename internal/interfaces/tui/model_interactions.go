@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -628,17 +629,12 @@ func (m *Model) setTableSelection(index int) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if m.hasDirtyEdits() {
+		prompt := m.dirtyNavigationPolicyUseCase().BuildTableSwitchPrompt(m.dirtyEditCount())
 		m.pendingTableIndex = index
 		m.openModalConfirmPopupWithOptions(
-			"Switch Table",
-			fmt.Sprintf(
-				"Switching tables will cause loss of unsaved data (%d changes). Are you sure you want to discard unsaved data?",
-				m.dirtyEditCount(),
-			),
-			[]confirmOption{
-				{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
-				{label: "(n) No, continue editing", action: confirmCancelTableSwitch},
-			},
+			prompt.Title,
+			prompt.Message,
+			m.confirmOptionsFromDirtyPrompt(prompt, false),
 			0,
 		)
 		return m, nil
@@ -793,14 +789,11 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case runtimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
+			prompt := m.dirtyNavigationPolicyUseCase().BuildConfigPrompt()
 			m.openModalConfirmPopupWithOptions(
-				"Config",
-				"Unsaved changes detected. Choose save, discard, or cancel.",
-				[]confirmOption{
-					{label: "Save and open config", action: confirmConfigSaveAndOpen},
-					{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
-					{label: "Cancel", action: confirmConfigCancel},
-				},
+				prompt.Title,
+				prompt.Message,
+				m.confirmOptionsFromDirtyPrompt(prompt, true),
 				0,
 			)
 			return m, nil
@@ -1144,4 +1137,46 @@ func (m *Model) applySort(column string, direction dto.SortDirection) (tea.Model
 	}
 	m.closeSortPopup()
 	return m, m.loadRecordsCmd(true)
+}
+
+func (m *Model) dirtyNavigationPolicyUseCase() *usecase.DirtyNavigationPolicy {
+	if m.dirtyNavPolicy != nil {
+		return m.dirtyNavPolicy
+	}
+	return usecase.NewDirtyNavigationPolicy()
+}
+
+func (m *Model) confirmOptionsFromDirtyPrompt(prompt usecase.DirtyDecisionPrompt, configFlow bool) []confirmOption {
+	options := make([]confirmOption, 0, len(prompt.Options))
+	for _, option := range prompt.Options {
+		options = append(options, confirmOption{
+			label:  option.Label,
+			action: mapDirtyDecisionToConfirmAction(option.ID, configFlow),
+		})
+	}
+	return options
+}
+
+func mapDirtyDecisionToConfirmAction(decisionID string, configFlow bool) confirmAction {
+	if !configFlow {
+		switch decisionID {
+		case usecase.DirtyDecisionDiscard:
+			return confirmDiscardTable
+		case usecase.DirtyDecisionCancel:
+			return confirmCancelTableSwitch
+		default:
+			return confirmCancelTableSwitch
+		}
+	}
+
+	switch decisionID {
+	case usecase.DirtyDecisionSave:
+		return confirmConfigSaveAndOpen
+	case usecase.DirtyDecisionDiscard:
+		return confirmConfigDiscardAndOpen
+	case usecase.DirtyDecisionCancel:
+		return confirmConfigCancel
+	default:
+		return confirmConfigCancel
+	}
 }

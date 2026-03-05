@@ -205,14 +205,15 @@ type pkColumn struct {
 }
 
 type Model struct {
-	ctx           context.Context
-	listTables    listTablesUseCase
-	getSchema     getSchemaUseCase
-	listRecords   listRecordsUseCase
-	listOperators listOperatorsUseCase
-	saveChanges   saveChangesUseCase
-	translator    *usecase.StagedChangesTranslator
-	stagingPolicy *usecase.StagingPolicy
+	ctx            context.Context
+	listTables     listTablesUseCase
+	getSchema      getSchemaUseCase
+	listRecords    listRecordsUseCase
+	listOperators  listOperatorsUseCase
+	saveChanges    saveChangesUseCase
+	translator     *usecase.StagedChangesTranslator
+	stagingPolicy  *usecase.StagingPolicy
+	dirtyNavPolicy *usecase.DirtyNavigationPolicy
 
 	width  int
 	height int
