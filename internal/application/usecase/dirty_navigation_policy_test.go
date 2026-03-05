@@ -1,0 +1,75 @@
+package usecase_test
+
+import (
+	"testing"
+
+	"github.com/mgierok/dbc/internal/application/usecase"
+)
+
+func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
+	// Arrange
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	// Act
+	prompt := policy.BuildTableSwitchPrompt(3)
+
+	// Assert
+	if prompt.Title != "Switch Table" {
+		t.Fatalf("expected title Switch Table, got %q", prompt.Title)
+	}
+	expectedMessage := "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?"
+	if prompt.Message != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	}
+	if len(prompt.Options) != 2 {
+		t.Fatalf("expected 2 options, got %d", len(prompt.Options))
+	}
+	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "(y) Yes, discard changes and switch table" {
+		t.Fatalf("unexpected first option: %#v", prompt.Options[0])
+	}
+	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "(n) No, continue editing" {
+		t.Fatalf("unexpected second option: %#v", prompt.Options[1])
+	}
+}
+
+func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_ClampsNegativeCountToZero(t *testing.T) {
+	// Arrange
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	// Act
+	prompt := policy.BuildTableSwitchPrompt(-5)
+
+	// Assert
+	expectedMessage := "Switching tables will cause loss of unsaved data (0 changes). Are you sure you want to discard unsaved data?"
+	if prompt.Message != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	}
+}
+
+func TestDirtyNavigationPolicy_BuildConfigPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
+	// Arrange
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	// Act
+	prompt := policy.BuildConfigPrompt()
+
+	// Assert
+	if prompt.Title != "Config" {
+		t.Fatalf("expected title Config, got %q", prompt.Title)
+	}
+	if prompt.Message != "Unsaved changes detected. Choose save, discard, or cancel." {
+		t.Fatalf("unexpected message: %q", prompt.Message)
+	}
+	if len(prompt.Options) != 3 {
+		t.Fatalf("expected 3 options, got %d", len(prompt.Options))
+	}
+	if prompt.Options[0].ID != usecase.DirtyDecisionSave || prompt.Options[0].Label != "Save and open config" {
+		t.Fatalf("unexpected save option: %#v", prompt.Options[0])
+	}
+	if prompt.Options[1].ID != usecase.DirtyDecisionDiscard || prompt.Options[1].Label != "Discard and open config" {
+		t.Fatalf("unexpected discard option: %#v", prompt.Options[1])
+	}
+	if prompt.Options[2].ID != usecase.DirtyDecisionCancel || prompt.Options[2].Label != "Cancel" {
+		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
+	}
+}
