@@ -139,7 +139,7 @@ Package responsibilities:
 3. Records are loaded per explicit page request (`offset`, `limit`) with optional filter and optional single-column sort.
 4. Runtime uses fixed records page size (`20`) and tracks page index + total page count in TUI state.
 5. `Ctrl+f` and `Ctrl+b` in records-content context trigger next/previous page reload instead of incremental tail loading.
-6. Runtime panel transitions and key-driven interactions are handled in `internal/interfaces/tui/model_interactions.go` with shared model state in `internal/interfaces/tui/model.go`:
+6. Runtime panel transitions and key-driven interactions are handled across focused runtime modules (`internal/interfaces/tui/model_runtime_*.go`) with shared model state in `internal/interfaces/tui/model.go`:
    - runtime key dispatch branches match physical keys via centralized binding definitions from `internal/interfaces/tui/input_registry.go` (`keyBindingID` + `keyMatches`),
    - `?` opens a runtime context-help popup that captures the currently active panel/state,
    - `Enter` from left-panel table focus calls `switchToRecords` (records view + right-panel focus).
@@ -366,7 +366,7 @@ Why:
 Where:
 
 - TUI staged state fields: `internal/interfaces/tui/model.go`
-- TUI staged-state operations (insert/edit/delete, undo/redo, save flow): `internal/interfaces/tui/model_staging.go`
+- TUI staged-state operations (insert/edit/delete, undo/redo, save flow): `internal/interfaces/tui/model_staging_*.go`
 - Save use case: `internal/application/usecase/save_table_changes.go`
 
 ### 8.3 Transactional Save per Table
@@ -438,7 +438,7 @@ Why:
 Where:
 
 - Registry definitions: `internal/interfaces/tui/input_registry.go`
-- Runtime key/command routing consumers: `internal/interfaces/tui/model_interactions.go`
+- Runtime key/command routing consumers: `internal/interfaces/tui/model_runtime_*.go`
 - Selector key/context consumers: `internal/interfaces/tui/selector.go`
 - Help/status rendering consumers: `internal/interfaces/tui/view.go`
 - Contract tests: `internal/interfaces/tui/input_registry_test.go`
