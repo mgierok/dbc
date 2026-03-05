@@ -786,6 +786,85 @@ func TestResolveStartupSelection_ReturnsSelectorError(t *testing.T) {
 	}
 }
 
+func TestNewStartupSelectionStrategy_UsesDirectLaunchWhenPending(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	options := startupOptions{directLaunchConnString: "/tmp/direct.sqlite"}
+	strategy := newStartupSelectionStrategy(options, true)
+	listCalled := false
+	selectorCalled := false
+
+	// Act
+	selected, path, err := strategy.resolve(
+		func() ([]tui.DatabaseOption, error) {
+			listCalled = true
+			return nil, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			selectorCalled = true
+			return tui.DatabaseOption{}, nil
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !listCalled {
+		t.Fatal("expected direct-launch strategy to list configured options")
+	}
+	if selectorCalled {
+		t.Fatal("expected direct-launch strategy to skip selector callback")
+	}
+	if path != startupPathDirectLaunch {
+		t.Fatalf("expected startup path %v, got %v", startupPathDirectLaunch, path)
+	}
+	if selected.ConnString != "/tmp/direct.sqlite" {
+		t.Fatalf("expected direct-launch conn string %q, got %q", "/tmp/direct.sqlite", selected.ConnString)
+	}
+}
+
+func TestNewStartupSelectionStrategy_FallsBackToSelectorWhenDirectLaunchIsNotPending(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	options := startupOptions{directLaunchConnString: "/tmp/direct.sqlite"}
+	strategy := newStartupSelectionStrategy(options, false)
+	listCalled := false
+	selectorCalled := false
+	expected := tui.DatabaseOption{Name: "analytics", ConnString: "/tmp/analytics.sqlite"}
+
+	// Act
+	selected, path, err := strategy.resolve(
+		func() ([]tui.DatabaseOption, error) {
+			listCalled = true
+			return nil, nil
+		},
+		func() (tui.DatabaseOption, error) {
+			selectorCalled = true
+			return expected, nil
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if listCalled {
+		t.Fatal("expected selector strategy to skip configured database listing")
+	}
+	if !selectorCalled {
+		t.Fatal("expected selector callback to be used when direct launch is not pending")
+	}
+	if path != startupPathSelector {
+		t.Fatalf("expected startup path %v, got %v", startupPathSelector, path)
+	}
+	if selected != expected {
+		t.Fatalf("expected selected option %+v, got %+v", expected, selected)
+	}
+}
+
 func TestResolveStartupSelection_ReusesConfiguredIdentityWhenNormalizedPathsMatch(t *testing.T) {
 	t.Parallel()
 
