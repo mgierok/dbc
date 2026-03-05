@@ -212,6 +212,7 @@ type Model struct {
 	listOperators listOperatorsUseCase
 	saveChanges   saveChangesUseCase
 	translator    *usecase.StagedChangesTranslator
+	stagingPolicy *usecase.StagingPolicy
 
 	width  int
 	height int

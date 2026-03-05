@@ -79,7 +79,7 @@ func (m *Model) addPendingInsert() (tea.Model, tea.Cmd) {
 		explicitAuto: make(map[int]bool),
 	}
 	for index, column := range m.schema.Columns {
-		row.values[index] = stagedEdit{Value: initialInsertValue(column)}
+		row.values[index] = stagedEdit{Value: m.stagingPolicyUseCase().InitialInsertValue(column)}
 	}
 	if err := m.insertPendingRowAt(0, row); err != nil {
 		m.statusMessage = "Error: " + err.Error()
@@ -539,13 +539,11 @@ func (m *Model) primaryKeyColumns() []pkColumn {
 }
 
 func (m *Model) dirtyEditCount() int {
-	count := 0
-	for _, edits := range m.pendingUpdates {
-		count += len(edits.changes)
-	}
-	count += len(m.pendingInserts)
-	count += len(m.pendingDeletes)
-	return count
+	return m.stagingPolicyUseCase().DirtyEditCount(
+		m.toPendingInsertRowsDTO(),
+		m.toPendingRecordEditsDTO(),
+		m.toPendingRecordDeletesDTO(),
+	)
 }
 
 func (m *Model) hasDirtyEdits() bool {
@@ -701,16 +699,6 @@ func (m *Model) visibleColumnIndicesForRow(rowIndex int) []int {
 	return columns
 }
 
-func initialInsertValue(column dto.SchemaColumn) dto.StagedValue {
-	if column.DefaultValue != nil {
-		return dto.StagedValue{Text: *column.DefaultValue, Raw: *column.DefaultValue}
-	}
-	if column.Nullable {
-		return dto.StagedValue{IsNull: true, Text: "NULL"}
-	}
-	return dto.StagedValue{Text: "", Raw: ""}
-}
-
 func displayValue(value dto.StagedValue) string {
 	if value.IsNull {
 		return "NULL"
@@ -729,6 +717,13 @@ func (m *Model) translatorUseCase() *usecase.StagedChangesTranslator {
 		return m.translator
 	}
 	return usecase.NewStagedChangesTranslator()
+}
+
+func (m *Model) stagingPolicyUseCase() *usecase.StagingPolicy {
+	if m.stagingPolicy != nil {
+		return m.stagingPolicy
+	}
+	return usecase.NewStagingPolicy()
 }
 
 func (m *Model) toPendingInsertRowsDTO() []dto.PendingInsertRow {
