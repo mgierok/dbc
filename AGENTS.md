@@ -24,13 +24,13 @@ This requirement MUST NOT apply when the task scope is limited to governance-onl
 ### Dependencies and Toolchain
 
 - Dependency/toolchain baseline MUST be taken from:
-  - `docs/technical-documentation.md#9-technology-stack-and-versions`
+  - `docs/technical-documentation.md#technology-stack-and-versions`
   - `go.mod`
 - Adding third-party dependencies MUST have explicit approval.
 
 ### Architecture
 
-The agent MUST use `docs/technical-documentation.md#3-architecture-and-boundaries` as the primary architecture guide.
+The agent MUST use `docs/technical-documentation.md#architecture-and-boundaries` as the primary architecture guide.
 For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
 
 Non-negotiable summary:
