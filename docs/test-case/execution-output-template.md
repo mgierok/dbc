@@ -6,7 +6,7 @@ This template defines display format only. Execution results must be shown after
 
 - Execution Type: `SINGLE`
 - Case ID: `TC-<NNN>`
-- Functional Behavior Reference: `[<4.x Section Title>](../docs/product-documentation.md#<anchor-under-4-functional-behavior>)`
+- Functional Behavior Reference: `[<Functional Behavior Section Title>](../docs/product-documentation.md#<section-anchor-under-functional-behavior>)`
 - Startup Script: `scripts/<script-name>.sh`
 - Startup Command: `bash scripts/<script-name>.sh`
 

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-003` |
-| Functional Behavior Reference | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` |
+| Functional Behavior Reference | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` |
 | Startup Script | `scripts/start-direct-launch.sh` |
 | Startup Command | `bash scripts/start-direct-launch.sh` |
 
@@ -33,10 +33,10 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Runtime presents table-discovery list and schema panel for selected table. | `PASS` | Left panel contains table names and right panel shows schema rows immediately after startup. |
-| A2 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Table list excludes internal SQLite system tables. | `PASS` | No `sqlite_` system table names are shown in the list. |
-| A3 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Table list ordering is alphabetical for predictable scanning. | `PASS` | Visible table names are ordered lexicographically. |
-| A4 | `[4.3 Table Discovery and Schema View](../docs/product-documentation.md#43-table-discovery-and-schema-view)` | Changing selected table refreshes schema with column name and type fields. | `PASS` | Right panel schema content updates after selection change and includes name/type information. |
+| A1 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Runtime presents table-discovery list and schema panel for selected table. | `PASS` | Left panel contains table names and right panel shows schema rows immediately after startup. |
+| A2 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Table list excludes internal SQLite system tables. | `PASS` | No `sqlite_` system table names are shown in the list. |
+| A3 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Table list ordering is alphabetical for predictable scanning. | `PASS` | Visible table names are ordered lexicographically. |
+| A4 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Changing selected table refreshes schema with column name and type fields. | `PASS` | Right panel schema content updates after selection change and includes name/type information. |
 
 ## 6. Final Result
 

@@ -12,7 +12,7 @@ Recommended filename: `TC-<NNN>-<behavior>-<expected-result>.md`.
 | Startup Script | `scripts/<script-name>.sh` |
 | Startup Command | `bash scripts/<script-name>.sh` |
 
-`Functional Behavior Reference` must be exactly one Markdown link pointing to one subsection under `docs/product-documentation.md#4-functional-behavior`.
+`Functional Behavior Reference` must be exactly one Markdown link pointing to one subsection under `docs/product-documentation.md#functional-behavior`.
 
 ## 2. Scenario
 

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-007` |
-| Functional Behavior Reference | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` |
+| Functional Behavior Reference | `[Filtering](../docs/product-documentation.md#filtering)` |
 | Startup Script | `scripts/start-direct-launch.sh` |
 | Startup Command | `bash scripts/start-direct-launch.sh` |
 
@@ -36,13 +36,13 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Runtime opens in context where filtering can be triggered from records workflow. | `PASS` | Main runtime view is visible and selected table can enter records/filter flow. |
-| A2 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | `Shift+F` opens guided filter popup and starts with column selection. | `PASS` | Filter popup appears and shows column-choice step first. |
-| A3 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Column and operator selection steps execute in sequence; `LIKE` requires value input step. | `PASS` | Flow progresses from column to operator to value input after selecting `LIKE`. |
-| A4 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Confirmed value-input filter is applied to currently selected table records. | `PASS` | Records list updates and visible rows satisfy `name LIKE 'Tea%'`. |
-| A5 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Applying another filter replaces previous one, preserving one-active-filter rule for selected table. | `PASS` | Active-filter summary reflects only `category_id = 1` and prior filter is no longer active. |
-| A6 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Switching to different table resets active filter state after explicit return to left-panel table focus. | `PASS` | `Esc` returns to left-panel table focus, and filter summary for `categories` does not carry over `products` filter. |
-| A7 | `[4.5 Filtering](../docs/product-documentation.md#45-filtering)` | Returning to original table after switch keeps filter reset behavior deterministic. | `PASS` | `products` records reopen without previously active filter summary. |
+| A1 | `[Filtering](../docs/product-documentation.md#filtering)` | Runtime opens in context where filtering can be triggered from records workflow. | `PASS` | Main runtime view is visible and selected table can enter records/filter flow. |
+| A2 | `[Filtering](../docs/product-documentation.md#filtering)` | `Shift+F` opens guided filter popup and starts with column selection. | `PASS` | Filter popup appears and shows column-choice step first. |
+| A3 | `[Filtering](../docs/product-documentation.md#filtering)` | Column and operator selection steps execute in sequence; `LIKE` requires value input step. | `PASS` | Flow progresses from column to operator to value input after selecting `LIKE`. |
+| A4 | `[Filtering](../docs/product-documentation.md#filtering)` | Confirmed value-input filter is applied to currently selected table records. | `PASS` | Records list updates and visible rows satisfy `name LIKE 'Tea%'`. |
+| A5 | `[Filtering](../docs/product-documentation.md#filtering)` | Applying another filter replaces previous one, preserving one-active-filter rule for selected table. | `PASS` | Active-filter summary reflects only `category_id = 1` and prior filter is no longer active. |
+| A6 | `[Filtering](../docs/product-documentation.md#filtering)` | Switching to different table resets active filter state after explicit return to left-panel table focus. | `PASS` | `Esc` returns to left-panel table focus, and filter summary for `categories` does not carry over `products` filter. |
+| A7 | `[Filtering](../docs/product-documentation.md#filtering)` | Returning to original table after switch keeps filter reset behavior deterministic. | `PASS` | `products` records reopen without previously active filter summary. |
 
 ## 6. Final Result
 

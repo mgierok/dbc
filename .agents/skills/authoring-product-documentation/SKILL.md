@@ -33,7 +33,7 @@ description: Assess whether non-documentation codebase changes require updating 
 ## Structural Contract (Mandatory)
 
 - `docs/product-documentation.md` MUST stay aligned with the section set and order from `references/product-documentation-template.md`.
-- Existing section numbering and anchors MUST be preserved unless structural migration is explicitly requested.
+- Existing section titles and order MUST be preserved unless structural migration is explicitly requested.
 - If one fact fits multiple sections, it SHOULD be placed in the most product-specific section, and duplication SHOULD be avoided.
 
 ## Decision Contract (Mandatory)

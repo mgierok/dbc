@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-001` |
-| Functional Behavior Reference | `[4.1 Database Configuration and Access](../docs/product-documentation.md#41-database-configuration-and-access)` |
+| Functional Behavior Reference | `[Database Configuration and Access](../docs/product-documentation.md#database-configuration-and-access)` |
 | Startup Script | `scripts/start-informational.sh` |
 | Startup Command | `bash scripts/start-informational.sh <help\|version>` |
 
@@ -32,9 +32,9 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.1 Database Configuration and Access](../docs/product-documentation.md#41-database-configuration-and-access)` | `help` output is rendered and startup short-circuits before selector/runtime launch. | `PASS` | Terminal prints help/usage content and returns to prompt immediately. |
-| A2 | `[4.1 Database Configuration and Access](../docs/product-documentation.md#41-database-configuration-and-access)` | `version` output is one token (`short revision` or `dev`) and startup short-circuits before selector/runtime launch. | `PASS` | Terminal prints one version token and returns to prompt immediately. |
-| A3 | `[4.1 Database Configuration and Access](../docs/product-documentation.md#41-database-configuration-and-access)` | Informational alias behavior remains deterministic and UI-free for both runs. | `PASS` | No selector/main-view UI is opened for either informational command. |
+| A1 | `[Database Configuration and Access](../docs/product-documentation.md#database-configuration-and-access)` | `help` output is rendered and startup short-circuits before selector/runtime launch. | `PASS` | Terminal prints help/usage content and returns to prompt immediately. |
+| A2 | `[Database Configuration and Access](../docs/product-documentation.md#database-configuration-and-access)` | `version` output is one token (`short revision` or `dev`) and startup short-circuits before selector/runtime launch. | `PASS` | Terminal prints one version token and returns to prompt immediately. |
+| A3 | `[Database Configuration and Access](../docs/product-documentation.md#database-configuration-and-access)` | Informational alias behavior remains deterministic and UI-free for both runs. | `PASS` | No selector/main-view UI is opened for either informational command. |
 
 ## 6. Final Result
 

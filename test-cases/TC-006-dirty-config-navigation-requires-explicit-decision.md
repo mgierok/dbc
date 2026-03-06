@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-006` |
-| Functional Behavior Reference | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` |
+| Functional Behavior Reference | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` |
 | Startup Script | `scripts/start-selector-from-config.sh` |
 | Startup Command | `bash scripts/start-selector-from-config.sh` |
 
@@ -40,17 +40,17 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Startup command reaches selector-first flow with configured entry available. | `PASS` | Selector list is first visible screen and contains configured row. |
-| A2 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Selector entry opens runtime context where staging lifecycle can be exercised. | `PASS` | Main two-panel runtime layout appears after `Enter`. |
-| A3 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Valid edit is staged before any save execution. | `PASS` | Edited value remains pending in session after confirm. |
-| A4 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Undo removes most recent staged change from current table state. | `PASS` | Previously staged value reverts after `u`. |
-| A5 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Redo reapplies the most recently undone staged change. | `PASS` | Reverted value returns after `Ctrl+r`. |
-| A6 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `cancel` in dirty `:config` decision keeps runtime active and preserves staged changes. | `PASS` | Selector does not open; runtime remains active with staged value still pending. |
-| A7 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `save` decision persists staged changes first and opens selector only after success. | `PASS` | Save confirmation path completes and selector opens after successful save. |
-| A8 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Runtime can be re-entered from selector after successful save path. | `PASS` | `Enter` on selector row reopens runtime normally. |
-| A9 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | New staged change can be created after re-entry for discard-path validation. | `PASS` | New pending edit is created in current runtime session. |
-| A10 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | `discard` in dirty `:config` decision clears staged changes and opens selector without save. | `PASS` | Selector appears immediately and pending edit is not retained in runtime state. |
-| A11 | `[4.7 Staging, Undo/Redo, and Save](../docs/product-documentation.md#47-staging-undoredo-and-save)` | Quit from selector exits process normally after decision-path checks. | `PASS` | Terminal prompt returns after `q`. |
+| A1 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Startup command reaches selector-first flow with configured entry available. | `PASS` | Selector list is first visible screen and contains configured row. |
+| A2 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Selector entry opens runtime context where staging lifecycle can be exercised. | `PASS` | Main two-panel runtime layout appears after `Enter`. |
+| A3 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Valid edit is staged before any save execution. | `PASS` | Edited value remains pending in session after confirm. |
+| A4 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Undo removes most recent staged change from current table state. | `PASS` | Previously staged value reverts after `u`. |
+| A5 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Redo reapplies the most recently undone staged change. | `PASS` | Reverted value returns after `Ctrl+r`. |
+| A6 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | `cancel` in dirty `:config` decision keeps runtime active and preserves staged changes. | `PASS` | Selector does not open; runtime remains active with staged value still pending. |
+| A7 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | `save` decision persists staged changes first and opens selector only after success. | `PASS` | Save confirmation path completes and selector opens after successful save. |
+| A8 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Runtime can be re-entered from selector after successful save path. | `PASS` | `Enter` on selector row reopens runtime normally. |
+| A9 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | New staged change can be created after re-entry for discard-path validation. | `PASS` | New pending edit is created in current runtime session. |
+| A10 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | `discard` in dirty `:config` decision clears staged changes and opens selector without save. | `PASS` | Selector appears immediately and pending edit is not retained in runtime state. |
+| A11 | `[Staging, Undo/Redo, and Save](../docs/product-documentation.md#staging-undoredo-and-save)` | Quit from selector exits process normally after decision-path checks. | `PASS` | Terminal prompt returns after `q`. |
 
 ## 6. Final Result
 

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-005` |
-| Functional Behavior Reference | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` |
+| Functional Behavior Reference | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` |
 | Startup Script | `scripts/start-direct-launch.sh` |
 | Startup Command | `bash scripts/start-direct-launch.sh` |
 
@@ -39,16 +39,16 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Runtime opens in context where table-level data operations can be performed. | `PASS` | Main two-panel runtime view appears immediately after launch command. |
-| A2 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `categories` records are accessible for insert/edit/delete operations. | `PASS` | Right panel opens records content for `categories`. |
-| A3 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Field-focus mode is reachable for cell-level edit workflow. | `PASS` | Cell-level navigation is visibly active after `e`. |
-| A4 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Editing an existing persisted value is accepted and staged through edit popup flow. | `PASS` | Updated unique value is confirmed in popup and reflected in records row. |
-| A5 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `d` on persisted row toggles delete marker on. | `PASS` | Selected persisted row shows delete-marked state after first `d`. |
-| A6 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Repeating `d` on same persisted row toggles delete marker off. | `PASS` | Previously delete-marked persisted row returns to non-delete state. |
-| A7 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `i` stages a new record at top of records view. | `PASS` | A new pending row is inserted at top position immediately after `i`. |
-| A8 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Pending insert accepts value entry in edit popup for required data fields. | `PASS` | Required field value is accepted and remains populated in pending insert row. |
-| A9 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | `d` on pending insert removes that pending row immediately. | `PASS` | Pending insert row disappears from records list after `d`. |
-| A10 | `[4.6 Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#46-data-operations-insert-edit-delete)` | Quit exits process normally after data-operation checks. | `PASS` | Terminal prompt returns after `:q`. |
+| A1 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | Runtime opens in context where table-level data operations can be performed. | `PASS` | Main two-panel runtime view appears immediately after launch command. |
+| A2 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | `categories` records are accessible for insert/edit/delete operations. | `PASS` | Right panel opens records content for `categories`. |
+| A3 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | Field-focus mode is reachable for cell-level edit workflow. | `PASS` | Cell-level navigation is visibly active after `e`. |
+| A4 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | Editing an existing persisted value is accepted and staged through edit popup flow. | `PASS` | Updated unique value is confirmed in popup and reflected in records row. |
+| A5 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | `d` on persisted row toggles delete marker on. | `PASS` | Selected persisted row shows delete-marked state after first `d`. |
+| A6 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | Repeating `d` on same persisted row toggles delete marker off. | `PASS` | Previously delete-marked persisted row returns to non-delete state. |
+| A7 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | `i` stages a new record at top of records view. | `PASS` | A new pending row is inserted at top position immediately after `i`. |
+| A8 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | Pending insert accepts value entry in edit popup for required data fields. | `PASS` | Required field value is accepted and remains populated in pending insert row. |
+| A9 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | `d` on pending insert removes that pending row immediately. | `PASS` | Pending insert row disappears from records list after `d`. |
+| A10 | `[Data Operations (Insert, Edit, Delete)](../docs/product-documentation.md#data-operations-insert-edit-delete)` | Quit exits process normally after data-operation checks. | `PASS` | Terminal prompt returns after `:q`. |
 
 ## 6. Final Result
 

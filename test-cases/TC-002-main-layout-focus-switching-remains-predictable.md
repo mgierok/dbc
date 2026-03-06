@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-002` |
-| Functional Behavior Reference | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` |
+| Functional Behavior Reference | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` |
 | Startup Script | `scripts/start-direct-launch.sh` |
 | Startup Command | `bash scripts/start-direct-launch.sh` |
 
@@ -36,12 +36,12 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | Startup lands in stable two-panel runtime layout with clear active-panel indicator and independent section framing. | `PASS` | Left panel and right panel are visible simultaneously in separate boxes, status bar is rendered in its own 3-row box, and one panel is visually marked active. |
-| A2 | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | Pressing `Enter` from left-panel table selection opens the selected table in right-panel Records view and marks right panel as active. | `PASS` | `Enter` from tables switches focus to records content in right panel for the selected table. |
-| A3 | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | Pressing `Esc` from neutral right-panel Records state returns focus to left panel and forces right-panel Table Discovery for the selected table. | `PASS` | Left panel becomes active after neutral-state `Esc`, right panel renders schema/table-discovery content, and current table context remains consistent. |
-| A4 | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | In nested right-panel context, first `Esc` exits local context only; it must not switch panels in the same keypress. | `PASS` | Filter popup closes on first `Esc` and focus remains in right-panel runtime context. |
-| A5 | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | After nested context is closed, `Esc` from neutral right-panel state returns focus to left panel and forces right-panel Table Discovery. | `PASS` | Second `Esc` (from neutral right panel) returns focus to left-panel table selection and right panel shows schema/table-discovery content. |
-| A6 | `[4.2 Main Layout and Focus Model](../docs/product-documentation.md#42-main-layout-and-focus-model)` | `Ctrl+w l`, `Ctrl+w h`, and `Ctrl+w w` do not trigger runtime panel transitions. | `PASS` | Executing each removed `Ctrl+w` combination leaves panel ownership unchanged (no transition observed). |
+| A1 | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` | Startup lands in stable two-panel runtime layout with clear active-panel indicator and independent section framing. | `PASS` | Left panel and right panel are visible simultaneously in separate boxes, status bar is rendered in its own 3-row box, and one panel is visually marked active. |
+| A2 | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` | Pressing `Enter` from left-panel table selection opens the selected table in right-panel Records view and marks right panel as active. | `PASS` | `Enter` from tables switches focus to records content in right panel for the selected table. |
+| A3 | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` | Pressing `Esc` from neutral right-panel Records state returns focus to left panel and forces right-panel Table Discovery for the selected table. | `PASS` | Left panel becomes active after neutral-state `Esc`, right panel renders schema/table-discovery content, and current table context remains consistent. |
+| A4 | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` | In nested right-panel context, first `Esc` exits local context only; it must not switch panels in the same keypress. | `PASS` | Filter popup closes on first `Esc` and focus remains in right-panel runtime context. |
+| A5 | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` | After nested context is closed, `Esc` from neutral right-panel state returns focus to left panel and forces right-panel Table Discovery. | `PASS` | Second `Esc` (from neutral right panel) returns focus to left-panel table selection and right panel shows schema/table-discovery content. |
+| A6 | `[Main Layout and Focus Model](../docs/product-documentation.md#main-layout-and-focus-model)` | `Ctrl+w l`, `Ctrl+w h`, and `Ctrl+w w` do not trigger runtime panel transitions. | `PASS` | Executing each removed `Ctrl+w` combination leaves panel ownership unchanged (no transition observed). |
 
 ## 6. Final Result
 

@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Case ID | `TC-004` |
-| Functional Behavior Reference | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` |
+| Functional Behavior Reference | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` |
 | Startup Script | `scripts/start-direct-launch.sh` |
 | Startup Command | `bash scripts/start-direct-launch.sh` |
 
@@ -43,20 +43,20 @@
 
 | Assertion ID | Functional Behavior Reference | Pass Criteria | Result (`PASS`/`FAIL`) | Evidence |
 | --- | --- | --- | --- | --- |
-| A1 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Startup reaches runtime context that allows opening records for selected table. | `PASS` | Main runtime layout is visible and selected table is ready for records entry. |
-| A2 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Enter` opens records view with visible selected row. | `PASS` | Right panel switches to record rows and highlights active row. |
-| A3 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Row navigation keys move selected record while staying in records view. | `PASS` | Selection changes as `j`/`k` are pressed with no context loss. |
-| A4 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Ctrl+f`/`Ctrl+b` execute pagination motions without leaving records context, and page navigation stays bounded when only one page exists. | `PASS` | For fixture table `products` (`5` persisted rows), `Ctrl+f`/`Ctrl+b` keep records view interactive and remain on `Page 1/1`. |
-| A5 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Sort popup supports column and direction steps, and applying sort marks selected column with `↑` for `ASC`. | `PASS` | `Shift+S` opens guided flow; after apply, header shows active sort indicator `↑` on `name`. |
-| A6 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Re-running sort replaces previous sort and keeps one active sort with updated direction indicator. | `PASS` | Second apply changes active sort to `name DESC`; header indicator is `↓` and previous `ASC` state is gone. |
-| A7 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Pending insert rows remain pinned at top even when SQL sort is applied. | `PASS` | Pending `✚` row stays first after sort apply and persisted rows are ordered below it. |
-| A8 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Pending insert can be removed immediately without leaving records context. | `PASS` | `d` removes pending insert row and list returns to persisted rows only. |
-| A9 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Sort state is reset on table switch and does not carry over when returning to original table. | `PASS` | After switching `products -> categories -> products`, previous sort indicator is not present in `products` header. |
-| A10 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Field-focus mode can be entered from records view. | `PASS` | Cell-level focus state becomes active after `e`. |
-| A11 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | Field-focus left/right navigation works at cell level. | `PASS` | Focused cell changes horizontally with `h`/`l`. |
-| A12 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Esc` exits field-focus mode and returns to records-level navigation. | `PASS` | Row-level navigation state is restored and records view remains open. |
-| A13 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Enter` opens vertical selected-row detail and preserves full field visibility. | `PASS` | Right panel shows column/value blocks and long values are wrapped instead of truncated. |
-| A14 | `[4.4 Records View and Navigation](../docs/product-documentation.md#44-records-view-and-navigation)` | `Esc` closes row detail and returns to records list context. | `PASS` | Records list selection is visible again and row navigation remains active. |
+| A1 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Startup reaches runtime context that allows opening records for selected table. | `PASS` | Main runtime layout is visible and selected table is ready for records entry. |
+| A2 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | `Enter` opens records view with visible selected row. | `PASS` | Right panel switches to record rows and highlights active row. |
+| A3 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Row navigation keys move selected record while staying in records view. | `PASS` | Selection changes as `j`/`k` are pressed with no context loss. |
+| A4 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | `Ctrl+f`/`Ctrl+b` execute pagination motions without leaving records context, and page navigation stays bounded when only one page exists. | `PASS` | For fixture table `products` (`5` persisted rows), `Ctrl+f`/`Ctrl+b` keep records view interactive and remain on `Page 1/1`. |
+| A5 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Sort popup supports column and direction steps, and applying sort marks selected column with `↑` for `ASC`. | `PASS` | `Shift+S` opens guided flow; after apply, header shows active sort indicator `↑` on `name`. |
+| A6 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Re-running sort replaces previous sort and keeps one active sort with updated direction indicator. | `PASS` | Second apply changes active sort to `name DESC`; header indicator is `↓` and previous `ASC` state is gone. |
+| A7 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Pending insert rows remain pinned at top even when SQL sort is applied. | `PASS` | Pending `✚` row stays first after sort apply and persisted rows are ordered below it. |
+| A8 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Pending insert can be removed immediately without leaving records context. | `PASS` | `d` removes pending insert row and list returns to persisted rows only. |
+| A9 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Sort state is reset on table switch and does not carry over when returning to original table. | `PASS` | After switching `products -> categories -> products`, previous sort indicator is not present in `products` header. |
+| A10 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Field-focus mode can be entered from records view. | `PASS` | Cell-level focus state becomes active after `e`. |
+| A11 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | Field-focus left/right navigation works at cell level. | `PASS` | Focused cell changes horizontally with `h`/`l`. |
+| A12 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | `Esc` exits field-focus mode and returns to records-level navigation. | `PASS` | Row-level navigation state is restored and records view remains open. |
+| A13 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | `Enter` opens vertical selected-row detail and preserves full field visibility. | `PASS` | Right panel shows column/value blocks and long values are wrapped instead of truncated. |
+| A14 | `[Records View and Navigation](../docs/product-documentation.md#records-view-and-navigation)` | `Esc` closes row detail and returns to records list context. | `PASS` | Records list selection is visible again and row navigation remains active. |
 
 ## 6. Final Result
 

@@ -27,7 +27,7 @@ Every test case must be a separate Markdown file and must follow `docs/test-case
 
 - Each scenario must declare exactly one `Functional Behavior Reference` in metadata.
 - The value must be a Markdown reference targeting one subsection under:
-  - `docs/product-documentation.md#4-functional-behavior`
+  - `docs/product-documentation.md#functional-behavior`
 - Assertions must be area-pure:
   - every assertion row must include one `Functional Behavior Reference`,
   - every assertion reference must be identical to the scenario metadata reference.
@@ -84,7 +84,7 @@ Coverage matrix contract:
 - Must map Functional Behavior reference -> scenario IDs -> assertion IDs.
 - `test-cases/suite-coverage-matrix.md` stores only factual mapping data (no local instructions, rules, or conclusions).
 - For each Product Documentation Functional Behavior subsection in active coverage scope, both `Scenario IDs` and `Assertion IDs` must be non-empty.
-- Every mapped reference must be a Markdown link to one subsection under `docs/product-documentation.md#4-functional-behavior`.
+- Every mapped reference must be a Markdown link to one subsection under `docs/product-documentation.md#functional-behavior`.
 - Every listed scenario ID must resolve to an existing `test-cases/TC-*.md` file.
 - Missing scenario mapping or missing assertion mapping is an audit `FAIL`.
 - Invalid reference links or unresolved scenario IDs are an audit `FAIL`.

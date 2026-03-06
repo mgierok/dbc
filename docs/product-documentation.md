@@ -1,17 +1,6 @@
 # DBC Product Documentation
 
-## 1. Table of Contents
-
-1. [Product Overview](#2-product-overview)
-2. [Available Capabilities](#3-available-capabilities)
-3. [Functional Behavior](#4-functional-behavior)
-4. [User Flows](#5-user-flows)
-5. [Interaction Model](#6-interaction-model)
-6. [Constraints and Non-Goals](#7-constraints-and-non-goals)
-7. [Safety and Governance](#8-safety-and-governance)
-8. [Glossary](#9-glossary)
-
-## 2. Product Overview
+## Product Overview
 
 DBC (Database Commander) is a terminal-first product for browsing and managing database content with a keyboard-centric workflow. The current product state focuses on fast data inspection and controlled data changes without leaving the command-line environment.
 
@@ -27,7 +16,7 @@ Core user value in current state:
 - Predictable keyboard workflow inspired by vim-like interaction patterns.
 - Safer change process through staged edits, explicit confirmation, and transactional save behavior.
 
-## 3. Available Capabilities
+## Available Capabilities
 
 ### In Scope (Current State)
 
@@ -70,9 +59,9 @@ Core user value in current state:
 - User and permission management.
 - Password manager integration.
 
-## 4. Functional Behavior
+## Functional Behavior
 
-### 4.1 Database Configuration and Access
+### Database Configuration and Access
 
 - DBC reads database entries from the active system configuration location.
 - Startup supports zero or more configured database entries.
@@ -128,7 +117,7 @@ Core user value in current state:
   - `cancel`: keep current session context and preserve staged changes.
 - Startup CLI behavior is consistent and user-visible across startup paths for help/discoverability, argument-validation feedback, and exit-code mapping.
 
-### 4.2 Main Layout and Focus Model
+### Main Layout and Focus Model
 
 - Layout is permanently two-panel in current state.
 - Left panel shows tables in an independent framed box (`Tables` title in the top border).
@@ -139,14 +128,14 @@ Core user value in current state:
 - In nested right-panel contexts, `Esc` exits local context first before any panel transition.
 - Active panel is visually indicated.
 
-### 4.3 Table Discovery and Schema View
+### Table Discovery and Schema View
 
 - Table list excludes internal SQLite system tables.
 - Table list is alphabetically sorted for predictable scanning.
 - Schema view displays column name and type for selected table.
 - If no schema is available yet, product shows an empty-state message.
 
-### 4.4 Records View and Navigation
+### Records View and Navigation
 
 - Records view shows table data for the selected table.
 - Records are fetched and displayed in fixed pages of 20 persisted records.
@@ -174,7 +163,7 @@ Core user value in current state:
   - `↑` for `ASC`.
   - `↓` for `DESC`.
 
-### 4.5 Filtering
+### Filtering
 
 - Users can open a guided filter popup in records view with `Shift+F`.
 - Filter flow is step-based:
@@ -186,7 +175,7 @@ Core user value in current state:
 - Exactly one filter can be active at a time for the selected table.
 - Filter is reset when switching to a different table.
 
-### 4.6 Data Operations (Insert, Edit, Delete)
+### Data Operations (Insert, Edit, Delete)
 
 #### Insert
 
@@ -215,7 +204,7 @@ Core user value in current state:
 - `d` toggles delete marker on existing selected record.
 - For pending inserts, `d` removes the pending insert immediately instead of adding delete marker.
 
-### 4.7 Staging, Undo/Redo, and Save
+### Staging, Undo/Redo, and Save
 
 - All writes are staged first; database is unchanged until save.
 - Undo/redo is available during the current app session for staged actions in the selected table.
@@ -235,7 +224,7 @@ Core user value in current state:
   - `(n) No, continue editing`.
 - If a user invokes `:config` or `:c` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
 
-### 4.8 Visual State Communication
+### Visual State Communication
 
 - Product mode indicator:
   - `READ-ONLY` when no staged changes.
@@ -260,9 +249,9 @@ Core user value in current state:
   - Runtime status/error messages.
 - Every active editable text field in the app displays a visible caret (`|`) at the insertion point.
 
-## 5. User Flows
+## User Flows
 
-### Step 1: Startup and Database Selection
+### Startup and Database Selection
 
 - Users launch DBC in one of three startup modes:
   - Informational mode: `-h` / `--help` or `-v` / `--version`; startup returns informational output and exits without opening selector or database.
@@ -275,20 +264,20 @@ Core user value in current state:
 - Selector main content does not display inline shortcut or legend rows; users open selector-specific shortcut help with `?`.
 - Users can confirm selection or cancel startup.
 
-### Step 2: Table Discovery and Schema Orientation
+### Table Discovery and Schema Orientation
 
 - After database selection, users enter the main two-panel view.
 - Left panel lists available tables in alphabetical order.
 - Right panel defaults to schema view for the selected table.
 
-### Step 3: Record Exploration
+### Record Exploration
 
 - Users switch to records view for the selected table.
 - Record list loads one fixed page at a time (`20` persisted records per page).
 - Users move between pages with `Ctrl+f` and `Ctrl+b`.
 - Users can navigate rows and jump/page efficiently.
 
-### Step 4: Focused Inspection with Filters, Sorting, and Row Detail
+### Focused Inspection with Filters, Sorting, and Row Detail
 
 - Users open the filter flow in records view and select:
   - Column.
@@ -302,16 +291,16 @@ Core user value in current state:
 - Users can open single-record detail with `Enter` to inspect full field values without truncation.
 - Users can leave single-record detail with `Esc` and continue records browsing.
 
-### Step 5: Controlled Data Change Workflow
+### Controlled Data Change Workflow
 
 - Users stage inserts, edits, and deletes in records view.
 - Product visually marks pending changes.
 - Users can undo/redo staged actions before save.
 - Save action requests confirmation, then applies all staged changes together.
 
-## 6. Interaction Model
+## Interaction Model
 
-### 6.1 Product Interaction Principles
+### Product Interaction Principles
 
 - Keyboard-first by default: all primary actions are accessible from keyboard.
 - Fast orientation: panel layout keeps navigation context visible.
@@ -320,7 +309,7 @@ Core user value in current state:
 - Visible state: status bar communicates mode, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
 - Consistent interaction language: vim-like motions and commands are reused across key contexts.
 
-### 6.2 Global/Main Navigation
+### Global/Main Navigation
 
 | Action | Shortcut |
 | --- | --- |
@@ -333,7 +322,7 @@ Core user value in current state:
 | Open selected table in records panel | `Enter` (from left panel) |
 | Return to tables panel and force Table Discovery in right panel | `Esc` (from neutral right panel) |
 
-### 6.3 View and Record Actions
+### View and Record Actions
 
 | Action | Shortcut |
 | --- | --- |
@@ -354,7 +343,7 @@ Core user value in current state:
 | Save staged changes | `w` |
 | Toggle auto-increment fields (pending insert row) | `Ctrl+a` |
 
-### 6.4 Popup Interactions
+### Popup Interactions
 
 | Context | Key Behavior |
 | --- | --- |
@@ -369,7 +358,7 @@ Core user value in current state:
 | Single-record detail view | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 | Command entry | `Enter` execute command, `Esc` cancel command |
 
-### 6.5 Startup Selector
+### Startup Selector
 
 | Action | Shortcut |
 | --- | --- |
@@ -384,7 +373,7 @@ Core user value in current state:
 | Delete selected entry (confirm required) | `d`, then `Enter` |
 | Selector form interaction | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel (or exit startup during mandatory first setup) |
 
-## 7. Constraints and Non-Goals
+## Constraints and Non-Goals
 
 Current user-visible constraints:
 
@@ -402,9 +391,9 @@ Explicit non-goals in current state:
 - Multi-engine runtime usage.
 - Advanced analytics/reporting and BI workflows.
 
-For capability boundaries and scope classification, see Section 3.
+For capability boundaries and scope classification, see Available Capabilities.
 
-## 8. Safety and Governance
+## Safety and Governance
 
 - Safe default state: product starts in read-only mode.
 - Write actions are staged and reversible before save.
@@ -415,7 +404,7 @@ For capability boundaries and scope classification, see Section 3.
 - Table switch with unsaved staged changes is guarded by explicit yes/no discard decision popup with unsaved-change count warning.
 - `:config` / `:c` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
 
-## 9. Glossary
+## Glossary
 
 - Database Entry: named configuration item that points to a SQLite database path.
 - Table: primary unit of navigation and data operations.
