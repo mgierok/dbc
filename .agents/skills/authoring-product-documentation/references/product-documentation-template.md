@@ -1,32 +1,23 @@
 # Product Documentation Title
 
 ## Product Overview
-- What the application does for users.
-- Core user value in current state.
-
-## Available Capabilities
-- What users can do today.
-- Capability boundaries in current state.
+- Summarize what the product does, for whom, and why it is useful now.
+- Keep this section high level.
+- Include high-level scope boundaries here instead of creating a separate capabilities section by default.
 
 ## Functional Behavior
-- User-visible behavior rules.
-- States, outcomes, and error behavior visible to users.
-
-## User Flows
-- Main user journeys.
-- Alternative/error journeys when relevant.
-
-## Interaction Model
-- Primary interaction patterns and controls.
-- Navigation and state transitions visible to users.
+- Preserve this section title exactly.
+- Make this the primary detailed section for user-visible behavior.
+- Capture states, outcomes, errors, and rules with enough precision for deterministic test-case mapping.
 
 ## Constraints and Non-Goals
-- User-visible limits.
-- Explicit non-goals.
+- Capture only current user-visible limits and explicit non-goals.
+- Absorb cross-cutting safety limits here when they do not need a dedicated section.
+- Do not restate detailed behavior already covered elsewhere.
 
-## Safety and Governance
-- User-facing safety rules and confirmations.
-- Behavioral guardrails that affect user actions.
+## Optional: Interaction Model
+- Add only when stable controls, commands, navigation patterns, or shortcut grammar deserve a compact dedicated reference.
+- Prefer concise tables when they reduce repetition.
 
 ## Glossary
-- Shared user/product terms.
+- Include only terms that materially improve reader understanding.
