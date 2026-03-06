@@ -1,23 +1,9 @@
 # AGENTS
 
-Role and purpose: this file defines repository-wide operating rules for coding agents.
+## Global Normative and Language Rules
 
-## Scope and Priority
-
-- This file MUST be treated as applying to the whole repository (project root level).
-- Source of truth split:
-  - Product perspective: `docs/product-documentation.md`
-  - Technical perspective: `docs/technical-documentation.md`
-- If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
-
-## Mandatory Context Loading
-
-Before planning or coding project changes (for example feature work, bug fixes, refactors, or future project planning), the agent MUST load both full source-of-truth documents:
-
-- `docs/product-documentation.md`
-- `docs/technical-documentation.md`
-
-This requirement MUST NOT apply when the task scope is limited to governance-only changes (for example updating `AGENTS.md` or `.agents/skills/**/SKILL.md`) and no project behavior is being changed.
+- The keywords `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, and `MAY` in this file MUST be interpreted as described in RFC 2119.
+- The agent MUST use English regardless of the language used in user instructions.
 
 ## Engineering Guardrails
 
@@ -100,15 +86,13 @@ Quick examples:
 - If an exception is required, the agent MUST apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
 - Every local linter exception MUST have explicit user approval each time (no blanket pre-approval).
 
-## Documentation Policy
+## Documentation
 
-For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
-
-- For `docs/product-documentation.md`, the agent MUST invoke `authoring-product-documentation`.
-- For `docs/technical-documentation.md`, the agent MUST invoke `authoring-technical-documentation`.
-- For `README.md`, the agent MUST invoke `authoring-readme-file`.
-
-If multiple documentation perspectives are affected, the agent MUST invoke all applicable skills independently and apply each skill decision.
+- If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
+- For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
+  - For `docs/product-documentation.md`, the agent MUST invoke `authoring-product-documentation`.
+  - For `docs/technical-documentation.md`, the agent MUST invoke `authoring-technical-documentation`.
+  - For `README.md`, the agent MUST invoke `authoring-readme-file`.
 
 ### Product Documentation Policy
 
