@@ -4,42 +4,34 @@
 
 - The keywords `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, and `MAY` in this file MUST be interpreted as described in RFC 2119.
 - The agent MUST use English regardless of the language used in user instructions.
+- If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
+
+## Source Documents
+
+- `docs/technical-documentation.md` MUST be used as the primary source for architecture boundaries, dependency direction, component responsibilities, technical contracts, supported stack versions, and operational constraints.
+- `docs/product-documentation.md` MUST be used as the primary source for user-visible behavior, workflows, interaction rules, product constraints, and current non-goals.
+- `README.md` SHOULD be used for repository entry context, including product summary, supported environments, installation prerequisites, and basic run commands.
+- `docs/clean-architecture-ddd.md` SHOULD be used for non-trivial architecture work, especially boundary changes, dependency-direction decisions, and new ports/adapters.
+- `docs/test-driven-development.md` MUST be used as the normative TDD reference for behavior-impacting changes, test strategy updates, and Red-Green-Refactor decisions.
 
 ## Engineering Guardrails
 
 ### Dependencies and Toolchain
 
-- Dependency/toolchain baseline MUST be taken from:
-  - `docs/technical-documentation.md#technology-stack-and-versions`
-  - `go.mod`
+- The agent MUST take the dependency and toolchain baseline from `go.mod` and `docs/technical-documentation.md`.
 - Adding third-party dependencies MUST have explicit approval.
 
 ### Architecture
 
 The agent MUST use `docs/technical-documentation.md#architecture-and-boundaries` as the primary architecture guide.
 For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
-
-Non-negotiable summary:
-
-- Dependencies MUST point inward.
-- Domain MUST stay isolated from outer layers.
-- TUI MUST remain an adapter (no direct database/business rule implementation).
-- Infrastructure MUST implement ports and MUST NOT drive use case logic.
-- The implementation MUST respect architecture boundaries and dependency direction.
-- The implementation SHOULD prefer interface-driven changes through application ports.
-- Interface adapters MUST NOT bypass use cases.
+- The agent MUST preserve the architecture boundaries and dependency direction defined in `docs/technical-documentation.md`.
+- The agent SHOULD prefer interface-driven changes through application ports instead of adapter-to-adapter coupling.
 
 #### Architecture Rules for New Features
 
-When adding functionality that changes behavior, the agent MUST follow this order:
-
-1. Start from domain model/service changes if behavior changes domain rules.
-2. Add/update use case orchestration.
-3. Extend port interfaces only when a new boundary is required.
-4. Implement infrastructure adapters for new port behavior.
-5. Connect UI adapter to use case, not to infrastructure.
-
-For adapter-only or infrastructure-only changes that do not change domain behavior, steps `1` and `2` MAY be no-op, but dependency direction and architecture boundaries MUST still be preserved.
+- When adding functionality that changes behavior, the agent MUST prefer implementation flow from inner layers outward: domain, use case, port, infrastructure adapter, then UI adapter.
+- For adapter-only or infrastructure-only changes that do not change domain behavior, the inner-layer steps MAY be no-op, but architecture boundaries and dependency direction MUST still be preserved.
 
 ### Development Standards
 
@@ -86,29 +78,6 @@ Quick examples:
 - If an exception is required, the agent MUST apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
 - Every local linter exception MUST have explicit user approval each time (no blanket pre-approval).
 
-## Documentation
-
-- If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
-- For tasks that directly create or modify documentation files, the agent MUST invoke the matching skill:
-  - For `docs/product-documentation.md`, the agent MUST invoke `authoring-product-documentation`.
-  - For `docs/technical-documentation.md`, the agent MUST invoke `authoring-technical-documentation`.
-  - For `README.md`, the agent MUST invoke `authoring-readme-file`.
-
-### Product Documentation Policy
-
-- Product documentation policy is governed exclusively by skill `authoring-product-documentation`; `AGENTS.md` MUST NOT define additional or duplicate product-documentation authoring/decision rules.
-- The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
-
-### Technical Documentation Policy
-
-- Technical documentation policy is governed exclusively by skill `authoring-technical-documentation`; `AGENTS.md` MUST NOT define additional or duplicate technical-documentation authoring/decision rules.
-- The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
-
-### README Documentation Policy
-
-- README policy is governed exclusively by skill `authoring-readme-file`; `AGENTS.md` MUST NOT define additional or duplicate README authoring/decision rules.
-- The agent MUST accept the invoked skill decision (`UPDATE_REQUIRED` or `NO_UPDATE_REQUIRED`) and proceed accordingly.
-
 ## Cross-Cutting Operational Rules
 
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
@@ -118,11 +87,3 @@ Quick examples:
   - Option `4` MUST allow the user to provide a custom response.
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change-set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change-set.
-
-## Quick Reference
-
-- Product source of truth: `docs/product-documentation.md`
-- Technical source of truth: `docs/technical-documentation.md`
-- Architecture deep dive: `docs/clean-architecture-ddd.md`
-- TDD deep dive: `docs/test-driven-development.md`
-- Run/setup basics: `README.md`
