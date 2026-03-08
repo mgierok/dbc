@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -387,6 +388,74 @@ func TestClassifyStartupFailure_MapsRuntimeErrorsToExitCodeOne(t *testing.T) {
 	}
 	if !strings.Contains(failure.stderrOutput, "stdout write failed") {
 		t.Fatalf("expected runtime error details, got %q", failure.stderrOutput)
+	}
+}
+
+func TestRunMain_ReturnsRuntimeFailureExitCodeWhenRuntimeStartupFails(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	// Act
+	exitCode := runMain(
+		[]string{"-d", "/tmp/direct.sqlite"},
+		&stdout,
+		&stderr,
+		"linux",
+		func() (*debug.BuildInfo, bool) {
+			return nil, false
+		},
+		func(_ startupOptions) error {
+			return errors.New("runtime bootstrap failed")
+		},
+	)
+
+	// Assert
+	if exitCode != startupExitCodeRuntimeFailure {
+		t.Fatalf("expected runtime failure exit code %d, got %d", startupExitCodeRuntimeFailure, exitCode)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected runtime failure path to avoid stdout output, got %q", stdout.String())
+	}
+	rendered := stderr.String()
+	if !strings.Contains(rendered, "Startup error: runtime bootstrap failed") {
+		t.Fatalf("expected runtime failure rendering in stderr, got %q", rendered)
+	}
+}
+
+func TestRunMain_UsesExplicitOperationalFailureOutputWhenProvided(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	expectedMessage := buildDirectLaunchFailureMessage("/tmp/missing.sqlite", "database file does not exist")
+
+	// Act
+	exitCode := runMain(
+		[]string{"-d", "/tmp/missing.sqlite"},
+		&stdout,
+		&stderr,
+		"linux",
+		func() (*debug.BuildInfo, bool) {
+			return nil, false
+		},
+		func(_ startupOptions) error {
+			return newPresentedStartupFailure(startupExitCodeRuntimeFailure, expectedMessage)
+		},
+	)
+
+	// Assert
+	if exitCode != startupExitCodeRuntimeFailure {
+		t.Fatalf("expected runtime failure exit code %d, got %d", startupExitCodeRuntimeFailure, exitCode)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected explicit operational failure path to avoid stdout output, got %q", stdout.String())
+	}
+	if strings.TrimSpace(stderr.String()) != expectedMessage {
+		t.Fatalf("expected explicit operational failure message %q, got %q", expectedMessage, stderr.String())
 	}
 }
 

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/infrastructure/config"
@@ -55,32 +54,35 @@ func newRuntimeStartupOrchestrator(options startupOptions, deps runtimeStartupDe
 	}
 }
 
-func runRuntimeStartup(options startupOptions) {
+func runRuntimeStartup(options startupOptions) error {
 	deps, err := newRuntimeStartupDependencies()
 	if err != nil {
-		log.Fatalf("failed to resolve config path: %v", err)
+		return fmt.Errorf("failed to resolve config path: %w", err)
 	}
 
 	orchestrator := newRuntimeStartupOrchestrator(options, deps)
-	orchestrator.run()
+	return orchestrator.run()
 }
 
-func (o *runtimeStartupOrchestrator) run() {
+func (o *runtimeStartupOrchestrator) run() error {
 	for {
 		selected, selectedStartupPath, err := o.selectDatabase()
 		if err != nil {
 			if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
-				return
+				return nil
 			}
-			log.Fatalf("failed to select database: %v", err)
+			return fmt.Errorf("failed to select database: %w", err)
 		}
 
 		o.sessionScopedOptions = trackSessionScopedDirectLaunchOption(o.sessionScopedOptions, selectedStartupPath, selected)
 		o.directLaunchPending = false
 
-		shouldContinue := o.runSelectedDatabase(selected, selectedStartupPath)
+		shouldContinue, err := o.runSelectedDatabase(selected, selectedStartupPath)
+		if err != nil {
+			return err
+		}
 		if !shouldContinue {
-			return
+			return nil
 		}
 	}
 }
@@ -105,12 +107,14 @@ func (o *runtimeStartupOrchestrator) selectDatabase() (tui.DatabaseOption, start
 	)
 }
 
-func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOption, selectedStartupPath startupPath) bool {
+func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOption, selectedStartupPath startupPath) (bool, error) {
 	db, err := connectSelectedDatabase(selected)
 	if err != nil {
 		if selectedStartupPath == startupPathDirectLaunch {
-			fmt.Fprintln(os.Stderr, buildDirectLaunchFailureMessage(selected.ConnString, err.Error()))
-			os.Exit(1)
+			return false, newPresentedStartupFailure(
+				startupExitCodeRuntimeFailure,
+				buildDirectLaunchFailureMessage(selected.ConnString, err.Error()),
+			)
 		}
 
 		o.selectorState = tui.SelectorLaunchState{
@@ -118,7 +122,7 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 			PreferConnString:  selected.ConnString,
 			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
 		}
-		return true
+		return true, nil
 	}
 	o.selectorState = tui.SelectorLaunchState{}
 
@@ -128,12 +132,15 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 			PreferConnString:  selected.ConnString,
 			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
 		}
-		return true
+		return true, nil
 	}
 	if runErr != nil {
-		fmt.Printf("application error: %v\n", runErr)
+		return false, newPresentedStartupFailure(
+			startupExitCodeRuntimeFailure,
+			fmt.Sprintf("application error: %v", runErr),
+		)
 	}
-	return false
+	return false, nil
 }
 
 func runRuntimeSession(db *sql.DB) error {

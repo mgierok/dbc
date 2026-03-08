@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -10,22 +11,37 @@ import (
 )
 
 func main() {
-	err := runStartupDispatch(
-		os.Args[1:],
+	os.Exit(runMain(os.Args[1:], os.Stdout, os.Stderr, runtime.GOOS, debug.ReadBuildInfo, runRuntimeStartup))
+}
+
+type startupBuildInfoReader func() (*debug.BuildInfo, bool)
+
+type startupRuntimeHandler func(startupOptions) error
+
+func runMain(
+	args []string,
+	stdout io.Writer,
+	stderr io.Writer,
+	goos string,
+	readBuildInfo startupBuildInfoReader,
+	runRuntime startupRuntimeHandler,
+) int {
+	err := runStartupDispatchWithOS(
+		goos,
+		args,
 		func(command startupInformationalCommand) error {
-			_, err := fmt.Fprintln(os.Stdout, renderStartupInformationalOutput(command))
+			_, err := fmt.Fprintln(stdout, renderStartupInformationalOutputWithBuildInfo(command, readBuildInfo))
 			return err
 		},
-		func(options startupOptions) error {
-			runRuntimeStartup(options)
-			return nil
-		},
+		runRuntime,
 	)
-	if err != nil {
-		failure := classifyStartupFailure(err)
-		fmt.Fprintln(os.Stderr, failure.stderrOutput)
-		os.Exit(failure.exitCode)
+	if err == nil {
+		return 0
 	}
+
+	failure := classifyStartupFailure(err)
+	_, _ = fmt.Fprintln(stderr, failure.stderrOutput)
+	return failure.exitCode
 }
 
 type startupInformationalCommand int
@@ -53,12 +69,21 @@ type startupFailure struct {
 	stderrOutput string
 }
 
+type presentedStartupFailure struct {
+	exitCode     int
+	stderrOutput string
+}
+
 type startupUsageError struct {
 	message string
 }
 
 func (e startupUsageError) Error() string {
 	return e.message
+}
+
+func (e presentedStartupFailure) Error() string {
+	return e.stderrOutput
 }
 
 func newStartupUsageError(message string) error {
@@ -69,6 +94,13 @@ func newStartupUsageErrorf(format string, args ...any) error {
 	return startupUsageError{message: fmt.Sprintf(format, args...)}
 }
 
+func newPresentedStartupFailure(exitCode int, stderrOutput string) error {
+	return presentedStartupFailure{
+		exitCode:     exitCode,
+		stderrOutput: stderrOutput,
+	}
+}
+
 func classifyStartupFailure(err error) startupFailure {
 	var usageErr startupUsageError
 	if errors.As(err, &usageErr) {
@@ -76,6 +108,11 @@ func classifyStartupFailure(err error) startupFailure {
 			exitCode:     startupExitCodeInvalidUsage,
 			stderrOutput: renderStartupUsageFailureOutput(usageErr),
 		}
+	}
+
+	var presentedErr presentedStartupFailure
+	if errors.As(err, &presentedErr) {
+		return startupFailure(presentedErr)
 	}
 
 	return startupFailure{
@@ -102,7 +139,16 @@ func runStartupDispatch(
 	handleInformational func(startupInformationalCommand) error,
 	runRuntime func(startupOptions) error,
 ) error {
-	if err := validateSupportedOS(runtime.GOOS); err != nil {
+	return runStartupDispatchWithOS(runtime.GOOS, args, handleInformational, runRuntime)
+}
+
+func runStartupDispatchWithOS(
+	goos string,
+	args []string,
+	handleInformational func(startupInformationalCommand) error,
+	runRuntime func(startupOptions) error,
+) error {
+	if err := validateSupportedOS(goos); err != nil {
 		return err
 	}
 
@@ -190,11 +236,18 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 }
 
 func renderStartupInformationalOutput(command startupInformationalCommand) string {
+	return renderStartupInformationalOutputWithBuildInfo(command, debug.ReadBuildInfo)
+}
+
+func renderStartupInformationalOutputWithBuildInfo(
+	command startupInformationalCommand,
+	readBuildInfo startupBuildInfoReader,
+) string {
 	switch command {
 	case startupInformationalHelp:
 		return renderStartupHelpOutput()
 	case startupInformationalVersion:
-		return resolveStartupVersionToken(debug.ReadBuildInfo)
+		return resolveStartupVersionToken(readBuildInfo)
 	default:
 		return ""
 	}
