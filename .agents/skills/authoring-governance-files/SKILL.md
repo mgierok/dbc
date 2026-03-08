@@ -18,7 +18,8 @@ Standardize creation and editing of governance files for AI coding agents, focus
 
 ### Role, Purpose, and Structural Flow
 
-- Target governance documents MUST open with a short role and purpose statement.
+- Target governance documents MUST make role, purpose, and scope clear near the top.
+- A dedicated role/purpose section MAY be omitted when the title, frontmatter, and opening sections already make that context explicit.
 - Scope MUST be explicit in opening sections and top-level constraints.
 - Document structure MUST flow from global constraints to local details.
 
@@ -135,6 +136,9 @@ When adding or changing instructions:
 - Each rule SHOULD define condition, expected behavior, and boundary/exception (if relevant).
 - Overlapping instructions SHOULD be merged.
 - Duplicative restatements SHOULD be removed.
+- Source-document routing guidance SHOULD be kept separate from implementation guardrails when both concerns exist.
+- Sections that point to source documents SHOULD state what operational questions those documents answer for the agent.
+- `AGENTS.md` sections such as architecture or dependencies/toolchain SHOULD stay governance-focused and SHOULD NOT restate detailed technical facts already delegated to source documents, unless a short enforcement summary materially improves compliance.
 
 ### Editing Discipline
 
@@ -143,8 +147,10 @@ When editing `AGENTS.md`:
 1. Prefer updating existing rules in-place.
 2. Preserve section coherence and terminology consistency.
 3. Add new rules only when no existing section can safely absorb the intent.
-4. Numeric heading prefixes (for example `1.`, `1.1`, `2.`) MUST remain sequential and consistent after edits.
+4. If numeric heading prefixes are used (for example `1.`, `1.1`, `2.`), they MUST remain sequential and consistent after edits.
 5. Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
+6. If source-of-truth document guidance exists, it SHOULD appear before engineering guardrails that depend on it.
+7. Standalone documentation-policy sections SHOULD be removed when their content fits more cleanly into global rules or source-document guidance.
 
 ## Anti-Patterns and Quality Checks
 
@@ -157,13 +163,15 @@ When editing `AGENTS.md`:
 - Overly long and multi-clause sentences that reduce junior readability.
 - Skill descriptions that explain only “what” but not “when”.
 - Mixed formatting conventions for equivalent structures in the same governance file (`AGENTS.md` or `SKILL.md`).
+- Architecture or dependency sections in `AGENTS.md` that mostly duplicate facts already assigned to source documents.
+- Source-document guidance that only lists file names without stating what the agent should use each file for.
 
 ### Final Quality Gate
 
 Before finalizing governance output, verify:
 
 1. Scope is limited to `SKILL.md` and/or `AGENTS.md`.
-2. Target documents open with role/purpose, explicit scope, and global-to-local structure.
+2. Target documents make role/purpose and scope clear near the top and keep a global-to-local structure.
 3. Content is in English, junior-readable, and operationally concrete.
 4. Normative statements use uppercase RFC keywords with RFC 2119 semantics.
 5. Hidden normative imperatives without RFC keywords are removed.
