@@ -11,50 +11,61 @@ func (m *Model) renderStatus(width int) string {
 	}
 	mode := "READ-ONLY"
 	if m.hasDirtyEdits() {
-		mode = fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount())
+		mode = m.styles.dirty(fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
 	}
 	parts := []string{
 		mode,
-		fmt.Sprintf("Table: %s", m.currentTableName()),
+		m.statusSegment("Table", m.currentTableName()),
 	}
 	if m.viewMode == ViewRecords {
 		parts = append(parts, m.recordsSummary(), m.pageSummary())
 	}
 	parts = append(parts, m.filterSummary(), m.sortSummary())
 	if m.commandInput.active {
-		parts = append(parts, "Command: "+m.commandPrompt())
+		parts = append(parts, m.statusSegment("Command", m.commandPrompt()))
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
-		parts = append(parts, m.statusMessage)
+		parts = append(parts, m.styleStatusMessage(m.statusMessage))
 	}
 	left := strings.Join(parts, frameSegmentSeparator)
-	return renderStatusWithRightHint(left, runtimeStatusContextHelpHint(), width)
+	return renderStatusWithRightHint(left, m.styles.muted(runtimeStatusContextHelpHint()), width)
 }
 
 func (m *Model) filterSummary() string {
 	if m.currentFilter == nil {
-		return "Filter: none"
+		return m.statusSegment("Filter", "none")
 	}
 	if m.currentFilter.Operator.RequiresValue {
-		return fmt.Sprintf("Filter: %s %s %s", m.currentFilter.Column, m.currentFilter.Operator.Name, m.currentFilter.Value)
+		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.currentFilter.Column, m.currentFilter.Operator.Name, m.currentFilter.Value))
 	}
-	return fmt.Sprintf("Filter: %s %s", m.currentFilter.Column, m.currentFilter.Operator.Name)
+	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.currentFilter.Column, m.currentFilter.Operator.Name))
 }
 
 func (m *Model) sortSummary() string {
 	if m.currentSort == nil {
-		return "Sort: none"
+		return m.statusSegment("Sort", "none")
 	}
-	return fmt.Sprintf("Sort: %s %s", m.currentSort.Column, m.currentSort.Direction)
+	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.currentSort.Column, m.currentSort.Direction))
 }
 
 func (m *Model) recordsSummary() string {
-	return fmt.Sprintf("Records: %d/%d", len(m.records), m.recordTotalCount)
+	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.records), m.recordTotalCount))
 }
 
 func (m *Model) pageSummary() string {
 	currentPage := clamp(m.recordPageIndex+1, 1, maxInt(1, m.recordTotalPages))
-	return fmt.Sprintf("Page: %d/%d", currentPage, maxInt(1, m.recordTotalPages))
+	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, maxInt(1, m.recordTotalPages)))
+}
+
+func (m *Model) statusSegment(label, value string) string {
+	return m.styles.label(label+":") + " " + value
+}
+
+func (m *Model) styleStatusMessage(message string) string {
+	if isErrorLikeMessage(message) {
+		return m.styles.error(message)
+	}
+	return message
 }
 
 func renderStatusWithRightHint(left, right string, width int) string {

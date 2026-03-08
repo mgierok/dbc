@@ -10,6 +10,7 @@ import (
 func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 	// Arrange
 	model := &Model{
+		styles:   renderStyles{enabled: true},
 		viewMode: ViewRecords,
 		schema: dto.Schema{
 			Columns: []dto.SchemaColumn{
@@ -105,7 +106,7 @@ func TestFormatRecordsHeaderRows_UsesFullWidthBoxWithCenteredLabel(t *testing.T)
 	label := "name " + iconSortAsc
 
 	// Act
-	rows := formatRecordsHeaderRows([]string{label}, []int{20})
+	rows := formatRecordsHeaderRows([]string{label}, []int{20}, renderStyles{})
 
 	// Assert
 	if len(rows) != 3 {
@@ -185,7 +186,7 @@ func TestFormatRecordsHeaderRows_UsesDoubleSpaceSeparatorBetweenColumns(t *testi
 	widths := []int{6, 6}
 
 	// Act
-	rows := formatRecordsHeaderRows(values, widths)
+	rows := formatRecordsHeaderRows(values, widths, renderStyles{})
 
 	// Assert
 	if len(rows) != 3 {
@@ -359,6 +360,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	// Arrange
 	longValue := "abcdefghijklmnopqrstuvwxyz0123456789"
 	model := &Model{
+		styles:   renderStyles{enabled: true},
 		viewMode: ViewRecords,
 		focus:    FocusContent,
 		recordDetail: recordDetailState{
@@ -404,6 +406,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	t.Run("persisted row", func(t *testing.T) {
 		// Arrange
 		model := &Model{
+			styles: renderStyles{enabled: true},
 			schema: dto.Schema{
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},
@@ -477,6 +480,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	t.Run("edited persisted row", func(t *testing.T) {
 		// Arrange
 		model := &Model{
+			styles: renderStyles{enabled: true},
 			schema: dto.Schema{
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},

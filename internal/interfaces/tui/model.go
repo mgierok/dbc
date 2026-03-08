@@ -214,6 +214,7 @@ type Model struct {
 	translator     *usecase.StagedChangesTranslator
 	stagingPolicy  *usecase.StagingPolicy
 	dirtyNavPolicy *usecase.DirtyNavigationPolicy
+	styles         renderStyles
 
 	width  int
 	height int
@@ -319,6 +320,7 @@ func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSc
 		listOperators:     listOperators,
 		saveChanges:       saveChanges,
 		translator:        translator,
+		styles:            detectRenderStyles(),
 		focus:             FocusTables,
 		viewMode:          ViewSchema,
 		recordTotalPages:  1,

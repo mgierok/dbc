@@ -16,6 +16,7 @@ type standardizedPopupSpec struct {
 	defaultWidth        int
 	minWidth            int
 	maxWidth            int
+	styles              renderStyles
 }
 
 const (
@@ -52,13 +53,19 @@ func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopup
 		return frameVertical + content + frameVertical
 	}
 
-	topBorder := renderTitledTopBorder(title, width-2)
+	buildSelectedContentLine := func(text string) string {
+		content := strings.Repeat(" ", leftPadding) + padRight(text, contentWidth) + strings.Repeat(" ", rightPadding)
+		content = padRight(content, contentInnerWidth)
+		return frameVertical + spec.styles.selected(content) + frameVertical
+	}
+
+	topBorder := renderTitledTopBorder(spec.styles.title(title), width-2)
 	bottomBorder := frameBottomLeft + strings.Repeat(frameHorizontal, width-2) + frameBottomRight
 	sectionDivider := frameJoinLeft + strings.Repeat(frameHorizontal, width-2) + frameJoinRight
 
 	lines := []string{topBorder}
 	if strings.TrimSpace(spec.summary) != "" {
-		lines = append(lines, buildContentLine(spec.summary))
+		lines = append(lines, buildContentLine(spec.styles.summary(spec.summary)))
 	}
 	lines = append(lines, sectionDivider)
 
@@ -93,6 +100,10 @@ func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopup
 			}
 			row = prefix + row
 		}
+		if i == selected {
+			lines = append(lines, buildSelectedContentLine(row))
+			continue
+		}
 		lines = append(lines, buildContentLine(row))
 	}
 	for i := end - offset; i < visibleRows; i++ {
@@ -100,7 +111,7 @@ func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopup
 	}
 
 	if spec.showScrollIndicator && maxOffset > 0 {
-		indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
+		indicator := spec.styles.muted(fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1))
 		lines = append(lines, buildContentLine(indicator))
 	}
 

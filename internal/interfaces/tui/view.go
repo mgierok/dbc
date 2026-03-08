@@ -38,8 +38,8 @@ func (m *Model) View() string {
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
-	left := renderPanelBox("Tables", m.renderTables(leftWidth, bodyHeight), leftWidth)
-	right := renderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth)
+	left := renderPanelBox("Tables", m.renderTables(leftWidth, bodyHeight), leftWidth, m.styles)
+	right := renderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth, m.styles)
 	lines := mergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
 	lines = append(lines, m.renderStatusBox(width)...)
 	lines = fitLinesToHeight(lines, height, width)
@@ -127,7 +127,7 @@ func (m *Model) renderTables(width, height int) []string {
 		items[i] = table.Name
 	}
 
-	listLines := renderList(items, m.selectedTable, height, width, true)
+	listLines := renderList(items, m.selectedTable, height, width, true, m.styles)
 	return padLines(listLines, height, width)
 }
 

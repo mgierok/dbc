@@ -59,6 +59,7 @@ func (m *databaseSelectorModel) renderHelpPopup(totalWidth, totalHeight int) []s
 		defaultWidth:        60,
 		minWidth:            20,
 		maxWidth:            70,
+		styles:              m.styles,
 	})
 }
 
@@ -105,10 +106,10 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 	if strings.TrimSpace(configPath) == "" {
 		configPath = "unavailable"
 	}
-	pathLine := "Config: " + configPath
+	pathLine := m.styles.summary("Config: " + configPath)
 
 	bodyLines := m.mainContentLines(listHeight)
-	hintLine := runtimeStatusContextHelpHint()
+	hintLine := m.styles.muted(runtimeStatusContextHelpHint())
 
 	contentAreaWidth := textWidth(title)
 	if textWidth(pathLine) > contentAreaWidth {
@@ -152,7 +153,7 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 		return frameVertical + content + frameVertical
 	}
 
-	topBorder := renderTitledTopBorder(title, contentInnerWidth)
+	topBorder := renderTitledTopBorder(m.styles.title(title), contentInnerWidth)
 	bottomBorder := frameBottomLeft + strings.Repeat(frameHorizontal, contentInnerWidth) + frameBottomRight
 	sectionDivider := frameJoinLeft + strings.Repeat(frameHorizontal, contentInnerWidth) + frameJoinRight
 	lines := []string{
@@ -161,7 +162,11 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 		sectionDivider,
 	}
 	for _, line := range bodyLines {
-		lines = append(lines, buildContentLine(line))
+		framedLine := buildContentLine(line)
+		if strings.HasPrefix(line, selectionSelectedPrefix()) {
+			framedLine = m.styles.selected(framedLine)
+		}
+		lines = append(lines, framedLine)
 	}
 
 	minHeight := popupMinHeight(m.height)
@@ -209,7 +214,7 @@ func (m *databaseSelectorModel) browseContentLines(listHeight int) []string {
 		}
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
-		lines = append(lines, "Status: "+m.statusMessage)
+		lines = append(lines, "Status: "+m.styleStatusMessage())
 	}
 	return lines
 }
@@ -237,11 +242,11 @@ func (m *databaseSelectorModel) formContentLines() []string {
 	lines := []string{
 		title,
 		"",
-		namePrefix + "Name: " + nameValue,
-		pathPrefix + "Path: " + pathValue,
+		m.styleFormLine(namePrefix, "Name", nameValue, m.form.activeField == selectorInputName),
+		m.styleFormLine(pathPrefix, "Path", pathValue, m.form.activeField == selectorInputPath),
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
-		lines = append(lines, "", "Error: "+m.form.errorMessage)
+		lines = append(lines, "", m.styles.error("Error: "+m.form.errorMessage))
 	}
 	return lines
 }
@@ -292,14 +297,26 @@ func (m *databaseSelectorModel) formLines() []string {
 	lines := []string{
 		title,
 		"",
-		namePrefix + "Name: " + nameValue,
-		pathPrefix + "Path: " + pathValue,
+		m.styleFormLine(namePrefix, "Name", nameValue, m.form.activeField == selectorInputName),
+		m.styleFormLine(pathPrefix, "Path", pathValue, m.form.activeField == selectorInputPath),
 		"",
 		selectorFormSwitchLine(),
 		selectorFormSubmitLine(escLabel),
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
-		lines = append(lines, "Error: "+m.form.errorMessage)
+		lines = append(lines, m.styles.error("Error: "+m.form.errorMessage))
 	}
 	return lines
+}
+
+func (m *databaseSelectorModel) styleFormLine(prefix, label, value string, active bool) string {
+	line := prefix + label + ": " + value
+	return line
+}
+
+func (m *databaseSelectorModel) styleStatusMessage() string {
+	if isErrorLikeMessage(m.statusMessage) {
+		return m.styles.error(m.statusMessage)
+	}
+	return m.statusMessage
 }

@@ -35,7 +35,7 @@ func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 	if len(lines) < 4 {
 		t.Fatalf("expected at least 4 lines in runtime view, got %d", len(lines))
 	}
-	topLine := lines[0]
+	topLine := stripANSI(lines[0])
 	if !strings.Contains(topLine, frameTopLeft+"Tables") || !strings.Contains(topLine, frameTopLeft+"Schema") {
 		t.Fatalf("expected titled top borders for both panels, got %q", topLine)
 	}
@@ -43,9 +43,9 @@ func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 		t.Fatalf("expected independent panel boxes without shared joins, got %q", topLine)
 	}
 
-	statusTop := lines[len(lines)-3]
-	statusContent := lines[len(lines)-2]
-	statusBottom := lines[len(lines)-1]
+	statusTop := stripANSI(lines[len(lines)-3])
+	statusContent := stripANSI(lines[len(lines)-2])
+	statusBottom := stripANSI(lines[len(lines)-1])
 
 	if !strings.HasPrefix(statusTop, frameTopLeft) || !strings.HasSuffix(statusTop, frameTopRight) {
 		t.Fatalf("expected framed status top border, got %q", statusTop)
@@ -118,7 +118,7 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			view := tc.model.View()
-			topLine := strings.Split(view, "\n")[0]
+			topLine := stripANSI(strings.Split(view, "\n")[0])
 			if !strings.Contains(topLine, tc.expected) {
 				t.Fatalf("expected top line to contain %q, got %q", tc.expected, topLine)
 			}

@@ -21,7 +21,7 @@ func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
 	}
 
 	// Act
-	popup := strings.Join(model.renderFilterPopup(60), "\n")
+	popup := stripANSI(strings.Join(model.renderFilterPopup(60), "\n"))
 
 	// Assert
 	if !strings.Contains(popup, "Value: a|bc") {
@@ -50,7 +50,7 @@ func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 	}
 
 	// Act
-	popup := strings.Join(model.renderEditPopup(60), "\n")
+	popup := stripANSI(strings.Join(model.renderEditPopup(60), "\n"))
 
 	// Assert
 	if !strings.Contains(popup, "Value: jo|hn") {
@@ -78,7 +78,7 @@ func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 	}
 
 	// Act
-	popup := strings.Join(model.renderEditPopup(60), "\n")
+	popup := stripANSI(strings.Join(model.renderEditPopup(60), "\n"))
 
 	// Assert
 	if !strings.Contains(popup, "name (TEXT)"+frameSegmentSeparator+"NULLABLE") {
@@ -97,7 +97,7 @@ func TestRenderHelpPopup_ShowsOnlyCurrentContextBindings(t *testing.T) {
 	}
 
 	// Act
-	popup := strings.Join(model.renderHelpPopup(60), "\n")
+	popup := stripANSI(strings.Join(model.renderHelpPopup(60), "\n"))
 
 	// Assert
 	if !strings.Contains(popup, "Records: Esc tables") {
@@ -129,16 +129,17 @@ func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
 		t.Fatalf("expected help popup to include framed header and content, got %q", strings.Join(lines, "\n"))
 	}
 
-	if !strings.HasPrefix(lines[0], frameTopLeft+"Context Help: Tables") {
-		t.Fatalf("expected context-specific help title in top border, got %q", lines[0])
+	if !strings.HasPrefix(stripANSI(lines[0]), frameTopLeft+"Context Help: Tables") {
+		t.Fatalf("expected context-specific help title in top border, got %q", stripANSI(lines[0]))
 	}
 
-	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(lines[1], frameVertical), frameVertical))
+	summaryLine := stripANSI(lines[1])
+	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(summaryLine, frameVertical), frameVertical))
 	if summary != "Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes." {
 		t.Fatalf("expected config-style summary row below title, got %q", summary)
 	}
 
-	separator := strings.TrimSpace(lines[2])
+	separator := strings.TrimSpace(stripANSI(lines[2]))
 	if !strings.HasPrefix(separator, frameJoinLeft) || !strings.HasSuffix(separator, frameJoinRight) {
 		t.Fatalf("expected separator row with border joins, got %q", separator)
 	}
@@ -155,13 +156,13 @@ func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 		helpPopup:     helpPopup{active: true, context: helpPopupContextRecords},
 		statusMessage: "",
 	}
-	initial := strings.Join(model.renderHelpPopup(60), "\n")
+	initial := stripANSI(strings.Join(model.renderHelpPopup(60), "\n"))
 
 	// Act
 	for range 30 {
 		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 	}
-	scrolled := strings.Join(model.renderHelpPopup(60), "\n")
+	scrolled := stripANSI(strings.Join(model.renderHelpPopup(60), "\n"))
 
 	// Assert
 	if strings.Contains(initial, "Shift+S sort") {
@@ -188,8 +189,8 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 	after := strings.Join(model.renderHelpPopup(60), "\n")
 
 	// Assert
-	if before != after {
-		t.Fatalf("expected non-scroll key to keep help window stable, before=%q after=%q", before, after)
+	if stripANSI(before) != stripANSI(after) {
+		t.Fatalf("expected non-scroll key to keep help window stable, before=%q after=%q", stripANSI(before), stripANSI(after))
 	}
 }
 
@@ -202,7 +203,7 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	}
 
 	// Act
-	view := model.View()
+	view := stripANSI(model.View())
 
 	// Assert
 	if strings.Contains(view, iconSelection+" Tables") || strings.Contains(view, iconSelection+" Schema") || strings.Contains(view, iconSelection+" Records") {
@@ -242,7 +243,7 @@ func TestView_FilterPopupRendersAsCenteredModal(t *testing.T) {
 	}
 
 	// Act
-	view := model.View()
+	view := stripANSI(model.View())
 
 	// Assert
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
@@ -290,7 +291,7 @@ func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
 	}
 
 	// Act
-	view := model.View()
+	view := stripANSI(model.View())
 
 	// Assert
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
@@ -330,7 +331,7 @@ func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
-	view := model.View()
+	view := stripANSI(model.View())
 
 	// Assert
 	if !strings.Contains(view, frameTopLeft+"Config") {
@@ -381,8 +382,8 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 	if len(lines) < 6 {
 		t.Fatalf("expected modal config popup with framed header and options, got %q", popup)
 	}
-	if !strings.HasPrefix(lines[0], frameTopLeft+"Config") {
-		t.Fatalf("expected config title in top border, got %q", lines[0])
+	if !strings.HasPrefix(stripANSI(lines[0]), frameTopLeft+"Config") {
+		t.Fatalf("expected config title in top border, got %q", stripANSI(lines[0]))
 	}
 	if !strings.Contains(popup, "Unsaved changes detected.") {
 		t.Fatalf("expected decision summary in popup, got %q", popup)

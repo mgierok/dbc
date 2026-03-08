@@ -24,7 +24,7 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	lines := strings.Join(model.formLines(), "\n")
+	lines := stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
 	if !strings.Contains(lines, iconSelection+" Name: |") {
@@ -36,7 +36,7 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
-	lines = strings.Join(model.formLines(), "\n")
+	lines = stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
 	if !strings.Contains(lines, iconSelection+" Path: |") {
@@ -58,7 +58,7 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	lines := strings.Join(model.formLines(), "\n")
+	lines := stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
 	if !strings.Contains(lines, iconSelection+" Name: local|") {
@@ -70,7 +70,7 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
-	lines = strings.Join(model.formLines(), "\n")
+	lines = stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
 	if !strings.Contains(lines, iconSelection+" Path: /tmp/local.sqlite|") {
@@ -94,7 +94,7 @@ func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
 	model.height = 24
 
 	// Act
-	view := model.View()
+	view := stripANSI(model.View())
 
 	// Assert
 	if !strings.Contains(view, "/tmp/config.toml") {
@@ -186,7 +186,7 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	framedWidth := 0
 	hasFramedLine := false
 	for _, line := range lines {
-		trimmed := strings.TrimLeft(line, " ")
+		trimmed := strings.TrimLeft(stripANSI(line), " ")
 		if trimmed == "" {
 			continue
 		}
@@ -244,14 +244,14 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 	}
 
 	// Act + Assert: browse mode.
-	browse := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+	browse := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 	if strings.Contains(browse, selectorContextLinesBrowseDefault()[0]) || strings.Contains(browse, selectorContextLinesBrowseDefault()[1]) {
 		t.Fatalf("expected browse shortcuts to be removed from main content, got %q", browse)
 	}
 
 	// Act + Assert: add mode.
 	model.openAddForm()
-	addView := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+	addView := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 	if strings.Contains(addView, selectorFormSwitchLine()) || strings.Contains(addView, selectorFormSubmitLine("Esc cancel")) {
 		t.Fatalf("expected add-form shortcuts to be removed from main content, got %q", addView)
 	}
@@ -259,7 +259,7 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 	// Act + Assert: delete-confirm mode.
 	model.mode = selectorModeBrowse
 	model.openDeleteConfirmation()
-	deleteView := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+	deleteView := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 	if strings.Contains(deleteView, selectorDeleteConfirmationLine()) {
 		t.Fatalf("expected delete-confirm shortcuts to be removed from main content, got %q", deleteView)
 	}
@@ -303,7 +303,7 @@ func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *tes
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 
 	// Act
-	view := model.View()
+	view := stripANSI(model.View())
 
 	// Assert
 	if !strings.Contains(view, "Context Help: Config") {
@@ -317,5 +317,32 @@ func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *tes
 	}
 	if strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
 		t.Fatalf("expected help popup to exclude legend, got %q", view)
+	}
+}
+
+func TestDatabaseSelector_BoxLines_UsesPopupLikeSummaryAndSelectionStyling(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+		activePath: "/tmp/config.toml",
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.styles = renderStyles{enabled: true}
+
+	// Act
+	lines := model.boxLines(model.listHeight(24), 80)
+	view := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(lines[1], "\x1b[1mConfig: /tmp/config.toml\x1b[0m") {
+		t.Fatalf("expected selector config path to use popup summary styling, got %q", lines[1])
+	}
+	if !strings.Contains(view, "\x1b[7m"+frameVertical+" "+selectionSelectedPrefix()+"⚙ local"+frameSegmentSeparator+"/tmp/local.sqlite") {
+		t.Fatalf("expected selector selection to use popup-like full-line styling, got %q", view)
 	}
 }

@@ -16,7 +16,7 @@ func (m *Model) renderSchema(width, height int) []string {
 	for i, column := range m.schema.Columns {
 		items[i] = fmt.Sprintf("%s : %s", column.Name, column.Type)
 	}
-	lines := renderList(items, m.schemaIndex, height, width, m.focus == FocusContent && m.viewMode == ViewSchema)
+	lines := renderList(items, m.schemaIndex, height, width, m.focus == FocusContent && m.viewMode == ViewSchema, m.styles)
 	return padLines(lines, height, width)
 }
 
@@ -40,7 +40,7 @@ func (m *Model) renderRecords(width, height int) []string {
 	}
 	columnWidths := allocateColumnWidths(rowWidth, len(columns))
 	headerPrefix := strings.Repeat(" ", recordSelectionPrefixWidth+recordMarkerSlotWidth)
-	headerRows := formatRecordsHeaderRows(columns, columnWidths)
+	headerRows := formatRecordsHeaderRows(columns, columnWidths, m.styles)
 	for _, headerRow := range headerRows {
 		lines = append(lines, padRight(headerPrefix+headerRow, width))
 	}
@@ -85,7 +85,11 @@ func (m *Model) renderRecords(width, height int) []string {
 		}
 		row := formatRecordRow(displayValues, columnWidths, focusColumn)
 		rowMarker := m.recordRowMarker(i)
-		lines = append(lines, padRight(prefix+rowMarker+" "+row, width))
+		line := padRight(prefix+rowMarker+" "+row, width)
+		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
+			line = m.styles.selected(line)
+		}
+		lines = append(lines, line)
 	}
 	return padLines(lines, height, width)
 }
@@ -144,7 +148,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 	} else if m.isRowEdited(rowIndex) {
 		rowLine = iconInfo + " Edited record"
 	}
-	lines = append(lines, wrapTextToWidth(rowLine, width)...)
+	lines = append(lines, wrapTextToWidth(m.styles.summary(rowLine), width)...)
 	lines = append(lines, "")
 
 	valueWidth := width - 2
@@ -154,7 +158,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	for columnIndex, column := range m.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
-		header := fmt.Sprintf("%s (%s)", bold(column.Name), column.Type)
+		header := fmt.Sprintf("%s (%s)", m.styles.title(column.Name), column.Type)
 		if edited {
 			header += " " + iconEdit
 		}
@@ -240,7 +244,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	return widths
 }
 
-func formatRecordsHeaderRows(values []string, widths []int) []string {
+func formatRecordsHeaderRows(values []string, widths []int, styles renderStyles) []string {
 	if len(widths) == 0 {
 		return nil
 	}
@@ -253,6 +257,7 @@ func formatRecordsHeaderRows(values []string, widths []int) []string {
 		if i < len(values) {
 			value = values[i]
 		}
+		value = styles.title(value)
 		top, middle, bottom := formatRecordsHeaderCell(value, width)
 		topParts[i] = top
 		middleParts[i] = middle

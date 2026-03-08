@@ -15,7 +15,7 @@ Database Commander is a terminal-first application for browsing and managing dat
 Prerequisites:
 - Go `1.25.0` or newer.
 - Supported operating systems: macOS and Linux.
-- Terminal with UTF-8 Unicode rendering support for box-drawing glyphs used by the TUI.
+- Terminal with UTF-8 Unicode rendering support for box-drawing glyphs and standard ANSI SGR text attributes used by the TUI. Set `NO_COLOR` to force monochrome output.
 
 Clone repository and install:
 ```bash

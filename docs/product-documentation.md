@@ -101,9 +101,11 @@ Current product value and scope:
 
 - The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present.
 - Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
+- Visual emphasis uses terminal-native text attributes instead of application-defined colors: selected items use reverse video, titles and status labels use emphasis, secondary hints are visually subdued, and error messages are emphasized with underline.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
 - The status bar always communicates current mode, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`).
 - Every active editable text field in the product shows a visible caret `|`.
+- If `NO_COLOR` is set or the terminal reports `TERM=dumb`, DBC falls back to unstyled monochrome rendering.
 
 ## Constraints and Non-Goals
 

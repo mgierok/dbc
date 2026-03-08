@@ -19,6 +19,7 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 		defaultWidth:        50,
 		minWidth:            20,
 		maxWidth:            60,
+		styles:              m.styles,
 	})
 }
 
@@ -61,6 +62,7 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 		defaultWidth: 60,
 		minWidth:     20,
 		maxWidth:     60,
+		styles:       m.styles,
 	})
 }
 
@@ -98,6 +100,7 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 		defaultWidth: 60,
 		minWidth:     20,
 		maxWidth:     60,
+		styles:       m.styles,
 	})
 }
 
@@ -144,7 +147,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 	}
 
 	if strings.TrimSpace(m.editPopup.errorMessage) != "" {
-		rows = append(rows, "Error: "+m.editPopup.errorMessage)
+		rows = append(rows, m.styles.error("Error: "+m.editPopup.errorMessage))
 	}
 
 	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
@@ -155,6 +158,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 		defaultWidth: 60,
 		minWidth:     30,
 		maxWidth:     60,
+		styles:       m.styles,
 	})
 }
 
@@ -185,5 +189,6 @@ func (m *Model) renderConfirmPopup(totalWidth int) []string {
 		defaultWidth: 50,
 		minWidth:     20,
 		maxWidth:     60,
+		styles:       m.styles,
 	})
 }

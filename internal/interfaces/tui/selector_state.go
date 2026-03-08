@@ -48,6 +48,7 @@ type selectorHelpPopup struct {
 type databaseSelectorModel struct {
 	ctx     context.Context
 	manager selectorManager
+	styles  renderStyles
 
 	options  []DatabaseOption
 	selected int
@@ -80,6 +81,7 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, laun
 	model := &databaseSelectorModel{
 		ctx:                     ctx,
 		manager:                 manager,
+		styles:                  detectRenderStyles(),
 		mode:                    selectorModeBrowse,
 		launchAdditionalOptions: normalizeAdditionalOptions(state.AdditionalOptions),
 	}

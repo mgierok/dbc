@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-func renderList(items []string, selected, height, width int, focused bool) []string {
+func renderList(items []string, selected, height, width int, focused bool, styles renderStyles) []string {
 	if height < 1 {
 		return nil
 	}
@@ -22,8 +22,11 @@ func renderList(items []string, selected, height, width int, focused bool) []str
 		if focused && i == selected {
 			prefix = selectionSelectedPrefix()
 		}
-		line := prefix + items[i]
-		lines = append(lines, padRight(line, width))
+		line := padRight(prefix+items[i], width)
+		if focused && i == selected {
+			line = styles.selected(line)
+		}
+		lines = append(lines, line)
 	}
 	return padLines(lines, height, width)
 }
@@ -36,11 +39,11 @@ func selectionUnselectedPrefix() string {
 	return strings.Repeat(" ", textWidth(selectionSelectedPrefix()))
 }
 
-func renderPanelBox(title string, content []string, contentWidth int) []string {
+func renderPanelBox(title string, content []string, contentWidth int, styles renderStyles) []string {
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
-	top := renderTitledTopBorder(title, contentWidth)
+	top := renderTitledTopBorder(styles.title(title), contentWidth)
 	bottom := frameBottomLeft + strings.Repeat(frameHorizontal, contentWidth) + frameBottomRight
 
 	lines := make([]string, 0, len(content)+2)
@@ -268,10 +271,6 @@ func wrapTextToWidth(text string, width int) []string {
 
 func textWidth(text string) int {
 	return ansi.StringWidth(text)
-}
-
-func bold(text string) string {
-	return "\x1b[1m" + text + "\x1b[0m"
 }
 
 func minInt(a, b int) int {

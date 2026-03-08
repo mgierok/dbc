@@ -15,7 +15,7 @@ func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(120)
+	status := stripANSI(model.renderStatus(120))
 
 	// Assert
 	if !strings.HasSuffix(status, "Context help: ?") {
@@ -31,7 +31,7 @@ func TestRenderStatus_DoesNotIncludeContextShortcutList(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(200)
+	status := stripANSI(model.renderStatus(200))
 
 	// Assert
 	if strings.Contains(status, "Records: Esc tables | e edit | Enter detail") {
@@ -47,7 +47,7 @@ func TestRenderStatus_RightHintPriorityOnNarrowWidth(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(20)
+	status := stripANSI(model.renderStatus(20))
 
 	// Assert
 	if !strings.HasSuffix(status, "Context help: ?") {
@@ -70,7 +70,7 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(80)
+	status := stripANSI(model.renderStatus(80))
 
 	// Assert
 	if !strings.Contains(status, "WRITE (dirty: 3)") {
@@ -85,7 +85,7 @@ func TestRenderStatus_DoesNotShowViewIndicator(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(200)
+	status := stripANSI(model.renderStatus(200))
 
 	// Assert
 	if strings.Contains(status, "View: ") {
@@ -104,7 +104,7 @@ func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(200)
+	status := stripANSI(model.renderStatus(200))
 
 	// Assert
 	if !strings.Contains(status, "Command: :con|fig") {
@@ -123,7 +123,7 @@ func TestRenderStatus_RecordsViewShowsTotalAndPagination(t *testing.T) {
 	}
 
 	// Act
-	status := model.renderStatus(220)
+	status := stripANSI(model.renderStatus(220))
 
 	// Assert
 	if !strings.Contains(status, "Records: 20/137") {
@@ -144,7 +144,7 @@ func TestRenderStatus_RecordsViewShowsSinglePageSummaryForEmptyResult(t *testing
 	}
 
 	// Act
-	status := model.renderStatus(220)
+	status := stripANSI(model.renderStatus(220))
 
 	// Assert
 	if !strings.Contains(status, "Records: 0/0") {
