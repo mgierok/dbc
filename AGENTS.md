@@ -39,6 +39,8 @@ For non-trivial architecture work, the agent SHOULD consult `docs/clean-architec
 
 - The agent MUST use English for identifiers and internal technical documentation.
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
+- For feature changes, bug fixes, and behavior-impacting refactors, the agent MUST follow `TDD Rules`.
+- Before finalizing a non-documentation code change, the agent MUST run the applicable formatter, tests, and linter for the affected stack.
 - The agent MUST NOT add speculative abstractions, configurability, or extensibility that were not requested.
 - Changes MUST stay minimal and scoped to task intent.
 - Changes MUST stay surgical; every changed line MUST map directly to task intent.
@@ -52,10 +54,9 @@ Quick examples:
 
 #### TDD Rules
 
-- Before starting unit-test work, the agent MUST invoke skill `create-unit-tests`.
-- This prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests.
-- The agent MUST apply this prerequisite independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
-- TDD MUST be applied for every feature change, bug fix, and behavior-impacting refactor.
+- This section MUST be applied whenever `General Development Rules` routes work to `TDD Rules`.
+- Before starting unit-test work for such changes, the agent MUST invoke skill `create-unit-tests`.
+- The `create-unit-tests` prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests, independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
 - The agent MUST treat `docs/test-driven-development.md` as the normative TDD reference and SHOULD consult it for behavior-impacting implementation, test strategy updates, and non-trivial Red-Green-Refactor decisions.
 - For bug fixes, the agent MUST add a regression unit test that reproduces the bug before applying the fix.
 - The agent MUST NOT weaken assertions only to make failing behavior pass.
