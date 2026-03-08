@@ -49,4 +49,4 @@ test "should_return_error_when_dependency_times_out":
 
 ## References
 
-- Read `references/unit-testing-guide.md` for detailed heuristics, anti-patterns, pseudo-code patterns, and review checklists.
+- Read `.agents/skills/create-unit-tests/references/unit-testing-guide.md` for detailed heuristics, anti-patterns, pseudo-code patterns, and review checklists.

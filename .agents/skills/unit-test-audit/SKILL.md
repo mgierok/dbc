@@ -88,8 +88,8 @@ The skill is language agnostic and project agnostic. It MUST treat project-defin
 - Prioritization SHOULD consider defect risk, maintainability gain, and effort.
 
 7. Produce final report
-- Generate a Markdown report using `references/report-template.md`.
-- Follow validation points from `references/analysis-checklist.md`.
+- Generate a Markdown report using `.agents/skills/unit-test-audit/references/report-template.md`.
+- Follow validation points from `.agents/skills/unit-test-audit/references/analysis-checklist.md`.
 
 ## Decision Rules
 
@@ -186,5 +186,5 @@ The skill MUST write the report file to `<project-root>/unit-test-audit.md`.
 
 ## References
 
-- `references/analysis-checklist.md`
-- `references/report-template.md`
+- `.agents/skills/unit-test-audit/references/analysis-checklist.md`
+- `.agents/skills/unit-test-audit/references/report-template.md`

@@ -204,9 +204,9 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - Prioritization SHOULD consider correctness risk, maintainability gain, migration effort, and blast radius.
 
 10. Produce final report
-- Generate a Markdown report using `references/report-template.md` as a baseline structure.
+- Generate a Markdown report using `.agents/skills/architecture-audit/references/report-template.md` as a baseline structure.
 - The report MUST be extended with any required sections from `Output Requirements` that are missing in the template.
-- Follow validation points from `references/analysis-checklist.md`.
+- Follow validation points from `.agents/skills/architecture-audit/references/analysis-checklist.md`.
 
 ## Decision Rules
 
@@ -248,5 +248,5 @@ The skill MUST write the report file to `<project-root>/architecture-audit.md`.
 
 ## References
 
-- `references/analysis-checklist.md`
-- `references/report-template.md`
+- `.agents/skills/architecture-audit/references/analysis-checklist.md`
+- `.agents/skills/architecture-audit/references/report-template.md`

@@ -22,11 +22,11 @@ description: Assess whether non-documentation codebase changes require updating 
 
 ## Required Reference
 
-- Before decision and writing, the agent MUST load `references/readme-template.md`.
+- Before decision and writing, the agent MUST load `.agents/skills/authoring-readme-file/references/readme-template.md`.
 
 ## Structural Contract (Mandatory)
 
-- `README.md` MUST stay aligned with the section set and order from `references/readme-template.md`.
+- `README.md` MUST stay aligned with the section set and order from `.agents/skills/authoring-readme-file/references/readme-template.md`.
 - Existing heading anchors SHOULD be preserved unless restructuring is explicitly requested.
 - If one fact fits multiple sections, it SHOULD be placed in the most user-actionable section, and duplication SHOULD be avoided.
 
@@ -37,7 +37,7 @@ description: Assess whether non-documentation codebase changes require updating 
   - `NO_UPDATE_REQUIRED`
 - Every decision output MUST include:
   - `EVIDENCE`: concrete user-facing facts supporting the decision
-  - `IMPACTED SECTIONS`: sections mapped to `references/readme-template.md` (or `none`)
+  - `IMPACTED SECTIONS`: sections mapped to `.agents/skills/authoring-readme-file/references/readme-template.md` (or `none`)
 - The agent MUST apply strict evidence threshold:
   - `UPDATE_REQUIRED` MUST be used only when at least one documented README fact materially changed.
   - When evidence is insufficient or ambiguous, the agent MUST return `NO_UPDATE_REQUIRED`.
@@ -74,7 +74,7 @@ Return `NO_UPDATE_REQUIRED` when changes are README-irrelevant, for example:
 2. Apply the Decision Rules and produce `DECISION`, `EVIDENCE`, and `IMPACTED SECTIONS`.
 3. If decision is `NO_UPDATE_REQUIRED`, the agent MUST stop after decision output.
 4. If decision is `UPDATE_REQUIRED`, the agent MUST update `README.md` only.
-5. After update, the agent MUST verify structural alignment with `references/readme-template.md`.
+5. After update, the agent MUST verify structural alignment with `.agents/skills/authoring-readme-file/references/readme-template.md`.
 6. The completion output MUST include:
    - `DECISION`
    - `EVIDENCE`
@@ -85,5 +85,5 @@ Return `NO_UPDATE_REQUIRED` when changes are README-irrelevant, for example:
 ## Consistency and Integrity Contract (Mandatory)
 
 - This file MUST remain internally consistent and free of contradictory normative rules.
-- The agent MUST keep this file and `references/readme-template.md` non-contradictory.
+- The agent MUST keep this file and `.agents/skills/authoring-readme-file/references/readme-template.md` non-contradictory.
 - If structural requirements in this file change, the template MUST be updated in the same change set.

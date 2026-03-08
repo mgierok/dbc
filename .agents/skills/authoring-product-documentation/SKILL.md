@@ -28,13 +28,13 @@ description: Assess whether non-documentation codebase changes require updating 
 
 ## Required Reference
 
-- Before decision or writing, the agent MUST load `references/product-documentation-template.md`.
+- Before decision or writing, the agent MUST load `.agents/skills/authoring-product-documentation/references/product-documentation-template.md`.
 
 ## Structural Contract
 
-- `docs/product-documentation.md` MUST preserve the mandatory section set and order defined in `references/product-documentation-template.md`.
+- `docs/product-documentation.md` MUST preserve the mandatory section set and order defined in `.agents/skills/authoring-product-documentation/references/product-documentation-template.md`.
 - The section title `## Functional Behavior` MUST be preserved exactly.
-- Optional sections from `references/product-documentation-template.md` MAY be included only when they add unique product-facing information.
+- Optional sections from `.agents/skills/authoring-product-documentation/references/product-documentation-template.md` MAY be included only when they add unique product-facing information.
 - Existing section titles and order MUST NOT change unless the user explicitly requests a structural migration.
 - Facts MUST be placed in the single best-fit section and MUST NOT be repeated across multiple sections.
 
@@ -45,7 +45,7 @@ description: Assess whether non-documentation codebase changes require updating 
   - `NO_UPDATE_REQUIRED`
 - Every decision output MUST include:
   - `EVIDENCE`: concrete product-facing facts that support the decision
-  - `IMPACTED SECTIONS`: section names from `references/product-documentation-template.md`, or `none`
+  - `IMPACTED SECTIONS`: section names from `.agents/skills/authoring-product-documentation/references/product-documentation-template.md`, or `none`
 - `UPDATE_REQUIRED` MUST be used only when at least one documented product-facing fact materially changed.
 - When evidence is insufficient or ambiguous, the agent MUST return `NO_UPDATE_REQUIRED`.
 - The agent MUST NOT require documentation updates based on speculation.
@@ -132,7 +132,7 @@ Return `NO_UPDATE_REQUIRED` for changes such as:
 ## Workflow
 
 1. Gather product-facing facts from the codebase or the user request.
-2. Load `references/product-documentation-template.md`.
+2. Load `.agents/skills/authoring-product-documentation/references/product-documentation-template.md`.
 3. Apply the Decision Rules and produce `DECISION`, `EVIDENCE`, and `IMPACTED SECTIONS`.
 4. If the decision is `NO_UPDATE_REQUIRED`, the agent MUST stop after the decision output.
 5. If the decision is `UPDATE_REQUIRED`, the agent MUST update `docs/product-documentation.md`.
@@ -152,5 +152,5 @@ Return `NO_UPDATE_REQUIRED` for changes such as:
 ## Consistency and Integrity Contract
 
 - This file MUST remain internally consistent and free of contradictory rules.
-- This file and `references/product-documentation-template.md` MUST stay non-contradictory.
+- This file and `.agents/skills/authoring-product-documentation/references/product-documentation-template.md` MUST stay non-contradictory.
 - If section-role or structural requirements change in this file, the template MUST be updated in the same change set.

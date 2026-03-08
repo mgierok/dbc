@@ -117,7 +117,7 @@ When adding or changing instructions:
 
 ### External Best-Practices Usage Rule
 
-- Canonical best-practices reference file: `references/The-Complete-Guide-to-Building-Skill-for-Claude.md`.
+- Canonical best-practices reference file: `.agents/skills/authoring-governance-files/references/The-Complete-Guide-to-Building-Skill-for-Claude.md`.
 - Best-practices material from external guides SHOULD be referenced:
   1. when creating a new skill, or
   2. when explicitly requested by the user during skill editing.

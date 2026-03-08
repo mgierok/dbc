@@ -1,30 +1,30 @@
 ---
 name: orchestrator
-description: Orchestrate repeatable multi-step workflows by selecting one task specification from `references/tasks/*.md` and executing it strictly. Use when the user asks for standardized process execution managed by this skill, including running the Create PRD task from `references/tasks/create-prd.md`, the Refine PRD task from `references/tasks/refine-prd.md`, or the Execute Task workflow from `references/tasks/execute-task.md`.
+description: Orchestrate repeatable multi-step workflows by selecting one task specification from `.agents/skills/orchestrator/references/tasks/*.md` and executing it strictly. Use when the user asks for standardized process execution managed by this skill, including running the Create PRD task from `.agents/skills/orchestrator/references/tasks/create-prd.md`, the Refine PRD task from `.agents/skills/orchestrator/references/tasks/refine-prd.md`, or the Execute Task workflow from `.agents/skills/orchestrator/references/tasks/execute-task.md`.
 ---
 
 # Orchestrator
 
 ## Goal
 
-Execute one defined workflow from `references/tasks/` at a time, with strict adherence to the selected task file contract.
+Execute one defined workflow from `.agents/skills/orchestrator/references/tasks/` at a time, with strict adherence to the selected task file contract.
 
 ## Task Routing
 
 1. Identify user intent.
-2. Match intent to one task file in `references/tasks/`.
+2. Match intent to one task file in `.agents/skills/orchestrator/references/tasks/`.
 3. If multiple tasks could match, ask one focused disambiguation question.
 4. Load the matched task file first, then load only the resources explicitly required by that task file (for example templates or referenced `.tasks` artifacts), and execute it literally.
 
 ## Available Tasks
 
-- `Create PRD` (`references/tasks/create-prd.md`)
+- `Create PRD` (`.agents/skills/orchestrator/references/tasks/create-prd.md`)
   - Trigger examples: "create PRD", "prepare product requirements", "build PRD from short prompt".
   - Execution rule: follow this task file exactly as written; this workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
-- `Refine PRD` (`references/tasks/refine-prd.md`)
+- `Refine PRD` (`.agents/skills/orchestrator/references/tasks/refine-prd.md`)
   - Trigger examples: "refine PRD", "break PRD into tasks", "generate implementation tasks from PRD".
   - Execution rule: follow this task file exactly as written; this workflow is two-phase: draft in `Plan` mode, save in `Default` mode.
-- `Execute Task` (`references/tasks/execute-task.md`)
+- `Execute Task` (`.agents/skills/orchestrator/references/tasks/execute-task.md`)
   - Trigger examples: "execute task", "run next task from PRD", "implement PRD task".
   - Execution rule: follow this task file exactly as written; this workflow executes exactly one task in `Default` mode.
 
@@ -61,8 +61,8 @@ These rules apply to all orchestrator workflows unless a task file defines a str
 
 Use these templates as the only source of truth for target file structure:
 
-- PRD template: `references/templates/prd-template.md`
-- Task template: `references/templates/task-template.md`
+- PRD template: `.agents/skills/orchestrator/references/templates/prd-template.md`
+- Task template: `.agents/skills/orchestrator/references/templates/task-template.md`
 
 Rules:
 
@@ -76,12 +76,12 @@ Prevent instruction bloat and duplication across workflow files:
 
 1. Define each normative rule once in the most authoritative location, then reference it from other sections instead of repeating full text.
 2. Keep mode, placeholder, and template constraints in one canonical place per workflow and avoid restating them in `Core Rules`, `Workflow`, `Quality Gates`, and `Forbidden Content` simultaneously.
-3. Keep command snippets centralized in `references/commands.md` and reference hints by ID (`Hxxx`) with explicit usage context.
+3. Keep command snippets centralized in `.agents/skills/orchestrator/references/commands.md` and reference hints by ID (`Hxxx`) with explicit usage context.
 4. During updates, remove or rewrite stale duplicates in the same change set so old and new wording cannot drift.
 
 ## Extending This Skill
 
-1. Add each new workflow as a separate file in `references/tasks/`.
+1. Add each new workflow as a separate file in `.agents/skills/orchestrator/references/tasks/`.
 2. Keep each task file self-contained for workflow-specific behavior and reference `Shared Workflow Baseline` for common constraints, with clear:
    - purpose,
    - required workflow/order,

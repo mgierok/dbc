@@ -32,11 +32,11 @@ description: Assess whether non-documentation codebase changes require updating 
 
 ## Required Reference
 
-- Before decision and writing, the agent MUST load `references/technical-documentation-template.md`.
+- Before decision and writing, the agent MUST load `.agents/skills/authoring-technical-documentation/references/technical-documentation-template.md`.
 
 ## Structural Contract (Mandatory)
 
-- `docs/technical-documentation.md` MUST stay aligned with the section set and order from `references/technical-documentation-template.md`.
+- `docs/technical-documentation.md` MUST stay aligned with the section set and order from `.agents/skills/authoring-technical-documentation/references/technical-documentation-template.md`.
 - Section titles and anchors SHOULD stay stable across updates.
 - Section numbering MUST NOT be used.
 - If one fact fits multiple sections, it SHOULD be placed in the most implementation-specific section, and duplication SHOULD be avoided.
@@ -49,7 +49,7 @@ description: Assess whether non-documentation codebase changes require updating 
   - `NO_UPDATE_REQUIRED`
 - Every decision output MUST include:
   - `EVIDENCE`: concrete implementation facts supporting the decision
-  - `IMPACTED SECTIONS`: sections mapped to `references/technical-documentation-template.md` (or `none`)
+  - `IMPACTED SECTIONS`: sections mapped to `.agents/skills/authoring-technical-documentation/references/technical-documentation-template.md` (or `none`)
 - The agent MUST apply strict evidence threshold:
   - `UPDATE_REQUIRED` MUST be used only when at least one documented durable technical fact materially changed.
   - When evidence is insufficient or ambiguous, the agent MUST return `NO_UPDATE_REQUIRED`.
@@ -103,7 +103,7 @@ Return `NO_UPDATE_REQUIRED` when changes are technical-documentation-irrelevant,
 3. If decision is `NO_UPDATE_REQUIRED`, the agent MUST stop after decision output.
 4. If decision is `UPDATE_REQUIRED`, the agent MUST update only impacted sections and MUST keep unchanged sections untouched.
 5. If decision is `UPDATE_REQUIRED`, the agent MUST add new technical rules/decisions when they became stable in implementation.
-6. After update, the agent MUST verify structural alignment with `references/technical-documentation-template.md`.
+6. After update, the agent MUST verify structural alignment with `.agents/skills/authoring-technical-documentation/references/technical-documentation-template.md`.
 7. The completion output MUST include:
    - `DECISION`
    - `EVIDENCE`
@@ -114,5 +114,5 @@ Return `NO_UPDATE_REQUIRED` when changes are technical-documentation-irrelevant,
 ## Consistency and Integrity Contract (Mandatory)
 
 - This file MUST remain internally consistent and free of contradictory normative rules.
-- The agent MUST keep this file and `references/technical-documentation-template.md` non-contradictory.
+- The agent MUST keep this file and `.agents/skills/authoring-technical-documentation/references/technical-documentation-template.md` non-contradictory.
 - If structural requirements in this file change, the template MUST be updated in the same change set.
