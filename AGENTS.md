@@ -113,7 +113,6 @@ Quick examples:
 
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
-- For structured multi-phase delivery workflow execution, the agent MUST invoke skill `delivery-workflow` only when explicitly requested by the user.
 - Whenever the agent asks the user a question, it MUST present exactly four numbered response options:
   - Options `1`, `2`, and `3` MUST be predefined choices.
   - Option `4` MUST allow the user to provide a custom response.
