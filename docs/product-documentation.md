@@ -15,13 +15,14 @@ Current product value and scope:
 
 ### Database Configuration and Access
 
-- DBC reads zero or more database entries from the active system configuration location.
+- DBC reads zero or more database entries from the active config file at `~/.config/dbc/config.toml`.
 - Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing. Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
-- Mandatory first-entry setup requires at least one valid entry before continue and allows optional additional entries; `Esc` cancels startup.
-- Each configured entry requires `name` and `db_path`. The selector shows entries in configuration order, shows the active config file path, and uses source markers `⚙` for config-backed entries and `⌨` for session-scoped direct-launch entries.
+- Mandatory first-entry setup requires at least one valid entry before continue and allows optional additional entries; `Esc` from the forced setup form exits the application. In selector browse mode, `Esc`, `q`, or `Ctrl+C` exits startup.
+- Each configured entry requires `name` and `db_path`. The selector shows the active config file path, keeps config-backed entries in configuration order, and uses source markers `⚙` for config-backed entries and `⌨` for session-scoped direct-launch entries.
+- If a direct-launch path does not match an existing configured SQLite path, returning to the selector during the same app session shows it as a session-scoped `⌨` entry appended after config-backed entries. If the path matches an existing configured entry, DBC reuses that config-backed entry instead of showing a duplicate session entry.
 - The selector main view shows database options and status without inline shortcut or legend rows and keeps a right-aligned help hint: `Context help: ?`.
 - Selector help opened with `?` is context-sensitive to the current selector mode (`browse`, `add/edit form`, or `delete confirmation`). Overflowing help can be scrolled with `j/k`, `Ctrl+f`/`Ctrl+b`, and `g`/`G`, and closes with `Esc`.
-- In-selector management supports add, edit, and delete. Add and edit require non-empty `name` and `db_path`, validate the target before save, and keep the user in the form on validation failure. Delete requires explicit confirmation and may remove the last config-backed entry, leaving an empty selector state. Active editable fields show a visible caret `|`.
+- In-selector management supports add, edit, and delete. Add creates config-backed entries. Edit and delete apply only to config-backed `⚙` entries; session-scoped `⌨` entries remain selectable but cannot be edited or deleted. Add and edit require non-empty `name` and `db_path`, validate the target before save, and keep the user in the form on validation failure. Delete requires explicit confirmation and may remove the last config-backed entry, leaving an empty selector state. Active editable fields show a visible caret `|`.
 - If a selected config-backed entry cannot be opened, DBC keeps the selector active, surfaces the startup connection error in selector status, and requires the user to pick another reachable entry or edit the failing entry.
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
@@ -53,7 +54,7 @@ Current product value and scope:
 - Pending insert rows marked with `✚` stay pinned at the top of the records list and do not count toward persisted-record page size.
 - Row selection is visible in the focused records panel. Field focus mode supports cell-level navigation inside the records grid.
 - Cell content in the records grid is width-constrained and may be truncated in the list view.
-- Opening single-record detail renders the effective row state, including staged insert or edit values, as a vertical `column -> value` view. Detail content is wrapped instead of truncated, supports scrolling, and closes with `Esc`.
+- Opening single-record detail renders the effective row state, including staged insert or edit values, as stacked field blocks: each field shows a `column (type)` header followed by wrapped value lines. Edited fields show `✱` on the field header. Detail content is wrapped instead of truncated, supports scrolling, and closes with `Esc`.
 - Records view supports a guided sort flow that selects one column and one direction (`ASC` or `DESC`).
 - Exactly one sort can be active per selected table. Re-running sort replaces the current sort, and switching tables resets sort state.
 - Pending insert rows stay at the top even when sort is active.
@@ -62,7 +63,7 @@ Current product value and scope:
 ### Filtering
 
 - Records view supports a guided filter flow that selects a column, an operator, and a value only when the chosen operator requires one.
-- Supported operators are `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `IS NULL`, and `IS NOT NULL`.
+- Supported operator labels are `Equals`, `Not Equals`, `Less Than`, `Less Or Equal`, `Greater Than`, `Greater Or Equal`, `Like`, `Is Null`, and `Is Not Null` (corresponding to SQL `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `IS NULL`, and `IS NOT NULL`).
 - Exactly one filter can be active per selected table. Applying a new filter replaces the current one, and switching tables resets filter state.
 
 ### Data Operations (Insert, Edit, Delete)
@@ -91,7 +92,7 @@ Current product value and scope:
 - All writes are staged first. The database remains unchanged until save succeeds.
 - Undo and redo are available during the current app session for staged actions in the selected table.
 - Save is a confirmed action that applies staged insert, update, and delete changes as a single save operation for the current table.
-- On save success, staged state is cleared and records reload for the current table with the active filter still applied.
+- On save success, staged state is cleared and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
 - Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss and requires an explicit discard decision before the table switch proceeds.
 - Invoking `:config` / `:c` with unsaved changes blocks navigation until the user explicitly chooses `save`, `discard`, or `cancel`.
@@ -101,7 +102,7 @@ Current product value and scope:
 - The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present.
 - Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
-- The status bar communicates current mode, current table, persisted-record summary (`Records: current/total`), pagination summary (`Page: current/total`), active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages.
+- The status bar always communicates current mode, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`).
 - Every active editable text field in the product shows a visible caret `|`.
 
 ## Constraints and Non-Goals
@@ -114,6 +115,7 @@ Current user-visible constraints:
 - Only one active sort is supported per table.
 - There is no shortcut that switches from Records view back to Schema view while keeping right-panel focus.
 - There is no dedicated clear-filter command; filter state is replaced by applying a new filter or cleared by switching tables.
+- There is no dedicated clear-sort command; sort state is replaced by applying a new sort or cleared by switching tables.
 - Quit does not prompt to preserve unsaved staged changes.
 - Write behavior is intentionally conservative: edits are staged first, save requires explicit confirmation, dirty state stays visible, and unsaved table-switch or `:config` navigation always requires an explicit decision.
 
@@ -165,10 +167,12 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | --- | --- |
 | Runtime commands | `:config` / `:c`, `:help` / `:h`, `:quit` / `:q` |
 | Startup selector navigation | `j/k`, arrow keys, `g/G`, `Home`/`End`, `Ctrl+f`/`Ctrl+b`, `PgDown`/`PgUp` |
-| Startup selector management | `a` add, `e` edit, `d` delete, `Enter` select |
-| Selector form | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel |
-| Filter and sort popups | `j/k` select, `Enter` confirm step, `Esc` close |
-| Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` when field is nullable |
+| Startup selector browse mode | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` / `q` / `Ctrl+C` quit |
+| Selector form | `Tab` / `Shift+Tab` switch field, `Ctrl+u` clear field, `Backspace` / `Ctrl+h` delete character, `Enter` save, `Esc` cancel (`Esc` exits app during mandatory first-entry setup) |
+| Filter popup | `j/k` select, `Enter` confirm step, `Esc` close; value-entry step also supports typing, `left/right`, and `Backspace` |
+| Sort popup | `j/k` select, `Enter` confirm step, `Esc` close |
+| Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` when field is nullable; text entry supports typing, `left/right`, and `Backspace`, while select-style fields use `j/k` |
+| Command input | Type command text, `left/right` move caret, `Backspace` delete, `Enter` run, `Esc` cancel |
 | Confirm and dirty-decision popups | `j/k` choose action, `Enter` or `y` confirm, `Esc` or `n` cancel |
 | Help and record-detail popups | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 
