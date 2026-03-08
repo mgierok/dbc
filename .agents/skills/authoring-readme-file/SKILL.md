@@ -19,6 +19,8 @@ description: Assess whether non-documentation codebase changes require updating 
 - When this skill is active, the agent MUST NOT modify files other than `README.md`.
 - README content MUST stay user-facing and task-oriented.
 - README content MUST NOT duplicate internal architecture/process governance details from internal documentation.
+- README content SHOULD prioritize installation, supported scope, and startup usage over exhaustive runtime reference material.
+- README content MUST NOT duplicate a comprehensive keyboard/control reference when that material is better owned by product documentation or in-app help, unless the user explicitly requests that duplication.
 
 ## Required Reference
 
@@ -50,7 +52,6 @@ Return `UPDATE_REQUIRED` when at least one of these user-facing facts materially
 - installation prerequisites or primary installation path
 - supported database scope
 - startup usage or canonical CLI examples (including direct launch examples)
-- keyboard controls, command-mode commands, or user-visible command outcomes
 - user-facing license pointer
 - user-facing project value proposition in README intro/overview
 
@@ -60,6 +61,7 @@ Return `NO_UPDATE_REQUIRED` when changes are README-irrelevant, for example:
 - test-only changes that do not alter user-facing usage
 - formatting, naming, or comments-only edits without user-facing impact
 - changes limited to documentation files (no implementation change)
+- changes limited to detailed keyboard controls or command-reference material that README does not own
 
 ## Writing Rules
 
@@ -67,6 +69,7 @@ Return `NO_UPDATE_REQUIRED` when changes are README-irrelevant, for example:
 - Command examples MUST be runnable as shown.
 - Content MUST describe current factual behavior only.
 - Language SHOULD prioritize "what to run" and "what happens."
+- README content SHOULD summarize runtime interaction only when it materially improves first-run usability.
 
 ## Workflow (Mandatory)
 
