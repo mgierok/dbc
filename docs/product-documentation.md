@@ -2,417 +2,183 @@
 
 ## Product Overview
 
-DBC (Database Commander) is a terminal-first product for browsing and managing database content with a keyboard-centric workflow. The current product state focuses on fast data inspection and controlled data changes without leaving the command-line environment.
+DBC (Database Commander) is a terminal-first product for browsing and managing SQLite data with a keyboard-centric workflow. The current product state is optimized for fast inspection, controlled edits, and minimal context switching for users who prefer to stay in the command line.
 
-Primary user segments:
+Current product value and scope:
 
-- Developers inspecting schema and records during development/debugging workflows.
-- DevOps/SRE practitioners validating operational data in terminal contexts.
-- Technical analysts comfortable with keyboard-first tooling.
-
-Core user value in current state:
-
-- Faster table and data inspection than GUI context switching.
-- Predictable keyboard workflow inspired by vim-like interaction patterns.
-- Safer change process through staged edits, explicit confirmation, and transactional save behavior.
-
-## Available Capabilities
-
-### In Scope (Current State)
-
-- SQLite database support.
-- Supported operating systems: macOS and Linux.
-- Startup informational flags via `-h` / `--help` and `-v` / `--version`.
-- Optional direct CLI launch for known SQLite targets via `-d` / `--database`.
-- Multi-database startup selector from local configuration.
-- In-selector configuration management for startup databases:
-  - Add database entry.
-  - Edit database entry.
-  - Delete database entry with explicit confirmation.
-  - Display active config file path.
-- In-session command entry supports:
-  - `:config` / `:c` to return to selector/management without restarting.
-  - `:help` / `:h` to open runtime help popup reference during active session.
-  - `:quit` / `:q` to exit runtime session.
-- Two-panel browsing experience:
-  - Left panel: table list.
-  - Right panel: schema view or records view for selected table.
-- Schema inspection for selected table columns.
-- Record browsing with fixed-page pagination (20 records per page).
-- Single-record detail inspection in right panel (`Enter`) with vertical field layout.
-- Single active filter per selected table.
-- Single active sort (one column + direction) per selected table.
-- Staged data operations for current table:
-  - Insert record.
-  - Edit record fields.
-  - Mark record for deletion.
-  - Undo/redo staged actions.
-- Explicit save confirmation and single-step save execution.
-- Clear status visibility for read-only vs write mode (with unsaved changes count).
-
-### Out of Scope (Current State)
-
-- Non-SQLite database engines.
-- Schema-altering operations (create/alter/drop tables, indexes, views, triggers).
-- SQL console/REPL execution.
-- Bulk import/export workflows.
-- User and permission management.
-- Password manager integration.
+- Primary users are developers, DevOps/SRE practitioners, and technical analysts who are comfortable with keyboard-first tooling.
+- The product supports macOS and Linux.
+- The core experience covers startup database selection or direct launch, two-panel schema and record browsing, guided filtering and sorting, single-record detail inspection, and staged insert/edit/delete operations with undo/redo and explicit save.
+- The current scope is limited to SQLite data access and management; it does not aim to be a general SQL console, schema-management tool, or multi-engine database client.
 
 ## Functional Behavior
 
 ### Database Configuration and Access
 
-- DBC reads database entries from the active system configuration location.
-- Startup supports zero or more configured database entries.
-- Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing.
-- Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
-- Mandatory first-entry setup allows adding one required entry (with optional additional entries before continue); `Esc` cancels startup.
-- DBC supports direct-launch aliases:
-  - `-d <db_path>`
-  - `--database <db_path>`
-- DBC supports startup informational aliases:
-  - `-h`
-  - `--help`
-  - `-v`
-  - `--version`
-- `--version` / `-v` prints one stdout token: short commit hash when revision metadata exists, otherwise `dev`.
-- Informational aliases short-circuit startup and cannot be combined with direct-launch aliases.
-- Invalid startup usage/argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`); startup runtime failures exit with code `1`.
-- Direct launch validates target connectivity before runtime start:
-  - success opens the main view directly (selector is skipped),
-  - failure surfaces startup error guidance and exits non-zero (no selector fallback).
-- Without direct launch, selector-first startup remains the default path.
-- Each entry requires:
-  - `name` (display name).
-  - `db_path` (SQLite connection path/string).
-- Startup selector displays entries in configuration order.
-- Startup selector shows source marker for each option: `⚙` for config-backed entries and `⌨` for direct-launch session-scoped entry (in-memory only for current process, no auto-persistence).
-- Startup selector main content shows database options and status without inline shortcut/legend rows.
-- Startup selector keeps a right-aligned context-help hint: `Context help: ?`.
-- Startup selector supports `?` to open context-help popup for the current selector mode (`browse`, `add/edit form`, or `delete confirmation`).
-- Startup selector supports in-app add/edit/delete management:
-  - Add and edit require non-empty `name` and `db_path`.
-  - Add and edit validate database target before config save.
-  - If validation fails, entry is not saved and the user stays in the form with an error message.
-  - Delete requires explicit confirmation.
-  - Delete can remove the last config-backed entry; selector then stays open with an empty list state until a user adds an entry or exits startup.
-  - Add/edit form shows a visible caret (`|`) in the active editable field.
-- If a user selects an existing entry that cannot be opened at startup (invalid path/connection string), DBC shows startup connection error in selector status and keeps selector active.
-- After such startup connection error, a user must select another reachable entry or edit the selected entry before the main view can open.
-- Startup selector displays active configuration file path.
-- During active database session, users can open command entry with `:` and execute `:config` / `:c` to return to selector/management.
-- During active database session, users can press `?` to open runtime context help popup for the active panel/state.
-- During active database session, users can execute `:help` / `:h` as an alias that also opens runtime context help popup.
-- During active database session, users can execute `:quit` / `:q` to exit the application.
-- Re-running `:help` or `:h` while help popup is already open keeps popup open.
-- Help popup content lists only keybindings available in the context where help was opened (active panel/state).
-- When help content exceeds visible popup height, users can scroll to reach final entries.
-- Help popup closes only with `Esc`; unrelated keys keep it open.
-- Selector context-help popup closes with `Esc`; if content overflows, users can scroll with `j/k`, `Ctrl+f`/`Ctrl+b`, and `g`/`G`.
-- Unsupported runtime commands continue to show unknown-command status while session remains active.
-- If `:config` or `:c` is invoked while staged changes exist, product requires explicit dirty-state decision before navigation:
-  - `save`: persist staged changes, then open selector/management only on success.
-  - `discard`: clear staged changes, then open selector/management.
-  - `cancel`: keep current session context and preserve staged changes.
-- Startup CLI behavior is consistent and user-visible across startup paths for help/discoverability, argument-validation feedback, and exit-code mapping.
+- DBC reads zero or more database entries from the active system configuration location.
+- Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing. Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
+- Mandatory first-entry setup requires at least one valid entry before continue and allows optional additional entries; `Esc` cancels startup.
+- Each configured entry requires `name` and `db_path`. The selector shows entries in configuration order, shows the active config file path, and uses source markers `⚙` for config-backed entries and `⌨` for session-scoped direct-launch entries.
+- The selector main view shows database options and status without inline shortcut or legend rows and keeps a right-aligned help hint: `Context help: ?`.
+- Selector help opened with `?` is context-sensitive to the current selector mode (`browse`, `add/edit form`, or `delete confirmation`). Overflowing help can be scrolled with `j/k`, `Ctrl+f`/`Ctrl+b`, and `g`/`G`, and closes with `Esc`.
+- In-selector management supports add, edit, and delete. Add and edit require non-empty `name` and `db_path`, validate the target before save, and keep the user in the form on validation failure. Delete requires explicit confirmation and may remove the last config-backed entry, leaving an empty selector state. Active editable fields show a visible caret `|`.
+- If a selected config-backed entry cannot be opened, DBC keeps the selector active, surfaces the startup connection error in selector status, and requires the user to pick another reachable entry or edit the failing entry.
+- Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
+- Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
+- Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
+- During an active session, `:` opens command entry. `:config` / `:c` returns to selector/management, `:help` / `:h` opens runtime context help, and `:quit` / `:q` exits the application.
+- Runtime help is context-sensitive, lists only keybindings available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
+- Unsupported runtime commands keep the session active and surface an unknown-command status.
+- If `:config` / `:c` is invoked while staged changes exist, DBC requires an explicit `save`, `discard`, or `cancel` decision before navigation.
 
 ### Main Layout and Focus Model
 
-- Layout is permanently two-panel in current state.
-- Left panel shows tables in an independent framed box (`Tables` title in the top border).
-- Right panel shows schema or records for the selected table in an independent framed box (context title in the top border).
-- Panel boxes are visually separate and do not use shared frame joins.
-- Left-panel `Enter` transitions to right panel in Records view.
-- Neutral right-panel `Esc` returns focus to left-panel table selection and forces right panel to Table Discovery (Schema view).
-- In nested right-panel contexts, `Esc` exits local context first before any panel transition.
-- Active panel is visually indicated.
+- The runtime layout is permanently two-panel in the current product state.
+- The left panel shows tables in an independent framed box titled `Tables`. The right panel shows schema or records for the selected table in its own framed box with a context title.
+- `Enter` from the left panel opens the selected table in right-panel Records view.
+- `Esc` from a neutral right-panel state returns focus to left-panel table selection and forces the right panel back to Table Discovery (Schema view).
+- In nested right-panel contexts, `Esc` exits the local context first before any panel transition.
+- The active panel is visually indicated.
+- `Ctrl+w h`, `Ctrl+w l`, and `Ctrl+w w` do not trigger runtime panel transitions.
 
 ### Table Discovery and Schema View
 
-- Table list excludes internal SQLite system tables.
-- Table list is alphabetically sorted for predictable scanning.
-- Schema view displays column name and type for selected table.
-- If no schema is available yet, product shows an empty-state message.
+- Table discovery excludes internal SQLite system tables and lists visible tables in alphabetical order.
+- Schema view shows column name and type for the selected table.
+- If schema data is not yet available, DBC shows an empty-state message.
 
 ### Records View and Navigation
 
-- Records view shows table data for the selected table.
-- Records are fetched and displayed in fixed pages of 20 persisted records.
-- Users switch persisted-record pages with `Ctrl+f` (next page) and `Ctrl+b` (previous page).
-- Page navigation is bounded to the available page range.
-- Pending insert rows (`✚`) remain rendered at the top and are outside persisted-record page-size counting.
-- Row selection is visible in the focused records panel.
-- Field focus mode is supported for cell-level editing navigation.
-- Record cell content is width-constrained in the UI (truncated when needed).
-- Users can open a single-record detail view in records context with `Enter`.
-- Single-record detail view behavior:
-  - Renders selected row vertically as `column -> value`.
-  - Uses effective row state (includes staged insert/edit values).
-  - Does not truncate field content; values are wrapped and scrollable.
-  - Closes with `Esc` and returns to records list context.
-- Users can open a guided sort popup in records view with `Shift+S`.
-- Sort flow is step-based:
-  - Select one column.
-  - Select direction (`ASC` or `DESC`).
-- Exactly one sort can be active at a time for the selected table.
-- Re-running sort replaces the previously active sort.
-- Sort is reset when switching to a different table.
-- Pending insert rows (`✚`) stay at the top of records view and are not reordered by sort.
-- Records header shows active sort indicator on the sorted column:
-  - `↑` for `ASC`.
-  - `↓` for `DESC`.
+- Records view shows table data for the selected table in fixed pages of `20` persisted records. `Ctrl+f` and `Ctrl+b` move between pages, and page navigation is bounded to the available range.
+- Pending insert rows marked with `✚` stay pinned at the top of the records list and do not count toward persisted-record page size.
+- Row selection is visible in the focused records panel. Field focus mode supports cell-level navigation inside the records grid.
+- Cell content in the records grid is width-constrained and may be truncated in the list view.
+- Opening single-record detail renders the effective row state, including staged insert or edit values, as a vertical `column -> value` view. Detail content is wrapped instead of truncated, supports scrolling, and closes with `Esc`.
+- Records view supports a guided sort flow that selects one column and one direction (`ASC` or `DESC`).
+- Exactly one sort can be active per selected table. Re-running sort replaces the current sort, and switching tables resets sort state.
+- Pending insert rows stay at the top even when sort is active.
+- The records header marks the sorted column with `↑` for `ASC` and `↓` for `DESC`.
 
 ### Filtering
 
-- Users can open a guided filter popup in records view with `Shift+F`.
-- Filter flow is step-based:
-  - Select column.
-  - Select operator.
-  - Input value (only if operator requires one).
-- Supported operators:
-  - `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `IS NULL`, `IS NOT NULL`.
-- Exactly one filter can be active at a time for the selected table.
-- Filter is reset when switching to a different table.
+- Records view supports a guided filter flow that selects a column, an operator, and a value only when the chosen operator requires one.
+- Supported operators are `=`, `!=`, `<`, `<=`, `>`, `>=`, `LIKE`, `IS NULL`, and `IS NOT NULL`.
+- Exactly one filter can be active per selected table. Applying a new filter replaces the current one, and switching tables resets filter state.
 
 ### Data Operations (Insert, Edit, Delete)
 
 #### Insert
 
-- `i` stages a new record at the top of records view.
-- Prefill behavior:
-  - Column default value is prefilled when present.
-  - Nullable columns default to `NULL`.
-  - Required columns without default start as empty and must be completed before save.
-- Auto-increment fields are hidden by default for pending inserts.
-- `Ctrl+a` toggles visibility of auto-increment fields for explicit value entry.
+- Insert stages a new record at the top of the records view.
+- Pending inserts prefill column defaults when present, use `NULL` for nullable columns, and leave required columns without defaults empty until the user fills them.
+- Auto-increment fields are hidden by default for pending inserts and can be revealed for explicit value entry.
 
 #### Edit
 
-- Existing record edits require a table with a primary key.
-- Users enter field focus, then open the edit popup for the selected cell.
-- Edit popup shows:
-  - Column identity and type.
-  - Nullable/not-null indicator.
-  - Value entry control.
-- Nullable fields can be explicitly set to `NULL` via shortcut.
-- Boolean and enum-like fields use option selection instead of free-text typing.
-- Validation occurs on confirm; invalid values remain in popup with error feedback.
+- Editing an existing persisted record requires a table with a primary key.
+- Editing is performed from field focus through an edit popup that shows column identity, type, nullability, and value entry.
+- Nullable fields can be explicitly set to `NULL`.
+- Boolean and enum-like fields use option selection instead of unrestricted free-text entry.
+- Validation happens on confirm. Invalid values keep the popup open and surface error feedback.
 
 #### Delete
 
-- `d` toggles delete marker on existing selected record.
-- For pending inserts, `d` removes the pending insert immediately instead of adding delete marker.
+- Delete toggles a delete marker on the selected persisted record.
+- For pending inserts, delete removes the staged row immediately instead of adding a delete marker.
 
 ### Staging, Undo/Redo, and Save
 
-- All writes are staged first; database is unchanged until save.
-- Undo/redo is available during the current app session for staged actions in the selected table.
-- Save flow:
-  - Users press save.
-  - Product asks for confirmation.
-  - Product applies staged insert/update/delete changes as one save operation.
-- On save success:
-  - Staged state is cleared.
-  - Records reload for current table and active filter.
-- On save failure:
-  - Staged state is retained.
-  - Error is surfaced in status line.
-- If a user attempts to switch tables with unsaved changes, product opens a `Switch Table` decision popup with warning text: `Switching tables will cause loss of unsaved data (N changes). Are you sure you want to discard unsaved data?`.
-- The table-switch decision popup exposes explicit actions:
-  - `(y) Yes, discard changes and switch table`.
-  - `(n) No, continue editing`.
-- If a user invokes `:config` or `:c` with unsaved changes, product blocks navigation until one explicit decision is selected: `save`, `discard`, or `cancel`.
+- All writes are staged first. The database remains unchanged until save succeeds.
+- Undo and redo are available during the current app session for staged actions in the selected table.
+- Save is a confirmed action that applies staged insert, update, and delete changes as a single save operation for the current table.
+- On save success, staged state is cleared and records reload for the current table with the active filter still applied.
+- On save failure, staged state is retained and the error is shown in the status line.
+- Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss and requires an explicit discard decision before the table switch proceeds.
+- Invoking `:config` / `:c` with unsaved changes blocks navigation until the user explicitly chooses `save`, `discard`, or `cancel`.
 
 ### Visual State Communication
 
-- Product mode indicator:
-  - `READ-ONLY` when no staged changes.
-  - `WRITE (dirty: N)` when staged changes exist.
-- Visual row markers:
-  - `✚` pending insert.
-  - `✖` pending delete.
-- Edited row indicator:
-  - `✱` marker on edited rows in Records view.
-- Record detail information indicator:
-  - `ℹ` marker on row-state summary lines.
-- Status bar is rendered as an independent 3-row framed box, and its content row keeps one-space horizontal padding from both frame edges.
-- Runtime and selector popup windows keep title text in the top frame border, one-space horizontal side padding in content rows, and minimum height equal to `40%` of terminal height.
-- Status bar communicates:
-  - Current mode.
-  - Current table.
-  - Persisted-record count summary for current page and filtered total (`Records: current/total`).
-  - Persisted-record pagination summary (`Page: current/total`).
-  - Active filter summary.
-  - Active sort summary.
-  - Right-aligned context-help hint (`Context help: ?`).
-  - Runtime status/error messages.
-- Every active editable text field in the app displays a visible caret (`|`) at the insertion point.
-
-## User Flows
-
-### Startup and Database Selection
-
-- Users launch DBC in one of three startup modes:
-  - Informational mode: `-h` / `--help` or `-v` / `--version`; startup returns informational output and exits without opening selector or database.
-  - Default: centered database selector.
-  - Direct launch: pass `-d` / `--database` with a SQLite path to bypass selector on successful validation.
-- Selector displays active config file path.
-- Selector displays right-aligned `Context help: ?` in the bottom content row.
-- Each database option is presented as `Name | Connection String`.
-- Users can manage entries in place (`add`, `edit`, `delete` with confirmation).
-- Selector main content does not display inline shortcut or legend rows; users open selector-specific shortcut help with `?`.
-- Users can confirm selection or cancel startup.
-
-### Table Discovery and Schema Orientation
-
-- After database selection, users enter the main two-panel view.
-- Left panel lists available tables in alphabetical order.
-- Right panel defaults to schema view for the selected table.
-
-### Record Exploration
-
-- Users switch to records view for the selected table.
-- Record list loads one fixed page at a time (`20` persisted records per page).
-- Users move between pages with `Ctrl+f` and `Ctrl+b`.
-- Users can navigate rows and jump/page efficiently.
-
-### Focused Inspection with Filters, Sorting, and Row Detail
-
-- Users open the filter flow in records view and select:
-  - Column.
-  - Operator.
-  - Value (when required by operator).
-- Product applies one active filter for the currently selected table.
-- Users open the sort flow and select:
-  - One column.
-  - `ASC` or `DESC`.
-- Product applies one active sort for the currently selected table.
-- Users can open single-record detail with `Enter` to inspect full field values without truncation.
-- Users can leave single-record detail with `Esc` and continue records browsing.
-
-### Controlled Data Change Workflow
-
-- Users stage inserts, edits, and deletes in records view.
-- Product visually marks pending changes.
-- Users can undo/redo staged actions before save.
-- Save action requests confirmation, then applies all staged changes together.
-
-## Interaction Model
-
-### Product Interaction Principles
-
-- Keyboard-first by default: all primary actions are accessible from keyboard.
-- Fast orientation: panel layout keeps navigation context visible.
-- Safe-by-design editing: data changes are staged before save.
-- Explicit commitment: save requires user confirmation.
-- Visible state: status bar communicates mode, selected table, persisted-record count, pagination, filter, sort, runtime status, and right-aligned context-help access.
-- Consistent interaction language: vim-like motions and commands are reused across key contexts.
-
-### Global/Main Navigation
-
-| Action | Shortcut |
-| --- | --- |
-| Move down/up | `j`, `k` |
-| Move left/right (field focus in records) | `h`, `l` |
-| Jump to top | `gg` |
-| Jump to bottom | `G` |
-| Page down/up (records: next/previous persisted-record page) | `Ctrl+f`, `Ctrl+b` |
-| Open runtime context help popup for current panel/state | `?` |
-| Open selected table in records panel | `Enter` (from left panel) |
-| Return to tables panel and force Table Discovery in right panel | `Esc` (from neutral right panel) |
-
-### View and Record Actions
-
-| Action | Shortcut |
-| --- | --- |
-| Enter field focus / open edit popup | `e` (in records context) |
-| Exit nested right-panel context | `Esc` |
-| Open command entry | `:` |
-| Open selector/config management (command mode) | `:config`, `:c` |
-| Open runtime context help popup (command-mode alias) | `:help`, `:h` |
-| Exit runtime session (command mode) | `:quit`, `:q` |
-| Open filter popup | `Shift+F` |
-| Open sort popup | `Shift+S` |
-| Open selected row detail view | `Enter` (in records context) |
-| Next/previous persisted-record page | `Ctrl+f`, `Ctrl+b` (in records context) |
-| Stage insert | `i` |
-| Toggle delete marker / remove pending insert | `d` |
-| Undo staged action | `u` |
-| Redo staged action | `Ctrl+r` |
-| Save staged changes | `w` |
-| Toggle auto-increment fields (pending insert row) | `Ctrl+a` |
-
-### Popup Interactions
-
-| Context | Key Behavior |
-| --- | --- |
-| Filter popup | `j/k` selection, `Enter` confirm step, `Esc` close |
-| Sort popup | `j/k` selection, `Enter` confirm step, `Esc` close |
-| Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` (nullable fields) |
-| Confirm popup (binary) | `Enter` or `y` confirm, `Esc` or `n` cancel |
-| Dirty table-switch decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
-| Dirty `:config` / `:c` decision popup | `j/k` choose action, `Enter` or `y` select, `Esc` or `n` cancel |
-| Help popup | Shows keybindings for the context captured on open; `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
-| Selector context-help popup | Shows shortcuts for current selector mode (`browse`, `add/edit form`, or `delete confirmation`); `j/k`, `Ctrl+f`/`Ctrl+b`, `g`/`G` scroll, `Esc` close |
-| Single-record detail view | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
-| Command entry | `Enter` execute command, `Esc` cancel command |
-
-### Startup Selector
-
-| Action | Shortcut |
-| --- | --- |
-| Select database | `Enter` |
-| Cancel startup | `Esc`, `q`, `Ctrl+c` |
-| Move selection | `j/k` and arrow keys |
-| Jump to top/bottom | `g`/`G` and `Home`/`End` |
-| Page navigation | `Ctrl+f`/`Ctrl+b` and `PgDown`/`PgUp` |
-| Open selector context help popup | `?` |
-| Add entry | `a` |
-| Edit selected entry | `e` |
-| Delete selected entry (confirm required) | `d`, then `Enter` |
-| Selector form interaction | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel (or exit startup during mandatory first setup) |
+- The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present.
+- Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
+- The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
+- The status bar communicates current mode, current table, persisted-record summary (`Records: current/total`), pagination summary (`Page: current/total`), active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages.
+- Every active editable text field in the product shows a visible caret `|`.
 
 ## Constraints and Non-Goals
 
 Current user-visible constraints:
 
 - Only SQLite is supported.
-- Editing/deleting existing records requires a primary key in the table.
-- Only one active filter is supported at a time.
-- Only one active sort is supported at a time.
-- There is no shortcut to switch from Records view back to Schema view while keeping right-panel focus.
-- No dedicated command exists to clear filter directly (filter resets on table switch or is replaced by applying a new filter).
-- Quit action does not prompt to preserve unsaved staged changes.
+- Editing and deleting persisted records requires a primary key in the table.
+- Only one active filter is supported per table.
+- Only one active sort is supported per table.
+- There is no shortcut that switches from Records view back to Schema view while keeping right-panel focus.
+- There is no dedicated clear-filter command; filter state is replaced by applying a new filter or cleared by switching tables.
+- Quit does not prompt to preserve unsaved staged changes.
+- Write behavior is intentionally conservative: edits are staged first, save requires explicit confirmation, dirty state stays visible, and unsaved table-switch or `:config` navigation always requires an explicit decision.
 
-Explicit non-goals in current state:
+Explicit non-goals in the current product state:
 
-- Schema management and administrative operations.
-- Multi-engine runtime usage.
-- Advanced analytics/reporting and BI workflows.
+- Non-SQLite or multi-engine database support.
+- Schema-altering operations such as create, alter, or drop for tables, indexes, views, or triggers.
+- SQL console or REPL execution.
+- Bulk import or export workflows.
+- User and permission management.
+- Password manager integration.
+- Advanced analytics, reporting, or BI workflows.
 
-For capability boundaries and scope classification, see Available Capabilities.
+## Interaction Model
 
-## Safety and Governance
+DBC is keyboard-first by design and reuses a small set of stable navigation patterns across selector, tables, records, popups, and command entry.
 
-- Safe default state: product starts in read-only mode.
-- Write actions are staged and reversible before save.
-- Save requires explicit confirmation.
-- Save applies as one unit for the current table.
-- On execution failure, product preserves staged intent for user correction.
-- Dirty-state visibility is always present in status line.
-- Table switch with unsaved staged changes is guarded by explicit yes/no discard decision popup with unsaved-change count warning.
-- `:config` / `:c` navigation with unsaved staged changes is guarded by explicit save/discard/cancel decision.
+### Global and Runtime Navigation
+
+| Action | Shortcut |
+| --- | --- |
+| Move down/up | `j`, `k` |
+| Move left/right in field focus | `h`, `l` |
+| Jump to top/bottom | `gg`, `G` |
+| Page down/up | `Ctrl+f`, `Ctrl+b` |
+| Open context help for current state | `?` |
+| Open selected table in records panel | `Enter` |
+| Return to left panel from neutral right-panel state | `Esc` |
+| Open command entry | `:` |
+
+### Records and Data Actions
+
+| Action | Shortcut |
+| --- | --- |
+| Enter field focus | `e` |
+| Open guided filter | `Shift+F` |
+| Open guided sort | `Shift+S` |
+| Open selected row detail | `Enter` |
+| Stage insert | `i` |
+| Toggle delete marker / remove pending insert | `d` |
+| Undo staged action | `u` |
+| Redo staged action | `Ctrl+r` |
+| Save staged changes | `w` |
+| Toggle auto-increment fields in pending insert | `Ctrl+a` |
+
+### Commands, Selector, and Popup Controls
+
+| Context | Controls |
+| --- | --- |
+| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:quit` / `:q` |
+| Startup selector navigation | `j/k`, arrow keys, `g/G`, `Home`/`End`, `Ctrl+f`/`Ctrl+b`, `PgDown`/`PgUp` |
+| Startup selector management | `a` add, `e` edit, `d` delete, `Enter` select |
+| Selector form | `Tab` switch field, `Ctrl+u` clear field, `Enter` save, `Esc` cancel |
+| Filter and sort popups | `j/k` select, `Enter` confirm step, `Esc` close |
+| Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` when field is nullable |
+| Confirm and dirty-decision popups | `j/k` choose action, `Enter` or `y` confirm, `Esc` or `n` cancel |
+| Help and record-detail popups | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 
 ## Glossary
 
-- Database Entry: named configuration item that points to a SQLite database path.
-- Table: primary unit of navigation and data operations.
-- Column: typed field in a table schema.
-- Record: single row of table data.
-- Schema View: right-panel mode showing table columns and types.
-- Records View: right-panel mode showing table data rows.
-- Filter: active condition applied to records of selected table.
-- Sort: active single-column ordering (`ASC`/`DESC`) applied to records of selected table.
-- Staged Change: pending insert/edit/delete not yet saved to the database.
-- Dirty State: staged changes exist, and write mode with an unsaved changes count is active.
+- Database Entry: Named configuration item that points to a SQLite database path.
+- Schema View: Right-panel mode that shows column names and types for the selected table.
+- Records View: Right-panel mode that shows table rows for the selected table.
+- Field Focus: Cell-level navigation mode used to select a specific field before editing.
+- Filter: The single active condition applied to the selected table's records.
+- Sort: The single active column ordering (`ASC` or `DESC`) applied to the selected table's records.
+- Staged Change: Pending insert, edit, or delete that has not yet been saved to the database.
+- Dirty State: Session state in which staged changes exist and the mode indicator shows an unsaved change count.
