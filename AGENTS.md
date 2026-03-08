@@ -27,6 +27,10 @@ The agent MUST use `docs/technical-documentation.md#architecture-and-boundaries`
 For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
 - The agent MUST preserve the architecture boundaries and dependency direction defined in `docs/technical-documentation.md`.
 - The agent SHOULD prefer interface-driven changes through application ports instead of adapter-to-adapter coupling.
+- The agent SHOULD prefer finer-grained files, packages, and modules when the current code mixes separable architectural responsibilities or crosses stable change seams.
+- The agent MUST NOT split files, packages, or modules only to reduce size, only to reduce token usage, or only to satisfy a generic granularity preference.
+- The agent MAY treat lower token consumption, smaller review surface, and easier navigation as secondary benefits when a decomposition is already justified by cohesion, boundary clarity, testability, or reduced change blast radius.
+- When proposing or applying decomposition, the agent MUST be able to name the architectural seam or responsibility split that justifies it.
 
 #### Architecture Rules for New Features
 
@@ -45,6 +49,7 @@ For non-trivial architecture work, the agent SHOULD consult `docs/clean-architec
 - Changes MUST stay minimal and scoped to task intent.
 - Changes MUST stay surgical; every changed line MUST map directly to task intent.
 - The agent MUST NOT refactor adjacent or orthogonal code unless explicitly requested.
+- The agent SHOULD prefer decomposition that removes mixed responsibilities, duplicated orchestration, or unstable change coupling, but it MUST keep cohesive workflows together when splitting would add indirection without architectural gain.
 - If unrelated issues are discovered, the agent MUST report them separately instead of changing them.
 
 Quick examples:

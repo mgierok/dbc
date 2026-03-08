@@ -58,6 +58,8 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The audit MUST verify dependency direction (for example domain not depending on infrastructure).
 - The audit SHOULD flag god modules and overgrown shared utility modules.
 - The audit SHOULD assess whether module public APIs are small and stable.
+- The audit SHOULD assess whether oversized files, packages, or modules are hiding multiple architectural responsibilities that can be split along existing boundaries or stable seams.
+- The audit MUST NOT recommend file or module splitting based on size alone.
 
 2. Dependencies and import rules
 - The audit MUST inspect dependency graph risks (cycles, spaghetti imports, extreme fan-in/fan-out).
@@ -134,6 +136,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The audit SHOULD flag duplicated orchestration paths and overlapping module responsibilities.
 - The audit MUST propose simplification actions that preserve architecture boundaries and dependency direction.
 - The audit SHOULD include measurable simplification outcomes (for example fewer dependency edges, smaller change blast radius, and reduced cognitive load in core flows).
+- The audit SHOULD treat finer-grained decomposition as a valid simplification only when it reduces cognitive load or review surface without introducing speculative layers or extra boundary crossings.
 
 ## Audit Workflow
 
@@ -175,6 +178,11 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
   - expected quality or performance gain,
   - why the recommendation remains architecture-compliant,
   - implementation effort estimate.
+- If the opportunity recommends finer-grained decomposition, it MUST also include:
+  - the responsibility split being proposed,
+  - the architectural seam that makes the split valid,
+  - why the split is better than keeping the current unit intact,
+  - why the split is not merely a size-reduction exercise.
 
 7. Identify pattern-based optimization opportunities
 - Evaluate whether missing design patterns are causing duplicated logic, rigid coupling, unstable change surfaces, or orchestration leakage.
@@ -218,6 +226,9 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The skill MUST prioritize architecture-compliant recommendations before exception candidates.
 - The skill MUST explain why a rule-exception candidate could be beneficial and what conditions make it acceptable.
 - The skill MUST mark exception candidates as `OPTIONAL` and `REQUIRES_HUMAN_APPROVAL`.
+- The skill SHOULD prefer finer-grained files, packages, or modules when the code already contains separable architectural responsibilities or stable change seams.
+- The skill MAY treat reduced token consumption, review surface, or navigation cost as a supporting benefit of decomposition, but it MUST NOT use token reduction as the primary justification.
+- The skill MUST NOT recommend decomposition that mainly adds indirection, fragments a cohesive workflow, or weakens discoverability of a single responsibility.
 
 ## Output Requirements
 
