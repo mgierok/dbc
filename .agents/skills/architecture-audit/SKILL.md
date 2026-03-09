@@ -221,6 +221,9 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 10. Produce final report
 - Generate a Markdown report using `.agents/skills/architecture-audit/references/report-template.md` as a baseline structure.
 - The report MUST be extended with any required sections from `Output Requirements` that are missing in the template.
+- The report MUST be concise by default.
+- The report MUST keep supporting sections short and MUST place most explanatory detail in `Recommended Change Plan`.
+- The report SHOULD collapse detailed finding inventories into a compact summary when separate long sections would only repeat the same information.
 - Follow validation points from `.agents/skills/architecture-audit/references/analysis-checklist.md`.
 
 ## Decision Rules
@@ -243,19 +246,23 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 
 The final output MUST be a Markdown report with these sections:
 - `Scope and Inputs`
-- `Architecture Rules Baseline`
-- `Architecture Review Area Coverage`
-- `Confirmed Violations`
-- `Review Required Findings`
-- `Compliant Optimization Opportunities`
-- `Design Pattern Opportunities`
-- `Rule-Exception Candidates`
+- `Key Findings Summary`
 - `Recommended Change Plan`
 - `Confidence and Risk`
 - `Evidence and Limitations`
 
 The report MUST include concrete file references and architecture unit identifiers wherever possible.
-`Architecture Review Area Coverage` MUST reflect the applicability classification produced in `Audit Workflow` step `3`, including one-line rationale for each `NOT_APPLICABLE` area.
+- `Scope and Inputs` MUST stay compact and SHOULD use short bullets only.
+- `Key Findings Summary` MUST stay compact and SHOULD fit each finding or opportunity into one short table row or one short bullet.
+- `Key Findings Summary` MUST preserve the finding class or recommendation kind (`ARCH_VIOLATION_CONFIRMED`, `REVIEW_REQUIRED`, optimization opportunity, pattern opportunity, or `RULE_EXCEPTION_CANDIDATE`) without expanding each kind into its own long section.
+- `Recommended Change Plan` MUST be the primary section and MUST be more detailed than the rest of the report.
+- Each item in `Recommended Change Plan` MUST explain:
+  - the essence of the problem,
+  - why solving it is valuable,
+  - the general implementation direction,
+  - the expected benefit,
+  - the main sequencing or dependency considerations when relevant.
+- `Confidence and Risk` and `Evidence and Limitations` MUST stay brief and MUST NOT restate the full plan.
 The skill MUST write the report file to `<project-root>/architecture-audit.md`.
 
 ## Safety and Boundaries

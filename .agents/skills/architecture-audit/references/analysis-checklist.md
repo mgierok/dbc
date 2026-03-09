@@ -69,6 +69,9 @@ For each `RULE_EXCEPTION_CANDIDATE`:
 
 - [ ] Report follows required section structure.
 - [ ] Report is saved to `<project-root>/architecture-audit.md`.
+- [ ] Supporting sections stay concise and do not turn into long inventories.
+- [ ] `Recommended Change Plan` is the most detailed section in the report.
+- [ ] Each plan item explains the problem, expected value, and general implementation direction.
 - [ ] Evidence is separated from assumptions and open questions.
 - [ ] Limitations are declared (for example partial scope, missing architecture rules).
 - [ ] Recommendations are actionable and specific, not generic.

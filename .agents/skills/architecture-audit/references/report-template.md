@@ -5,66 +5,43 @@
 - Audit scope:
 - Invocation intent:
 - Project architecture rules consulted:
+- Relevant review areas:
 - Fallback heuristics used (if any):
 
-## Architecture Rules Baseline
+## Key Findings Summary
 
-| Rule ID | Rule Summary | Source | Scope |
-|---|---|---|---|
-|  |  |  |  |
-
-## Confirmed Violations
-
-| File / Unit | Violated Rule | Evidence | Impact | Recommended Remediation | Priority |
+| ID | Kind | Area | File / Unit | Summary | Priority |
 |---|---|---|---|---|---|
 |  |  |  |  |  |  |
-
-## Review Required Findings
-
-| File / Unit | Suspected Rule Violation | Evidence | Why Manual Validation Is Needed | Suggested Validation Step | Priority |
-|---|---|---|---|---|---|
-|  |  |  |  |  |  |
-
-## Compliant Optimization Opportunities
-
-| Area | Opportunity | Expected Value | Architecture-Compliance Rationale | Effort | Suggested Sequencing | Priority |
-|---|---|---|---|---|---|---|
-|  |  |  |  |  |  |  |
-
-## Design Pattern Opportunities
-
-| Area | Problem Signal | Proposed Pattern | Expected Gain | Over-Engineering Risk | Effort | Priority |
-|---|---|---|---|---|---|---|
-|  |  |  |  |  |  |  |
-
-## Rule-Exception Candidates
-
-| Rule | Current Constraint Cost | Why Exception May Help | Risk / Blast Radius | Required Safeguards | Reversibility | Priority |
-|---|---|---|---|---|---|---|
-|  |  |  |  |  |  |  |
 
 ## Recommended Change Plan
 
-### High Impact
+### 1. Change Title
 
-1.
+- Problem:
+- Why it matters:
+- General implementation direction:
+- Expected benefit:
+- Sequencing / dependencies:
+- Evidence:
 
-### Medium Impact
+### 2. Change Title
 
-1.
-
-### Low Impact
-
-1.
+- Problem:
+- Why it matters:
+- General implementation direction:
+- Expected benefit:
+- Sequencing / dependencies:
+- Evidence:
 
 ## Confidence and Risk
 
 - Confidence summary:
-- Highest-risk recommendations:
-- Findings requiring manual verification:
+- Main risk or uncertainty:
+- Manual validation needed:
 
 ## Evidence and Limitations
 
 - Evidence sources:
 - Limitations:
-- Open questions:
+- Open questions (if any):
