@@ -1,4 +1,4 @@
-package tui
+package primitives
 
 import (
 	"fmt"

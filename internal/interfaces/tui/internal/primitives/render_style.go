@@ -1,4 +1,4 @@
-package tui
+package primitives
 
 import (
 	"os"
@@ -16,8 +16,6 @@ const (
 type renderStyles struct {
 	enabled bool
 }
-
-var detectRenderStyles = resolveRenderStylesFromEnv
 
 func resolveRenderStylesFromEnv() renderStyles {
 	if _, disabled := os.LookupEnv("NO_COLOR"); disabled {

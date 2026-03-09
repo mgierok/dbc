@@ -4,45 +4,25 @@ import (
 	"context"
 	"errors"
 
-	tea "github.com/charmbracelet/bubbletea"
-
 	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/usecase"
+	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
 )
 
 var (
-	ErrDatabaseSelectionCanceled   = errors.New("database selection canceled")
-	ErrDatabaseSelectionUnfinished = errors.New("database selection not confirmed")
+	ErrDatabaseSelectionCanceled   = selectorpkg.ErrDatabaseSelectionCanceled
+	ErrDatabaseSelectionUnfinished = selectorpkg.ErrDatabaseSelectionUnfinished
 )
 
-type DatabaseOptionSource string
+type DatabaseOptionSource = selectorpkg.DatabaseOptionSource
 
 const (
-	DatabaseOptionSourceConfig DatabaseOptionSource = "config"
-	DatabaseOptionSourceCLI    DatabaseOptionSource = "cli"
+	DatabaseOptionSourceConfig = selectorpkg.DatabaseOptionSourceConfig
+	DatabaseOptionSourceCLI    = selectorpkg.DatabaseOptionSourceCLI
 )
 
-type DatabaseOption struct {
-	Name       string
-	ConnString string
-	Source     DatabaseOptionSource
-
-	managerIndex int
-}
-
-type SelectorLaunchState struct {
-	StatusMessage     string
-	PreferConnString  string
-	AdditionalOptions []DatabaseOption
-}
-
-type selectorManager interface {
-	List(ctx context.Context) ([]dto.ConfigDatabase, error)
-	Create(ctx context.Context, entry dto.ConfigDatabase) error
-	Update(ctx context.Context, index int, entry dto.ConfigDatabase) error
-	Delete(ctx context.Context, index int) error
-	ActivePath(ctx context.Context) (string, error)
-}
+type DatabaseOption = selectorpkg.DatabaseOption
+type SelectorLaunchState = selectorpkg.SelectorLaunchState
 
 type selectorUseCaseAdapter struct {
 	list   *usecase.ListConfiguredDatabases
@@ -104,34 +84,11 @@ func SelectDatabaseWithState(
 		return DatabaseOption{}, errors.New("selector config management use cases are required")
 	}
 
-	model, err := newDatabaseSelectorModel(ctx, selectorUseCaseAdapter{
+	return selectorpkg.SelectDatabaseWithState(ctx, selectorUseCaseAdapter{
 		list:   listConfiguredDatabases,
 		create: createConfiguredDatabase,
 		update: updateConfiguredDatabase,
 		del:    deleteConfiguredDatabase,
 		active: getActiveConfigPath,
 	}, state)
-	if err != nil {
-		return DatabaseOption{}, err
-	}
-
-	program := tea.NewProgram(model, tea.WithAltScreen())
-	final, err := program.Run()
-	if err != nil {
-		return DatabaseOption{}, err
-	}
-	selector, ok := final.(*databaseSelectorModel)
-	if !ok {
-		return DatabaseOption{}, errors.New("unexpected selector state")
-	}
-	if selector.canceled {
-		return DatabaseOption{}, ErrDatabaseSelectionCanceled
-	}
-	if !selector.chosen {
-		return DatabaseOption{}, ErrDatabaseSelectionUnfinished
-	}
-	if selector.selected < 0 || selector.selected >= len(selector.options) {
-		return DatabaseOption{}, ErrDatabaseSelectionUnfinished
-	}
-	return selector.options[selector.selected], nil
 }

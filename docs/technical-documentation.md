@@ -31,7 +31,9 @@
 - `internal/application/usecase`: read/write orchestration, config management, staging policy, and dirty-navigation policy.
 - `internal/application/port`: application boundary interfaces for infrastructure implementations.
 - `internal/application/dto`: adapter-facing data contracts exchanged between use cases and interfaces.
-- `internal/interfaces/tui`: runtime UI model, selector UI, key/command registry, and terminal-native rendering/styling adapters.
+- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model and runtime-session entrypoints.
+- `internal/interfaces/tui/internal/selector`: selector-specific Bubble Tea model, selector view/state transitions, and selector option normalization.
+- `internal/interfaces/tui/internal/primitives`: terminal UI primitives shared by runtime and selector, including key/help registry, popup/layout rendering, iconography, and style helpers.
 - `internal/infrastructure/config`: TOML config loading/validation/persistence adapter.
 - `internal/infrastructure/engine`: SQLite adapter for reads/writes/filter/sort and connectivity checks.
 
@@ -79,14 +81,14 @@
 
 - Guarantee: key bindings, command aliases, and help text are maintained in a shared registry.
 - Guarantee: command parsing trims optional `:` and matches aliases case-insensitively.
-- Enforced in: `internal/interfaces/tui/input_registry.go`.
+- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry.go`.
 
 ### Terminal-Native TUI Styling
 
 - Guarantee: runtime and selector models resolve their styling profile once at construction time and render deterministically from that profile.
 - Guarantee: TUI emphasis uses only ANSI SGR attributes (`bold`, `faint`, `underline`, `reverse`) on the terminal's current foreground/background theme; the application does not define its own color palette.
 - Guarantee: setting `NO_COLOR` or running with `TERM=dumb` disables ANSI styling and falls back to plain text rendering.
-- Enforced in: `internal/interfaces/tui/render_style.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/selector_view.go`, `internal/interfaces/tui/popup_component.go`.
+- Enforced in: `internal/interfaces/tui/internal/primitives/render_style.go`, `internal/interfaces/tui/internal/primitives/view_layout.go`, `internal/interfaces/tui/internal/primitives/popup_component.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/internal/selector/view.go`.
 
 ## Data and Interface Contracts
 
@@ -168,13 +170,19 @@
 
 - Decision: keep shortcut bindings, command aliases, and help/status hints in one registry.
 - Rationale: prevent drift between key handlers and rendered guidance.
-- Where: `internal/interfaces/tui/input_registry.go`.
+- Where: `internal/interfaces/tui/internal/primitives/input_registry.go`.
+
+### Selector-First Decomposition Inside The TUI Adapter
+
+- Decision: keep `internal/interfaces/tui` as the public facade/runtime package and isolate selector workflow plus low-level terminal UI primitives in internal subpackages.
+- Rationale: reduce mixed-context hotspots while preserving the adapter boundary used by `cmd/dbc`.
+- Where: `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
 
 ### Terminal-Theme-Driven TUI Styling
 
 - Decision: keep TUI styling limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors.
 - Rationale: inherit the user's terminal colorscheme automatically while preserving a predictable monochrome fallback path.
-- Where: `internal/interfaces/tui/render_style.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/selector_view.go`, `internal/interfaces/tui/popup_component.go`.
+- Where: `internal/interfaces/tui/internal/primitives/render_style.go`, `internal/interfaces/tui/internal/primitives/view_layout.go`, `internal/interfaces/tui/internal/primitives/popup_component.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/internal/selector/view.go`.
 
 ### Guarded Dynamic Query Composition
 
