@@ -26,6 +26,8 @@
 The agent MUST use `docs/technical-documentation.md#architecture-and-boundaries` as the primary architecture guide.
 For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
 - The agent MUST preserve the architecture boundaries and dependency direction defined in `docs/technical-documentation.md`.
+- The agent MUST treat human and AI discoverability as first-class quality concerns.
+- The agent SHOULD prefer structures where the likely change location is predictable from naming, boundaries, and module ownership.
 - The agent SHOULD prefer interface-driven changes through application ports instead of adapter-to-adapter coupling.
 - The agent SHOULD prefer finer-grained files, packages, and modules when the current code mixes separable architectural responsibilities or crosses stable change seams.
 - The agent MUST NOT split files, packages, or modules only to reduce size, only to reduce token usage, or only to satisfy a generic granularity preference.
@@ -49,7 +51,8 @@ For non-trivial architecture work, the agent SHOULD consult `docs/clean-architec
 - Changes MUST stay minimal and scoped to task intent.
 - Changes MUST stay surgical; every changed line MUST map directly to task intent.
 - The agent MUST NOT refactor adjacent or orthogonal code unless explicitly requested.
-- The agent SHOULD prefer decomposition that removes mixed responsibilities, duplicated orchestration, or unstable change coupling, but it MUST keep cohesive workflows together when splitting would add indirection without architectural gain.
+- The agent SHOULD prefer decomposition or simplification that removes mixed responsibilities, duplicated orchestration, unstable change coupling, unnecessary complexity, unnecessary nesting, redundancy, or over-abstraction, but it MUST keep cohesive workflows together when splitting would add indirection without architectural gain.
+- The agent MUST NOT simplify in a way that merges distinct concerns, weakens separation of responsibilities, or makes debugging harder.
 - If unrelated issues are discovered, the agent MUST report them separately instead of changing them.
 
 Quick examples:
