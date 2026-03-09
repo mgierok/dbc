@@ -5,12 +5,52 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui"
 )
+
+func TestNewRuntimeStartupDependencies_UsesDefaultConfigPathAndBuildsUseCases(t *testing.T) {
+	// Arrange
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	expectedPath := filepath.Join(home, ".config", "dbc", "config.toml")
+
+	// Act
+	deps, err := newRuntimeStartupDependencies()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if deps.listConfiguredDatabases == nil {
+		t.Fatal("expected listConfiguredDatabases use case to be initialized")
+	}
+	if deps.createConfiguredDB == nil {
+		t.Fatal("expected createConfiguredDB use case to be initialized")
+	}
+	if deps.updateConfiguredDB == nil {
+		t.Fatal("expected updateConfiguredDB use case to be initialized")
+	}
+	if deps.deleteConfiguredDB == nil {
+		t.Fatal("expected deleteConfiguredDB use case to be initialized")
+	}
+	if deps.getActiveConfigPath == nil {
+		t.Fatal("expected getActiveConfigPath use case to be initialized")
+	}
+
+	activePath, err := deps.getActiveConfigPath.Execute(context.Background())
+	if err != nil {
+		t.Fatalf("expected active config path to resolve, got %v", err)
+	}
+	if activePath != expectedPath {
+		t.Fatalf("expected active config path %q, got %q", expectedPath, activePath)
+	}
+}
 
 func TestNewRuntimeStartupOrchestrator_SetsDirectLaunchPendingFromOptions(t *testing.T) {
 	t.Parallel()
@@ -432,6 +472,42 @@ func TestRunRuntimeSession_LogsCloseFailure(t *testing.T) {
 	}
 	if !strings.Contains(logged, "failed to close database: close failed") {
 		t.Fatalf("expected close failure to be logged, got %q", logged)
+	}
+}
+
+func TestConnectSelectedDatabase_OpensReachableSQLiteFile(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	file, err := os.CreateTemp("", "dbc-startup-runtime-*.sqlite")
+	if err != nil {
+		t.Fatalf("expected sqlite file to be created, got %v", err)
+	}
+	t.Cleanup(func() {
+		if removeErr := os.Remove(file.Name()); removeErr != nil && !os.IsNotExist(removeErr) {
+			t.Fatalf("expected temp sqlite file removal to succeed, got %v", removeErr)
+		}
+	})
+	if err := file.Close(); err != nil {
+		t.Fatalf("expected sqlite file close to succeed, got %v", err)
+	}
+	dbPath := file.Name()
+
+	// Act
+	db, err := connectSelectedDatabase(tui.DatabaseOption{
+		Name:       "analytics",
+		ConnString: dbPath,
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected sqlite connection to open, got %v", err)
+	}
+	if db == nil {
+		t.Fatal("expected sqlite connection handle, got nil")
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("expected sqlite connection close to succeed, got %v", err)
 	}
 }
 
