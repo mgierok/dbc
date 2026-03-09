@@ -45,6 +45,14 @@ type Manager interface {
 
 type selectorManager = Manager
 
+type selectorProgram interface {
+	Run() (tea.Model, error)
+}
+
+var newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
+	return tea.NewProgram(model, options...)
+}
+
 func SelectDatabase(ctx context.Context, manager Manager) (DatabaseOption, error) {
 	return SelectDatabaseWithState(ctx, manager, SelectorLaunchState{})
 }
@@ -59,7 +67,7 @@ func SelectDatabaseWithState(ctx context.Context, manager Manager, state Selecto
 		return DatabaseOption{}, err
 	}
 
-	program := tea.NewProgram(model, tea.WithAltScreen())
+	program := newSelectorProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {
 		return DatabaseOption{}, err
@@ -74,8 +82,8 @@ func SelectDatabaseWithState(ctx context.Context, manager Manager, state Selecto
 	if !selector.chosen {
 		return DatabaseOption{}, ErrDatabaseSelectionUnfinished
 	}
-	if selector.selected < 0 || selector.selected >= len(selector.options) {
+	if selector.browse.selected < 0 || selector.browse.selected >= len(selector.options) {
 		return DatabaseOption{}, ErrDatabaseSelectionUnfinished
 	}
-	return selector.options[selector.selected], nil
+	return selector.options[selector.browse.selected], nil
 }

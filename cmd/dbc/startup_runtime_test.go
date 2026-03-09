@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -256,6 +257,59 @@ func TestRuntimeStartupOrchestratorRun_TracksDirectLaunchOptionAcrossConfigRetry
 	}
 	if runCalls != 2 {
 		t.Fatalf("expected two runtime session attempts, got %d", runCalls)
+	}
+}
+
+func TestRuntimeStartupOrchestratorSelectDatabase_UsesSelectorState(t *testing.T) {
+	restore := snapshotStartupRuntimeTestHooks()
+	defer restore()
+
+	// Arrange
+	expectedState := tui.SelectorLaunchState{
+		StatusMessage:    "Connection failed for \"analytics\": ping failed",
+		PreferConnString: "/tmp/analytics.sqlite",
+		AdditionalOptions: []tui.DatabaseOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     tui.DatabaseOptionSourceCLI,
+			},
+		},
+	}
+	expectedOption := tui.DatabaseOption{
+		Name:       "analytics",
+		ConnString: "/tmp/analytics.sqlite",
+		Source:     tui.DatabaseOptionSourceConfig,
+	}
+	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{})
+	orchestrator.selectorState = expectedState
+	selectDatabaseWithStateFn = func(
+		ctx context.Context,
+		listConfiguredDatabases *usecase.ListConfiguredDatabases,
+		createConfiguredDatabase *usecase.CreateConfiguredDatabase,
+		updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
+		deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
+		getActiveConfigPath *usecase.GetActiveConfigPath,
+		state tui.SelectorLaunchState,
+	) (tui.DatabaseOption, error) {
+		if !reflect.DeepEqual(state, expectedState) {
+			t.Fatalf("expected selector state %+v, got %+v", expectedState, state)
+		}
+		return expectedOption, nil
+	}
+
+	// Act
+	selected, path, err := orchestrator.selectDatabase()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if path != startupPathSelector {
+		t.Fatalf("expected startup path %v, got %v", startupPathSelector, path)
+	}
+	if selected != expectedOption {
+		t.Fatalf("expected selected option %+v, got %+v", expectedOption, selected)
 	}
 }
 
@@ -514,6 +568,7 @@ func TestConnectSelectedDatabase_OpensReachableSQLiteFile(t *testing.T) {
 func snapshotStartupRuntimeTestHooks() func() {
 	oldDepsFactory := newRuntimeStartupDependenciesFn
 	oldOrchestratorFactory := newRuntimeStartupOrchestratorFn
+	oldSelectDatabase := selectDatabaseWithStateFn
 	oldTUIRun := tuiRunFn
 	oldCloseDatabase := closeDatabaseFn
 	oldLogPrintf := logPrintfFn
@@ -521,6 +576,7 @@ func snapshotStartupRuntimeTestHooks() func() {
 	return func() {
 		newRuntimeStartupDependenciesFn = oldDepsFactory
 		newRuntimeStartupOrchestratorFn = oldOrchestratorFactory
+		selectDatabaseWithStateFn = oldSelectDatabase
 		tuiRunFn = oldTUIRun
 		closeDatabaseFn = oldCloseDatabase
 		logPrintfFn = oldLogPrintf

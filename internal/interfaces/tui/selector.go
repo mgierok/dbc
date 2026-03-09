@@ -14,6 +14,8 @@ var (
 	ErrDatabaseSelectionUnfinished = selectorpkg.ErrDatabaseSelectionUnfinished
 )
 
+var selectDatabaseWithStateFn = selectorpkg.SelectDatabaseWithState
+
 type DatabaseOptionSource = selectorpkg.DatabaseOptionSource
 
 const (
@@ -84,7 +86,7 @@ func SelectDatabaseWithState(
 		return DatabaseOption{}, errors.New("selector config management use cases are required")
 	}
 
-	return selectorpkg.SelectDatabaseWithState(ctx, selectorUseCaseAdapter{
+	return selectDatabaseWithStateFn(ctx, selectorUseCaseAdapter{
 		list:   listConfiguredDatabases,
 		create: createConfiguredDatabase,
 		update: updateConfiguredDatabase,

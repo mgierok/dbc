@@ -73,8 +73,8 @@ func TestDatabaseSelector_MoveSelection(t *testing.T) {
 
 	// Assert
 	selector := updated.(*databaseSelectorModel)
-	if selector.selected != 1 {
-		t.Fatalf("expected selection to move down, got %d", selector.selected)
+	if selector.browse.selected != 1 {
+		t.Fatalf("expected selection to move down, got %d", selector.browse.selected)
 	}
 
 	// Act
@@ -82,8 +82,8 @@ func TestDatabaseSelector_MoveSelection(t *testing.T) {
 
 	// Assert
 	selector = updated.(*databaseSelectorModel)
-	if selector.selected != 0 {
-		t.Fatalf("expected selection to move up, got %d", selector.selected)
+	if selector.browse.selected != 0 {
+		t.Fatalf("expected selection to move up, got %d", selector.browse.selected)
 	}
 }
 
@@ -430,8 +430,8 @@ func TestDatabaseSelector_AppliesInitialStatusMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	if model.statusMessage != "Connection failed: invalid path" {
-		t.Fatalf("expected initial status message, got %q", model.statusMessage)
+	if model.browse.statusMessage != "Connection failed: invalid path" {
+		t.Fatalf("expected initial status message, got %q", model.browse.statusMessage)
 	}
 }
 
@@ -453,8 +453,8 @@ func TestDatabaseSelector_PrefersSelectionByConnString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	if model.selected != 1 {
-		t.Fatalf("expected preferred selection index %d, got %d", 1, model.selected)
+	if model.browse.selected != 1 {
+		t.Fatalf("expected preferred selection index %d, got %d", 1, model.browse.selected)
 	}
 }
 
@@ -476,8 +476,8 @@ func TestDatabaseSelector_IgnoresMissingPreferredConnString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	if model.selected != 0 {
-		t.Fatalf("expected default selection index %d, got %d", 0, model.selected)
+	if model.browse.selected != 0 {
+		t.Fatalf("expected default selection index %d, got %d", 0, model.browse.selected)
 	}
 }
 
@@ -568,7 +568,7 @@ func TestDatabaseSelector_EditIsUnavailableForSessionScopedCLIEntry(t *testing.T
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	model.selected = 1
+	model.browse.selected = 1
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
@@ -577,8 +577,8 @@ func TestDatabaseSelector_EditIsUnavailableForSessionScopedCLIEntry(t *testing.T
 	if model.mode != selectorModeBrowse {
 		t.Fatalf("expected browse mode to stay active, got %v", model.mode)
 	}
-	if !strings.Contains(strings.ToLower(model.statusMessage), "cannot be edited") {
-		t.Fatalf("expected edit-block status message, got %q", model.statusMessage)
+	if !strings.Contains(strings.ToLower(model.browse.statusMessage), "cannot be edited") {
+		t.Fatalf("expected edit-block status message, got %q", model.browse.statusMessage)
 	}
 	if len(manager.updated) != 0 {
 		t.Fatalf("expected no update calls for CLI session entry, got %d", len(manager.updated))
@@ -604,7 +604,7 @@ func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	model.selected = 1
+	model.browse.selected = 1
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
@@ -613,8 +613,8 @@ func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing
 	if model.mode != selectorModeBrowse {
 		t.Fatalf("expected browse mode to stay active, got %v", model.mode)
 	}
-	if !strings.Contains(strings.ToLower(model.statusMessage), "cannot be deleted") {
-		t.Fatalf("expected delete-block status message, got %q", model.statusMessage)
+	if !strings.Contains(strings.ToLower(model.browse.statusMessage), "cannot be deleted") {
+		t.Fatalf("expected delete-block status message, got %q", model.browse.statusMessage)
 	}
 	if len(manager.deleted) != 0 {
 		t.Fatalf("expected no delete calls for CLI session entry, got %d", len(manager.deleted))

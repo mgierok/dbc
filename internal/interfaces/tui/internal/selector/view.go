@@ -113,17 +113,17 @@ func (m *databaseSelectorModel) browseContentRows(listHeight int) []standardized
 	if len(items) == 0 {
 		rows = append(rows, standardizedPopupRow{text: "No databases configured."})
 	} else {
-		start := scrollStart(m.selected, listHeight, len(items))
+		start := scrollStart(m.browse.selected, listHeight, len(items))
 		end := minInt(len(items), start+listHeight)
 		for i := start; i < end; i++ {
 			rows = append(rows, standardizedPopupRow{
 				text:       items[i],
 				selectable: true,
-				selected:   i == m.selected,
+				selected:   i == m.browse.selected,
 			})
 		}
 	}
-	if strings.TrimSpace(m.statusMessage) != "" {
+	if strings.TrimSpace(m.browse.statusMessage) != "" {
 		rows = append(rows, standardizedPopupRow{text: "Status: " + m.styleStatusMessage()})
 	}
 	return rows
@@ -227,8 +227,8 @@ func selectorFormFieldLine(label, value string) string {
 }
 
 func (m *databaseSelectorModel) styleStatusMessage() string {
-	if isErrorLikeMessage(m.statusMessage) {
-		return m.styles.error(m.statusMessage)
+	if isErrorLikeMessage(m.browse.statusMessage) {
+		return m.styles.error(m.browse.statusMessage)
 	}
-	return m.statusMessage
+	return m.browse.statusMessage
 }

@@ -16,6 +16,7 @@ import (
 var (
 	newRuntimeStartupDependenciesFn = newRuntimeStartupDependencies
 	newRuntimeStartupOrchestratorFn = newRuntimeStartupOrchestrator
+	selectDatabaseWithStateFn       = tui.SelectDatabaseWithState
 	tuiRunFn                        = tui.Run
 	closeDatabaseFn                 = func(db *sql.DB) error { return db.Close() }
 	logPrintfFn                     = log.Printf
@@ -120,7 +121,7 @@ func (o *runtimeStartupOrchestrator) selectDatabase() (tui.DatabaseOption, start
 			return listConfiguredDatabaseOptions(context.Background(), o.deps.listConfiguredDatabases)
 		},
 		func() (tui.DatabaseOption, error) {
-			return tui.SelectDatabaseWithState(
+			return selectDatabaseWithStateFn(
 				context.Background(),
 				o.deps.listConfiguredDatabases,
 				o.deps.createConfiguredDB,

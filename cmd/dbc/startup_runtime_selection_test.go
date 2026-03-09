@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/mgierok/dbc/internal/application/port"
+	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui"
 )
 
@@ -327,6 +330,36 @@ func TestResolveStartupSelection_UsesFirstConfiguredIdentityForDeterministicNorm
 	}
 }
 
+func TestListConfiguredDatabaseOptions_MapsConfigEntriesToSelectorOptions(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	store := &fakeStartupSelectionConfigStore{
+		entries: []port.ConfigEntry{
+			{Name: "local", DBPath: "/tmp/local.sqlite"},
+			{Name: "analytics", DBPath: "/tmp/analytics.sqlite"},
+		},
+	}
+	listConfiguredDatabases := usecase.NewListConfiguredDatabases(store)
+
+	// Act
+	options, err := listConfiguredDatabaseOptions(context.Background(), listConfiguredDatabases)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(options) != 2 {
+		t.Fatalf("expected two mapped options, got %d", len(options))
+	}
+	if options[0].Name != "local" || options[0].ConnString != "/tmp/local.sqlite" || options[0].Source != tui.DatabaseOptionSourceConfig {
+		t.Fatalf("unexpected first option mapping: %+v", options[0])
+	}
+	if options[1].Name != "analytics" || options[1].ConnString != "/tmp/analytics.sqlite" || options[1].Source != tui.DatabaseOptionSourceConfig {
+		t.Fatalf("unexpected second option mapping: %+v", options[1])
+	}
+}
+
 func TestBuildDirectLaunchFailureMessage_ContainsReasonAndGuidance(t *testing.T) {
 	t.Parallel()
 
@@ -410,4 +443,39 @@ func TestTrackSessionScopedDirectLaunchOption_DeduplicatesNormalizedIdentity(t *
 	if len(updated) != 1 {
 		t.Fatalf("expected one deduplicated session option, got %d", len(updated))
 	}
+}
+
+type fakeStartupSelectionConfigStore struct {
+	entries []port.ConfigEntry
+}
+
+func (f *fakeStartupSelectionConfigStore) List(_ context.Context) ([]port.ConfigEntry, error) {
+	result := make([]port.ConfigEntry, len(f.entries))
+	copy(result, f.entries)
+	return result, nil
+}
+
+func (f *fakeStartupSelectionConfigStore) Create(_ context.Context, entry port.ConfigEntry) error {
+	f.entries = append(f.entries, entry)
+	return nil
+}
+
+func (f *fakeStartupSelectionConfigStore) Update(_ context.Context, index int, entry port.ConfigEntry) error {
+	if index < 0 || index >= len(f.entries) {
+		return errors.New("index out of range")
+	}
+	f.entries[index] = entry
+	return nil
+}
+
+func (f *fakeStartupSelectionConfigStore) Delete(_ context.Context, index int) error {
+	if index < 0 || index >= len(f.entries) {
+		return errors.New("index out of range")
+	}
+	f.entries = append(f.entries[:index], f.entries[index+1:]...)
+	return nil
+}
+
+func (f *fakeStartupSelectionConfigStore) ActivePath(_ context.Context) (string, error) {
+	return "/tmp/config.toml", nil
 }
