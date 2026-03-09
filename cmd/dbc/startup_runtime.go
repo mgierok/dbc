@@ -13,6 +13,14 @@ import (
 	"github.com/mgierok/dbc/internal/interfaces/tui"
 )
 
+var (
+	newRuntimeStartupDependenciesFn = newRuntimeStartupDependencies
+	newRuntimeStartupOrchestratorFn = newRuntimeStartupOrchestrator
+	tuiRunFn                        = tui.Run
+	closeDatabaseFn                 = func(db *sql.DB) error { return db.Close() }
+	logPrintfFn                     = log.Printf
+)
+
 type runtimeStartupDependencies struct {
 	listConfiguredDatabases *usecase.ListConfiguredDatabases
 	createConfiguredDB      *usecase.CreateConfiguredDatabase
@@ -39,34 +47,52 @@ func newRuntimeStartupDependencies() (runtimeStartupDependencies, error) {
 }
 
 type runtimeStartupOrchestrator struct {
-	options              startupOptions
-	deps                 runtimeStartupDependencies
-	selectorState        tui.SelectorLaunchState
-	sessionScopedOptions []tui.DatabaseOption
-	directLaunchPending  bool
+	options               startupOptions
+	deps                  runtimeStartupDependencies
+	selectorState         tui.SelectorLaunchState
+	sessionScopedOptions  []tui.DatabaseOption
+	directLaunchPending   bool
+	selectDatabaseFn      func() (tui.DatabaseOption, startupPath, error)
+	runSelectedDatabaseFn func(tui.DatabaseOption, startupPath) (bool, error)
+	connectDatabaseFn     func(tui.DatabaseOption) (*sql.DB, error)
+	runRuntimeSessionFn   func(*sql.DB) error
 }
 
 func newRuntimeStartupOrchestrator(options startupOptions, deps runtimeStartupDependencies) *runtimeStartupOrchestrator {
-	return &runtimeStartupOrchestrator{
+	orchestrator := &runtimeStartupOrchestrator{
 		options:             options,
 		deps:                deps,
 		directLaunchPending: options.directLaunchConnString != "",
+		connectDatabaseFn:   connectSelectedDatabase,
+		runRuntimeSessionFn: runRuntimeSession,
 	}
+	orchestrator.selectDatabaseFn = orchestrator.selectDatabase
+	orchestrator.runSelectedDatabaseFn = orchestrator.runSelectedDatabase
+	return orchestrator
 }
 
 func runRuntimeStartup(options startupOptions) error {
-	deps, err := newRuntimeStartupDependencies()
+	deps, err := newRuntimeStartupDependenciesFn()
 	if err != nil {
 		return fmt.Errorf("failed to resolve config path: %w", err)
 	}
 
-	orchestrator := newRuntimeStartupOrchestrator(options, deps)
+	orchestrator := newRuntimeStartupOrchestratorFn(options, deps)
 	return orchestrator.run()
 }
 
 func (o *runtimeStartupOrchestrator) run() error {
+	selectDatabaseFn := o.selectDatabaseFn
+	if selectDatabaseFn == nil {
+		selectDatabaseFn = o.selectDatabase
+	}
+	runSelectedDatabaseFn := o.runSelectedDatabaseFn
+	if runSelectedDatabaseFn == nil {
+		runSelectedDatabaseFn = o.runSelectedDatabase
+	}
+
 	for {
-		selected, selectedStartupPath, err := o.selectDatabase()
+		selected, selectedStartupPath, err := selectDatabaseFn()
 		if err != nil {
 			if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
 				return nil
@@ -77,7 +103,7 @@ func (o *runtimeStartupOrchestrator) run() error {
 		o.sessionScopedOptions = trackSessionScopedDirectLaunchOption(o.sessionScopedOptions, selectedStartupPath, selected)
 		o.directLaunchPending = false
 
-		shouldContinue, err := o.runSelectedDatabase(selected, selectedStartupPath)
+		shouldContinue, err := runSelectedDatabaseFn(selected, selectedStartupPath)
 		if err != nil {
 			return err
 		}
@@ -108,7 +134,12 @@ func (o *runtimeStartupOrchestrator) selectDatabase() (tui.DatabaseOption, start
 }
 
 func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOption, selectedStartupPath startupPath) (bool, error) {
-	db, err := connectSelectedDatabase(selected)
+	connectDatabaseFn := o.connectDatabaseFn
+	if connectDatabaseFn == nil {
+		connectDatabaseFn = connectSelectedDatabase
+	}
+
+	db, err := connectDatabaseFn(selected)
 	if err != nil {
 		if selectedStartupPath == startupPathDirectLaunch {
 			return false, newPresentedStartupFailure(
@@ -126,7 +157,12 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 	}
 	o.selectorState = tui.SelectorLaunchState{}
 
-	runErr := runRuntimeSession(db)
+	runRuntimeSessionFn := o.runRuntimeSessionFn
+	if runRuntimeSessionFn == nil {
+		runRuntimeSessionFn = runRuntimeSession
+	}
+
+	runErr := runRuntimeSessionFn(db)
 	if errors.Is(runErr, tui.ErrOpenConfigSelector) {
 		o.selectorState = tui.SelectorLaunchState{
 			PreferConnString:  selected.ConnString,
@@ -152,9 +188,9 @@ func runRuntimeSession(db *sql.DB) error {
 	saveChanges := usecase.NewSaveTableChanges(sqliteEngine)
 	translator := usecase.NewStagedChangesTranslator()
 
-	runErr := tui.Run(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator)
-	if closeErr := db.Close(); closeErr != nil {
-		log.Printf("failed to close database: %v", closeErr)
+	runErr := tuiRunFn(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator)
+	if closeErr := closeDatabaseFn(db); closeErr != nil {
+		logPrintfFn("failed to close database: %v", closeErr)
 	}
 	return runErr
 }
