@@ -31,7 +31,7 @@
 - `internal/application/usecase`: read/write orchestration, config management, staging policy, and dirty-navigation policy.
 - `internal/application/port`: application boundary interfaces for infrastructure implementations.
 - `internal/application/dto`: adapter-facing data contracts exchanged between use cases and interfaces.
-- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model and runtime-session entrypoints.
+- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, and runtime-session entrypoints.
 - `internal/interfaces/tui/internal/selector`: selector-specific Bubble Tea model, selector view/state transitions, and selector option normalization.
 - `internal/interfaces/tui/internal/primitives`: terminal UI primitives shared by runtime and selector, including key/help registry, popup/layout rendering, iconography, and style helpers.
 - `internal/infrastructure/config`: TOML config loading/validation/persistence adapter.
@@ -55,8 +55,9 @@
 ### Staged Write Model
 
 - Guarantee: insert/edit/delete actions are staged in memory and persisted only after explicit save confirmation.
+- Guarantee: runtime write-side session state and undo/redo history stay behind `Model.staging` so staging mutations remain local to the TUI write workflow.
 - Guarantee: dirty-change counting and initial insert defaults are delegated to application staging policy.
-- Enforced in: `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/staging_policy.go`.
+- Enforced in: `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/staging_policy.go`.
 
 ### Transactional Save Semantics
 
@@ -174,9 +175,9 @@
 
 ### Selector-First Decomposition Inside The TUI Adapter
 
-- Decision: keep `internal/interfaces/tui` as the public facade/runtime package and isolate selector workflow plus low-level terminal UI primitives in internal subpackages.
-- Rationale: reduce mixed-context hotspots while preserving the adapter boundary used by `cmd/dbc`.
-- Where: `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
+- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, and keep runtime write-side state behind `Model.staging`.
+- Rationale: reduce mixed-context hotspots while preserving the adapter boundary and stable top-level runtime entry points used by `cmd/dbc`.
+- Where: `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
 
 ### Terminal-Theme-Driven TUI Styling
 
