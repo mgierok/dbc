@@ -27,9 +27,11 @@ Current product value and scope:
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
 - Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
-- During an active session, `:` opens command entry. `:config` / `:c` returns to selector/management, `:help` / `:h` opens runtime context help, and `:quit` / `:q` exits the application.
+- During an active session, `:` opens command entry. `:config` / `:c` returns to selector/management, `:help` / `:h` opens runtime context help, `:quit` / `:q` exits the application, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
 - Runtime help is context-sensitive, lists only keybindings available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
+- `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
+- A successful `:set limit=<n>` replaces any earlier session value, is never persisted into config, survives `:config` round-trips in the same app session, and resets persisted-record pagination to page `1`. If Records view is already open, records reload immediately with the new limit.
 - If `:config` / `:c` is invoked while staged changes exist, DBC requires an explicit `save`, `discard`, or `cancel` decision before navigation.
 
 ### Main Layout and Focus Model
@@ -50,7 +52,7 @@ Current product value and scope:
 
 ### Records View and Navigation
 
-- Records view shows table data for the selected table in fixed pages of `20` persisted records. `Ctrl+f` and `Ctrl+b` move between pages, and page navigation is bounded to the available range.
+- Records view shows table data for the selected table in persisted-record pages that default to `20` rows and can be overridden for the current app session with `:set limit=<n>`. `Ctrl+f` and `Ctrl+b` move between pages, and page navigation is bounded to the available range.
 - Pending insert rows marked with `✚` stay pinned at the top of the records list and do not count toward persisted-record page size.
 - Row selection is visible in the focused records panel. Field focus mode supports cell-level navigation inside the records grid.
 - Cell content in the records grid is width-constrained and may be truncated in the list view.
@@ -115,6 +117,7 @@ Current user-visible constraints:
 - Editing and deleting persisted records requires a primary key in the table.
 - Only one active filter is supported per table.
 - Only one active sort is supported per table.
+- Runtime page-limit overrides via `:set limit=<n>` are limited to the range `1..1000` and apply only to the current app session.
 - There is no shortcut that switches from Records view back to Schema view while keeping right-panel focus.
 - There is no dedicated clear-filter command; filter state is replaced by applying a new filter or cleared by switching tables.
 - There is no dedicated clear-sort command; sort state is replaced by applying a new sort or cleared by switching tables.
@@ -167,7 +170,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 
 | Context | Controls |
 | --- | --- |
-| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:quit` / `:q` |
+| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:quit` / `:q`, `:set limit=<n>` |
 | Startup selector navigation | `j/k`, arrow keys, `g/G`, `Home`/`End`, `Ctrl+f`/`Ctrl+b`, `PgDown`/`PgUp` |
 | Startup selector browse mode | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` / `q` / `Ctrl+C` quit |
 | Selector form | `Tab` / `Shift+Tab` switch field, `Ctrl+u` clear field, `Backspace` / `Ctrl+h` delete character, `Enter` save, `Esc` cancel (`Esc` exits app during mandatory first-entry setup) |

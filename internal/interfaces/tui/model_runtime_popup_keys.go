@@ -119,8 +119,11 @@ func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if msg.Type == tea.KeyRunes {
+	if msg.Type == tea.KeyRunes || msg.Type == tea.KeySpace {
 		insert := string(msg.Runes)
+		if msg.Type == tea.KeySpace {
+			insert = " "
+		}
 		m.commandInput.value, m.commandInput.cursor = insertAtCursor(m.commandInput.value, insert, m.commandInput.cursor)
 	}
 	return m, nil

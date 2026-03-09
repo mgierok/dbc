@@ -27,8 +27,9 @@ func Run(
 	listOperators *usecase.ListOperators,
 	saveChanges *usecase.SaveTableChanges,
 	translator *usecase.StagedChangesTranslator,
+	runtimeSession *RuntimeSessionState,
 ) error {
-	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator)
+	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession)
 	program := newRuntimeProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {

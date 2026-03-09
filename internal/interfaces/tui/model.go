@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	recordPageSize = 20
+	defaultRecordPageLimit = 20
 )
 
 type PanelFocus int
@@ -141,6 +141,7 @@ type Model struct {
 	translator     *usecase.StagedChangesTranslator
 	stagingPolicy  *usecase.StagingPolicy
 	dirtyNavPolicy *usecase.DirtyNavigationPolicy
+	runtimeSession *RuntimeSessionState
 	styles         renderStyles
 
 	width  int
@@ -231,9 +232,12 @@ type saveChangesUseCase interface {
 	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error
 }
 
-func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator) *Model {
+func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator, runtimeSession *RuntimeSessionState) *Model {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if runtimeSession == nil {
+		runtimeSession = &RuntimeSessionState{}
 	}
 	return &Model{
 		ctx:               ctx,
@@ -243,6 +247,7 @@ func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSc
 		listOperators:     listOperators,
 		saveChanges:       saveChanges,
 		translator:        translator,
+		runtimeSession:    runtimeSession,
 		styles:            detectRenderStyles(),
 		focus:             FocusTables,
 		viewMode:          ViewSchema,
@@ -383,16 +388,18 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 	m.closeRecordDetail()
 	m.recordLoading = true
 	m.recordRequestID++
-	offset := m.recordPageIndex * recordPageSize
-	return loadRecordsCmd(m.ctx, m.listRecords, tableName, offset, recordPageSize, m.currentFilter, m.currentSort, m.recordRequestID)
+	recordLimit := m.effectiveRecordLimit()
+	offset := m.recordPageIndex * recordLimit
+	return loadRecordsCmd(m.ctx, m.listRecords, tableName, offset, recordLimit, m.currentFilter, m.currentSort, m.recordRequestID)
 }
 
 func (m *Model) computeTotalPages(totalCount int) int {
 	if totalCount <= 0 {
 		return 1
 	}
-	pages := totalCount / recordPageSize
-	if totalCount%recordPageSize != 0 {
+	recordLimit := m.effectiveRecordLimit()
+	pages := totalCount / recordLimit
+	if totalCount%recordLimit != 0 {
 		pages++
 	}
 	if pages < 1 {
@@ -410,6 +417,13 @@ func (m *Model) pageSize() int {
 		return height - 2
 	}
 	return height - 1
+}
+
+func (m *Model) effectiveRecordLimit() int {
+	if m.runtimeSession == nil {
+		return defaultRecordPageLimit
+	}
+	return m.runtimeSession.effectiveRecordsPageLimit()
 }
 
 func (m *Model) contentHeight() int {

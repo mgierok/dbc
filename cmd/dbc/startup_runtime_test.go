@@ -237,10 +237,25 @@ func TestRuntimeStartupOrchestratorRun_TracksDirectLaunchOptionAcrossConfigRetry
 	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
 		return &sql.DB{}, nil
 	}
-	orchestrator.runRuntimeSessionFn = func(*sql.DB) error {
+	var firstRuntimeSession *tui.RuntimeSessionState
+	orchestrator.runRuntimeSessionFn = func(_ *sql.DB, runtimeSession *tui.RuntimeSessionState) error {
 		runCalls++
+		if runtimeSession == nil {
+			t.Fatal("expected shared runtime session state")
+		}
 		if runCalls == 1 {
+			firstRuntimeSession = runtimeSession
+			if runtimeSession.RecordsPageLimit != 0 {
+				t.Fatalf("expected zero-value runtime session limit on first run, got %d", runtimeSession.RecordsPageLimit)
+			}
+			runtimeSession.RecordsPageLimit = 55
 			return tui.ErrOpenConfigSelector
+		}
+		if runtimeSession != firstRuntimeSession {
+			t.Fatal("expected runtime session state pointer to be reused across runs")
+		}
+		if runtimeSession.RecordsPageLimit != 55 {
+			t.Fatalf("expected runtime session limit to survive config round-trip, got %d", runtimeSession.RecordsPageLimit)
 		}
 		return nil
 	}
@@ -396,7 +411,10 @@ func TestRuntimeStartupOrchestratorRunSelectedDatabase_ResetsSelectorStateBefore
 	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
 		return &sql.DB{}, nil
 	}
-	orchestrator.runRuntimeSessionFn = func(*sql.DB) error {
+	orchestrator.runRuntimeSessionFn = func(_ *sql.DB, runtimeSession *tui.RuntimeSessionState) error {
+		if runtimeSession == nil {
+			t.Fatal("expected runtime session state to be provided")
+		}
 		if orchestrator.selectorState.StatusMessage != "" {
 			t.Fatalf("expected selector status to reset before session run, got %q", orchestrator.selectorState.StatusMessage)
 		}
@@ -432,7 +450,7 @@ func TestRuntimeStartupOrchestratorRunSelectedDatabase_ReturnsPresentedFailureFo
 	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
 		return &sql.DB{}, nil
 	}
-	orchestrator.runRuntimeSessionFn = func(*sql.DB) error {
+	orchestrator.runRuntimeSessionFn = func(*sql.DB, *tui.RuntimeSessionState) error {
 		return errors.New("runtime exploded")
 	}
 
@@ -470,6 +488,7 @@ func TestRunRuntimeSession_PropagatesRunErrorAndClosesDatabase(t *testing.T) {
 		_ *usecase.ListOperators,
 		_ *usecase.SaveTableChanges,
 		_ *usecase.StagedChangesTranslator,
+		_ *tui.RuntimeSessionState,
 	) error {
 		return expectedErr
 	}
@@ -482,7 +501,7 @@ func TestRunRuntimeSession_PropagatesRunErrorAndClosesDatabase(t *testing.T) {
 	}
 
 	// Act
-	err := runRuntimeSession(expectedDB)
+	err := runRuntimeSession(expectedDB, nil)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -490,6 +509,43 @@ func TestRunRuntimeSession_PropagatesRunErrorAndClosesDatabase(t *testing.T) {
 	}
 	if !closed {
 		t.Fatal("expected database close after runtime session")
+	}
+}
+
+func TestRunRuntimeSession_PassesRuntimeSessionStateToTUI(t *testing.T) {
+	restore := snapshotStartupRuntimeTestHooks()
+	defer restore()
+
+	// Arrange
+	runtimeSession := &tui.RuntimeSessionState{RecordsPageLimit: 33}
+	tuiRunFn = func(
+		_ context.Context,
+		_ *usecase.ListTables,
+		_ *usecase.GetSchema,
+		_ *usecase.ListRecords,
+		_ *usecase.ListOperators,
+		_ *usecase.SaveTableChanges,
+		_ *usecase.StagedChangesTranslator,
+		gotRuntimeSession *tui.RuntimeSessionState,
+	) error {
+		if gotRuntimeSession != runtimeSession {
+			t.Fatalf("expected runtime session pointer %p, got %p", runtimeSession, gotRuntimeSession)
+		}
+		if gotRuntimeSession.RecordsPageLimit != 33 {
+			t.Fatalf("expected runtime session limit 33, got %d", gotRuntimeSession.RecordsPageLimit)
+		}
+		return nil
+	}
+	closeDatabaseFn = func(*sql.DB) error {
+		return nil
+	}
+
+	// Act
+	err := runRuntimeSession(&sql.DB{}, runtimeSession)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no runtime error, got %v", err)
 	}
 }
 
@@ -507,6 +563,7 @@ func TestRunRuntimeSession_LogsCloseFailure(t *testing.T) {
 		_ *usecase.ListOperators,
 		_ *usecase.SaveTableChanges,
 		_ *usecase.StagedChangesTranslator,
+		_ *tui.RuntimeSessionState,
 	) error {
 		return nil
 	}
@@ -518,7 +575,7 @@ func TestRunRuntimeSession_LogsCloseFailure(t *testing.T) {
 	}
 
 	// Act
-	err := runRuntimeSession(&sql.DB{})
+	err := runRuntimeSession(&sql.DB{}, nil)
 
 	// Assert
 	if err != nil {

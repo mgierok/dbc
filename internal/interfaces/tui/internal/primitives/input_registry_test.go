@@ -1,15 +1,17 @@
 package primitives
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
 
 func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  string
-		action runtimeCommandAction
+		name        string
+		input       string
+		action      runtimeCommandAction
+		recordLimit int
 	}{
 		{name: "help full", input: ":help", action: runtimeCommandActionOpenHelp},
 		{name: "help alias uppercase", input: ":H", action: runtimeCommandActionOpenHelp},
@@ -17,6 +19,8 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "quit alias", input: ":q", action: runtimeCommandActionQuit},
 		{name: "config full", input: ":config", action: runtimeCommandActionOpenConfig},
 		{name: "config alias", input: ":c", action: runtimeCommandActionOpenConfig},
+		{name: "set limit", input: ":set limit=10", action: runtimeCommandActionSetRecordLimit, recordLimit: 10},
+		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: runtimeCommandActionSetRecordLimit, recordLimit: 25},
 	}
 
 	for _, tc := range tests {
@@ -33,6 +37,9 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 			if command.action != tc.action {
 				t.Fatalf("expected action %v for %q, got %v", tc.action, tc.input, command.action)
 			}
+			if command.recordLimit != tc.recordLimit {
+				t.Fatalf("expected record limit %d for %q, got %d", tc.recordLimit, tc.input, command.recordLimit)
+			}
 		})
 	}
 }
@@ -47,6 +54,41 @@ func TestResolveRuntimeCommand_RejectsUnknownCommand(t *testing.T) {
 	// Assert
 	if ok {
 		t.Fatalf("expected %q to be rejected", input)
+	}
+}
+
+func TestParseRuntimeCommand_RejectsInvalidSetLimitFormsWithValidationError(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{name: "missing value", input: ":set limit="},
+		{name: "missing equals", input: ":set limit"},
+		{name: "zero", input: ":set limit=0"},
+		{name: "negative", input: ":set limit=-1"},
+		{name: "too large", input: ":set limit=100000000"},
+		{name: "non integer", input: ":set limit=abc"},
+		{name: "space after equals", input: ":set limit= 10"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+
+			// Act
+			_, err := parseRuntimeCommand(tc.input)
+
+			// Assert
+			if err == nil {
+				t.Fatalf("expected validation error for %q", tc.input)
+			}
+			if !errors.Is(err, errInvalidRuntimeCommand) {
+				t.Fatalf("expected invalid runtime command error for %q, got %v", tc.input, err)
+			}
+			if !strings.Contains(err.Error(), ":set limit=<1-1000>") {
+				t.Fatalf("expected deterministic validation hint for %q, got %v", tc.input, err)
+			}
+		})
 	}
 }
 
@@ -87,16 +129,19 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	if lines[0] != "Supported Commands" {
 		t.Fatalf("expected commands section header, got %q", lines[0])
 	}
-	if lines[1] != ":config / :c - Open database selector and config manager." {
-		t.Fatalf("unexpected first command line: %q", lines[1])
-	}
-	if lines[2] != ":help / :h - Open runtime help popup reference." {
-		t.Fatalf("unexpected second command line: %q", lines[2])
-	}
-	if lines[3] != ":quit / :q - Quit the application." {
-		t.Fatalf("unexpected third command line: %q", lines[3])
-	}
 	joined := strings.Join(lines, "\n")
+	if !strings.Contains(joined, ":config / :c - Open database selector and config manager.") {
+		t.Fatalf("expected config command line in help content, got %q", joined)
+	}
+	if !strings.Contains(joined, ":help / :h - Open runtime help popup reference.") {
+		t.Fatalf("expected help command line in help content, got %q", joined)
+	}
+	if !strings.Contains(joined, ":set limit=<n> - Set records page limit for the current app session.") {
+		t.Fatalf("expected set-limit command line in help content, got %q", joined)
+	}
+	if !strings.Contains(joined, ":quit / :q - Quit the application.") {
+		t.Fatalf("expected quit command line in help content, got %q", joined)
+	}
 	if !strings.Contains(joined, "Shift+F - Open filter flow for current table.") {
 		t.Fatalf("expected filter keyword in help content, got %q", joined)
 	}

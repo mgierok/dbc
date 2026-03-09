@@ -46,7 +46,7 @@ func TestRun_ReturnsProgramError(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -69,7 +69,7 @@ func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if err == nil {
@@ -95,7 +95,7 @@ func TestRun_ReturnsOpenConfigSelectorErrorWhenModelRequestsSelector(t *testing.
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if !errors.Is(err, ErrOpenConfigSelector) {
@@ -118,7 +118,7 @@ func TestRun_ReturnsNilOnNormalCompletion(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if err != nil {

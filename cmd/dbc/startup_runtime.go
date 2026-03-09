@@ -51,12 +51,13 @@ type runtimeStartupOrchestrator struct {
 	options               startupOptions
 	deps                  runtimeStartupDependencies
 	selectorState         tui.SelectorLaunchState
+	runtimeSessionState   tui.RuntimeSessionState
 	sessionScopedOptions  []tui.DatabaseOption
 	directLaunchPending   bool
 	selectDatabaseFn      func() (tui.DatabaseOption, startupPath, error)
 	runSelectedDatabaseFn func(tui.DatabaseOption, startupPath) (bool, error)
 	connectDatabaseFn     func(tui.DatabaseOption) (*sql.DB, error)
-	runRuntimeSessionFn   func(*sql.DB) error
+	runRuntimeSessionFn   func(*sql.DB, *tui.RuntimeSessionState) error
 }
 
 func newRuntimeStartupOrchestrator(options startupOptions, deps runtimeStartupDependencies) *runtimeStartupOrchestrator {
@@ -163,7 +164,7 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 		runRuntimeSessionFn = runRuntimeSession
 	}
 
-	runErr := runRuntimeSessionFn(db)
+	runErr := runRuntimeSessionFn(db, &o.runtimeSessionState)
 	if errors.Is(runErr, tui.ErrOpenConfigSelector) {
 		o.selectorState = tui.SelectorLaunchState{
 			PreferConnString:  selected.ConnString,
@@ -180,7 +181,7 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 	return false, nil
 }
 
-func runRuntimeSession(db *sql.DB) error {
+func runRuntimeSession(db *sql.DB, runtimeSession *tui.RuntimeSessionState) error {
 	sqliteEngine := engine.NewSQLiteEngine(db)
 	listTables := usecase.NewListTables(sqliteEngine)
 	getSchema := usecase.NewGetSchema(sqliteEngine)
@@ -189,7 +190,7 @@ func runRuntimeSession(db *sql.DB) error {
 	saveChanges := usecase.NewSaveTableChanges(sqliteEngine)
 	translator := usecase.NewStagedChangesTranslator()
 
-	runErr := tuiRunFn(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator)
+	runErr := tuiRunFn(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession)
 	if closeErr := closeDatabaseFn(db); closeErr != nil {
 		logPrintfFn("failed to close database: %v", closeErr)
 	}

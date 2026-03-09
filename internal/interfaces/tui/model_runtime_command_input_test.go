@@ -1,0 +1,66 @@
+package tui
+
+import (
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func TestHandleKey_CommandInputAcceptsLiteralSpaceForSetLimitCommand(t *testing.T) {
+	// Arrange
+	runtimeSession := &RuntimeSessionState{}
+	model := &Model{
+		runtimeSession: runtimeSession,
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	typeCommandInputText(model, "set")
+	model.handleKey(tea.KeyMsg{Type: tea.KeySpace})
+	typeCommandInputText(model, "limit=10")
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no immediate records reload outside records view")
+	}
+	if runtimeSession.RecordsPageLimit != 10 {
+		t.Fatalf("expected record limit 10 after typing :set limit=10, got %d", runtimeSession.RecordsPageLimit)
+	}
+	if model.statusMessage != "Record limit set to 10" {
+		t.Fatalf("expected success status, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_StartingNewCommandClearsStaleUnknownCommandStatus(t *testing.T) {
+	// Arrange
+	model := &Model{}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	typeCommandInputText(model, "setlimit")
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	status := stripANSI(model.renderStatus(200))
+
+	// Assert
+	if !model.commandInput.active {
+		t.Fatal("expected command input to be active after pressing :")
+	}
+	if model.statusMessage != "" {
+		t.Fatalf("expected stale status message to be cleared, got %q", model.statusMessage)
+	}
+	if strings.Contains(status, "Unknown command") {
+		t.Fatalf("expected rendered status to hide stale unknown-command message, got %q", status)
+	}
+	if !strings.Contains(status, "Command: :|") {
+		t.Fatalf("expected fresh command prompt in status, got %q", status)
+	}
+}
+
+func typeCommandInputText(model *Model, value string) {
+	for _, r := range value {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+}

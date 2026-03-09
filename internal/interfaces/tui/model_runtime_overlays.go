@@ -213,6 +213,7 @@ func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
 		value:  "",
 		cursor: 0,
 	}
+	m.statusMessage = ""
 	return m, nil
 }
 
@@ -220,13 +221,19 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	command := ":" + strings.TrimSpace(m.commandInput.value)
 	m.commandInput = commandInput{}
 
-	commandSpec, found := resolveRuntimeCommand(command)
-	if !found {
-		m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
+	commandSpec, err := parseRuntimeCommand(command)
+	if err != nil {
+		if isUnknownRuntimeCommand(err) {
+			m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
+			return m, nil
+		}
+		m.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
 
 	switch commandSpec.action {
+	case runtimeCommandActionSetRecordLimit:
+		return m.applyRecordLimit(commandSpec.recordLimit)
 	case runtimeCommandActionOpenHelp:
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil

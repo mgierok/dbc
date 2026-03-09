@@ -1,5 +1,7 @@
 package primitives
 
+import "errors"
+
 type RenderStyles struct {
 	inner renderStyles
 }
@@ -51,8 +53,9 @@ func IsErrorLikeMessage(message string) bool {
 type StandardizedPopupWidthMode int
 
 const (
-	PopupWidthClamp   StandardizedPopupWidthMode = StandardizedPopupWidthMode(popupWidthClamp)
-	PopupWidthContent StandardizedPopupWidthMode = StandardizedPopupWidthMode(popupWidthContent)
+	RuntimeMaxRecordPageLimit                            = maxRuntimeRecordLimit
+	PopupWidthClamp           StandardizedPopupWidthMode = StandardizedPopupWidthMode(popupWidthClamp)
+	PopupWidthContent         StandardizedPopupWidthMode = StandardizedPopupWidthMode(popupWidthContent)
 )
 
 type StandardizedPopupRow struct {
@@ -187,17 +190,25 @@ const (
 type RuntimeCommandAction int
 
 const (
-	RuntimeCommandActionNone       RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionNone)
-	RuntimeCommandActionOpenHelp   RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionOpenHelp)
-	RuntimeCommandActionQuit       RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionQuit)
-	RuntimeCommandActionOpenConfig RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionOpenConfig)
+	RuntimeCommandActionNone           RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionNone)
+	RuntimeCommandActionOpenHelp       RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionOpenHelp)
+	RuntimeCommandActionQuit           RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionQuit)
+	RuntimeCommandActionOpenConfig     RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionOpenConfig)
+	RuntimeCommandActionSetRecordLimit RuntimeCommandAction = RuntimeCommandAction(runtimeCommandActionSetRecordLimit)
 )
 
 type RuntimeCommandSpec struct {
 	Aliases     []string
+	Usage       string
 	Description string
 	Action      RuntimeCommandAction
+	RecordLimit int
 }
+
+var (
+	ErrUnknownRuntimeCommand = errUnknownRuntimeCommand
+	ErrInvalidRuntimeCommand = errInvalidRuntimeCommand
+)
 
 func KeyMatches(bindingID KeyBindingID, key string) bool {
 	return keyMatches(keyBindingID(bindingID), key)
@@ -234,9 +245,33 @@ func ResolveRuntimeCommand(input string) (RuntimeCommandSpec, bool) {
 	}
 	return RuntimeCommandSpec{
 		Aliases:     append([]string(nil), spec.aliases...),
+		Usage:       spec.usage,
 		Description: spec.description,
 		Action:      RuntimeCommandAction(spec.action),
+		RecordLimit: spec.recordLimit,
 	}, true
+}
+
+func ParseRuntimeCommand(input string) (RuntimeCommandSpec, error) {
+	spec, err := parseRuntimeCommand(input)
+	if err != nil {
+		return RuntimeCommandSpec{}, err
+	}
+	return RuntimeCommandSpec{
+		Aliases:     append([]string(nil), spec.aliases...),
+		Usage:       spec.usage,
+		Description: spec.description,
+		Action:      RuntimeCommandAction(spec.action),
+		RecordLimit: spec.recordLimit,
+	}, nil
+}
+
+func IsUnknownRuntimeCommand(err error) bool {
+	return errors.Is(err, ErrUnknownRuntimeCommand)
+}
+
+func IsInvalidRuntimeCommand(err error) bool {
+	return errors.Is(err, ErrInvalidRuntimeCommand)
 }
 
 func RuntimeStatusEditShortcuts() string {

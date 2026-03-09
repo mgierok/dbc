@@ -80,9 +80,9 @@
 
 ### Centralized Runtime and Selector Command Registry
 
-- Guarantee: key bindings, command aliases, and help text are maintained in a shared registry.
-- Guarantee: command parsing trims optional `:` and matches aliases case-insensitively.
-- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry.go`.
+- Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in a shared registry.
+- Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
+- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry.go`, `internal/interfaces/tui/model_runtime_overlays.go`.
 
 ### Terminal-Native TUI Styling
 
@@ -97,6 +97,7 @@
 
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
+- Runtime startup re-entry reuses `internal/interfaces/tui.RuntimeSessionState` across repeated runtime launches in the same DBC process.
 - Selector-return signal: `internal/interfaces/tui.ErrOpenConfigSelector`.
 
 ### Configuration Contract
@@ -123,7 +124,8 @@
 
 - Read contract returns `Rows`, `TotalCount`, and `HasMore`.
 - `HasMore` is computed via look-ahead (`LIMIT limit+1`).
-- Runtime page size is fixed at `20`.
+- Runtime records page limit defaults to `20`, but page loads and total-page calculations use the effective session-scoped limit from runtime state.
+- Runtime command-driven page-limit overrides are accepted only in the bounded range `1..1000`.
 
 ### Selector Launch Contract
 
@@ -138,7 +140,8 @@
 - SQLite open contract requires existing file path (missing files and directory paths fail fast).
 - Startup database open and config add/edit validation share the same open/ping helper.
 - Runtime closes active DB handle on session end; close failures are logged.
-- Runtime record reload path ignores stale async responses using request ID checks.
+- Runtime session state survives `:config` round-trips within the same DBC process and is not persisted into config.
+- Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
 
 ## Technical Decisions and Tradeoffs
@@ -169,9 +172,15 @@
 
 ### Centralized Keybinding and Command Registry
 
-- Decision: keep shortcut bindings, command aliases, and help/status hints in one registry.
-- Rationale: prevent drift between key handlers and rendered guidance.
+- Decision: keep shortcut bindings, command aliases, parameterized runtime commands, and help/status hints in one registry.
+- Rationale: prevent drift between key handlers, command parsing, and rendered guidance.
 - Where: `internal/interfaces/tui/internal/primitives/input_registry.go`.
+
+### Session-Scoped Runtime Overrides
+
+- Decision: keep runtime-only overrides, including the records page limit, in runtime session state owned by startup/runtime orchestration instead of persisting them to config.
+- Rationale: preserve temporary per-process behavior across `:config` round-trips without mutating the config file contract.
+- Where: `cmd/dbc/startup_runtime.go`, `internal/interfaces/tui/app.go`, `internal/interfaces/tui/runtime_session.go`.
 
 ### Selector-First Decomposition Inside The TUI Adapter
 
@@ -215,6 +224,7 @@ Version source: `go.mod`.
 - Editing/deleting persisted rows requires primary keys.
 - Runtime supports one active filter and one active sort for the selected table.
 - Records reload performs `COUNT(*)` on each fetch; large tables can increase read latency.
+- Runtime-set records page limits are capped at `1000`; increasing or removing that cap requires revisiting engine-side slice preallocation in record loading.
 - Selector updates/deletes are index-based and can be sensitive to concurrent external config edits.
 - Shortcut/command changes must keep input registry and help/status rendering synchronized.
 - Dynamic SQL paths must preserve identifier quoting, operator allowlists, and value placeholders.

@@ -47,7 +47,7 @@ func TestNewModel_UsesDetectedRenderStyles(t *testing.T) {
 	}
 
 	// Act
-	model := NewModel(context.Background(), nil, nil, nil, nil, nil, nil)
+	model := NewModel(context.Background(), nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if !model.styles.enabled {

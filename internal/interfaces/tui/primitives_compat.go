@@ -1,8 +1,13 @@
 package tui
 
-import "github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+import (
+	"errors"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+)
 
 const (
+	maxRuntimeRecordLimit = primitives.RuntimeMaxRecordPageLimit
 	iconInsert            = primitives.IconInsert
 	iconEdit              = primitives.IconEdit
 	iconDelete            = primitives.IconDelete
@@ -189,17 +194,24 @@ const (
 type runtimeCommandAction int
 
 const (
-	runtimeCommandActionNone       runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionNone)
-	runtimeCommandActionOpenHelp   runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionOpenHelp)
-	runtimeCommandActionQuit       runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionQuit)
-	runtimeCommandActionOpenConfig runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionOpenConfig)
+	runtimeCommandActionNone           runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionNone)
+	runtimeCommandActionOpenHelp       runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionOpenHelp)
+	runtimeCommandActionQuit           runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionQuit)
+	runtimeCommandActionOpenConfig     runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionOpenConfig)
+	runtimeCommandActionSetRecordLimit runtimeCommandAction = runtimeCommandAction(primitives.RuntimeCommandActionSetRecordLimit)
 )
 
 type runtimeCommandSpec struct {
 	aliases     []string
+	usage       string
 	description string
 	action      runtimeCommandAction
+	recordLimit int
 }
+
+var (
+	errUnknownRuntimeCommand = primitives.ErrUnknownRuntimeCommand
+)
 
 func keyMatches(bindingID keyBindingID, key string) bool {
 	return primitives.KeyMatches(bindingID, key)
@@ -209,16 +221,22 @@ func runtimeHelpPopupSummaryLine() string {
 	return primitives.RuntimeHelpPopupSummaryLine()
 }
 
-func resolveRuntimeCommand(input string) (runtimeCommandSpec, bool) {
-	spec, ok := primitives.ResolveRuntimeCommand(input)
-	if !ok {
-		return runtimeCommandSpec{}, false
+func parseRuntimeCommand(input string) (runtimeCommandSpec, error) {
+	spec, err := primitives.ParseRuntimeCommand(input)
+	if err != nil {
+		return runtimeCommandSpec{}, err
 	}
 	return runtimeCommandSpec{
 		aliases:     append([]string(nil), spec.Aliases...),
+		usage:       spec.Usage,
 		description: spec.Description,
 		action:      runtimeCommandAction(spec.Action),
-	}, true
+		recordLimit: spec.RecordLimit,
+	}, nil
+}
+
+func isUnknownRuntimeCommand(err error) bool {
+	return errors.Is(err, errUnknownRuntimeCommand)
 }
 
 func runtimeStatusEditShortcuts() string {

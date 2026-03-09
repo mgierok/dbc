@@ -561,7 +561,7 @@ func TestHandleKey_CommandHelpReenterKeepsPopupOpen(t *testing.T) {
 	}
 }
 
-func TestHandleKey_CommandHelpReenterDoesNotResetStatusUnexpectedly(t *testing.T) {
+func TestHandleKey_CommandHelpReenterClearsStaleStatusBeforeNewCommand(t *testing.T) {
 	// Arrange
 	model := &Model{viewMode: ViewRecords, statusMessage: "existing status"}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
@@ -581,8 +581,8 @@ func TestHandleKey_CommandHelpReenterDoesNotResetStatusUnexpectedly(t *testing.T
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	if model.statusMessage != "existing status" {
-		t.Fatalf("expected status message to remain unchanged, got %q", model.statusMessage)
+	if model.statusMessage != "" {
+		t.Fatalf("expected stale status message to clear before new command, got %q", model.statusMessage)
 	}
 	if !model.helpPopup.active {
 		t.Fatal("expected help popup to remain open")
