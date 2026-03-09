@@ -342,7 +342,59 @@ func TestDatabaseSelector_BoxLines_UsesPopupLikeSummaryAndSelectionStyling(t *te
 	if !strings.Contains(lines[1], "\x1b[1mConfig: /tmp/config.toml\x1b[0m") {
 		t.Fatalf("expected selector config path to use popup summary styling, got %q", lines[1])
 	}
-	if !strings.Contains(view, "\x1b[7m"+frameVertical+" "+selectionSelectedPrefix()+"⚙ local"+frameSegmentSeparator+"/tmp/local.sqlite") {
-		t.Fatalf("expected selector selection to use popup-like full-line styling, got %q", view)
+	selectedLine := lines[3]
+	if strings.HasPrefix(selectedLine, "\x1b[7m"+frameVertical) {
+		t.Fatalf("expected selector left border to remain unstyled, got %q", selectedLine)
+	}
+	if strings.Contains(selectedLine, frameVertical+"\x1b[0m") {
+		t.Fatalf("expected selector right border to remain outside selected styling, got %q", selectedLine)
+	}
+	if !strings.Contains(selectedLine, frameVertical+"\x1b[7m "+selectionSelectedPrefix()+"⚙ local"+frameSegmentSeparator+"/tmp/local.sqlite") {
+		t.Fatalf("expected selector selection to style only popup content, got %q", selectedLine)
+	}
+	if !strings.Contains(stripANSI(lines[len(lines)-2]), "Context help: ?") {
+		t.Fatalf("expected selector footer hint in popup footer row, got %q", stripANSI(lines[len(lines)-2]))
+	}
+	if !strings.Contains(view, "Context help: ?") {
+		t.Fatalf("expected selector view to keep context help footer, got %q", view)
+	}
+}
+
+func TestDatabaseSelector_BoxLines_UsesPopupLikeSelectionStylingForActiveFormField(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.styles = renderStyles{enabled: true}
+	model.openAddForm()
+
+	// Act
+	lines := model.boxLines(model.listHeight(24), 80)
+
+	// Assert
+	var activeLine string
+	for _, line := range lines {
+		if strings.Contains(line, "Name: |") {
+			activeLine = line
+			break
+		}
+	}
+	if activeLine == "" {
+		t.Fatalf("expected active form field line, got %q", strings.Join(lines, "\n"))
+	}
+	if strings.HasPrefix(activeLine, "\x1b[7m"+frameVertical) {
+		t.Fatalf("expected form field left border to remain unstyled, got %q", activeLine)
+	}
+	if strings.Contains(activeLine, frameVertical+"\x1b[0m") {
+		t.Fatalf("expected form field right border to remain outside selected styling, got %q", activeLine)
+	}
+	if !strings.Contains(activeLine, frameVertical+"\x1b[7m "+selectionSelectedPrefix()+"Name: |") {
+		t.Fatalf("expected active form field content to use shared popup selection styling, got %q", activeLine)
 	}
 }

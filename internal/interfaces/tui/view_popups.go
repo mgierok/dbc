@@ -11,8 +11,7 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:               m.helpPopupContextTitle(),
 		summary:             runtimeHelpPopupSummaryLine(),
-		rows:                m.helpPopupContentLines(),
-		selected:            -1,
+		rows:                popupTextRows(m.helpPopupContentLines()),
 		scrollOffset:        m.helpPopup.scrollOffset,
 		visibleRows:         m.helpPopupVisibleLines(),
 		showScrollIndicator: true,
@@ -25,40 +24,41 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
 	stepLabel := "Select column"
-	rows := []string{}
-	selected := -1
+	rows := []standardizedPopupRow{}
 	switch m.filterPopup.step {
 	case filterSelectColumn:
-		stepLabel = "Select column"
-		rows = make([]string, len(m.schema.Columns))
+		columnRows := make([]string, len(m.schema.Columns))
 		for i, column := range m.schema.Columns {
-			rows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+			columnRows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
 		}
-		if len(rows) > 0 {
-			selected = clamp(m.filterPopup.columnIndex, 0, len(rows)-1)
+		selected := -1
+		if len(columnRows) > 0 {
+			selected = clamp(m.filterPopup.columnIndex, 0, len(columnRows)-1)
 		}
+		rows = popupSelectableRows(columnRows, selected)
 	case filterSelectOperator:
 		stepLabel = "Select operator"
-		rows = make([]string, len(m.filterPopup.operators))
+		operatorRows := make([]string, len(m.filterPopup.operators))
 		for i, operator := range m.filterPopup.operators {
-			rows[i] = operator.Name
+			operatorRows[i] = operator.Name
 		}
-		if len(rows) > 0 {
-			selected = clamp(m.filterPopup.operatorIndex, 0, len(rows)-1)
+		selected := -1
+		if len(operatorRows) > 0 {
+			selected = clamp(m.filterPopup.operatorIndex, 0, len(operatorRows)-1)
 		}
+		rows = popupSelectableRows(operatorRows, selected)
 	case filterInputValue:
 		stepLabel = "Enter value"
 		input := m.filterPopup.input
 		cursor := clamp(m.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
-		rows = append(rows, "Value: "+value)
+		rows = popupTextRows([]string{"Value: " + value})
 	}
 
 	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        "Filter",
 		summary:      stepLabel,
 		rows:         rows,
-		selected:     selected,
 		defaultWidth: 60,
 		minWidth:     20,
 		maxWidth:     60,
@@ -68,35 +68,37 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 
 func (m *Model) renderSortPopup(totalWidth int) []string {
 	stepLabel := "Select column"
-	rows := []string{}
-	selected := -1
+	rows := []standardizedPopupRow{}
 
 	switch m.sortPopup.step {
 	case sortSelectColumn:
-		rows = make([]string, len(m.schema.Columns))
+		columnRows := make([]string, len(m.schema.Columns))
 		for i, column := range m.schema.Columns {
-			rows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+			columnRows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
 		}
-		if len(rows) > 0 {
-			selected = clamp(m.sortPopup.columnIndex, 0, len(rows)-1)
+		selected := -1
+		if len(columnRows) > 0 {
+			selected = clamp(m.sortPopup.columnIndex, 0, len(columnRows)-1)
 		}
+		rows = popupSelectableRows(columnRows, selected)
 	case sortSelectDirection:
 		stepLabel = "Select direction"
 		directions := sortDirections()
-		rows = make([]string, len(directions))
+		directionRows := make([]string, len(directions))
 		for i, direction := range directions {
-			rows[i] = string(direction)
+			directionRows[i] = string(direction)
 		}
-		if len(rows) > 0 {
-			selected = clamp(m.sortPopup.directionIndex, 0, len(rows)-1)
+		selected := -1
+		if len(directionRows) > 0 {
+			selected = clamp(m.sortPopup.directionIndex, 0, len(directionRows)-1)
 		}
+		rows = popupSelectableRows(directionRows, selected)
 	}
 
 	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        "Sort",
 		summary:      stepLabel,
 		rows:         rows,
-		selected:     selected,
 		defaultWidth: 60,
 		minWidth:     20,
 		maxWidth:     60,
@@ -118,8 +120,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 		inputKind = column.Input.Kind
 		options = column.Input.Options
 	}
-	rows := []string{}
-	selected := -1
+	rows := []standardizedPopupRow{}
 
 	if inputKind == dto.ColumnInputSelect {
 		current := "NULL"
@@ -130,31 +131,30 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 				current = m.editPopup.input
 			}
 		}
-		rows = append(rows, "Value: "+current)
+		rows = append(rows, standardizedPopupRow{text: "Value: " + current})
 		if len(options) > 0 {
-			rows = append(rows, options...)
-			selected = clamp(m.editPopup.optionIndex, 0, len(options)-1) + 1
+			selected := clamp(m.editPopup.optionIndex, 0, len(options)-1)
+			rows = append(rows, popupSelectableRows(options, selected)...)
 		}
 	} else {
 		if m.editPopup.isNull {
-			rows = append(rows, "Value: NULL")
+			rows = append(rows, standardizedPopupRow{text: "Value: NULL"})
 		} else {
 			input := m.editPopup.input
 			cursor := clamp(m.editPopup.cursor, 0, len(input))
 			value := input[:cursor] + "|" + input[cursor:]
-			rows = append(rows, "Value: "+value)
+			rows = append(rows, standardizedPopupRow{text: "Value: " + value})
 		}
 	}
 
 	if strings.TrimSpace(m.editPopup.errorMessage) != "" {
-		rows = append(rows, m.styles.error("Error: "+m.editPopup.errorMessage))
+		rows = append(rows, standardizedPopupRow{text: m.styles.error("Error: " + m.editPopup.errorMessage)})
 	}
 
 	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        "Edit Cell",
 		summary:      columnLabel + frameSegmentSeparator + nullableLabel,
 		rows:         rows,
-		selected:     selected,
 		defaultWidth: 60,
 		minWidth:     30,
 		maxWidth:     60,
@@ -184,8 +184,7 @@ func (m *Model) renderConfirmPopup(totalWidth int) []string {
 	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
 		title:        title,
 		summary:      message,
-		rows:         options,
-		selected:     selected,
+		rows:         popupSelectableRows(options, selected),
 		defaultWidth: 50,
 		minWidth:     20,
 		maxWidth:     60,

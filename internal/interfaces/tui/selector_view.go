@@ -17,42 +17,14 @@ func (m *databaseSelectorModel) View() string {
 	}
 
 	listHeight := m.listHeight(height)
-	lines := m.boxLines(listHeight, width)
-	boxHeight := len(lines)
-	if boxHeight > height {
-		boxHeight = height
-		lines = lines[:boxHeight]
-	}
-
-	leftPad := 0
-	boxWidth := textWidth(lines[0])
-	if width > boxWidth {
-		leftPad = (width - boxWidth) / 2
-	}
-	topPad := 0
-	if height > boxHeight {
-		topPad = (height - boxHeight) / 2
-	}
-
-	full := make([]string, 0, height)
-	for i := 0; i < topPad; i++ {
-		full = append(full, strings.Repeat(" ", width))
-	}
-	for _, line := range lines {
-		full = append(full, padRight(strings.Repeat(" ", leftPad)+line, width))
-	}
-	for len(full) < height {
-		full = append(full, strings.Repeat(" ", width))
-	}
-	return strings.Join(full, "\n")
+	return centerBoxLines(m.boxLines(listHeight, width), width, height)
 }
 
 func (m *databaseSelectorModel) renderHelpPopup(totalWidth, totalHeight int) []string {
 	return renderStandardizedPopup(totalWidth, totalHeight, standardizedPopupSpec{
 		title:               "Context Help: Config",
 		summary:             runtimeHelpPopupSummaryLine(),
-		rows:                m.helpPopupContentLines(),
-		selected:            -1,
+		rows:                popupTextRows(m.helpPopupContentLines()),
 		scrollOffset:        m.helpPopup.scrollOffset,
 		visibleRows:         m.helpPopupVisibleLines(),
 		showScrollIndicator: true,
@@ -106,76 +78,14 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 	if strings.TrimSpace(configPath) == "" {
 		configPath = "unavailable"
 	}
-	pathLine := m.styles.summary("Config: " + configPath)
-
-	bodyLines := m.mainContentLines(listHeight)
-	hintLine := m.styles.muted(runtimeStatusContextHelpHint())
-
-	contentAreaWidth := textWidth(title)
-	if textWidth(pathLine) > contentAreaWidth {
-		contentAreaWidth = textWidth(pathLine)
-	}
-	if textWidth(hintLine) > contentAreaWidth {
-		contentAreaWidth = textWidth(hintLine)
-	}
-	for _, line := range bodyLines {
-		if textWidth(line) > contentAreaWidth {
-			contentAreaWidth = textWidth(line)
-		}
-	}
-	if contentAreaWidth < 1 {
-		contentAreaWidth = 1
-	}
-
-	contentInnerWidth := contentAreaWidth + (popupContentSidePadding * 2)
-	maxInner := totalWidth - 2
-	if maxInner < 1 {
-		maxInner = 1
-	}
-	if contentInnerWidth > maxInner {
-		contentInnerWidth = maxInner
-	}
-
-	leftPadding := popupContentSidePadding
-	rightPadding := popupContentSidePadding
-	if contentInnerWidth <= (popupContentSidePadding * 2) {
-		leftPadding = 0
-		rightPadding = 0
-	}
-	contentWidth := contentInnerWidth - leftPadding - rightPadding
-	if contentWidth < 0 {
-		contentWidth = 0
-	}
-
-	buildContentLine := func(text string) string {
-		content := strings.Repeat(" ", leftPadding) + padRight(text, contentWidth) + strings.Repeat(" ", rightPadding)
-		content = padRight(content, contentInnerWidth)
-		return frameVertical + content + frameVertical
-	}
-
-	topBorder := renderTitledTopBorder(m.styles.title(title), contentInnerWidth)
-	bottomBorder := frameBottomLeft + strings.Repeat(frameHorizontal, contentInnerWidth) + frameBottomRight
-	sectionDivider := frameJoinLeft + strings.Repeat(frameHorizontal, contentInnerWidth) + frameJoinRight
-	lines := []string{
-		topBorder,
-		buildContentLine(pathLine),
-		sectionDivider,
-	}
-	for _, line := range bodyLines {
-		framedLine := buildContentLine(line)
-		if strings.HasPrefix(line, selectionSelectedPrefix()) {
-			framedLine = m.styles.selected(framedLine)
-		}
-		lines = append(lines, framedLine)
-	}
-
-	minHeight := popupMinHeight(m.height)
-	for len(lines)+2 < minHeight {
-		lines = append(lines, buildContentLine(""))
-	}
-	lines = append(lines, buildContentLine(renderStatusWithRightHint("", hintLine, contentWidth)))
-	lines = append(lines, bottomBorder)
-	return lines
+	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
+		title:     title,
+		summary:   "Config: " + configPath,
+		rows:      m.mainContentRows(listHeight),
+		footer:    standardizedPopupFooter{right: m.styles.muted(runtimeStatusContextHelpHint())},
+		widthMode: popupWidthContent,
+		styles:    m.styles,
+	})
 }
 
 func (m *databaseSelectorModel) optionLines() []string {
@@ -186,40 +96,40 @@ func (m *databaseSelectorModel) optionLines() []string {
 	return items
 }
 
-func (m *databaseSelectorModel) mainContentLines(listHeight int) []string {
+func (m *databaseSelectorModel) mainContentRows(listHeight int) []standardizedPopupRow {
 	switch m.mode {
 	case selectorModeAdd, selectorModeEdit:
-		return m.formContentLines()
+		return m.formContentRows()
 	case selectorModeConfirmDelete:
-		return m.deleteConfirmationContentLines()
+		return m.deleteConfirmationContentRows()
 	default:
-		return m.browseContentLines(listHeight)
+		return m.browseContentRows(listHeight)
 	}
 }
 
-func (m *databaseSelectorModel) browseContentLines(listHeight int) []string {
+func (m *databaseSelectorModel) browseContentRows(listHeight int) []standardizedPopupRow {
 	items := m.optionLines()
-	lines := make([]string, 0, maxInt(1, len(items)))
+	rows := make([]standardizedPopupRow, 0, maxInt(1, len(items)))
 	if len(items) == 0 {
-		lines = append(lines, "No databases configured.")
+		rows = append(rows, standardizedPopupRow{text: "No databases configured."})
 	} else {
 		start := scrollStart(m.selected, listHeight, len(items))
 		end := minInt(len(items), start+listHeight)
 		for i := start; i < end; i++ {
-			prefix := selectionUnselectedPrefix()
-			if i == m.selected {
-				prefix = selectionSelectedPrefix()
-			}
-			lines = append(lines, prefix+items[i])
+			rows = append(rows, standardizedPopupRow{
+				text:       items[i],
+				selectable: true,
+				selected:   i == m.selected,
+			})
 		}
 	}
 	if strings.TrimSpace(m.statusMessage) != "" {
-		lines = append(lines, "Status: "+m.styleStatusMessage())
+		rows = append(rows, standardizedPopupRow{text: "Status: " + m.styleStatusMessage()})
 	}
-	return lines
+	return rows
 }
 
-func (m *databaseSelectorModel) formContentLines() []string {
+func (m *databaseSelectorModel) formContentRows() []standardizedPopupRow {
 	if m.mode != selectorModeAdd && m.mode != selectorModeEdit {
 		return nil
 	}
@@ -227,46 +137,45 @@ func (m *databaseSelectorModel) formContentLines() []string {
 	if m.mode == selectorModeEdit {
 		title = "Edit database"
 	}
-	namePrefix := selectionUnselectedPrefix()
-	pathPrefix := selectionUnselectedPrefix()
 	nameValue := m.form.nameValue
 	pathValue := m.form.pathValue
 	if m.form.activeField == selectorInputName {
-		namePrefix = selectionSelectedPrefix()
 		nameValue += "|"
 	} else {
-		pathPrefix = selectionSelectedPrefix()
 		pathValue += "|"
 	}
 
-	lines := []string{
-		title,
-		"",
-		m.styleFormLine(namePrefix, "Name", nameValue, m.form.activeField == selectorInputName),
-		m.styleFormLine(pathPrefix, "Path", pathValue, m.form.activeField == selectorInputPath),
+	rows := []standardizedPopupRow{
+		{text: title},
+		{text: ""},
+		{text: selectorFormFieldLine("Name", nameValue), selectable: true, selected: m.form.activeField == selectorInputName},
+		{text: selectorFormFieldLine("Path", pathValue), selectable: true, selected: m.form.activeField == selectorInputPath},
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
-		lines = append(lines, "", m.styles.error("Error: "+m.form.errorMessage))
+		rows = append(rows,
+			standardizedPopupRow{text: ""},
+			standardizedPopupRow{text: m.styles.error("Error: " + m.form.errorMessage)},
+		)
 	}
-	return lines
+	return rows
 }
 
-func (m *databaseSelectorModel) deleteConfirmationContentLines() []string {
+func (m *databaseSelectorModel) deleteConfirmationContentRows() []standardizedPopupRow {
 	if m.mode != selectorModeConfirmDelete {
 		return nil
 	}
 	if m.confirmDelete.optionIndex < 0 || m.confirmDelete.optionIndex >= len(m.options) {
-		return []string{
+		return popupTextRows([]string{
 			"Cannot delete: invalid selection.",
 			"Press Esc to return.",
-		}
+		})
 	}
 	selected := m.options[m.confirmDelete.optionIndex]
-	return []string{
+	return popupTextRows([]string{
 		"Delete database entry?",
 		"",
 		selected.Name + frameSegmentSeparator + selected.ConnString,
-	}
+	})
 }
 
 func (m *databaseSelectorModel) formLines() []string {
@@ -297,8 +206,8 @@ func (m *databaseSelectorModel) formLines() []string {
 	lines := []string{
 		title,
 		"",
-		m.styleFormLine(namePrefix, "Name", nameValue, m.form.activeField == selectorInputName),
-		m.styleFormLine(pathPrefix, "Path", pathValue, m.form.activeField == selectorInputPath),
+		selectorFormFieldLineWithPrefix(namePrefix, "Name", nameValue),
+		selectorFormFieldLineWithPrefix(pathPrefix, "Path", pathValue),
 		"",
 		selectorFormSwitchLine(),
 		selectorFormSubmitLine(escLabel),
@@ -309,9 +218,12 @@ func (m *databaseSelectorModel) formLines() []string {
 	return lines
 }
 
-func (m *databaseSelectorModel) styleFormLine(prefix, label, value string, active bool) string {
-	line := prefix + label + ": " + value
-	return line
+func selectorFormFieldLineWithPrefix(prefix, label, value string) string {
+	return prefix + selectorFormFieldLine(label, value)
+}
+
+func selectorFormFieldLine(label, value string) string {
+	return label + ": " + value
 }
 
 func (m *databaseSelectorModel) styleStatusMessage() string {

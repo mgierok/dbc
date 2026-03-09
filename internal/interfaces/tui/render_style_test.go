@@ -143,8 +143,7 @@ func TestRenderStandardizedPopup_StylesTitleSelectionAndScrollIndicatorWhenEnabl
 	spec := standardizedPopupSpec{
 		title:               "Config",
 		summary:             "Choose action.",
-		rows:                []string{"Save", "Discard", "Cancel"},
-		selected:            1,
+		rows:                popupSelectableRows([]string{"Save", "Discard", "Cancel"}, 1),
 		scrollOffset:        1,
 		visibleRows:         2,
 		showScrollIndicator: true,
@@ -175,8 +174,7 @@ func TestRenderStandardizedPopup_StylesSummaryWhenEnabled(t *testing.T) {
 	spec := standardizedPopupSpec{
 		title:        "Filter",
 		summary:      "Select column",
-		rows:         []string{"id (INTEGER)"},
-		selected:     0,
+		rows:         popupSelectableRows([]string{"id (INTEGER)"}, 0),
 		defaultWidth: 50,
 		minWidth:     20,
 		maxWidth:     60,

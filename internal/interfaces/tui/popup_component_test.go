@@ -10,8 +10,7 @@ func TestRenderStandardizedPopup_RendersSelectableRows(t *testing.T) {
 	spec := standardizedPopupSpec{
 		title:        "Config",
 		summary:      "Choose action.",
-		rows:         []string{"Save", "Discard", "Cancel"},
-		selected:     1,
+		rows:         popupSelectableRows([]string{"Save", "Discard", "Cancel"}, 1),
 		defaultWidth: 50,
 		minWidth:     20,
 		maxWidth:     60,
@@ -41,8 +40,7 @@ func TestRenderStandardizedPopup_ShowsScrollIndicatorForOverflow(t *testing.T) {
 	spec := standardizedPopupSpec{
 		title:               "Help",
 		summary:             "Summary",
-		rows:                []string{"one", "two", "three", "four"},
-		selected:            -1,
+		rows:                popupTextRows([]string{"one", "two", "three", "four"}),
 		scrollOffset:        1,
 		visibleRows:         2,
 		showScrollIndicator: true,
@@ -71,8 +69,7 @@ func TestRenderStandardizedPopup_EnforcesMinimumHeight40Percent(t *testing.T) {
 	spec := standardizedPopupSpec{
 		title:        "Confirm",
 		summary:      "Save changes?",
-		rows:         []string{"Yes", "No"},
-		selected:     0,
+		rows:         popupSelectableRows([]string{"Yes", "No"}, 0),
 		defaultWidth: 50,
 		minWidth:     20,
 		maxWidth:     60,
@@ -93,8 +90,7 @@ func TestRenderStandardizedPopup_DoesNotEmphasizeOrdinaryRowsThatContainErrorLik
 	spec := standardizedPopupSpec{
 		title:        "Filter",
 		summary:      "Select column",
-		rows:         []string{"failed_login (TEXT)", "invalid status (TEXT)"},
-		selected:     0,
+		rows:         popupSelectableRows([]string{"failed_login (TEXT)", "invalid status (TEXT)"}, 0),
 		defaultWidth: 60,
 		minWidth:     20,
 		maxWidth:     60,
@@ -118,8 +114,7 @@ func TestRenderStandardizedPopup_SelectedRowDoesNotStyleBorders(t *testing.T) {
 	spec := standardizedPopupSpec{
 		title:        "Sort",
 		summary:      "Select column",
-		rows:         []string{"id (TEXT)", "kind (TEXT)"},
-		selected:     1,
+		rows:         popupSelectableRows([]string{"id (TEXT)", "kind (TEXT)"}, 1),
 		defaultWidth: 60,
 		minWidth:     20,
 		maxWidth:     60,
@@ -139,5 +134,29 @@ func TestRenderStandardizedPopup_SelectedRowDoesNotStyleBorders(t *testing.T) {
 	}
 	if !strings.Contains(selectedLine, frameVertical+"\x1b[7m "+selectionSelectedPrefix()+"kind (TEXT)") {
 		t.Fatalf("expected only popup content to be reverse-video, got %q", selectedLine)
+	}
+}
+
+func TestRenderStandardizedPopup_ContentWidthModeUsesSelectableRowsAndFooterWidth(t *testing.T) {
+	// Arrange
+	spec := standardizedPopupSpec{
+		title:     "DB",
+		summary:   "Cfg",
+		rows:      popupSelectableRows([]string{"local"}, 0),
+		footer:    standardizedPopupFooter{right: "Context help: ?"},
+		widthMode: popupWidthContent,
+	}
+
+	// Act
+	lines := renderStandardizedPopup(80, 24, spec)
+
+	// Assert
+	actualWidth := textWidth(stripANSI(lines[0]))
+	minExpectedWidth := textWidth("Context help: ?") + (popupContentSidePadding * 2) + 2
+	if actualWidth != minExpectedWidth {
+		t.Fatalf("expected content-width popup width %d, got %d for %q", minExpectedWidth, actualWidth, stripANSI(lines[0]))
+	}
+	if !strings.Contains(stripANSI(lines[len(lines)-2]), "Context help: ?") {
+		t.Fatalf("expected footer row before bottom border, got %q", stripANSI(lines[len(lines)-2]))
 	}
 }
