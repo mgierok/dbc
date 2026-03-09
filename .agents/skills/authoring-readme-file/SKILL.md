@@ -1,6 +1,6 @@
 ---
 name: authoring-readme-file
-description: Assess whether non-documentation codebase changes require updating `README.md`, and create/update `README.md` only when required. Use for every non-documentation code change and for explicit README requests.
+description: Assess whether changes require updating `README.md`, and create/update `README.md` only when required. Use only when the user explicitly requests README assessment or README changes.
 ---
 
 # Authoring README File
@@ -9,9 +9,8 @@ description: Assess whether non-documentation codebase changes require updating 
 
 - This skill MUST be the single source of truth for deciding whether README updates are required.
 - This skill MUST be the single source of truth for authoring README updates.
-- This skill MUST be used:
-  - for every task that changes at least one non-documentation file in the codebase,
-  - for every explicit request to create or modify `README.md`.
+- This skill MUST be used only for an explicit user request to assess, create, or modify `README.md`.
+- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files.
 
 ## Scope
 

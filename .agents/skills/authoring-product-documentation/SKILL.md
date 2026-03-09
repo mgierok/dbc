@@ -1,6 +1,6 @@
 ---
 name: authoring-product-documentation
-description: Assess whether non-documentation codebase changes require updating `docs/product-documentation.md`, and create/update that file only when required. Use for every non-documentation code change and for explicit product-documentation requests.
+description: Assess whether changes require updating `docs/product-documentation.md`, and create/update that file only when required. Use only when the user explicitly requests product-documentation assessment or product-documentation changes.
 ---
 
 # Authoring Product Documentation
@@ -9,9 +9,8 @@ description: Assess whether non-documentation codebase changes require updating 
 
 - This skill MUST be the single source of truth for deciding whether `docs/product-documentation.md` requires an update.
 - This skill MUST be the single source of truth for authoring updates to `docs/product-documentation.md`.
-- This skill MUST be used:
-  - for every task that changes at least one non-documentation file in the codebase,
-  - for every explicit request to create or modify `docs/product-documentation.md`.
+- This skill MUST be used only for an explicit user request to assess, create, or modify `docs/product-documentation.md`.
+- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files.
 
 ## Scope
 
