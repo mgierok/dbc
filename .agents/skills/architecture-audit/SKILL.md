@@ -59,6 +59,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The audit SHOULD flag god modules and overgrown shared utility modules.
 - The audit SHOULD assess whether module public APIs are small and stable.
 - The audit SHOULD assess whether oversized files, packages, or modules are hiding multiple architectural responsibilities that can be split along existing boundaries or stable seams.
+- The audit SHOULD compare sibling units inside the same layer or package when they appear to implement the same conceptual component, renderer, or workflow through separate code paths.
 - The audit MUST NOT recommend file or module splitting based on size alone.
 
 2. Dependencies and import rules
@@ -134,6 +135,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 15. Complexity and simplification pressure
 - The audit MUST identify accidental-complexity hotspots (for example over-abstraction, unnecessary indirection, dead layers, and speculative extension points).
 - The audit SHOULD flag duplicated orchestration paths and overlapping module responsibilities.
+- The audit SHOULD flag duplicated adapter-layer rendering, layout, or interaction logic when the code appears to implement the same conceptual widget or workflow more than once without an explicit documented reason.
 - The audit MUST propose simplification actions that preserve architecture boundaries and dependency direction.
 - The audit SHOULD include measurable simplification outcomes (for example fewer dependency edges, smaller change blast radius, and reduced cognitive load in core flows).
 - The audit SHOULD treat finer-grained decomposition as a valid simplification only when it reduces cognitive load or review surface without introducing speculative layers or extra boundary crossings.
@@ -157,6 +159,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - Map inbound and outbound dependencies between units.
 - Map boundary crossings and integration points.
 - Identify allowed and forbidden dependency directions for the selected scope.
+- When UI or adapter packages are in scope, the audit SHOULD map shared interaction primitives and note where sibling files implement the same conceptual widget or workflow through separate rendering or orchestration paths.
 
 5. Identify conformance findings
 - Use two finding classes:
@@ -183,6 +186,10 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
   - the architectural seam that makes the split valid,
   - why the split is better than keeping the current unit intact,
   - why the split is not merely a size-reduction exercise.
+- If the opportunity recommends consolidating duplicated same-layer implementations of the same conceptual component or workflow, it MUST also include:
+  - the shared behavior contract being duplicated,
+  - the current drift risk or inconsistency signal,
+  - why a shared primitive or renderer is justified without introducing speculative abstraction.
 
 7. Identify pattern-based optimization opportunities
 - Evaluate whether missing design patterns are causing duplicated logic, rigid coupling, unstable change surfaces, or orchestration leakage.
@@ -229,6 +236,8 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The skill SHOULD prefer finer-grained files, packages, or modules when the code already contains separable architectural responsibilities or stable change seams.
 - The skill MAY treat reduced token consumption, review surface, or navigation cost as a supporting benefit of decomposition, but it MUST NOT use token reduction as the primary justification.
 - The skill MUST NOT recommend decomposition that mainly adds indirection, fragments a cohesive workflow, or weakens discoverability of a single responsibility.
+- The skill MUST NOT dismiss duplicated same-layer implementations solely because dependency boundaries are still correct.
+- When a shared helper, renderer, or orchestration primitive already exists and a sibling custom path duplicates the same behavior contract, the skill SHOULD surface at least a low-priority optimization opportunity unless the divergence is explicitly justified by materially different behavior or constraints.
 
 ## Output Requirements
 

@@ -19,6 +19,7 @@ Use this checklist to keep audit output consistent, evidence-based, and actionab
 - [ ] Dependency directions are mapped for key architecture units.
 - [ ] Boundary crossings are identified and categorized.
 - [ ] Allowed versus forbidden dependency flows are explicit.
+- [ ] When UI or adapter packages are in scope, sibling implementations of the same conceptual component or workflow were checked for duplicate rendering or orchestration paths.
 
 ## 4. Finding Quality Review
 
@@ -40,6 +41,7 @@ For each compliant optimization opportunity:
 - [ ] Architecture-compliance rationale is explicit.
 - [ ] Effort estimate is stated (`Low`, `Medium`, `High`).
 - [ ] Suggested sequencing is included.
+- [ ] For same-layer duplication findings, the shared behavior contract and current drift risk are explicit.
 
 ## 6. Design Pattern Opportunity Review
 
@@ -70,3 +72,4 @@ For each `RULE_EXCEPTION_CANDIDATE`:
 - [ ] Evidence is separated from assumptions and open questions.
 - [ ] Limitations are declared (for example partial scope, missing architecture rules).
 - [ ] Recommendations are actionable and specific, not generic.
+- [ ] Local duplication was not dismissed solely because architecture boundaries remained valid.
