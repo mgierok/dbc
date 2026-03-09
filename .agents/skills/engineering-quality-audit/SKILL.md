@@ -49,13 +49,12 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
   - testing sections from governance and technical docs,
   - local testing conventions, test-layout policies, and other local policies if present.
 - `quality-signal sources`:
-  - CI configuration,
   - lint, test, and coverage settings,
   - flaky-test signals and equivalent local evidence if present.
 
 ## Engineering Quality Review Areas (Relevance-Gated)
 
-- The skill MUST evaluate the following 13 areas when they are relevant to the analyzed project or selected scope.
+- The skill MUST evaluate the following 12 areas when they are relevant to the analyzed project or selected scope.
 - For each area, the skill MUST classify status as `APPLICABLE` or `NOT_APPLICABLE`.
 - Every `NOT_APPLICABLE` classification MUST include a concrete one-line reason.
 - Every finding and recommendation SHOULD reference one or more areas by name to keep traceability explicit.
@@ -70,6 +69,7 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The audit MUST verify that layer, module, or bounded-context boundaries are clear and consistently applied.
 - The audit MUST verify dependency direction.
 - The audit SHOULD flag god modules, dead layers, duplicated orchestration paths, and overlapping responsibilities.
+- The audit SHOULD flag unnecessary complexity, deep nesting, redundancy, and over-abstraction when they increase cognitive load without protecting a valid architectural seam.
 - The audit SHOULD assess whether decomposition opportunities follow stable seams rather than size alone.
 
 3. Dependencies, data flow, and contracts
@@ -131,17 +131,11 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The audit SHOULD flag test helpers or fixture layers that force broad context loading to understand a localized change.
 - The audit MUST identify tests that appear redundant, obsolete, or misaligned with the current contract, but MUST attach confidence and risk notes before recommending removal.
 
-13. CI/CD and quality enforcement
-- The audit SHOULD assess whether pipeline stages cover build, test, scans, and practical quality gates.
-- The audit SHOULD verify whether architecture-regression detection exists for dependency rules.
-- The audit SHOULD assess whether CI exposes unit-test results, flaky-test indicators, coverage by module, and runtime trends.
-- The audit MUST flag misleading coverage exclusions or impractical quality gates when evidence supports that conclusion.
-
 ## Audit Workflow
 
 1. Confirm scope and inventory quality units
 - Resolve audit scope (`repo root` or provided directory).
-- Inventory relevant code units, test files, configuration files, CI artifacts, boundaries, and integration points.
+- Inventory relevant code units, test files, configuration files, boundaries, and integration points.
 
 2. Load project expectations
 - Discover and load project-specific architecture rules and testing rules before applying generic heuristics.
@@ -250,6 +244,8 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The skill SHOULD prefer finer-grained files, packages, or modules when the code already contains separable responsibilities or stable seams.
 - The skill SHOULD treat reduced token consumption, lower search effort, and smaller review surface as valid supporting benefits when they result from better cohesion and clearer seams.
 - The skill MUST NOT recommend decomposition that mainly adds indirection, fragments a cohesive workflow, or weakens discoverability of a single responsibility.
+- The skill SHOULD surface simplification opportunities that reduce unnecessary complexity, nesting, redundancy, or over-abstraction when those changes improve local reasoning and maintainability without changing responsibilities.
+- The skill MUST NOT recommend a simplification that merges distinct concerns, weakens separation of responsibilities, or makes debugging harder.
 - The skill MUST NOT dismiss duplicated same-layer implementations or duplicated tests solely because they still pass or because dependency boundaries are technically correct.
 - The skill SHOULD treat unusually high unit-test count around a narrow production surface as a signal that the production unit may be doing too much or that the test topology is poorly organized.
 - The skill MUST NOT treat a larger number of tests as inherently better when that volume mainly compensates for poor cohesion, unstable seams, or unclear boundaries.
