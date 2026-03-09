@@ -278,7 +278,7 @@ The report MUST include concrete file references and architecture unit identifie
 - If a plan item recommends test deletion, it MUST include the validation step before deletion.
 - If a plan item recommends test additions, it MUST include where and what to test.
 - `Confidence and Risk` and `Evidence and Limitations` MUST stay brief and MUST NOT restate the full plan.
-The skill MUST write the report file to `<project-root>/engineering-quality-audit.md`.
+The skill MUST write the report file to `<project-root>/.audits/engineering-quality-audit.md`.
 
 ## Safety and Boundaries
 
