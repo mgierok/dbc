@@ -22,13 +22,15 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 				{Name: "name", Type: "TEXT", Nullable: false},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
 				},
-				explicitAuto: map[int]bool{},
 			},
 		},
 		tables: []dto.Table{{Name: "users"}},
@@ -54,11 +56,13 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *testing.T) {
 	// Arrange
 	model := &Model{
-		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
-		selectedTable:     0,
-		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes:    map[string]recordDelete{"id=2": {}},
+		tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+		selectedTable: 0,
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
 		pendingTableIndex: -1,
 	}
 
@@ -98,11 +102,13 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 func TestSetTableSelection_WithDirtyStateYesOptionClearsStagingAndSwitches(t *testing.T) {
 	// Arrange
 	model := &Model{
-		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
-		selectedTable:     0,
-		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes:    map[string]recordDelete{"id=2": {}},
+		tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+		selectedTable: 0,
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
 		pendingTableIndex: -1,
 	}
 
@@ -122,11 +128,13 @@ func TestSetTableSelection_WithDirtyStateYesOptionClearsStagingAndSwitches(t *te
 func TestSetTableSelection_WithDirtyStateNoOptionPreservesStagingAndSelection(t *testing.T) {
 	// Arrange
 	model := &Model{
-		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
-		selectedTable:     0,
-		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes:    map[string]recordDelete{"id=2": {}},
+		tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+		selectedTable: 0,
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
 		pendingTableIndex: -1,
 	}
 
@@ -150,11 +158,13 @@ func TestSetTableSelection_WithDirtyStateNoOptionPreservesStagingAndSelection(t 
 func TestSetTableSelection_WithDirtyStateNoKeyPreservesStagingAndSelection(t *testing.T) {
 	// Arrange
 	model := &Model{
-		tables:            []dto.Table{{Name: "users"}, {Name: "orders"}},
-		selectedTable:     0,
-		pendingInserts:    []pendingInsertRow{{}},
-		pendingUpdates:    map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes:    map[string]recordDelete{"id=2": {}},
+		tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+		selectedTable: 0,
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
 		pendingTableIndex: -1,
 	}
 
@@ -212,13 +222,15 @@ func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
 				{Name: "name", Type: "TEXT", Nullable: false},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+					},
+					explicitAuto: map[int]bool{},
 				},
-				explicitAuto: map[int]bool{},
 			},
 		},
 		confirmPopup: confirmPopup{

@@ -28,8 +28,8 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 
 	// Assert
-	if len(model.pendingInserts) != 1 {
-		t.Fatalf("expected one pending insert, got %d", len(model.pendingInserts))
+	if len(model.staging.pendingInserts) != 1 {
+		t.Fatalf("expected one pending insert, got %d", len(model.staging.pendingInserts))
 	}
 	if model.recordSelection != 0 {
 		t.Fatalf("expected selection at top pending row, got %d", model.recordSelection)
@@ -37,7 +37,7 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	if model.recordColumn != 1 {
 		t.Fatalf("expected first editable column to skip auto field, got %d", model.recordColumn)
 	}
-	row := model.pendingInserts[0]
+	row := model.staging.pendingInserts[0]
 	if got := displayValue(row.values[1].Value); got != "guest" {
 		t.Fatalf("expected default value guest, got %q", got)
 	}
@@ -67,15 +67,15 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.pendingDeletes) != 1 {
-		t.Fatalf("expected one pending delete, got %d", len(model.pendingDeletes))
+	if len(model.staging.pendingDeletes) != 1 {
+		t.Fatalf("expected one pending delete, got %d", len(model.staging.pendingDeletes))
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.pendingDeletes) != 0 {
+	if len(model.staging.pendingDeletes) != 0 {
 		t.Fatalf("expected pending delete to toggle off")
 	}
 }
@@ -83,16 +83,18 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 func TestHandleKey_DeleteRemovesPendingInsert(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:       ViewRecords,
-		focus:          FocusContent,
-		pendingInserts: []pendingInsertRow{{values: map[int]stagedEdit{}}},
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{values: map[int]stagedEdit{}}},
+		},
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.pendingInserts) != 0 {
+	if len(model.staging.pendingInserts) != 0 {
 		t.Fatalf("expected pending insert to be removed")
 	}
 }
@@ -106,29 +108,31 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 				{Name: "name", Type: "TEXT", Nullable: false},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-		pendingUpdates: map[string]recordEdits{
-			"id=1": {
-				identity: dto.RecordIdentity{
-					Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
-				},
-				changes: map[int]stagedEdit{
-					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
 				},
 			},
-		},
-		pendingDeletes: map[string]recordDelete{
-			"id=1": {
-				identity: dto.RecordIdentity{
-					Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+			pendingUpdates: map[string]recordEdits{
+				"id=1": {
+					identity: dto.RecordIdentity{
+						Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+					},
+					changes: map[int]stagedEdit{
+						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+					},
+				},
+			},
+			pendingDeletes: map[string]recordDelete{
+				"id=1": {
+					identity: dto.RecordIdentity{
+						Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+					},
 				},
 			},
 		},
@@ -155,13 +159,15 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
 	// Arrange
 	model := &Model{
-		pendingInserts: []pendingInsertRow{{}},
-		pendingDeletes: map[string]recordDelete{"id=1": {}},
-		pendingUpdates: map[string]recordEdits{
-			"id=2": {
-				changes: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "x", Raw: "x"}},
-					1: {Value: dto.StagedValue{Text: "y", Raw: "y"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingDeletes: map[string]recordDelete{"id=1": {}},
+			pendingUpdates: map[string]recordEdits{
+				"id=2": {
+					changes: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "x", Raw: "x"}},
+						1: {Value: dto.StagedValue{Text: "y", Raw: "y"}},
+					},
 				},
 			},
 		},

@@ -211,11 +211,13 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 				{Name: "name", Type: "TEXT"},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
 				},
 			},
 		},
@@ -227,7 +229,7 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.pendingDeletes = map[string]recordDelete{
+	model.staging.pendingDeletes = map[string]recordDelete{
 		key: {},
 	}
 
@@ -262,7 +264,7 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.pendingUpdates = map[string]recordEdits{
+	model.staging.pendingUpdates = map[string]recordEdits{
 		key: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
@@ -293,11 +295,13 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 				{Name: "name", Type: "TEXT"},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "10", Raw: "10"}},
-					1: {Value: dto.StagedValue{Text: "inserted", Raw: "inserted"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "10", Raw: "10"}},
+						1: {Value: dto.StagedValue{Text: "inserted", Raw: "inserted"}},
+					},
 				},
 			},
 		},
@@ -311,7 +315,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	if !ok {
 		t.Fatal("expected edited row key")
 	}
-	model.pendingUpdates = map[string]recordEdits{
+	model.staging.pendingUpdates = map[string]recordEdits{
 		editedKey: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
@@ -323,7 +327,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	if !ok {
 		t.Fatal("expected delete row key")
 	}
-	model.pendingDeletes = map[string]recordDelete{
+	model.staging.pendingDeletes = map[string]recordDelete{
 		deleteKey: {},
 	}
 
@@ -434,8 +438,10 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 					{Name: "id", Type: "INTEGER"},
 				},
 			},
-			pendingInserts: []pendingInsertRow{
-				{},
+			staging: stagingState{
+				pendingInserts: []pendingInsertRow{
+					{},
+				},
 			},
 		}
 
@@ -464,7 +470,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !ok {
 			t.Fatal("expected persisted row key")
 		}
-		model.pendingDeletes = map[string]recordDelete{
+		model.staging.pendingDeletes = map[string]recordDelete{
 			key: {},
 		}
 
@@ -495,7 +501,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !ok {
 			t.Fatal("expected persisted row key")
 		}
-		model.pendingUpdates = map[string]recordEdits{
+		model.staging.pendingUpdates = map[string]recordEdits{
 			key: {
 				changes: map[int]stagedEdit{
 					1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},

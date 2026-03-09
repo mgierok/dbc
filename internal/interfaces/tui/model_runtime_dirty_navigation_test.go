@@ -22,8 +22,8 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			model := &Model{
-				viewMode:       ViewRecords,
-				pendingInserts: []pendingInsertRow{{}},
+				viewMode: ViewRecords,
+				staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
 			}
 
 			// Act
@@ -58,8 +58,8 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:       ViewRecords,
-		pendingInserts: []pendingInsertRow{{}},
+		viewMode: ViewRecords,
+		staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -85,8 +85,8 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:       ViewRecords,
-		pendingInserts: []pendingInsertRow{{}},
+		viewMode: ViewRecords,
+		staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -126,13 +126,15 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 				{Name: "name", Type: "TEXT", Nullable: false},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
 				},
-				explicitAuto: map[int]bool{},
 			},
 		},
 		tables: []dto.Table{{Name: "users"}},
@@ -179,13 +181,15 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 				{Name: "name", Type: "TEXT", Nullable: false},
 			},
 		},
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
 				},
-				explicitAuto: map[int]bool{},
 			},
 		},
 		tables: []dto.Table{{Name: "users"}},

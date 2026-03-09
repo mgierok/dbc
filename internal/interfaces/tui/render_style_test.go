@@ -59,10 +59,12 @@ func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
 		styles: renderStyles{enabled: true},
-		pendingUpdates: map[string]recordEdits{
-			"id=1": {
-				changes: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+		staging: stagingState{
+			pendingUpdates: map[string]recordEdits{
+				"id=1": {
+					changes: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+					},
 				},
 			},
 		},

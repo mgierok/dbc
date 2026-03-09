@@ -5,11 +5,11 @@ import (
 )
 
 func (m *Model) totalRecordRows() int {
-	return len(m.pendingInserts) + len(m.records)
+	return len(m.staging.pendingInserts) + len(m.records)
 }
 
 func (m *Model) pendingInsertIndex(rowIndex int) (int, bool) {
-	if rowIndex < 0 || rowIndex >= len(m.pendingInserts) {
+	if rowIndex < 0 || rowIndex >= len(m.staging.pendingInserts) {
 		return -1, false
 	}
 	return rowIndex, true
@@ -20,7 +20,7 @@ func (m *Model) pendingInsertIndexForSelection() (int, bool) {
 }
 
 func (m *Model) persistedRowIndex(rowIndex int) int {
-	persisted := rowIndex - len(m.pendingInserts)
+	persisted := rowIndex - len(m.staging.pendingInserts)
 	if persisted < 0 || persisted >= len(m.records) {
 		return -1
 	}
@@ -29,7 +29,7 @@ func (m *Model) persistedRowIndex(rowIndex int) int {
 
 func (m *Model) visibleRowValue(rowIndex, columnIndex int) string {
 	if insertIndex, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		row := m.pendingInserts[insertIndex]
+		row := m.staging.pendingInserts[insertIndex]
 		if value, ok := row.values[columnIndex]; ok {
 			return displayValue(value.Value)
 		}
@@ -51,16 +51,16 @@ func (m *Model) isRowMarkedDelete(rowIndex int) bool {
 	if !ok {
 		return false
 	}
-	_, marked := m.pendingDeletes[key]
+	_, marked := m.staging.pendingDeletes[key]
 	return marked
 }
 
 func (m *Model) removePendingInsert(index int) (pendingInsertRow, error) {
-	if index < 0 || index >= len(m.pendingInserts) {
+	if index < 0 || index >= len(m.staging.pendingInserts) {
 		return pendingInsertRow{}, fmt.Errorf("insert index out of range")
 	}
-	removed := clonePendingInsertRow(m.pendingInserts[index])
-	m.pendingInserts = append(m.pendingInserts[:index], m.pendingInserts[index+1:]...)
+	removed := clonePendingInsertRow(m.staging.pendingInserts[index])
+	m.staging.pendingInserts = append(m.staging.pendingInserts[:index], m.staging.pendingInserts[index+1:]...)
 	if m.recordSelection > index {
 		m.recordSelection--
 	}
@@ -69,13 +69,13 @@ func (m *Model) removePendingInsert(index int) (pendingInsertRow, error) {
 }
 
 func (m *Model) insertPendingRowAt(index int, row pendingInsertRow) error {
-	if index < 0 || index > len(m.pendingInserts) {
+	if index < 0 || index > len(m.staging.pendingInserts) {
 		return fmt.Errorf("insert index out of range")
 	}
 	cloned := clonePendingInsertRow(row)
-	m.pendingInserts = append(m.pendingInserts, pendingInsertRow{})
-	copy(m.pendingInserts[index+1:], m.pendingInserts[index:])
-	m.pendingInserts[index] = cloned
+	m.staging.pendingInserts = append(m.staging.pendingInserts, pendingInsertRow{})
+	copy(m.staging.pendingInserts[index+1:], m.staging.pendingInserts[index:])
+	m.staging.pendingInserts[index] = cloned
 	if m.recordSelection >= index {
 		m.recordSelection++
 	}
@@ -114,7 +114,7 @@ func (m *Model) visibleColumnIndicesForSelection() []int {
 	insertIndex, isInsert := m.pendingInsertIndexForSelection()
 	columns := make([]int, 0, len(m.schema.Columns))
 	for idx, column := range m.schema.Columns {
-		if isInsert && !m.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
+		if isInsert && !m.staging.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
 			continue
 		}
 		columns = append(columns, idx)
@@ -137,7 +137,7 @@ func (m *Model) visibleColumnIndicesForRow(rowIndex int) []int {
 	insertIndex, isInsert := m.pendingInsertIndex(rowIndex)
 	columns := make([]int, 0, len(m.schema.Columns))
 	for idx, column := range m.schema.Columns {
-		if isInsert && !m.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
+		if isInsert && !m.staging.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
 			continue
 		}
 		columns = append(columns, idx)

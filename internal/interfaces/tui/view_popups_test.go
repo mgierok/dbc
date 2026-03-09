@@ -319,10 +319,10 @@ func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
 func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:       ViewRecords,
-		width:          80,
-		height:         24,
-		pendingInserts: []pendingInsertRow{{}},
+		viewMode: ViewRecords,
+		width:    80,
+		height:   24,
+		staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 
 	// Act

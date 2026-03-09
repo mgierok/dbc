@@ -94,74 +94,6 @@ type recordDetailState struct {
 	scrollOffset int
 }
 
-type stagedEdit struct {
-	Value dto.StagedValue
-}
-
-type recordEdits struct {
-	identity dto.RecordIdentity
-	changes  map[int]stagedEdit
-}
-
-type pendingInsertRow struct {
-	values       map[int]stagedEdit
-	explicitAuto map[int]bool
-	showAuto     bool
-}
-
-type recordDelete struct {
-	identity dto.RecordIdentity
-}
-
-type stagedOperationKind int
-
-const (
-	opInsertAdded stagedOperationKind = iota
-	opInsertRemoved
-	opCellEdited
-	opDeleteToggled
-)
-
-type cellEditTarget int
-
-const (
-	cellEditPersisted cellEditTarget = iota
-	cellEditInsert
-)
-
-type insertOperation struct {
-	index int
-	row   pendingInsertRow
-}
-
-type cellEditOperation struct {
-	target             cellEditTarget
-	insertIndex        int
-	recordKey          string
-	identity           dto.RecordIdentity
-	columnIndex        int
-	before             stagedEdit
-	beforeExists       bool
-	after              stagedEdit
-	afterExists        bool
-	beforeExplicitAuto bool
-	afterExplicitAuto  bool
-}
-
-type deleteToggleOperation struct {
-	key          string
-	identity     dto.RecordIdentity
-	beforeMarked bool
-	afterMarked  bool
-}
-
-type stagedOperation struct {
-	kind   stagedOperationKind
-	insert insertOperation
-	cell   cellEditOperation
-	del    deleteToggleOperation
-}
-
 type editPopup struct {
 	active       bool
 	rowIndex     int
@@ -199,11 +131,6 @@ type confirmPopup struct {
 	modal    bool
 }
 
-type pkColumn struct {
-	index  int
-	column dto.SchemaColumn
-}
-
 type Model struct {
 	ctx            context.Context
 	listTables     listTablesUseCase
@@ -237,11 +164,7 @@ type Model struct {
 	recordRequestID  int
 	recordLoading    bool
 	recordFieldFocus bool
-	pendingInserts   []pendingInsertRow
-	pendingUpdates   map[string]recordEdits
-	pendingDeletes   map[string]recordDelete
-	history          []stagedOperation
-	future           []stagedOperation
+	staging          stagingState
 
 	currentFilter     *dto.Filter
 	currentSort       *dto.Sort

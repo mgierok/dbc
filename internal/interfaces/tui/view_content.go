@@ -66,7 +66,7 @@ func (m *Model) renderRecords(width, height int) []string {
 		displayValues := make([]string, len(columns))
 		if insertIndex, isInsert := m.pendingInsertIndex(i); isInsert {
 			for colIndex := range columns {
-				if value, ok := m.pendingInserts[insertIndex].values[colIndex]; ok {
+				if value, ok := m.staging.pendingInserts[insertIndex].values[colIndex]; ok {
 					displayValues[colIndex] = displayValue(value.Value)
 				}
 			}
@@ -176,7 +176,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 func (m *Model) effectiveRecordDetailValue(rowIndex, columnIndex int) (string, bool) {
 	if insertIndex, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		if value, ok := m.pendingInserts[insertIndex].values[columnIndex]; ok {
+		if value, ok := m.staging.pendingInserts[insertIndex].values[columnIndex]; ok {
 			return displayValue(value.Value), false
 		}
 		return "", false
@@ -196,7 +196,7 @@ func (m *Model) isRowEdited(rowIndex int) bool {
 	if !ok {
 		return false
 	}
-	edits, ok := m.pendingUpdates[key]
+	edits, ok := m.staging.pendingUpdates[key]
 	if !ok {
 		return false
 	}

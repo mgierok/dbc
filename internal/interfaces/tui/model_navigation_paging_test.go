@@ -17,13 +17,15 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 		recordFieldFocus: true,
 		recordSelection:  1,
 		recordColumn:     0,
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
 				},
-				explicitAuto: map[int]bool{},
 			},
 		},
 		records: []dto.RecordRow{

@@ -27,7 +27,7 @@ func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (stagedEdit, bool) {
 	if !ok {
 		return stagedEdit{}, false
 	}
-	edits, ok := m.pendingUpdates[key]
+	edits, ok := m.staging.pendingUpdates[key]
 	if !ok {
 		return stagedEdit{}, false
 	}

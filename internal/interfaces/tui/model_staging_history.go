@@ -50,10 +50,10 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 	}
 	switch op.target {
 	case cellEditInsert:
-		if op.insertIndex < 0 || op.insertIndex >= len(m.pendingInserts) {
+		if op.insertIndex < 0 || op.insertIndex >= len(m.staging.pendingInserts) {
 			return fmt.Errorf("insert index out of range")
 		}
-		row := m.pendingInserts[op.insertIndex]
+		row := m.staging.pendingInserts[op.insertIndex]
 		if row.values == nil {
 			row.values = make(map[int]stagedEdit, len(m.schema.Columns))
 		}
@@ -72,31 +72,31 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 				delete(row.explicitAuto, op.columnIndex)
 			}
 		}
-		m.pendingInserts[op.insertIndex] = row
+		m.staging.pendingInserts[op.insertIndex] = row
 		return nil
 	case cellEditPersisted:
 		if strings.TrimSpace(op.recordKey) == "" {
 			return fmt.Errorf("record key missing")
 		}
-		if m.pendingUpdates == nil {
-			m.pendingUpdates = make(map[string]recordEdits)
+		if m.staging.pendingUpdates == nil {
+			m.staging.pendingUpdates = make(map[string]recordEdits)
 		}
-		edits := m.pendingUpdates[op.recordKey]
+		edits := m.staging.pendingUpdates[op.recordKey]
 		if edits.changes == nil {
 			edits.changes = make(map[int]stagedEdit)
 		}
 		edits.identity = op.identity
 		if exists {
 			edits.changes[op.columnIndex] = edit
-			m.pendingUpdates[op.recordKey] = edits
+			m.staging.pendingUpdates[op.recordKey] = edits
 			return nil
 		}
 		delete(edits.changes, op.columnIndex)
 		if len(edits.changes) == 0 {
-			delete(m.pendingUpdates, op.recordKey)
+			delete(m.staging.pendingUpdates, op.recordKey)
 			return nil
 		}
-		m.pendingUpdates[op.recordKey] = edits
+		m.staging.pendingUpdates[op.recordKey] = edits
 		return nil
 	default:
 		return fmt.Errorf("unsupported cell edit target")
@@ -107,18 +107,18 @@ func (m *Model) setDeleteMark(key string, identity dto.RecordIdentity, marked bo
 	if strings.TrimSpace(key) == "" {
 		return fmt.Errorf("record key missing")
 	}
-	if m.pendingDeletes == nil {
-		m.pendingDeletes = make(map[string]recordDelete)
+	if m.staging.pendingDeletes == nil {
+		m.staging.pendingDeletes = make(map[string]recordDelete)
 	}
 	if marked {
-		m.pendingDeletes[key] = recordDelete{identity: identity}
+		m.staging.pendingDeletes[key] = recordDelete{identity: identity}
 		return nil
 	}
-	delete(m.pendingDeletes, key)
+	delete(m.staging.pendingDeletes, key)
 	return nil
 }
 
 func (m *Model) recordOperation(op stagedOperation) {
-	m.history = append(m.history, op)
-	m.future = nil
+	m.staging.history = append(m.staging.history, op)
+	m.staging.future = nil
 }
