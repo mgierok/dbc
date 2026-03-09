@@ -190,6 +190,12 @@
 - Rationale: reduce malformed query risk and unsafe string composition.
 - Where: `internal/infrastructure/engine/sqlite_filter.go`, `internal/infrastructure/engine/sqlite_operator.go`, `internal/infrastructure/engine/sqlite_sort.go`.
 
+### Explicit Infrastructure Test Naming
+
+- Decision: use `*_unit_test.go` for pure logic tests and `*_integration_test.go` for filesystem-backed or real-SQLite-backed adapter tests; both run in `go test ./...`.
+- Rationale: make test level obvious without splitting the default test lane.
+- Where: `internal/infrastructure/{config,engine}`.
+
 ## Technology Stack and Versions
 
 Version source: `go.mod`.
