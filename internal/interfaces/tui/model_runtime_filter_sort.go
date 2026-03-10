@@ -4,7 +4,137 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
+
+func (m *Model) startFilterPopup() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent {
+		return m, nil
+	}
+	if m.currentTableName() == "" {
+		return m, nil
+	}
+	if len(m.schema.Columns) == 0 {
+		m.pendingFilterOpen = true
+		return m, m.loadSchemaCmd()
+	}
+	m.openFilterPopup()
+	return m, nil
+}
+
+func (m *Model) startSortPopup() (tea.Model, tea.Cmd) {
+	if m.viewMode != ViewRecords || m.focus != FocusContent {
+		return m, nil
+	}
+	if m.currentTableName() == "" {
+		return m, nil
+	}
+	if len(m.schema.Columns) == 0 {
+		m.pendingSortOpen = true
+		return m, m.loadSchemaCmd()
+	}
+	m.openSortPopup()
+	return m, nil
+}
+
+func (m *Model) openFilterPopup() {
+	m.filterPopup = filterPopup{
+		active:        true,
+		step:          filterSelectColumn,
+		columnIndex:   0,
+		operatorIndex: 0,
+		input:         "",
+		operators:     nil,
+		cursor:        0,
+	}
+}
+
+func (m *Model) closeFilterPopup() {
+	m.filterPopup = filterPopup{}
+}
+
+func (m *Model) openSortPopup() {
+	directionIndex := 0
+	columnIndex := 0
+	if m.currentSort != nil {
+		for i, column := range m.schema.Columns {
+			if column.Name == m.currentSort.Column {
+				columnIndex = i
+				break
+			}
+		}
+		if m.currentSort.Direction == dto.SortDirectionDesc {
+			directionIndex = 1
+		}
+	}
+	m.sortPopup = sortPopup{
+		active:         true,
+		step:           sortSelectColumn,
+		columnIndex:    columnIndex,
+		directionIndex: directionIndex,
+	}
+}
+
+func (m *Model) closeSortPopup() {
+	m.sortPopup = sortPopup{}
+}
+
+func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
+	switch {
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
+		m.closeFilterPopup()
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
+		return m.confirmPopupSelection()
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveDown, key):
+		m.movePopupSelection(1)
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveUp, key):
+		m.movePopupSelection(-1)
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyInputMoveLeft, key):
+		if m.filterPopup.step == filterInputValue {
+			m.filterPopup.cursor = clamp(m.filterPopup.cursor-1, 0, len(m.filterPopup.input))
+		}
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyInputMoveRight, key):
+		if m.filterPopup.step == filterInputValue {
+			m.filterPopup.cursor = clamp(m.filterPopup.cursor+1, 0, len(m.filterPopup.input))
+		}
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyInputBackspace, key):
+		if m.filterPopup.step == filterInputValue && m.filterPopup.input != "" {
+			m.filterPopup.input, m.filterPopup.cursor = deleteAtCursor(m.filterPopup.input, m.filterPopup.cursor)
+		}
+		return m, nil
+	}
+
+	if m.filterPopup.step == filterInputValue && msg.Type == tea.KeyRunes {
+		insert := string(msg.Runes)
+		m.filterPopup.input, m.filterPopup.cursor = insertAtCursor(m.filterPopup.input, insert, m.filterPopup.cursor)
+	}
+	return m, nil
+}
+
+func (m *Model) handleSortPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := msg.String()
+	switch {
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
+		m.closeSortPopup()
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
+		return m.confirmSortPopupSelection()
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveDown, key):
+		m.moveSortPopupSelection(1)
+		return m, nil
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveUp, key):
+		m.moveSortPopupSelection(-1)
+		return m, nil
+	default:
+		return m, nil
+	}
+}
 
 func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
 	switch m.filterPopup.step {

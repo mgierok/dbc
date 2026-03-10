@@ -83,7 +83,7 @@
 - Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
 - Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, but remains the single source of truth for runtime/selector input semantics.
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
-- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_overlays.go`.
+- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`.
 
 ### Terminal-Native TUI Styling
 
@@ -185,9 +185,9 @@
 
 ### Selector-First Decomposition Inside The TUI Adapter
 
-- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, and keep runtime write-side state behind `Model.staging`.
-- Rationale: reduce mixed-context hotspots while preserving the adapter boundary and stable top-level runtime entry points used by `cmd/dbc`.
-- Where: `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
+- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, keep runtime write-side state behind `Model.staging`, and keep runtime overlay dispatch in one router with overlay workflows split into seam-specific runtime files.
+- Rationale: reduce mixed-context hotspots while preserving the adapter boundary, stable top-level runtime entry points used by `cmd/dbc`, and a predictable change location for each overlay workflow.
+- Where: `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_filter_sort.go`, `internal/interfaces/tui/model_runtime_edit_popup.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_record_detail.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
 
 ### Terminal-Theme-Driven TUI Styling
 
