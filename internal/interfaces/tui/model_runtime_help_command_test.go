@@ -1,0 +1,366 @@
+package tui
+
+import (
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "full command", command: "config"},
+		{name: "alias", command: "c"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{viewMode: ViewRecords}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
+	}
+}
+
+func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "short command", command: "q"},
+		{name: "full command", command: "quit"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{viewMode: ViewRecords}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
+	}
+}
+
+func TestHandleKey_ContextHelpQuestionMarkOpensRecordsHelpPopup(t *testing.T) {
+	// Arrange
+	model := newRuntimeHelpCommandModel()
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected ? to open help popup")
+	}
+	if model.helpPopup.context != helpPopupContextRecords {
+		t.Fatalf("expected records context, got %v", model.helpPopup.context)
+	}
+}
+
+func TestHandleKey_CommandHelpAliasOpensRecordsHelpPopup(t *testing.T) {
+	// Arrange
+	model := newRuntimeHelpCommandModel()
+
+	// Act
+	_, cmd := submitTypedRuntimeCommand(model, "help")
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, ":help")
+	if !model.helpPopup.active {
+		t.Fatal("expected :help to open help popup")
+	}
+	if model.helpPopup.context != helpPopupContextRecords {
+		t.Fatalf("expected records context for :help, got %v", model.helpPopup.context)
+	}
+	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected no unknown-command status for :help, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_ContextHelpPopupShowsCurrentContextBindings(t *testing.T) {
+	// Arrange
+	model := newRuntimeHelpCommandModel()
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Act
+	popup := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Assert
+	if !strings.Contains(popup, "Records: Esc tables") {
+		t.Fatalf("expected records shortcuts in context help popup, got %q", popup)
+	}
+	if strings.Contains(popup, "Supported Commands") || strings.Contains(popup, "Supported Keywords") {
+		t.Fatalf("expected context-only help content, got %q", popup)
+	}
+}
+
+func TestHandleKey_HelpPopupScrollCanReachFinalContextShortcut(t *testing.T) {
+	// Arrange
+	model := newRuntimeHelpCommandModel()
+	model.height = 12
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	initial := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Act
+	for range 30 {
+		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	}
+	scrolled := strings.Join(model.renderHelpPopup(60), "\n")
+
+	// Assert
+	if strings.Contains(initial, "Shift+S sort") {
+		t.Fatalf("expected final help item to be hidden before scrolling, got %q", initial)
+	}
+	if !strings.Contains(scrolled, "Shift+S sort") {
+		t.Fatalf("expected final help item to be reachable after scrolling, got %q", scrolled)
+	}
+}
+
+func TestHandleKey_InvalidCommandShowsErrorAndKeepsSessionActive(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	_, cmd := submitTypedRuntimeCommand(model, "unknown")
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "invalid command")
+	if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected unknown command status message, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_HelpCommandRequiresExplicitPrefix(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	for _, r := range "help" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "help without prefix")
+	if model.helpPopup.active {
+		t.Fatal("expected help popup to stay closed without ':' prefix")
+	}
+}
+
+func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	for _, r := range "config" {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "command without prefix")
+}
+
+func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "q without prefix")
+}
+
+func TestHandleKey_CtrlCWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlC})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "ctrl+c without prefix")
+}
+
+func TestHandleKey_CommandHelpReenterKeepsPopupOpen(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+	submitTypedRuntimeCommand(model, "help")
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before idempotence check")
+	}
+
+	// Act
+	_, cmd := submitTypedRuntimeCommand(model, "help")
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "repeated :help")
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to remain open when :help is re-entered")
+	}
+	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected no unknown-command status for repeated :help, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_CommandHelpReenterClearsStaleStatusBeforeNewCommand(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords, statusMessage: "existing status"}
+	submitTypedRuntimeCommand(model, "help")
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before re-entering :help")
+	}
+
+	// Act
+	_, cmd := submitTypedRuntimeCommand(model, "help")
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "repeated :help after stale status")
+	if model.statusMessage != "" {
+		t.Fatalf("expected stale status message to clear before new command, got %q", model.statusMessage)
+	}
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to remain open")
+	}
+}
+
+func TestHandleKey_HelpPopupEscClosesPopup(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+	submitTypedRuntimeCommand(model, "help")
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before close check")
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.helpPopup.active {
+		t.Fatal("expected Esc to close help popup")
+	}
+}
+
+func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+	submitTypedRuntimeCommand(model, "help")
+	if !model.helpPopup.active {
+		t.Fatal("expected help popup to open before unrelated-key check")
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected unrelated keys to keep help popup open")
+	}
+}
+
+func TestHandleKey_ContextHelpFromFilterPopupUsesFilterContext(t *testing.T) {
+	// Arrange
+	model := &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		filterPopup: filterPopup{
+			active: true,
+			step:   filterSelectColumn,
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Assert
+	if !model.helpPopup.active {
+		t.Fatal("expected ? to open help popup from filter context")
+	}
+	if model.helpPopup.context != helpPopupContextFilterPopup {
+		t.Fatalf("expected filter-popup context help, got %v", model.helpPopup.context)
+	}
+	if !model.filterPopup.active {
+		t.Fatal("expected filter popup state to stay preserved under help overlay")
+	}
+}
+
+func TestHandleKey_MisspelledHelpCommandUsesUnknownCommandFallback(t *testing.T) {
+	// Arrange
+	model := &Model{viewMode: ViewRecords}
+
+	// Act
+	_, cmd := submitTypedRuntimeCommand(model, "helpp")
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "misspelled :help")
+	if model.helpPopup.active {
+		t.Fatal("expected misspelled :help to keep help popup closed")
+	}
+	if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
+		t.Fatalf("expected unknown-command status for misspelled :help, got %q", model.statusMessage)
+	}
+}
+
+func TestHandleKey_PopupPriority_HelpPopupConsumesEscBeforeOtherPopups(t *testing.T) {
+	// Arrange
+	model := &Model{
+		helpPopup:   helpPopup{active: true},
+		filterPopup: filterPopup{active: true},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.helpPopup.active {
+		t.Fatal("expected help popup to close first")
+	}
+	if !model.filterPopup.active {
+		t.Fatal("expected filter popup to remain active when help popup handled Esc")
+	}
+}
+
+func newRuntimeHelpCommandModel() *Model {
+	return &Model{
+		viewMode: ViewRecords,
+		focus:    FocusContent,
+		height:   40,
+	}
+}
+
+func submitTypedRuntimeCommand(model *Model, value string) (tea.Model, tea.Cmd) {
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	for _, r := range value {
+		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	return model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+}
+
+func assertRuntimeSessionActive(t *testing.T, cmd tea.Cmd, context string) {
+	t.Helper()
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatalf("expected %s to keep session active", context)
+		}
+	}
+}
