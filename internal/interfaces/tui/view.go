@@ -1,6 +1,10 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+)
 
 const (
 	recordsColumnSeparator = "  "
@@ -20,29 +24,29 @@ func (m *Model) View() string {
 	}
 
 	if m.helpPopup.active {
-		return centerBoxLines(m.renderHelpPopup(width), width, height)
+		return primitives.CenterBoxLines(m.renderHelpPopup(width), width, height)
 	}
 	if m.confirmPopup.active {
-		return centerBoxLines(m.renderConfirmPopup(width), width, height)
+		return primitives.CenterBoxLines(m.renderConfirmPopup(width), width, height)
 	}
 	if m.editPopup.active {
-		return centerBoxLines(m.renderEditPopup(width), width, height)
+		return primitives.CenterBoxLines(m.renderEditPopup(width), width, height)
 	}
 	if m.filterPopup.active {
-		return centerBoxLines(m.renderFilterPopup(width), width, height)
+		return primitives.CenterBoxLines(m.renderFilterPopup(width), width, height)
 	}
 	if m.sortPopup.active {
-		return centerBoxLines(m.renderSortPopup(width), width, height)
+		return primitives.CenterBoxLines(m.renderSortPopup(width), width, height)
 	}
 
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
-	left := renderPanelBox("Tables", m.renderTables(leftWidth, bodyHeight), leftWidth, m.styles)
-	right := renderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth, m.styles)
-	lines := mergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
+	left := primitives.RenderPanelBox("Tables", m.renderTables(leftWidth, bodyHeight), leftWidth, m.styles)
+	right := primitives.RenderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth, m.styles)
+	lines := primitives.MergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
 	lines = append(lines, m.renderStatusBox(width)...)
-	lines = fitLinesToHeight(lines, height, width)
+	lines = primitives.FitLinesToHeight(lines, height, width)
 	return strings.Join(lines, "\n")
 }
 
@@ -108,17 +112,17 @@ func (m *Model) maxTablePanelWidth() int {
 		nameMargin       = 1
 	)
 
-	maxWidth := maxInt(textWidth("Tables"), textWidth("No items."))
+	maxWidth := primitives.MaxInt(primitives.TextWidth("Tables"), primitives.TextWidth("No items."))
 	longestNameWidth := 0
 	for _, table := range m.tables {
-		longestNameWidth = maxInt(longestNameWidth, textWidth(table.Name))
+		longestNameWidth = primitives.MaxInt(longestNameWidth, primitives.TextWidth(table.Name))
 	}
 	if longestNameWidth == 0 {
 		return maxWidth
 	}
 
 	tableListWidth := tablePrefixWidth + longestNameWidth + nameMargin
-	return maxInt(maxWidth, tableListWidth)
+	return primitives.MaxInt(maxWidth, tableListWidth)
 }
 
 func (m *Model) renderTables(width, height int) []string {
@@ -127,8 +131,8 @@ func (m *Model) renderTables(width, height int) []string {
 		items[i] = table.Name
 	}
 
-	listLines := renderList(items, m.selectedTable, height, width, true, m.styles)
-	return padLines(listLines, height, width)
+	listLines := primitives.RenderList(items, m.selectedTable, height, width, true, m.styles)
+	return primitives.PadLines(listLines, height, width)
 }
 
 func (m *Model) renderContent(width, height int) []string {

@@ -4,33 +4,34 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeFilterPopup()
 		return m, nil
-	case keyMatches(keyRuntimeEnter, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
 		return m.confirmPopupSelection()
-	case keyMatches(keyRuntimeMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveDown, key):
 		m.movePopupSelection(1)
 		return m, nil
-	case keyMatches(keyRuntimeMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveUp, key):
 		m.movePopupSelection(-1)
 		return m, nil
-	case keyMatches(keyInputMoveLeft, key):
+	case primitives.KeyMatches(primitives.KeyInputMoveLeft, key):
 		if m.filterPopup.step == filterInputValue {
 			m.filterPopup.cursor = clamp(m.filterPopup.cursor-1, 0, len(m.filterPopup.input))
 		}
 		return m, nil
-	case keyMatches(keyInputMoveRight, key):
+	case primitives.KeyMatches(primitives.KeyInputMoveRight, key):
 		if m.filterPopup.step == filterInputValue {
 			m.filterPopup.cursor = clamp(m.filterPopup.cursor+1, 0, len(m.filterPopup.input))
 		}
 		return m, nil
-	case keyMatches(keyInputBackspace, key):
+	case primitives.KeyMatches(primitives.KeyInputBackspace, key):
 		if m.filterPopup.step == filterInputValue && m.filterPopup.input != "" {
 			m.filterPopup.input, m.filterPopup.cursor = deleteAtCursor(m.filterPopup.input, m.filterPopup.cursor)
 		}
@@ -47,15 +48,15 @@ func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleSortPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeSortPopup()
 		return m, nil
-	case keyMatches(keyRuntimeEnter, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
 		return m.confirmSortPopupSelection()
-	case keyMatches(keyRuntimeMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveDown, key):
 		m.moveSortPopupSelection(1)
 		return m, nil
-	case keyMatches(keyRuntimeMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveUp, key):
 		m.moveSortPopupSelection(-1)
 		return m, nil
 	default:
@@ -70,27 +71,27 @@ func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeHelpPopup()
 		return m, nil
-	case keyMatches(keyRuntimeOpenCommandInput, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key):
 		return m.startCommandInput()
-	case keyMatches(keyPopupMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveDown, key):
 		m.moveHelpPopupScroll(1)
 		return m, nil
-	case keyMatches(keyPopupMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveUp, key):
 		m.moveHelpPopupScroll(-1)
 		return m, nil
-	case keyMatches(keyRuntimePageDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageDown, key):
 		m.moveHelpPopupScroll(m.helpPopupVisibleLines())
 		return m, nil
-	case keyMatches(keyRuntimePageUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageUp, key):
 		m.moveHelpPopupScroll(-m.helpPopupVisibleLines())
 		return m, nil
-	case keyMatches(keyPopupJumpTop, key):
+	case primitives.KeyMatches(primitives.KeyPopupJumpTop, key):
 		m.helpPopup.scrollOffset = 0
 		return m, nil
-	case keyMatches(keyPopupJumpBottom, key):
+	case primitives.KeyMatches(primitives.KeyPopupJumpBottom, key):
 		m.helpPopup.scrollOffset = m.helpPopupMaxOffset()
 		return m, nil
 	default:
@@ -101,18 +102,18 @@ func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.commandInput = commandInput{}
 		return m, nil
-	case keyMatches(keyRuntimeEnter, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
 		return m.submitCommandInput()
-	case keyMatches(keyInputMoveLeft, key):
+	case primitives.KeyMatches(primitives.KeyInputMoveLeft, key):
 		m.commandInput.cursor = clamp(m.commandInput.cursor-1, 0, len(m.commandInput.value))
 		return m, nil
-	case keyMatches(keyInputMoveRight, key):
+	case primitives.KeyMatches(primitives.KeyInputMoveRight, key):
 		m.commandInput.cursor = clamp(m.commandInput.cursor+1, 0, len(m.commandInput.value))
 		return m, nil
-	case keyMatches(keyInputBackspace, key):
+	case primitives.KeyMatches(primitives.KeyInputBackspace, key):
 		if m.commandInput.value != "" {
 			m.commandInput.value, m.commandInput.cursor = deleteAtCursor(m.commandInput.value, m.commandInput.cursor)
 		}
@@ -138,10 +139,10 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeEditPopup()
 		return m, nil
-	case keyMatches(keyEditSetNull, key):
+	case primitives.KeyMatches(primitives.KeyEditSetNull, key):
 		if !column.Nullable {
 			m.editPopup.errorMessage = "Column is not nullable"
 			return m, nil
@@ -149,9 +150,9 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.editPopup.isNull = true
 		m.editPopup.errorMessage = ""
 		return m, nil
-	case keyMatches(keyRuntimeEnter, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
 		return m.confirmEditPopup()
-	case keyMatches(keyRuntimeMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveDown, key):
 		if column.Input.Kind == dto.ColumnInputSelect {
 			if len(column.Input.Options) > 0 {
 				m.editPopup.optionIndex = clamp(m.editPopup.optionIndex+1, 0, len(column.Input.Options)-1)
@@ -160,7 +161,7 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
-	case keyMatches(keyRuntimeMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveUp, key):
 		if column.Input.Kind == dto.ColumnInputSelect {
 			if len(column.Input.Options) > 0 {
 				m.editPopup.optionIndex = clamp(m.editPopup.optionIndex-1, 0, len(column.Input.Options)-1)
@@ -169,19 +170,19 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, nil
-	case keyMatches(keyInputMoveLeft, key):
+	case primitives.KeyMatches(primitives.KeyInputMoveLeft, key):
 		if column.Input.Kind == dto.ColumnInputText {
 			m.editPopup.cursor = clamp(m.editPopup.cursor-1, 0, len(m.editPopup.input))
 			m.editPopup.errorMessage = ""
 		}
 		return m, nil
-	case keyMatches(keyInputMoveRight, key):
+	case primitives.KeyMatches(primitives.KeyInputMoveRight, key):
 		if column.Input.Kind == dto.ColumnInputText {
 			m.editPopup.cursor = clamp(m.editPopup.cursor+1, 0, len(m.editPopup.input))
 			m.editPopup.errorMessage = ""
 		}
 		return m, nil
-	case keyMatches(keyInputBackspace, key):
+	case primitives.KeyMatches(primitives.KeyInputBackspace, key):
 		if column.Input.Kind == dto.ColumnInputText && m.editPopup.input != "" {
 			m.editPopup.input, m.editPopup.cursor = deleteAtCursor(m.editPopup.input, m.editPopup.cursor)
 			m.editPopup.isNull = false
@@ -202,22 +203,22 @@ func (m *Model) handleEditPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keyPopupMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveDown, key):
 		if len(m.confirmPopup.options) > 0 {
 			m.confirmPopup.selected = clamp(m.confirmPopup.selected+1, 0, len(m.confirmPopup.options)-1)
 		}
 		return m, nil
-	case keyMatches(keyPopupMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveUp, key):
 		if len(m.confirmPopup.options) > 0 {
 			m.confirmPopup.selected = clamp(m.confirmPopup.selected-1, 0, len(m.confirmPopup.options)-1)
 		}
 		return m, nil
-	case keyMatches(keyConfirmCancel, key):
+	case primitives.KeyMatches(primitives.KeyConfirmCancel, key):
 		m.closeConfirmPopup()
 		m.pendingTableIndex = -1
 		m.pendingConfigOpen = false
 		return m, nil
-	case keyMatches(keyConfirmAccept, key):
+	case primitives.KeyMatches(primitives.KeyConfirmAccept, key):
 		action := m.confirmPopup.action
 		if len(m.confirmPopup.options) > 0 {
 			action = m.confirmPopup.options[clamp(m.confirmPopup.selected, 0, len(m.confirmPopup.options)-1)].action
@@ -249,25 +250,25 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleRecordDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeRecordDetail()
 		return m, nil
-	case keyMatches(keyPopupMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveDown, key):
 		m.moveRecordDetailScroll(1)
 		return m, nil
-	case keyMatches(keyPopupMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveUp, key):
 		m.moveRecordDetailScroll(-1)
 		return m, nil
-	case keyMatches(keyRuntimePageDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageDown, key):
 		m.moveRecordDetailScroll(m.recordDetailVisibleLines())
 		return m, nil
-	case keyMatches(keyRuntimePageUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageUp, key):
 		m.moveRecordDetailScroll(-m.recordDetailVisibleLines())
 		return m, nil
-	case keyMatches(keyPopupJumpTop, key):
+	case primitives.KeyMatches(primitives.KeyPopupJumpTop, key):
 		m.recordDetail.scrollOffset = 0
 		return m, nil
-	case keyMatches(keyPopupJumpBottom, key):
+	case primitives.KeyMatches(primitives.KeyPopupJumpBottom, key):
 		m.recordDetail.scrollOffset = m.recordDetailMaxOffset()
 		return m, nil
 	default:

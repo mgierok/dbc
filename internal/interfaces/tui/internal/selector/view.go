@@ -1,6 +1,10 @@
 package selector
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+)
 
 func (m *databaseSelectorModel) View() string {
 	width := m.width
@@ -13,25 +17,25 @@ func (m *databaseSelectorModel) View() string {
 	}
 
 	if m.helpPopup.active {
-		return centerBoxLines(m.renderHelpPopup(width, height), width, height)
+		return primitives.CenterBoxLines(m.renderHelpPopup(width, height), width, height)
 	}
 
 	listHeight := m.listHeight(height)
-	return centerBoxLines(m.boxLines(listHeight, width), width, height)
+	return primitives.CenterBoxLines(m.boxLines(listHeight, width), width, height)
 }
 
 func (m *databaseSelectorModel) renderHelpPopup(totalWidth, totalHeight int) []string {
-	return renderStandardizedPopup(totalWidth, totalHeight, standardizedPopupSpec{
-		title:               "Context Help: Config",
-		summary:             runtimeHelpPopupSummaryLine(),
-		rows:                popupTextRows(m.helpPopupContentLines()),
-		scrollOffset:        m.helpPopup.scrollOffset,
-		visibleRows:         m.helpPopupVisibleLines(),
-		showScrollIndicator: true,
-		defaultWidth:        60,
-		minWidth:            20,
-		maxWidth:            70,
-		styles:              m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, totalHeight, primitives.StandardizedPopupSpec{
+		Title:               "Context Help: Config",
+		Summary:             primitives.RuntimeHelpPopupSummaryLine(),
+		Rows:                primitives.PopupTextRows(m.helpPopupContentLines()),
+		ScrollOffset:        m.helpPopup.scrollOffset,
+		VisibleRows:         m.helpPopupVisibleLines(),
+		ShowScrollIndicator: true,
+		DefaultWidth:        60,
+		MinWidth:            20,
+		MaxWidth:            70,
+		Styles:              m.styles,
 	})
 }
 
@@ -43,16 +47,16 @@ func (m *databaseSelectorModel) helpPopupContentLines() []string {
 			escLabel = "Esc exit app"
 		}
 		return []string{
-			selectorFormSwitchLine(),
-			selectorFormSubmitLine(escLabel),
+			primitives.SelectorFormSwitchLine(),
+			primitives.SelectorFormSubmitLine(escLabel),
 		}
 	case selectorModeConfirmDelete:
-		return []string{selectorDeleteConfirmationLine()}
+		return []string{primitives.SelectorDeleteConfirmationLine()}
 	case selectorModeBrowse:
 		if m.requiresFirstEntry {
-			return selectorContextLinesBrowseFirstSetup()
+			return primitives.SelectorContextLinesBrowseFirstSetup()
 		}
-		return selectorContextLinesBrowseDefault()
+		return primitives.SelectorContextLinesBrowseDefault()
 	default:
 		return []string{"No shortcuts available."}
 	}
@@ -78,25 +82,25 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
 	if strings.TrimSpace(configPath) == "" {
 		configPath = "unavailable"
 	}
-	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
-		title:     title,
-		summary:   "Config: " + configPath,
-		rows:      m.mainContentRows(listHeight),
-		footer:    standardizedPopupFooter{right: m.styles.muted(runtimeStatusContextHelpHint())},
-		widthMode: popupWidthContent,
-		styles:    m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+		Title:     title,
+		Summary:   "Config: " + configPath,
+		Rows:      m.mainContentRows(listHeight),
+		Footer:    primitives.StandardizedPopupFooter{Right: m.styles.Muted(primitives.RuntimeStatusContextHelpHint())},
+		WidthMode: primitives.PopupWidthContent,
+		Styles:    m.styles,
 	})
 }
 
 func (m *databaseSelectorModel) optionLines() []string {
 	items := make([]string, len(m.options))
 	for i, option := range m.options {
-		items[i] = option.marker() + " " + option.Name + frameSegmentSeparator + option.ConnString
+		items[i] = option.marker() + " " + option.Name + primitives.FrameSegmentSeparator + option.ConnString
 	}
 	return items
 }
 
-func (m *databaseSelectorModel) mainContentRows(listHeight int) []standardizedPopupRow {
+func (m *databaseSelectorModel) mainContentRows(listHeight int) []primitives.StandardizedPopupRow {
 	switch m.mode {
 	case selectorModeAdd, selectorModeEdit:
 		return m.formContentRows()
@@ -107,29 +111,29 @@ func (m *databaseSelectorModel) mainContentRows(listHeight int) []standardizedPo
 	}
 }
 
-func (m *databaseSelectorModel) browseContentRows(listHeight int) []standardizedPopupRow {
+func (m *databaseSelectorModel) browseContentRows(listHeight int) []primitives.StandardizedPopupRow {
 	items := m.optionLines()
-	rows := make([]standardizedPopupRow, 0, maxInt(1, len(items)))
+	rows := make([]primitives.StandardizedPopupRow, 0, primitives.MaxInt(1, len(items)))
 	if len(items) == 0 {
-		rows = append(rows, standardizedPopupRow{text: "No databases configured."})
+		rows = append(rows, primitives.StandardizedPopupRow{Text: "No databases configured."})
 	} else {
-		start := scrollStart(m.browse.selected, listHeight, len(items))
-		end := minInt(len(items), start+listHeight)
+		start := primitives.ScrollStart(m.browse.selected, listHeight, len(items))
+		end := primitives.MinInt(len(items), start+listHeight)
 		for i := start; i < end; i++ {
-			rows = append(rows, standardizedPopupRow{
-				text:       items[i],
-				selectable: true,
-				selected:   i == m.browse.selected,
+			rows = append(rows, primitives.StandardizedPopupRow{
+				Text:       items[i],
+				Selectable: true,
+				Selected:   i == m.browse.selected,
 			})
 		}
 	}
 	if strings.TrimSpace(m.browse.statusMessage) != "" {
-		rows = append(rows, standardizedPopupRow{text: "Status: " + m.styleStatusMessage()})
+		rows = append(rows, primitives.StandardizedPopupRow{Text: "Status: " + m.styleStatusMessage()})
 	}
 	return rows
 }
 
-func (m *databaseSelectorModel) formContentRows() []standardizedPopupRow {
+func (m *databaseSelectorModel) formContentRows() []primitives.StandardizedPopupRow {
 	if m.mode != selectorModeAdd && m.mode != selectorModeEdit {
 		return nil
 	}
@@ -145,36 +149,36 @@ func (m *databaseSelectorModel) formContentRows() []standardizedPopupRow {
 		pathValue += "|"
 	}
 
-	rows := []standardizedPopupRow{
-		{text: title},
-		{text: ""},
-		{text: selectorFormFieldLine("Name", nameValue), selectable: true, selected: m.form.activeField == selectorInputName},
-		{text: selectorFormFieldLine("Path", pathValue), selectable: true, selected: m.form.activeField == selectorInputPath},
+	rows := []primitives.StandardizedPopupRow{
+		{Text: title},
+		{Text: ""},
+		{Text: selectorFormFieldLine("Name", nameValue), Selectable: true, Selected: m.form.activeField == selectorInputName},
+		{Text: selectorFormFieldLine("Path", pathValue), Selectable: true, Selected: m.form.activeField == selectorInputPath},
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
 		rows = append(rows,
-			standardizedPopupRow{text: ""},
-			standardizedPopupRow{text: m.styles.error("Error: " + m.form.errorMessage)},
+			primitives.StandardizedPopupRow{Text: ""},
+			primitives.StandardizedPopupRow{Text: m.styles.Error("Error: " + m.form.errorMessage)},
 		)
 	}
 	return rows
 }
 
-func (m *databaseSelectorModel) deleteConfirmationContentRows() []standardizedPopupRow {
+func (m *databaseSelectorModel) deleteConfirmationContentRows() []primitives.StandardizedPopupRow {
 	if m.mode != selectorModeConfirmDelete {
 		return nil
 	}
 	if m.confirmDelete.optionIndex < 0 || m.confirmDelete.optionIndex >= len(m.options) {
-		return popupTextRows([]string{
+		return primitives.PopupTextRows([]string{
 			"Cannot delete: invalid selection.",
 			"Press Esc to return.",
 		})
 	}
 	selected := m.options[m.confirmDelete.optionIndex]
-	return popupTextRows([]string{
+	return primitives.PopupTextRows([]string{
 		"Delete database entry?",
 		"",
-		selected.Name + frameSegmentSeparator + selected.ConnString,
+		selected.Name + primitives.FrameSegmentSeparator + selected.ConnString,
 	})
 }
 
@@ -186,15 +190,15 @@ func (m *databaseSelectorModel) formLines() []string {
 	if m.mode == selectorModeEdit {
 		title = "Edit database"
 	}
-	namePrefix := selectionUnselectedPrefix()
-	pathPrefix := selectionUnselectedPrefix()
+	namePrefix := primitives.SelectionUnselectedPrefix()
+	pathPrefix := primitives.SelectionUnselectedPrefix()
 	nameValue := m.form.nameValue
 	pathValue := m.form.pathValue
 	if m.form.activeField == selectorInputName {
-		namePrefix = selectionSelectedPrefix()
+		namePrefix = primitives.SelectionSelectedPrefix()
 		nameValue += "|"
 	} else {
-		pathPrefix = selectionSelectedPrefix()
+		pathPrefix = primitives.SelectionSelectedPrefix()
 		pathValue += "|"
 	}
 
@@ -209,11 +213,11 @@ func (m *databaseSelectorModel) formLines() []string {
 		selectorFormFieldLineWithPrefix(namePrefix, "Name", nameValue),
 		selectorFormFieldLineWithPrefix(pathPrefix, "Path", pathValue),
 		"",
-		selectorFormSwitchLine(),
-		selectorFormSubmitLine(escLabel),
+		primitives.SelectorFormSwitchLine(),
+		primitives.SelectorFormSubmitLine(escLabel),
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
-		lines = append(lines, m.styles.error("Error: "+m.form.errorMessage))
+		lines = append(lines, m.styles.Error("Error: "+m.form.errorMessage))
 	}
 	return lines
 }
@@ -227,8 +231,8 @@ func selectorFormFieldLine(label, value string) string {
 }
 
 func (m *databaseSelectorModel) styleStatusMessage() string {
-	if isErrorLikeMessage(m.browse.statusMessage) {
-		return m.styles.error(m.browse.statusMessage)
+	if primitives.IsErrorLikeMessage(m.browse.statusMessage) {
+		return m.styles.Error(m.browse.statusMessage)
 	}
 	return m.browse.statusMessage
 }

@@ -1,16 +1,20 @@
 package selector
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+)
 
 func (m *databaseSelectorModel) handleDeleteConfirmationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keySelectorDeleteCancel, key):
+	case primitives.KeyMatches(primitives.KeySelectorDeleteCancel, key):
 		m.mode = selectorModeBrowse
 		m.confirmDelete = selectorDeleteConfirm{}
 		m.browse.statusMessage = "Delete canceled"
 		return m, nil
-	case keyMatches(keySelectorDeleteConfirm, key):
+	case primitives.KeyMatches(primitives.KeySelectorDeleteConfirm, key):
 		optionIndex := m.confirmDelete.optionIndex
 		managerIndex := m.confirmDelete.managerIndex
 		if optionIndex < 0 || optionIndex >= len(m.options) || managerIndex < 0 {

@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 	// Arrange
 	model := &Model{
-		styles:   renderStyles{enabled: true},
+		styles:   primitives.NewRenderStyles(true),
 		viewMode: ViewRecords,
 		schema: dto.Schema{
 			Columns: []dto.SchemaColumn{
@@ -35,10 +36,10 @@ func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 		t.Fatalf("expected header row, got %v", lines)
 	}
 	header := lines[1]
-	if !strings.Contains(header, "name "+iconSortAsc) {
+	if !strings.Contains(header, "name "+primitives.IconSortAsc) {
 		t.Fatalf("expected asc sort indicator in header, got %q", header)
 	}
-	if strings.Contains(header, "id "+iconSortAsc) || strings.Contains(header, "id "+iconSortDesc) {
+	if strings.Contains(header, "id "+primitives.IconSortAsc) || strings.Contains(header, "id "+primitives.IconSortDesc) {
 		t.Fatalf("expected indicator only on sorted column, got %q", header)
 	}
 }
@@ -70,7 +71,7 @@ func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 		t.Fatalf("expected header row, got %v", lines)
 	}
 	header := lines[1]
-	if !strings.Contains(header, "name "+iconSortDesc) {
+	if !strings.Contains(header, "name "+primitives.IconSortDesc) {
 		t.Fatalf("expected desc sort indicator in header, got %q", header)
 	}
 }
@@ -103,28 +104,28 @@ func TestBoxWidthForRecordHeaderColumn_UsesFullColumnWidth(t *testing.T) {
 
 func TestFormatRecordsHeaderRows_UsesFullWidthBoxWithCenteredLabel(t *testing.T) {
 	// Arrange
-	label := "name " + iconSortAsc
+	label := "name " + primitives.IconSortAsc
 
 	// Act
-	rows := formatRecordsHeaderRows([]string{label}, []int{20}, renderStyles{})
+	rows := formatRecordsHeaderRows([]string{label}, []int{20}, primitives.NewRenderStyles(false))
 
 	// Assert
 	if len(rows) != 3 {
 		t.Fatalf("expected 3 header rows, got %d", len(rows))
 	}
 	for _, row := range rows {
-		if textWidth(row) != 20 {
-			t.Fatalf("expected header row width 20, got %d for row %q", textWidth(row), row)
+		if primitives.TextWidth(row) != 20 {
+			t.Fatalf("expected header row width 20, got %d for row %q", primitives.TextWidth(row), row)
 		}
 	}
 
-	if !strings.Contains(rows[0], frameTopLeft) || !strings.Contains(rows[0], frameTopRight) {
+	if !strings.Contains(rows[0], primitives.FrameTopLeft) || !strings.Contains(rows[0], primitives.FrameTopRight) {
 		t.Fatalf("expected framed top row, got %q", rows[0])
 	}
-	if !strings.Contains(rows[1], frameVertical) || !strings.Contains(rows[1], label) {
+	if !strings.Contains(rows[1], primitives.FrameVertical) || !strings.Contains(rows[1], label) {
 		t.Fatalf("expected framed middle row with label %q, got %q", label, rows[1])
 	}
-	if !strings.Contains(rows[2], frameBottomLeft) || !strings.Contains(rows[2], frameBottomRight) {
+	if !strings.Contains(rows[2], primitives.FrameBottomLeft) || !strings.Contains(rows[2], primitives.FrameBottomRight) {
 		t.Fatalf("expected framed bottom row, got %q", rows[2])
 	}
 }
@@ -151,13 +152,13 @@ func TestRenderRecords_RendersThreeLineFrameHeader(t *testing.T) {
 	if len(lines) < 3 {
 		t.Fatalf("expected 3-line header, got %v", lines)
 	}
-	if !strings.Contains(lines[0], frameTopLeft) || !strings.Contains(lines[0], frameTopRight) {
+	if !strings.Contains(lines[0], primitives.FrameTopLeft) || !strings.Contains(lines[0], primitives.FrameTopRight) {
 		t.Fatalf("expected top header frame row, got %q", lines[0])
 	}
-	if !strings.Contains(lines[1], frameVertical) {
+	if !strings.Contains(lines[1], primitives.FrameVertical) {
 		t.Fatalf("expected middle header frame row, got %q", lines[1])
 	}
-	if !strings.Contains(lines[2], frameBottomLeft) || !strings.Contains(lines[2], frameBottomRight) {
+	if !strings.Contains(lines[2], primitives.FrameBottomLeft) || !strings.Contains(lines[2], primitives.FrameBottomRight) {
 		t.Fatalf("expected bottom header frame row, got %q", lines[2])
 	}
 }
@@ -186,7 +187,7 @@ func TestFormatRecordsHeaderRows_UsesDoubleSpaceSeparatorBetweenColumns(t *testi
 	widths := []int{6, 6}
 
 	// Act
-	rows := formatRecordsHeaderRows(values, widths, renderStyles{})
+	rows := formatRecordsHeaderRows(values, widths, primitives.NewRenderStyles(false))
 
 	// Assert
 	if len(rows) != 3 {
@@ -237,10 +238,10 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 	content := strings.Join(model.renderRecords(80, 8), "\n")
 
 	// Assert
-	if !strings.Contains(content, iconInsert+" ") {
+	if !strings.Contains(content, primitives.IconInsert+" ") {
 		t.Fatalf("expected insert icon row prefix, got %q", content)
 	}
-	if !strings.Contains(content, iconDelete+" ") {
+	if !strings.Contains(content, primitives.IconDelete+" ") {
 		t.Fatalf("expected delete icon row prefix, got %q", content)
 	}
 }
@@ -276,10 +277,10 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	content := strings.Join(model.renderRecords(80, 6), "\n")
 
 	// Assert
-	if !strings.Contains(content, iconSelection+" "+iconEdit+" ") {
+	if !strings.Contains(content, primitives.IconSelection+" "+primitives.IconEdit+" ") {
 		t.Fatalf("expected edited row icon marker in row prefix, got %q", content)
 	}
-	if strings.Contains(content, "alice2"+iconEdit) {
+	if strings.Contains(content, "alice2"+primitives.IconEdit) {
 		t.Fatalf("expected no edited icon marker inside cell value, got %q", content)
 	}
 }
@@ -346,7 +347,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 		if colStartByteIndex < 0 {
 			t.Fatalf("expected second column token %q in row line, got %q", secondColumnTokens[i], line)
 		}
-		colStartDisplayWidth := textWidth(line[:colStartByteIndex])
+		colStartDisplayWidth := primitives.TextWidth(line[:colStartByteIndex])
 		secondColumnStarts = append(secondColumnStarts, colStartDisplayWidth)
 	}
 	for i := 1; i < len(secondColumnStarts); i++ {
@@ -364,7 +365,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	// Arrange
 	longValue := "abcdefghijklmnopqrstuvwxyz0123456789"
 	model := &Model{
-		styles:   renderStyles{enabled: true},
+		styles:   primitives.NewRenderStyles(true),
 		viewMode: ViewRecords,
 		focus:    FocusContent,
 		recordDetail: recordDetailState{
@@ -386,7 +387,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	content := strings.Join(lines, "\n")
 
 	// Assert
-	if !strings.Contains(content, iconInfo+" Persisted record") {
+	if !strings.Contains(content, primitives.IconInfo+" Persisted record") {
 		t.Fatalf("expected information marker in detail layout, got %q", content)
 	}
 	if strings.Contains(content, "[ROW]") {
@@ -410,7 +411,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	t.Run("persisted row", func(t *testing.T) {
 		// Arrange
 		model := &Model{
-			styles: renderStyles{enabled: true},
+			styles: primitives.NewRenderStyles(true),
 			schema: dto.Schema{
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},
@@ -425,7 +426,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+" Persisted record") {
+		if !strings.Contains(lines[0], primitives.IconInfo+" Persisted record") {
 			t.Fatalf("expected persisted information marker, got %q", lines[0])
 		}
 	})
@@ -449,7 +450,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+" Pending insert") {
+		if !strings.Contains(lines[0], primitives.IconInfo+" Pending insert") {
 			t.Fatalf("expected pending insert information marker, got %q", lines[0])
 		}
 	})
@@ -478,7 +479,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+" Marked for delete") {
+		if !strings.Contains(lines[0], primitives.IconInfo+" Marked for delete") {
 			t.Fatalf("expected delete information marker, got %q", lines[0])
 		}
 	})
@@ -486,7 +487,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	t.Run("edited persisted row", func(t *testing.T) {
 		// Arrange
 		model := &Model{
-			styles: renderStyles{enabled: true},
+			styles: primitives.NewRenderStyles(true),
 			schema: dto.Schema{
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},
@@ -513,14 +514,14 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		lines := model.recordDetailContentLines(40)
 
 		// Assert
-		if !strings.Contains(lines[0], iconInfo+" Edited record") {
+		if !strings.Contains(lines[0], primitives.IconInfo+" Edited record") {
 			t.Fatalf("expected edited information marker, got %q", lines[0])
 		}
 		content := strings.Join(lines, "\n")
-		if !strings.Contains(content, "\x1b[1mname\x1b[0m (TEXT) "+iconEdit) {
+		if !strings.Contains(content, "\x1b[1mname\x1b[0m (TEXT) "+primitives.IconEdit) {
 			t.Fatalf("expected edit icon on modified field header in detail content, got %q", content)
 		}
-		if strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER) "+iconEdit) {
+		if strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER) "+primitives.IconEdit) {
 			t.Fatalf("expected no edit icon on unmodified field header in detail content, got %q", content)
 		}
 	})

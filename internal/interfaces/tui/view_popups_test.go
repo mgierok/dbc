@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
@@ -81,7 +82,7 @@ func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 	popup := stripANSI(strings.Join(model.renderEditPopup(60), "\n"))
 
 	// Assert
-	if !strings.Contains(popup, "name (TEXT)"+frameSegmentSeparator+"NULLABLE") {
+	if !strings.Contains(popup, "name (TEXT)"+primitives.FrameSegmentSeparator+"NULLABLE") {
 		t.Fatalf("expected combined summary row for column metadata, got %q", popup)
 	}
 }
@@ -129,22 +130,22 @@ func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
 		t.Fatalf("expected help popup to include framed header and content, got %q", strings.Join(lines, "\n"))
 	}
 
-	if !strings.HasPrefix(stripANSI(lines[0]), frameTopLeft+"Context Help: Tables") {
+	if !strings.HasPrefix(stripANSI(lines[0]), primitives.FrameTopLeft+"Context Help: Tables") {
 		t.Fatalf("expected context-specific help title in top border, got %q", stripANSI(lines[0]))
 	}
 
 	summaryLine := stripANSI(lines[1])
-	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(summaryLine, frameVertical), frameVertical))
+	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(summaryLine, primitives.FrameVertical), primitives.FrameVertical))
 	if summary != "Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes." {
 		t.Fatalf("expected config-style summary row below title, got %q", summary)
 	}
 
 	separator := strings.TrimSpace(stripANSI(lines[2]))
-	if !strings.HasPrefix(separator, frameJoinLeft) || !strings.HasSuffix(separator, frameJoinRight) {
+	if !strings.HasPrefix(separator, primitives.FrameJoinLeft) || !strings.HasSuffix(separator, primitives.FrameJoinRight) {
 		t.Fatalf("expected separator row with border joins, got %q", separator)
 	}
-	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, frameJoinLeft), frameJoinRight)
-	if separatorInner == "" || strings.Trim(separatorInner, frameHorizontal) != "" {
+	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, primitives.FrameJoinLeft), primitives.FrameJoinRight)
+	if separatorInner == "" || strings.Trim(separatorInner, primitives.FrameHorizontal) != "" {
 		t.Fatalf("expected separator row after summary, got %q", separator)
 	}
 }
@@ -206,19 +207,19 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	view := stripANSI(model.View())
 
 	// Assert
-	if strings.Contains(view, iconSelection+" Tables") || strings.Contains(view, iconSelection+" Schema") || strings.Contains(view, iconSelection+" Records") {
+	if strings.Contains(view, primitives.IconSelection+" Tables") || strings.Contains(view, primitives.IconSelection+" Schema") || strings.Contains(view, primitives.IconSelection+" Records") {
 		t.Fatalf("expected help modal view without background panels, got %q", view)
 	}
-	if !strings.Contains(view, frameTopLeft+"Context Help: Tables") {
+	if !strings.Contains(view, primitives.FrameTopLeft+"Context Help: Tables") {
 		t.Fatalf("expected help modal frame in view, got %q", view)
 	}
 
 	lines := strings.Split(view, "\n")
 	helpLine := -1
 	for i, line := range lines {
-		if strings.Contains(line, frameTopLeft+"Context Help: Tables") {
+		if strings.Contains(line, primitives.FrameTopLeft+"Context Help: Tables") {
 			helpLine = i
-			if strings.Index(line, frameTopLeft+"Context Help: Tables") == 0 {
+			if strings.Index(line, primitives.FrameTopLeft+"Context Help: Tables") == 0 {
 				t.Fatalf("expected centered modal line with left padding, got %q", line)
 			}
 			break
@@ -249,15 +250,15 @@ func TestView_FilterPopupRendersAsCenteredModal(t *testing.T) {
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
 		t.Fatalf("expected filter popup modal view without background panels, got %q", view)
 	}
-	if !strings.Contains(view, frameTopLeft+"Filter") {
+	if !strings.Contains(view, primitives.FrameTopLeft+"Filter") {
 		t.Fatalf("expected filter popup frame in view, got %q", view)
 	}
 	lines := strings.Split(view, "\n")
 	filterLine := -1
 	for i, line := range lines {
-		if strings.Contains(line, frameTopLeft+"Filter") {
+		if strings.Contains(line, primitives.FrameTopLeft+"Filter") {
 			filterLine = i
-			if strings.Index(line, frameTopLeft+"Filter") == 0 {
+			if strings.Index(line, primitives.FrameTopLeft+"Filter") == 0 {
 				t.Fatalf("expected centered filter popup line with left padding, got %q", line)
 			}
 			break
@@ -297,15 +298,15 @@ func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
 		t.Fatalf("expected edit popup modal view without background panels, got %q", view)
 	}
-	if !strings.Contains(view, frameTopLeft+"Edit Cell") {
+	if !strings.Contains(view, primitives.FrameTopLeft+"Edit Cell") {
 		t.Fatalf("expected edit popup frame in view, got %q", view)
 	}
 	lines := strings.Split(view, "\n")
 	editLine := -1
 	for i, line := range lines {
-		if strings.Contains(line, frameTopLeft+"Edit Cell") {
+		if strings.Contains(line, primitives.FrameTopLeft+"Edit Cell") {
 			editLine = i
-			if strings.Index(line, frameTopLeft+"Edit Cell") == 0 {
+			if strings.Index(line, primitives.FrameTopLeft+"Edit Cell") == 0 {
 				t.Fatalf("expected centered edit popup line with left padding, got %q", line)
 			}
 			break
@@ -334,7 +335,7 @@ func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 	view := stripANSI(model.View())
 
 	// Assert
-	if !strings.Contains(view, frameTopLeft+"Config") {
+	if !strings.Contains(view, primitives.FrameTopLeft+"Config") {
 		t.Fatalf("expected dirty :config modal title, got %q", view)
 	}
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
@@ -344,9 +345,9 @@ func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 	lines := strings.Split(view, "\n")
 	configLine := -1
 	for i, line := range lines {
-		if strings.Contains(line, frameTopLeft+"Config") {
+		if strings.Contains(line, primitives.FrameTopLeft+"Config") {
 			configLine = i
-			if strings.Index(line, frameTopLeft+"Config") == 0 {
+			if strings.Index(line, primitives.FrameTopLeft+"Config") == 0 {
 				t.Fatalf("expected centered config modal line with left padding, got %q", line)
 			}
 			break
@@ -382,7 +383,7 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 	if len(lines) < 6 {
 		t.Fatalf("expected modal config popup with framed header and options, got %q", popup)
 	}
-	if !strings.HasPrefix(stripANSI(lines[0]), frameTopLeft+"Config") {
+	if !strings.HasPrefix(stripANSI(lines[0]), primitives.FrameTopLeft+"Config") {
 		t.Fatalf("expected config title in top border, got %q", stripANSI(lines[0]))
 	}
 	if !strings.Contains(popup, "Unsaved changes detected.") {
@@ -390,14 +391,14 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 	}
 
 	separator := strings.TrimSpace(lines[2])
-	if !strings.HasPrefix(separator, frameJoinLeft) || !strings.HasSuffix(separator, frameJoinRight) {
+	if !strings.HasPrefix(separator, primitives.FrameJoinLeft) || !strings.HasSuffix(separator, primitives.FrameJoinRight) {
 		t.Fatalf("expected separator row with border joins, got %q", separator)
 	}
-	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, frameJoinLeft), frameJoinRight)
-	if separatorInner == "" || strings.Trim(separatorInner, frameHorizontal) != "" {
+	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, primitives.FrameJoinLeft), primitives.FrameJoinRight)
+	if separatorInner == "" || strings.Trim(separatorInner, primitives.FrameHorizontal) != "" {
 		t.Fatalf("expected separator row after summary, got %q", separator)
 	}
-	if !strings.Contains(popup, iconSelection+" Save and open config") {
+	if !strings.Contains(popup, primitives.IconSelection+" Save and open config") {
 		t.Fatalf("expected selected option marker in popup, got %q", popup)
 	}
 }
@@ -423,13 +424,13 @@ func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitA
 	popup := strings.Join(lines, "\n")
 
 	// Assert
-	if !strings.Contains(popup, frameTopLeft+"Switch Table") {
+	if !strings.Contains(popup, primitives.FrameTopLeft+"Switch Table") {
 		t.Fatalf("expected switch-table title in popup, got %q", popup)
 	}
 	if !strings.Contains(popup, "Switching tables will cause loss of unsaved data") {
 		t.Fatalf("expected informational switch-table summary in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, iconSelection+" (y) Yes, discard changes and switch table") {
+	if !strings.Contains(popup, primitives.IconSelection+" (y) Yes, discard changes and switch table") {
 		t.Fatalf("expected explicit yes action in popup, got %q", popup)
 	}
 	if !strings.Contains(popup, "(n) No, continue editing") {
@@ -456,15 +457,15 @@ func TestView_RegularConfirmPopupRendersAsCenteredModal(t *testing.T) {
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
 		t.Fatalf("expected non-modal confirm as centered popup without background panels, got %q", view)
 	}
-	if !strings.Contains(view, frameTopLeft+"Confirm") {
+	if !strings.Contains(view, primitives.FrameTopLeft+"Confirm") {
 		t.Fatalf("expected confirm popup frame, got %q", view)
 	}
 	lines := strings.Split(view, "\n")
 	confirmLine := -1
 	for i, line := range lines {
-		if strings.Contains(line, frameTopLeft+"Confirm") {
+		if strings.Contains(line, primitives.FrameTopLeft+"Confirm") {
 			confirmLine = i
-			if strings.Index(line, frameTopLeft+"Confirm") == 0 {
+			if strings.Index(line, primitives.FrameTopLeft+"Confirm") == 0 {
 				t.Fatalf("expected centered confirm popup line with left padding, got %q", line)
 			}
 			break
@@ -494,11 +495,11 @@ func TestRenderConfirmPopup_InlineUsesStandardizedSeparatorRow(t *testing.T) {
 	}
 
 	separator := strings.TrimSpace(lines[2])
-	if !strings.HasPrefix(separator, frameJoinLeft) || !strings.HasSuffix(separator, frameJoinRight) {
+	if !strings.HasPrefix(separator, primitives.FrameJoinLeft) || !strings.HasSuffix(separator, primitives.FrameJoinRight) {
 		t.Fatalf("expected separator row with border joins, got %q", separator)
 	}
-	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, frameJoinLeft), frameJoinRight)
-	if separatorInner == "" || strings.Trim(separatorInner, frameHorizontal) != "" {
+	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, primitives.FrameJoinLeft), primitives.FrameJoinRight)
+	if separatorInner == "" || strings.Trim(separatorInner, primitives.FrameHorizontal) != "" {
 		t.Fatalf("expected separator row after summary, got %q", separator)
 	}
 }

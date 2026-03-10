@@ -5,19 +5,20 @@ import (
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) renderSchema(width, height int) []string {
 	if len(m.schema.Columns) == 0 {
-		return padLines([]string{padRight("No schema loaded.", width)}, height, width)
+		return primitives.PadLines([]string{primitives.PadRight("No schema loaded.", width)}, height, width)
 	}
 
 	items := make([]string, len(m.schema.Columns))
 	for i, column := range m.schema.Columns {
 		items[i] = fmt.Sprintf("%s : %s", column.Name, column.Type)
 	}
-	lines := renderList(items, m.schemaIndex, height, width, m.focus == FocusContent && m.viewMode == ViewSchema, m.styles)
-	return padLines(lines, height, width)
+	lines := primitives.RenderList(items, m.schemaIndex, height, width, m.focus == FocusContent && m.viewMode == ViewSchema, m.styles)
+	return primitives.PadLines(lines, height, width)
 }
 
 func (m *Model) renderRecords(width, height int) []string {
@@ -25,8 +26,8 @@ func (m *Model) renderRecords(width, height int) []string {
 
 	columns := m.schemaColumnsForRecordsHeader()
 	if len(columns) == 0 {
-		lines = append(lines, padRight("No columns loaded.", width))
-		return padLines(lines, height, width)
+		lines = append(lines, primitives.PadRight("No columns loaded.", width))
+		return primitives.PadLines(lines, height, width)
 	}
 
 	const (
@@ -42,26 +43,26 @@ func (m *Model) renderRecords(width, height int) []string {
 	headerPrefix := strings.Repeat(" ", recordSelectionPrefixWidth+recordMarkerSlotWidth)
 	headerRows := formatRecordsHeaderRows(columns, columnWidths, m.styles)
 	for _, headerRow := range headerRows {
-		lines = append(lines, padRight(headerPrefix+headerRow, width))
+		lines = append(lines, primitives.PadRight(headerPrefix+headerRow, width))
 	}
 
 	listHeight := height - len(headerRows)
 	if listHeight < 1 {
-		return padLines(lines, height, width)
+		return primitives.PadLines(lines, height, width)
 	}
 
 	if m.totalRecordRows() == 0 {
-		lines = append(lines, padRight("No records.", width))
-		return padLines(lines, height, width)
+		lines = append(lines, primitives.PadRight("No records.", width))
+		return primitives.PadLines(lines, height, width)
 	}
 
 	totalRows := m.totalRecordRows()
-	start := scrollStart(m.recordSelection, listHeight, totalRows)
-	end := minInt(totalRows, start+listHeight)
+	start := primitives.ScrollStart(m.recordSelection, listHeight, totalRows)
+	end := primitives.MinInt(totalRows, start+listHeight)
 	for i := start; i < end; i++ {
-		prefix := selectionUnselectedPrefix()
+		prefix := primitives.SelectionUnselectedPrefix()
 		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
-			prefix = selectionSelectedPrefix()
+			prefix = primitives.SelectionSelectedPrefix()
 		}
 		displayValues := make([]string, len(columns))
 		if insertIndex, isInsert := m.pendingInsertIndex(i); isInsert {
@@ -85,24 +86,24 @@ func (m *Model) renderRecords(width, height int) []string {
 		}
 		row := formatRecordRow(displayValues, columnWidths, focusColumn)
 		rowMarker := m.recordRowMarker(i)
-		line := padRight(prefix+rowMarker+" "+row, width)
+		line := primitives.PadRight(prefix+rowMarker+" "+row, width)
 		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
-			line = m.styles.selected(line)
+			line = m.styles.Selected(line)
 		}
 		lines = append(lines, line)
 	}
-	return padLines(lines, height, width)
+	return primitives.PadLines(lines, height, width)
 }
 
 func (m *Model) recordRowMarker(rowIndex int) string {
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		return iconInsert
+		return primitives.IconInsert
 	}
 	if m.isRowMarkedDelete(rowIndex) {
-		return iconDelete
+		return primitives.IconDelete
 	}
 	if m.isRowEdited(rowIndex) {
-		return iconEdit
+		return primitives.IconEdit
 	}
 	return " "
 }
@@ -112,8 +113,8 @@ func (m *Model) renderRecordDetail(width, height int) []string {
 
 	contentLines := m.recordDetailContentLines(width)
 	if len(contentLines) == 0 {
-		lines = append(lines, padRight("No detail available.", width))
-		return padLines(lines, height, width)
+		lines = append(lines, primitives.PadRight("No detail available.", width))
+		return primitives.PadLines(lines, height, width)
 	}
 
 	maxOffset := len(contentLines) - height
@@ -121,13 +122,13 @@ func (m *Model) renderRecordDetail(width, height int) []string {
 		maxOffset = 0
 	}
 	offset := clamp(m.recordDetail.scrollOffset, 0, maxOffset)
-	end := minInt(len(contentLines), offset+height)
+	end := primitives.MinInt(len(contentLines), offset+height)
 
 	for i := offset; i < end; i++ {
-		lines = append(lines, padRight(contentLines[i], width))
+		lines = append(lines, primitives.PadRight(contentLines[i], width))
 	}
 
-	return padLines(lines, height, width)
+	return primitives.PadLines(lines, height, width)
 }
 
 func (m *Model) recordDetailContentLines(width int) []string {
@@ -140,15 +141,15 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
 	lines := make([]string, 0, len(m.schema.Columns)*4)
-	rowLine := iconInfo + " Persisted record"
+	rowLine := primitives.IconInfo + " Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		rowLine = iconInfo + " Pending insert"
+		rowLine = primitives.IconInfo + " Pending insert"
 	} else if m.isRowMarkedDelete(rowIndex) {
-		rowLine = iconInfo + " Marked for delete"
+		rowLine = primitives.IconInfo + " Marked for delete"
 	} else if m.isRowEdited(rowIndex) {
-		rowLine = iconInfo + " Edited record"
+		rowLine = primitives.IconInfo + " Edited record"
 	}
-	lines = append(lines, wrapTextToWidth(m.styles.summary(rowLine), width)...)
+	lines = append(lines, primitives.WrapTextToWidth(m.styles.Summary(rowLine), width)...)
 	lines = append(lines, "")
 
 	valueWidth := width - 2
@@ -158,13 +159,13 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	for columnIndex, column := range m.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
-		header := fmt.Sprintf("%s (%s)", m.styles.title(column.Name), column.Type)
+		header := fmt.Sprintf("%s (%s)", m.styles.Title(column.Name), column.Type)
 		if edited {
-			header += " " + iconEdit
+			header += " " + primitives.IconEdit
 		}
-		lines = append(lines, wrapTextToWidth(header, width)...)
+		lines = append(lines, primitives.WrapTextToWidth(header, width)...)
 
-		for _, wrappedLine := range wrapTextToWidth(value, valueWidth) {
+		for _, wrappedLine := range primitives.WrapTextToWidth(value, valueWidth) {
 			lines = append(lines, "  "+wrappedLine)
 		}
 		if columnIndex < len(m.schema.Columns)-1 {
@@ -213,9 +214,9 @@ func (m *Model) schemaColumnsForRecordsHeader() []string {
 		if m.currentSort != nil && column.Name == m.currentSort.Column {
 			switch m.currentSort.Direction {
 			case dto.SortDirectionAsc:
-				label += " " + iconSortAsc
+				label += " " + primitives.IconSortAsc
 			case dto.SortDirectionDesc:
-				label += " " + iconSortDesc
+				label += " " + primitives.IconSortDesc
 			}
 		}
 		columns[i] = label
@@ -227,7 +228,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	if columns <= 0 {
 		return nil
 	}
-	separatorWidth := (columns - 1) * textWidth(recordsColumnSeparator)
+	separatorWidth := (columns - 1) * primitives.TextWidth(recordsColumnSeparator)
 	available := totalWidth - separatorWidth
 	if available < columns {
 		available = columns
@@ -244,7 +245,7 @@ func allocateColumnWidths(totalWidth, columns int) []int {
 	return widths
 }
 
-func formatRecordsHeaderRows(values []string, widths []int, styles renderStyles) []string {
+func formatRecordsHeaderRows(values []string, widths []int, styles primitives.RenderStyles) []string {
 	if len(widths) == 0 {
 		return nil
 	}
@@ -257,7 +258,7 @@ func formatRecordsHeaderRows(values []string, widths []int, styles renderStyles)
 		if i < len(values) {
 			value = values[i]
 		}
-		value = styles.title(value)
+		value = styles.Title(value)
 		top, middle, bottom := formatRecordsHeaderCell(value, width)
 		topParts[i] = top
 		middleParts[i] = middle
@@ -281,13 +282,13 @@ func formatRecordsHeaderCell(value string, columnWidth int) (string, string, str
 	rightPadding := columnWidth - boxWidth - leftPadding
 
 	top := strings.Repeat(" ", leftPadding) +
-		renderFrameEdge(boxWidth, frameTopLeft, frameHorizontal, frameTopRight) +
+		primitives.RenderFrameEdge(boxWidth, primitives.FrameTopLeft, primitives.FrameHorizontal, primitives.FrameTopRight) +
 		strings.Repeat(" ", rightPadding)
 	middle := strings.Repeat(" ", leftPadding) +
-		renderFrameContent(value, boxWidth) +
+		primitives.RenderFrameContent(value, boxWidth) +
 		strings.Repeat(" ", rightPadding)
 	bottom := strings.Repeat(" ", leftPadding) +
-		renderFrameEdge(boxWidth, frameBottomLeft, frameHorizontal, frameBottomRight) +
+		primitives.RenderFrameEdge(boxWidth, primitives.FrameBottomLeft, primitives.FrameHorizontal, primitives.FrameBottomRight) +
 		strings.Repeat(" ", rightPadding)
 
 	return top, middle, bottom
@@ -316,12 +317,12 @@ func formatRecordRow(values []string, widths []int, focusColumn int) string {
 func formatRecordCell(value string, width int, focused bool) string {
 	if focused {
 		if width <= 1 {
-			return padRight(">", width)
+			return primitives.PadRight(">", width)
 		}
 		innerWidth := width - 2
-		value = truncate(value, innerWidth)
-		value = padRight(value, innerWidth)
+		value = primitives.Truncate(value, innerWidth)
+		value = primitives.PadRight(value, innerWidth)
 		return "[" + value + "]"
 	}
-	return padRight(value, width)
+	return primitives.PadRight(value, width)
 }

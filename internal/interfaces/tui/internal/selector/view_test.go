@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
@@ -27,10 +28,10 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 	lines := stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, iconSelection+" Name: |") {
+	if !strings.Contains(lines, primitives.IconSelection+" Name: |") {
 		t.Fatalf("expected caret in active name field, got %q", lines)
 	}
-	if strings.Contains(lines, iconSelection+" Path: |") {
+	if strings.Contains(lines, primitives.IconSelection+" Path: |") {
 		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
 	}
 
@@ -39,7 +40,7 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 	lines = stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, iconSelection+" Path: |") {
+	if !strings.Contains(lines, primitives.IconSelection+" Path: |") {
 		t.Fatalf("expected caret in active path field after tab, got %q", lines)
 	}
 }
@@ -61,10 +62,10 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 	lines := stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, iconSelection+" Name: local|") {
+	if !strings.Contains(lines, primitives.IconSelection+" Name: local|") {
 		t.Fatalf("expected caret in active edit name field, got %q", lines)
 	}
-	if strings.Contains(lines, iconSelection+" Path: /tmp/local.sqlite|") {
+	if strings.Contains(lines, primitives.IconSelection+" Path: /tmp/local.sqlite|") {
 		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
 	}
 
@@ -73,7 +74,7 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 	lines = stripANSI(strings.Join(model.formLines(), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, iconSelection+" Path: /tmp/local.sqlite|") {
+	if !strings.Contains(lines, primitives.IconSelection+" Path: /tmp/local.sqlite|") {
 		t.Fatalf("expected caret in active edit path field after tab, got %q", lines)
 	}
 }
@@ -116,10 +117,10 @@ func TestDatabaseSelector_ForcedSetupFormHidesShortcutLegendFromMainContent(t *t
 	view := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
 
 	// Assert
-	if strings.Contains(view, selectorFormSubmitLine("Esc exit app")) {
+	if strings.Contains(view, primitives.SelectorFormSubmitLine("Esc exit app")) {
 		t.Fatalf("expected forced setup form to hide shortcut line from main content, got %q", view)
 	}
-	if strings.Contains(view, selectorFormSwitchLine()) {
+	if strings.Contains(view, primitives.SelectorFormSwitchLine()) {
 		t.Fatalf("expected forced setup form to hide switch shortcut line from main content, got %q", view)
 	}
 }
@@ -148,10 +149,10 @@ func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
 	lines := strings.Join(model.optionLines(), "\n")
 
 	// Assert
-	if !strings.Contains(lines, iconConfigSource+" local"+frameSegmentSeparator+"/tmp/local.sqlite") {
+	if !strings.Contains(lines, primitives.IconConfigSource+" local"+primitives.FrameSegmentSeparator+"/tmp/local.sqlite") {
 		t.Fatalf("expected config marker in option lines, got %q", lines)
 	}
-	if !strings.Contains(lines, iconCLISource+" /tmp/direct.sqlite"+frameSegmentSeparator+"/tmp/direct.sqlite") {
+	if !strings.Contains(lines, primitives.IconCLISource+" /tmp/direct.sqlite"+primitives.FrameSegmentSeparator+"/tmp/direct.sqlite") {
 		t.Fatalf("expected CLI marker in option lines, got %q", lines)
 	}
 }
@@ -190,40 +191,40 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 		if trimmed == "" {
 			continue
 		}
-		if !strings.HasPrefix(trimmed, frameTopLeft) &&
-			!strings.HasPrefix(trimmed, frameVertical) &&
-			!strings.HasPrefix(trimmed, frameJoinLeft) &&
-			!strings.HasPrefix(trimmed, frameBottomLeft) {
+		if !strings.HasPrefix(trimmed, primitives.FrameTopLeft) &&
+			!strings.HasPrefix(trimmed, primitives.FrameVertical) &&
+			!strings.HasPrefix(trimmed, primitives.FrameJoinLeft) &&
+			!strings.HasPrefix(trimmed, primitives.FrameBottomLeft) {
 			continue
 		}
 		framed := strings.TrimRight(trimmed, " ")
-		lineWidth := textWidth(framed)
+		lineWidth := primitives.TextWidth(framed)
 		if !hasFramedLine {
 			framedWidth = lineWidth
 			hasFramedLine = true
 		} else if lineWidth != framedWidth {
 			t.Fatalf("expected consistent framed width %d, got %d for line %q", framedWidth, lineWidth, framed)
 		}
-		if !strings.HasSuffix(framed, frameVertical) &&
-			!strings.HasSuffix(framed, frameTopRight) &&
-			!strings.HasSuffix(framed, frameJoinRight) &&
-			!strings.HasSuffix(framed, frameBottomRight) {
+		if !strings.HasSuffix(framed, primitives.FrameVertical) &&
+			!strings.HasSuffix(framed, primitives.FrameTopRight) &&
+			!strings.HasSuffix(framed, primitives.FrameJoinRight) &&
+			!strings.HasSuffix(framed, primitives.FrameBottomRight) {
 			t.Fatalf("expected framed line to end with right border marker, got %q", framed)
 		}
 	}
 	if !hasFramedLine {
 		t.Fatalf("expected popup content lines in view, got %q", view)
 	}
-	if !strings.Contains(view, iconConfigSource) {
+	if !strings.Contains(view, primitives.IconConfigSource) {
 		t.Fatalf("expected config source marker in selector view, got %q", view)
 	}
-	if !strings.Contains(view, iconCLISource) {
+	if !strings.Contains(view, primitives.IconCLISource) {
 		t.Fatalf("expected CLI source marker in selector view, got %q", view)
 	}
-	if strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
+	if strings.Contains(view, "Legend: "+primitives.IconConfigSource+" config"+primitives.FrameSegmentSeparator+primitives.IconCLISource+" CLI session") {
 		t.Fatalf("expected legend to be removed from selector main content, got %q", view)
 	}
-	if !strings.Contains(view, frameTopLeft+"Select database") {
+	if !strings.Contains(view, primitives.FrameTopLeft+"Select database") {
 		t.Fatalf("expected selector title in top border, got %q", view)
 	}
 	if !strings.Contains(view, "Context help: ?") {
@@ -245,14 +246,14 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 
 	// Act + Assert: browse mode.
 	browse := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
-	if strings.Contains(browse, selectorContextLinesBrowseDefault()[0]) || strings.Contains(browse, selectorContextLinesBrowseDefault()[1]) {
+	if strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault()[0]) || strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault()[1]) {
 		t.Fatalf("expected browse shortcuts to be removed from main content, got %q", browse)
 	}
 
 	// Act + Assert: add mode.
 	model.openAddForm()
 	addView := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
-	if strings.Contains(addView, selectorFormSwitchLine()) || strings.Contains(addView, selectorFormSubmitLine("Esc cancel")) {
+	if strings.Contains(addView, primitives.SelectorFormSwitchLine()) || strings.Contains(addView, primitives.SelectorFormSubmitLine("Esc cancel")) {
 		t.Fatalf("expected add-form shortcuts to be removed from main content, got %q", addView)
 	}
 
@@ -260,7 +261,7 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 	model.mode = selectorModeBrowse
 	model.openDeleteConfirmation()
 	deleteView := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
-	if strings.Contains(deleteView, selectorDeleteConfirmationLine()) {
+	if strings.Contains(deleteView, primitives.SelectorDeleteConfirmationLine()) {
 		t.Fatalf("expected delete-confirm shortcuts to be removed from main content, got %q", deleteView)
 	}
 }
@@ -309,13 +310,13 @@ func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *tes
 	if !strings.Contains(view, "Context Help: Config") {
 		t.Fatalf("expected selector help title, got %q", view)
 	}
-	if !strings.Contains(view, selectorFormSwitchLine()) || !strings.Contains(view, selectorFormSubmitLine("Esc cancel")) {
+	if !strings.Contains(view, primitives.SelectorFormSwitchLine()) || !strings.Contains(view, primitives.SelectorFormSubmitLine("Esc cancel")) {
 		t.Fatalf("expected form shortcuts in help popup, got %q", view)
 	}
-	if strings.Contains(view, selectorContextLinesBrowseDefault()[0]) {
+	if strings.Contains(view, primitives.SelectorContextLinesBrowseDefault()[0]) {
 		t.Fatalf("expected help popup to exclude browse shortcuts in form context, got %q", view)
 	}
-	if strings.Contains(view, "Legend: "+iconConfigSource+" config"+frameSegmentSeparator+iconCLISource+" CLI session") {
+	if strings.Contains(view, "Legend: "+primitives.IconConfigSource+" config"+primitives.FrameSegmentSeparator+primitives.IconCLISource+" CLI session") {
 		t.Fatalf("expected help popup to exclude legend, got %q", view)
 	}
 }
@@ -332,7 +333,7 @@ func TestDatabaseSelector_BoxLines_UsesPopupLikeSummaryAndSelectionStyling(t *te
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	model.styles = renderStyles{enabled: true}
+	model.styles = primitives.NewRenderStyles(true)
 
 	// Act
 	lines := model.boxLines(model.listHeight(24), 80)
@@ -343,13 +344,13 @@ func TestDatabaseSelector_BoxLines_UsesPopupLikeSummaryAndSelectionStyling(t *te
 		t.Fatalf("expected selector config path to use popup summary styling, got %q", lines[1])
 	}
 	selectedLine := lines[3]
-	if strings.HasPrefix(selectedLine, "\x1b[7m"+frameVertical) {
+	if strings.HasPrefix(selectedLine, "\x1b[7m"+primitives.FrameVertical) {
 		t.Fatalf("expected selector left border to remain unstyled, got %q", selectedLine)
 	}
-	if strings.Contains(selectedLine, frameVertical+"\x1b[0m") {
+	if strings.Contains(selectedLine, primitives.FrameVertical+"\x1b[0m") {
 		t.Fatalf("expected selector right border to remain outside selected styling, got %q", selectedLine)
 	}
-	if !strings.Contains(selectedLine, frameVertical+"\x1b[7m "+selectionSelectedPrefix()+"⚙ local"+frameSegmentSeparator+"/tmp/local.sqlite") {
+	if !strings.Contains(selectedLine, primitives.FrameVertical+"\x1b[7m "+primitives.SelectionSelectedPrefix()+"⚙ local"+primitives.FrameSegmentSeparator+"/tmp/local.sqlite") {
 		t.Fatalf("expected selector selection to style only popup content, got %q", selectedLine)
 	}
 	if !strings.Contains(stripANSI(lines[len(lines)-2]), "Context help: ?") {
@@ -371,7 +372,7 @@ func TestDatabaseSelector_BoxLines_UsesPopupLikeSelectionStylingForActiveFormFie
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	model.styles = renderStyles{enabled: true}
+	model.styles = primitives.NewRenderStyles(true)
 	model.openAddForm()
 
 	// Act
@@ -388,13 +389,13 @@ func TestDatabaseSelector_BoxLines_UsesPopupLikeSelectionStylingForActiveFormFie
 	if activeLine == "" {
 		t.Fatalf("expected active form field line, got %q", strings.Join(lines, "\n"))
 	}
-	if strings.HasPrefix(activeLine, "\x1b[7m"+frameVertical) {
+	if strings.HasPrefix(activeLine, "\x1b[7m"+primitives.FrameVertical) {
 		t.Fatalf("expected form field left border to remain unstyled, got %q", activeLine)
 	}
-	if strings.Contains(activeLine, frameVertical+"\x1b[0m") {
+	if strings.Contains(activeLine, primitives.FrameVertical+"\x1b[0m") {
 		t.Fatalf("expected form field right border to remain outside selected styling, got %q", activeLine)
 	}
-	if !strings.Contains(activeLine, frameVertical+"\x1b[7m "+selectionSelectedPrefix()+"Name: |") {
+	if !strings.Contains(activeLine, primitives.FrameVertical+"\x1b[7m "+primitives.SelectionSelectedPrefix()+"Name: |") {
 		t.Fatalf("expected active form field content to use shared popup selection styling, got %q", activeLine)
 	}
 }

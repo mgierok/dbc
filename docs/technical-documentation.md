@@ -80,9 +80,10 @@
 
 ### Centralized Runtime and Selector Command Registry
 
-- Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in a shared registry.
+- Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
+- Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, but remains the single source of truth for runtime/selector input semantics.
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
-- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry.go`, `internal/interfaces/tui/model_runtime_overlays.go`.
+- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_overlays.go`.
 
 ### Terminal-Native TUI Styling
 
@@ -172,9 +173,9 @@
 
 ### Centralized Keybinding and Command Registry
 
-- Decision: keep shortcut bindings, command aliases, parameterized runtime commands, and help/status hints in one registry.
-- Rationale: prevent drift between key handlers, command parsing, and rendered guidance.
-- Where: `internal/interfaces/tui/internal/primitives/input_registry.go`.
+- Decision: keep shortcut bindings, command aliases, parameterized runtime commands, and help/status hints centralized in `internal/interfaces/tui/internal/primitives`, split by concern rather than reintroduced through adapter-local bridge files.
+- Rationale: prevent drift between key handlers, command parsing, and rendered guidance while keeping the shared primitives surface discoverable after registry decomposition.
+- Where: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`.
 
 ### Session-Scoped Runtime Overrides
 

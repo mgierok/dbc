@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) enableRecordFieldFocus() (tea.Model, tea.Cmd) {
@@ -221,9 +222,9 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	command := ":" + strings.TrimSpace(m.commandInput.value)
 	m.commandInput = commandInput{}
 
-	commandSpec, err := parseRuntimeCommand(command)
+	commandSpec, err := primitives.ParseRuntimeCommand(command)
 	if err != nil {
-		if isUnknownRuntimeCommand(err) {
+		if primitives.IsUnknownRuntimeCommand(err) {
 			m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
 			return m, nil
 		}
@@ -231,15 +232,15 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	switch commandSpec.action {
-	case runtimeCommandActionSetRecordLimit:
-		return m.applyRecordLimit(commandSpec.recordLimit)
-	case runtimeCommandActionOpenHelp:
+	switch commandSpec.Action {
+	case primitives.RuntimeCommandActionSetRecordLimit:
+		return m.applyRecordLimit(commandSpec.RecordLimit)
+	case primitives.RuntimeCommandActionOpenHelp:
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
-	case runtimeCommandActionQuit:
+	case primitives.RuntimeCommandActionQuit:
 		return m, tea.Quit
-	case runtimeCommandActionOpenConfig:
+	case primitives.RuntimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
 			prompt := m.dirtyNavigationPolicyUseCase().BuildConfigPrompt()
 			m.openModalConfirmPopupWithOptions(
@@ -397,7 +398,7 @@ func (m *Model) helpPopupContentLines() []string {
 	if strings.TrimSpace(shortcuts) == "" {
 		return []string{"No keybindings available in this context."}
 	}
-	parts := strings.Split(shortcuts, frameSegmentSeparator)
+	parts := strings.Split(shortcuts, primitives.FrameSegmentSeparator)
 	lines := make([]string, 0, len(parts))
 	for _, part := range parts {
 		line := strings.TrimSpace(part)
@@ -415,25 +416,25 @@ func (m *Model) helpPopupContentLines() []string {
 func (m *Model) helpPopupContextShortcuts() string {
 	switch m.helpPopup.context {
 	case helpPopupContextEditPopup:
-		return runtimeStatusEditShortcuts()
+		return primitives.RuntimeStatusEditShortcuts()
 	case helpPopupContextConfirmPopup:
-		return runtimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
+		return primitives.RuntimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
 	case helpPopupContextFilterPopup:
-		return runtimeStatusFilterPopupShortcuts()
+		return primitives.RuntimeStatusFilterPopupShortcuts()
 	case helpPopupContextSortPopup:
-		return runtimeStatusSortPopupShortcuts()
+		return primitives.RuntimeStatusSortPopupShortcuts()
 	case helpPopupContextHelpPopup:
-		return runtimeStatusHelpPopupShortcuts()
+		return primitives.RuntimeStatusHelpPopupShortcuts()
 	case helpPopupContextCommandInput:
-		return runtimeStatusCommandInputShortcuts()
+		return primitives.RuntimeStatusCommandInputShortcuts()
 	case helpPopupContextRecordDetail:
-		return runtimeStatusRecordDetailShortcuts()
+		return primitives.RuntimeStatusRecordDetailShortcuts()
 	case helpPopupContextTables:
-		return runtimeStatusTablesShortcuts()
+		return primitives.RuntimeStatusTablesShortcuts()
 	case helpPopupContextSchema:
-		return runtimeStatusSchemaShortcuts()
+		return primitives.RuntimeStatusSchemaShortcuts()
 	case helpPopupContextRecords:
-		return runtimeStatusRecordsShortcuts()
+		return primitives.RuntimeStatusRecordsShortcuts()
 	default:
 		return ""
 	}

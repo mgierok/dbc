@@ -1,6 +1,10 @@
 package selector
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+)
 
 func (o DatabaseOption) source() DatabaseOptionSource {
 	if o.Source == DatabaseOptionSourceCLI {
@@ -11,9 +15,9 @@ func (o DatabaseOption) source() DatabaseOptionSource {
 
 func (o DatabaseOption) marker() string {
 	if o.source() == DatabaseOptionSourceCLI {
-		return iconCLISource
+		return primitives.IconCLISource
 	}
-	return iconConfigSource
+	return primitives.IconConfigSource
 }
 
 func (o DatabaseOption) isConfigBacked() bool {

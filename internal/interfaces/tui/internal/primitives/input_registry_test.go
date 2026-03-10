@@ -188,3 +188,59 @@ func TestSelectorContextHelpBinding_IsQuestionMark(t *testing.T) {
 		t.Fatalf("expected selector context-help label ?, got %q", keyLabel(keySelectorOpenContextHelp))
 	}
 }
+
+func TestSelectorContextLinesBrowseDefault_AreDeterministic(t *testing.T) {
+	// Arrange
+
+	// Act
+	lines := selectorContextLinesBrowseDefault()
+
+	// Assert
+	if len(lines) != 2 {
+		t.Fatalf("expected two selector browse help lines, got %v", lines)
+	}
+	if lines[0] != "j/k navigate | Enter select | a add | e edit | d delete" {
+		t.Fatalf("expected deterministic browse shortcut line, got %q", lines[0])
+	}
+	if lines[1] != "Esc cancel | q quit" {
+		t.Fatalf("expected deterministic browse exit line, got %q", lines[1])
+	}
+}
+
+func TestSelectorContextLinesBrowseFirstSetup_AreDeterministic(t *testing.T) {
+	// Arrange
+
+	// Act
+	lines := selectorContextLinesBrowseFirstSetup()
+
+	// Assert
+	if len(lines) != 2 {
+		t.Fatalf("expected two selector first-setup help lines, got %v", lines)
+	}
+	if lines[0] != "First setup: Enter continue | a add database" {
+		t.Fatalf("expected deterministic first-setup action line, got %q", lines[0])
+	}
+	if lines[1] != "j/k navigate | q quit" {
+		t.Fatalf("expected deterministic first-setup exit line, got %q", lines[1])
+	}
+}
+
+func TestSelectorFormAndDeleteLines_AreDeterministic(t *testing.T) {
+	// Arrange
+
+	// Act
+	switchLine := selectorFormSwitchLine()
+	submitLine := selectorFormSubmitLine("Esc cancel")
+	deleteLine := selectorDeleteConfirmationLine()
+
+	// Assert
+	if switchLine != "Tab switch field | Ctrl+u clear field" {
+		t.Fatalf("expected deterministic form-switch line, got %q", switchLine)
+	}
+	if submitLine != "Enter save | Esc cancel" {
+		t.Fatalf("expected deterministic form-submit line, got %q", submitLine)
+	}
+	if deleteLine != "Enter confirm delete | Esc cancel" {
+		t.Fatalf("expected deterministic delete-confirmation line, got %q", deleteLine)
+	}
+}

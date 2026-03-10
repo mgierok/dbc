@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
@@ -36,10 +37,10 @@ func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 		t.Fatalf("expected at least 4 lines in runtime view, got %d", len(lines))
 	}
 	topLine := stripANSI(lines[0])
-	if !strings.Contains(topLine, frameTopLeft+"Tables") || !strings.Contains(topLine, frameTopLeft+"Schema") {
+	if !strings.Contains(topLine, primitives.FrameTopLeft+"Tables") || !strings.Contains(topLine, primitives.FrameTopLeft+"Schema") {
 		t.Fatalf("expected titled top borders for both panels, got %q", topLine)
 	}
-	if strings.Contains(topLine, frameJoinCenter) || strings.Contains(topLine, frameJoinTop) || strings.Contains(topLine, frameJoinBottom) {
+	if strings.Contains(topLine, primitives.FrameJoinCenter) || strings.Contains(topLine, primitives.FrameJoinTop) || strings.Contains(topLine, primitives.FrameJoinBottom) {
 		t.Fatalf("expected independent panel boxes without shared joins, got %q", topLine)
 	}
 
@@ -47,18 +48,18 @@ func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 	statusContent := stripANSI(lines[len(lines)-2])
 	statusBottom := stripANSI(lines[len(lines)-1])
 
-	if !strings.HasPrefix(statusTop, frameTopLeft) || !strings.HasSuffix(statusTop, frameTopRight) {
+	if !strings.HasPrefix(statusTop, primitives.FrameTopLeft) || !strings.HasSuffix(statusTop, primitives.FrameTopRight) {
 		t.Fatalf("expected framed status top border, got %q", statusTop)
 	}
-	if !strings.HasPrefix(statusContent, frameVertical+" ") || !strings.HasSuffix(statusContent, " "+frameVertical) {
+	if !strings.HasPrefix(statusContent, primitives.FrameVertical+" ") || !strings.HasSuffix(statusContent, " "+primitives.FrameVertical) {
 		t.Fatalf("expected status content with one-space side padding, got %q", statusContent)
 	}
-	if !strings.HasPrefix(statusBottom, frameBottomLeft) || !strings.HasSuffix(statusBottom, frameBottomRight) {
+	if !strings.HasPrefix(statusBottom, primitives.FrameBottomLeft) || !strings.HasSuffix(statusBottom, primitives.FrameBottomRight) {
 		t.Fatalf("expected framed status bottom border, got %q", statusBottom)
 	}
 	for _, line := range []string{statusTop, statusContent, statusBottom} {
-		if textWidth(line) != model.width {
-			t.Fatalf("expected status row width %d, got %d for %q", model.width, textWidth(line), line)
+		if primitives.TextWidth(line) != model.width {
+			t.Fatalf("expected status row width %d, got %d for %q", model.width, primitives.TextWidth(line), line)
 		}
 	}
 }
@@ -80,7 +81,7 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
 				},
 			},
-			expected: frameTopLeft + "Schema",
+			expected: primitives.FrameTopLeft + "Schema",
 		},
 		{
 			name: "records view",
@@ -94,7 +95,7 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 				},
 				records: []dto.RecordRow{{Values: []string{"1"}}},
 			},
-			expected: frameTopLeft + "Records",
+			expected: primitives.FrameTopLeft + "Records",
 		},
 		{
 			name: "record detail view",
@@ -111,7 +112,7 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 				},
 				records: []dto.RecordRow{{Values: []string{"1"}}},
 			},
-			expected: frameTopLeft + "Record Detail",
+			expected: primitives.FrameTopLeft + "Record Detail",
 		},
 	}
 

@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) applyRecordLimit(recordLimit int) (tea.Model, tea.Cmd) {
-	if recordLimit <= 0 || recordLimit > maxRuntimeRecordLimit {
-		m.statusMessage = fmt.Sprintf("Error: expected :set limit=<1-%d>", maxRuntimeRecordLimit)
+	if recordLimit <= 0 || recordLimit > primitives.RuntimeMaxRecordPageLimit {
+		m.statusMessage = fmt.Sprintf("Error: expected :set limit=<1-%d>", primitives.RuntimeMaxRecordPageLimit)
 		return m, nil
 	}
 	if m.runtimeSession == nil {

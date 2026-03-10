@@ -5,26 +5,27 @@ import (
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
-	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
-		title:               m.helpPopupContextTitle(),
-		summary:             runtimeHelpPopupSummaryLine(),
-		rows:                popupTextRows(m.helpPopupContentLines()),
-		scrollOffset:        m.helpPopup.scrollOffset,
-		visibleRows:         m.helpPopupVisibleLines(),
-		showScrollIndicator: true,
-		defaultWidth:        50,
-		minWidth:            20,
-		maxWidth:            60,
-		styles:              m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+		Title:               m.helpPopupContextTitle(),
+		Summary:             primitives.RuntimeHelpPopupSummaryLine(),
+		Rows:                primitives.PopupTextRows(m.helpPopupContentLines()),
+		ScrollOffset:        m.helpPopup.scrollOffset,
+		VisibleRows:         m.helpPopupVisibleLines(),
+		ShowScrollIndicator: true,
+		DefaultWidth:        50,
+		MinWidth:            20,
+		MaxWidth:            60,
+		Styles:              m.styles,
 	})
 }
 
 func (m *Model) renderFilterPopup(totalWidth int) []string {
 	stepLabel := "Select column"
-	rows := []standardizedPopupRow{}
+	rows := []primitives.StandardizedPopupRow{}
 	switch m.filterPopup.step {
 	case filterSelectColumn:
 		columnRows := make([]string, len(m.schema.Columns))
@@ -35,7 +36,7 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 		if len(columnRows) > 0 {
 			selected = clamp(m.filterPopup.columnIndex, 0, len(columnRows)-1)
 		}
-		rows = popupSelectableRows(columnRows, selected)
+		rows = primitives.PopupSelectableRows(columnRows, selected)
 	case filterSelectOperator:
 		stepLabel = "Select operator"
 		operatorRows := make([]string, len(m.filterPopup.operators))
@@ -46,29 +47,29 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 		if len(operatorRows) > 0 {
 			selected = clamp(m.filterPopup.operatorIndex, 0, len(operatorRows)-1)
 		}
-		rows = popupSelectableRows(operatorRows, selected)
+		rows = primitives.PopupSelectableRows(operatorRows, selected)
 	case filterInputValue:
 		stepLabel = "Enter value"
 		input := m.filterPopup.input
 		cursor := clamp(m.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
-		rows = popupTextRows([]string{"Value: " + value})
+		rows = primitives.PopupTextRows([]string{"Value: " + value})
 	}
 
-	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
-		title:        "Filter",
-		summary:      stepLabel,
-		rows:         rows,
-		defaultWidth: 60,
-		minWidth:     20,
-		maxWidth:     60,
-		styles:       m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+		Title:        "Filter",
+		Summary:      stepLabel,
+		Rows:         rows,
+		DefaultWidth: 60,
+		MinWidth:     20,
+		MaxWidth:     60,
+		Styles:       m.styles,
 	})
 }
 
 func (m *Model) renderSortPopup(totalWidth int) []string {
 	stepLabel := "Select column"
-	rows := []standardizedPopupRow{}
+	rows := []primitives.StandardizedPopupRow{}
 
 	switch m.sortPopup.step {
 	case sortSelectColumn:
@@ -80,7 +81,7 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 		if len(columnRows) > 0 {
 			selected = clamp(m.sortPopup.columnIndex, 0, len(columnRows)-1)
 		}
-		rows = popupSelectableRows(columnRows, selected)
+		rows = primitives.PopupSelectableRows(columnRows, selected)
 	case sortSelectDirection:
 		stepLabel = "Select direction"
 		directions := sortDirections()
@@ -92,17 +93,17 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 		if len(directionRows) > 0 {
 			selected = clamp(m.sortPopup.directionIndex, 0, len(directionRows)-1)
 		}
-		rows = popupSelectableRows(directionRows, selected)
+		rows = primitives.PopupSelectableRows(directionRows, selected)
 	}
 
-	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
-		title:        "Sort",
-		summary:      stepLabel,
-		rows:         rows,
-		defaultWidth: 60,
-		minWidth:     20,
-		maxWidth:     60,
-		styles:       m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+		Title:        "Sort",
+		Summary:      stepLabel,
+		Rows:         rows,
+		DefaultWidth: 60,
+		MinWidth:     20,
+		MaxWidth:     60,
+		Styles:       m.styles,
 	})
 }
 
@@ -120,7 +121,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 		inputKind = column.Input.Kind
 		options = column.Input.Options
 	}
-	rows := []standardizedPopupRow{}
+	rows := []primitives.StandardizedPopupRow{}
 
 	if inputKind == dto.ColumnInputSelect {
 		current := "NULL"
@@ -131,34 +132,34 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 				current = m.editPopup.input
 			}
 		}
-		rows = append(rows, standardizedPopupRow{text: "Value: " + current})
+		rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: " + current})
 		if len(options) > 0 {
 			selected := clamp(m.editPopup.optionIndex, 0, len(options)-1)
-			rows = append(rows, popupSelectableRows(options, selected)...)
+			rows = append(rows, primitives.PopupSelectableRows(options, selected)...)
 		}
 	} else {
 		if m.editPopup.isNull {
-			rows = append(rows, standardizedPopupRow{text: "Value: NULL"})
+			rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: NULL"})
 		} else {
 			input := m.editPopup.input
 			cursor := clamp(m.editPopup.cursor, 0, len(input))
 			value := input[:cursor] + "|" + input[cursor:]
-			rows = append(rows, standardizedPopupRow{text: "Value: " + value})
+			rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: " + value})
 		}
 	}
 
 	if strings.TrimSpace(m.editPopup.errorMessage) != "" {
-		rows = append(rows, standardizedPopupRow{text: m.styles.error("Error: " + m.editPopup.errorMessage)})
+		rows = append(rows, primitives.StandardizedPopupRow{Text: m.styles.Error("Error: " + m.editPopup.errorMessage)})
 	}
 
-	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
-		title:        "Edit Cell",
-		summary:      columnLabel + frameSegmentSeparator + nullableLabel,
-		rows:         rows,
-		defaultWidth: 60,
-		minWidth:     30,
-		maxWidth:     60,
-		styles:       m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+		Title:        "Edit Cell",
+		Summary:      columnLabel + primitives.FrameSegmentSeparator + nullableLabel,
+		Rows:         rows,
+		DefaultWidth: 60,
+		MinWidth:     30,
+		MaxWidth:     60,
+		Styles:       m.styles,
 	})
 }
 
@@ -181,13 +182,13 @@ func (m *Model) renderConfirmPopup(totalWidth int) []string {
 		selected = clamp(m.confirmPopup.selected, 0, len(options)-1)
 	}
 
-	return renderStandardizedPopup(totalWidth, m.height, standardizedPopupSpec{
-		title:        title,
-		summary:      message,
-		rows:         popupSelectableRows(options, selected),
-		defaultWidth: 50,
-		minWidth:     20,
-		maxWidth:     60,
-		styles:       m.styles,
+	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+		Title:        title,
+		Summary:      message,
+		Rows:         primitives.PopupSelectableRows(options, selected),
+		DefaultWidth: 50,
+		MinWidth:     20,
+		MaxWidth:     60,
+		Styles:       m.styles,
 	})
 }

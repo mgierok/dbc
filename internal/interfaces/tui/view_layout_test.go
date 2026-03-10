@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
@@ -27,7 +28,7 @@ func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
 		nameMargin       = 1
 	)
 	nonContentWidth := (panelBoxBorderWidth * 2) + panelBoxGapWidth
-	expectedLeftWidth := tablePrefixWidth + textWidth(longName) + nameMargin
+	expectedLeftWidth := tablePrefixWidth + primitives.TextWidth(longName) + nameMargin
 	if leftWidth != expectedLeftWidth {
 		t.Fatalf("expected left panel width %d, got %d", expectedLeftWidth, leftWidth)
 	}
@@ -87,7 +88,7 @@ func TestRenderTables_ShowsSelectionMarkerWithoutBoldWhenTablePanelIsNotFocused(
 	if selectedLine == "" {
 		t.Fatalf("expected selected table line to be rendered, got %q", strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(selectedLine, iconSelection+" ") {
+	if !strings.Contains(selectedLine, primitives.IconSelection+" ") {
 		t.Fatalf("expected selection marker for selected table, got %q", selectedLine)
 	}
 	if strings.Contains(selectedLine, "\x1b[1m") || strings.Contains(selectedLine, "\x1b[0m") {

@@ -1,6 +1,10 @@
 package selector
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+)
 
 func (m *databaseSelectorModel) openHelpPopup() {
 	m.helpPopup = selectorHelpPopup{
@@ -17,25 +21,25 @@ func (m *databaseSelectorModel) closeHelpPopup() {
 func (m *databaseSelectorModel) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeHelpPopup()
 		return m, nil
-	case keyMatches(keyPopupMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveDown, key):
 		m.moveHelpPopupScroll(1)
 		return m, nil
-	case keyMatches(keyPopupMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyPopupMoveUp, key):
 		m.moveHelpPopupScroll(-1)
 		return m, nil
-	case keyMatches(keyRuntimePageDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageDown, key):
 		m.moveHelpPopupScroll(m.helpPopupVisibleLines())
 		return m, nil
-	case keyMatches(keyRuntimePageUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageUp, key):
 		m.moveHelpPopupScroll(-m.helpPopupVisibleLines())
 		return m, nil
-	case keyMatches(keyPopupJumpTop, key):
+	case primitives.KeyMatches(primitives.KeyPopupJumpTop, key):
 		m.helpPopup.scrollOffset = 0
 		return m, nil
-	case keyMatches(keyPopupJumpBottom, key):
+	case primitives.KeyMatches(primitives.KeyPopupJumpBottom, key):
 		m.helpPopup.scrollOffset = m.helpPopupMaxOffset()
 		return m, nil
 	default:

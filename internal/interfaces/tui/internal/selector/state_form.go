@@ -6,12 +6,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
-	case keyMatches(keySelectorFormEsc, key):
+	case primitives.KeyMatches(primitives.KeySelectorFormEsc, key):
 		if m.requiresFirstEntry && len(m.options) == 0 {
 			m.canceled = true
 			return m, tea.Quit
@@ -20,18 +21,18 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 		m.form = selectorForm{}
 		m.browse.statusMessage = "Config update canceled"
 		return m, nil
-	case keyMatches(keySelectorFormSwitch, key):
+	case primitives.KeyMatches(primitives.KeySelectorFormSwitch, key):
 		if m.form.activeField == selectorInputName {
 			m.form.activeField = selectorInputPath
 		} else {
 			m.form.activeField = selectorInputName
 		}
 		return m, nil
-	case keyMatches(keySelectorFormClear, key):
+	case primitives.KeyMatches(primitives.KeySelectorFormClear, key):
 		m.setActiveFormValue("")
 		m.form.errorMessage = ""
 		return m, nil
-	case keyMatches(keySelectorFormBackspace, key):
+	case primitives.KeyMatches(primitives.KeySelectorFormBackspace, key):
 		value := m.activeFormValue()
 		if value == "" {
 			return m, nil
@@ -39,7 +40,7 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 		m.setActiveFormValue(value[:len(value)-1])
 		m.form.errorMessage = ""
 		return m, nil
-	case keyMatches(keySelectorEnter, key):
+	case primitives.KeyMatches(primitives.KeySelectorEnter, key):
 		return m.submitForm()
 	default:
 		if len(msg.Runes) == 0 {

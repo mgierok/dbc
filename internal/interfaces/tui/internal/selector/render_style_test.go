@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestNewDatabaseSelectorModel_UsesDetectedRenderStyles(t *testing.T) {
@@ -13,8 +14,8 @@ func TestNewDatabaseSelectorModel_UsesDetectedRenderStyles(t *testing.T) {
 	t.Cleanup(func() {
 		detectRenderStyles = originalDetector
 	})
-	detectRenderStyles = func() renderStyles {
-		return renderStyles{enabled: true}
+	detectRenderStyles = func() primitives.RenderStyles {
+		return primitives.NewRenderStyles(true)
 	}
 
 	manager := &fakeSelectorManager{
@@ -30,7 +31,7 @@ func TestNewDatabaseSelectorModel_UsesDetectedRenderStyles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	if !model.styles.enabled {
+	if !model.styles.Enabled() {
 		t.Fatal("expected selector model to keep detected render styles")
 	}
 }

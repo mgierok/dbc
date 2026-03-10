@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 	"strings"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) renderStatus(width int) string {
@@ -11,7 +13,7 @@ func (m *Model) renderStatus(width int) string {
 	}
 	mode := "READ-ONLY"
 	if m.hasDirtyEdits() {
-		mode = m.styles.dirty(fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
+		mode = m.styles.Dirty(fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
 	}
 	parts := []string{
 		mode,
@@ -27,8 +29,8 @@ func (m *Model) renderStatus(width int) string {
 	if strings.TrimSpace(m.statusMessage) != "" {
 		parts = append(parts, m.styleStatusMessage(m.statusMessage))
 	}
-	left := strings.Join(parts, frameSegmentSeparator)
-	return renderStatusWithRightHint(left, m.styles.muted(runtimeStatusContextHelpHint()), width)
+	left := strings.Join(parts, primitives.FrameSegmentSeparator)
+	return primitives.RenderStatusWithRightHint(left, m.styles.Muted(primitives.RuntimeStatusContextHelpHint()), width)
 }
 
 func (m *Model) filterSummary() string {
@@ -53,48 +55,19 @@ func (m *Model) recordsSummary() string {
 }
 
 func (m *Model) pageSummary() string {
-	currentPage := clamp(m.recordPageIndex+1, 1, maxInt(1, m.recordTotalPages))
-	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, maxInt(1, m.recordTotalPages)))
+	currentPage := clamp(m.recordPageIndex+1, 1, primitives.MaxInt(1, m.recordTotalPages))
+	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.recordTotalPages)))
 }
 
 func (m *Model) statusSegment(label, value string) string {
-	return m.styles.label(label+":") + " " + value
+	return m.styles.Label(label+":") + " " + value
 }
 
 func (m *Model) styleStatusMessage(message string) string {
-	if isErrorLikeMessage(message) {
-		return m.styles.error(message)
+	if primitives.IsErrorLikeMessage(message) {
+		return m.styles.Error(message)
 	}
 	return message
-}
-
-func renderStatusWithRightHint(left, right string, width int) string {
-	if width <= 0 {
-		width = 80
-	}
-
-	left = strings.TrimSpace(left)
-	right = strings.TrimSpace(right)
-	if right == "" {
-		return padRight(left, width)
-	}
-
-	right = truncate(right, width)
-	rightWidth := textWidth(right)
-	if rightWidth >= width {
-		return padRight(right, width)
-	}
-
-	leftWidth := width - rightWidth - 1
-	if leftWidth <= 0 {
-		return padRight(right, width)
-	}
-
-	if left == "" {
-		return padRight(strings.Repeat(" ", leftWidth+1)+right, width)
-	}
-
-	return padRight(truncate(left, leftWidth), leftWidth) + " " + right
 }
 
 func (m *Model) renderStatusBox(width int) []string {
@@ -117,11 +90,11 @@ func (m *Model) renderStatusBox(width int) []string {
 	}
 
 	status := m.renderStatus(statusWidth)
-	content := strings.Repeat(" ", leftPadding) + padRight(status, statusWidth) + strings.Repeat(" ", rightPadding)
-	content = padRight(content, innerWidth)
+	content := strings.Repeat(" ", leftPadding) + primitives.PadRight(status, statusWidth) + strings.Repeat(" ", rightPadding)
+	content = primitives.PadRight(content, innerWidth)
 	return []string{
-		frameTopLeft + strings.Repeat(frameHorizontal, innerWidth) + frameTopRight,
-		frameVertical + content + frameVertical,
-		frameBottomLeft + strings.Repeat(frameHorizontal, innerWidth) + frameBottomRight,
+		primitives.FrameTopLeft + strings.Repeat(primitives.FrameHorizontal, innerWidth) + primitives.FrameTopRight,
+		primitives.FrameVertical + content + primitives.FrameVertical,
+		primitives.FrameBottomLeft + strings.Repeat(primitives.FrameHorizontal, innerWidth) + primitives.FrameBottomRight,
 	}
 }

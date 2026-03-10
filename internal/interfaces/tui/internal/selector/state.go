@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 type selectorMode int
@@ -51,7 +53,7 @@ type selectorBrowseState struct {
 type databaseSelectorModel struct {
 	ctx     context.Context
 	manager selectorManager
-	styles  renderStyles
+	styles  primitives.RenderStyles
 
 	options  []DatabaseOption
 	width    int
@@ -71,6 +73,8 @@ type databaseSelectorModel struct {
 	configOptionCount       int
 	requiresFirstEntry      bool
 }
+
+var detectRenderStyles = primitives.ResolveRenderStylesFromEnv
 
 func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, launchState ...SelectorLaunchState) (*databaseSelectorModel, error) {
 	if ctx == nil {
@@ -166,7 +170,7 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.helpPopup.active {
 			return m.handleHelpPopupKey(msg)
 		}
-		if keyMatches(keySelectorOpenContextHelp, key) {
+		if primitives.KeyMatches(primitives.KeySelectorOpenContextHelp, key) {
 			m.openHelpPopup()
 			return m, nil
 		}
@@ -179,10 +183,10 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
-		case keyMatches(keySelectorCancel, key):
+		case primitives.KeyMatches(primitives.KeySelectorCancel, key):
 			m.canceled = true
 			return m, tea.Quit
-		case keyMatches(keySelectorEnter, key):
+		case primitives.KeyMatches(primitives.KeySelectorEnter, key):
 			if len(m.options) == 0 {
 				if m.requiresFirstEntry {
 					m.openAddForm()
@@ -192,35 +196,35 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.chosen = true
 			return m, tea.Quit
-		case keyMatches(keySelectorMoveDown, key):
+		case primitives.KeyMatches(primitives.KeySelectorMoveDown, key):
 			m.moveSelection(1)
 			return m, nil
-		case keyMatches(keySelectorMoveUp, key):
+		case primitives.KeyMatches(primitives.KeySelectorMoveUp, key):
 			m.moveSelection(-1)
 			return m, nil
-		case keyMatches(keySelectorJumpTop, key):
+		case primitives.KeyMatches(primitives.KeySelectorJumpTop, key):
 			m.selectTop()
 			return m, nil
-		case keyMatches(keySelectorJumpBottom, key):
+		case primitives.KeyMatches(primitives.KeySelectorJumpBottom, key):
 			m.selectBottom()
 			return m, nil
-		case keyMatches(keySelectorPageDown, key):
+		case primitives.KeyMatches(primitives.KeySelectorPageDown, key):
 			m.page(1)
 			return m, nil
-		case keyMatches(keySelectorPageUp, key):
+		case primitives.KeyMatches(primitives.KeySelectorPageUp, key):
 			m.page(-1)
 			return m, nil
-		case keyMatches(keySelectorAdd, key):
+		case primitives.KeyMatches(primitives.KeySelectorAdd, key):
 			m.openAddForm()
 			return m, nil
-		case keyMatches(keySelectorEdit, key):
+		case primitives.KeyMatches(primitives.KeySelectorEdit, key):
 			if m.requiresFirstEntry {
 				m.browse.statusMessage = "Edit is unavailable during first setup"
 				return m, nil
 			}
 			m.openEditForm()
 			return m, nil
-		case keyMatches(keySelectorDelete, key):
+		case primitives.KeyMatches(primitives.KeySelectorDelete, key):
 			if m.requiresFirstEntry {
 				m.browse.statusMessage = "Delete is unavailable during first setup"
 				return m, nil

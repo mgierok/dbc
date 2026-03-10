@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestSubmitCommandInput_SetLimitInRecordsModeReloadsFromFirstPage(t *testing.T) {
@@ -236,7 +237,7 @@ func TestLoadRecordsCmd_ClampsOversizedSessionLimitBeforeUse(t *testing.T) {
 		listRecords: recordsSpy,
 		tables:      []dto.Table{{Name: "users"}},
 		runtimeSession: &RuntimeSessionState{
-			RecordsPageLimit: maxRuntimeRecordLimit + 1,
+			RecordsPageLimit: primitives.RuntimeMaxRecordPageLimit + 1,
 		},
 	}
 
@@ -248,8 +249,8 @@ func TestLoadRecordsCmd_ClampsOversizedSessionLimitBeforeUse(t *testing.T) {
 	model.Update(cmd())
 
 	// Assert
-	if recordsSpy.lastRecordsLimit != maxRuntimeRecordLimit {
-		t.Fatalf("expected oversized session value to clamp to %d, got %d", maxRuntimeRecordLimit, recordsSpy.lastRecordsLimit)
+	if recordsSpy.lastRecordsLimit != primitives.RuntimeMaxRecordPageLimit {
+		t.Fatalf("expected oversized session value to clamp to %d, got %d", primitives.RuntimeMaxRecordPageLimit, recordsSpy.lastRecordsLimit)
 	}
 }
 

@@ -2,12 +2,14 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 
-	if keyMatches(keyRuntimeOpenContextHelp, key) {
+	if primitives.KeyMatches(primitives.KeyRuntimeOpenContextHelp, key) {
 		if m.helpPopup.active {
 			return m, nil
 		}
@@ -38,7 +40,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.pendingG {
-		if keyMatches(keyRuntimeJumpTopPending, key) {
+		if primitives.KeyMatches(primitives.KeyRuntimeJumpTopPending, key) {
 			m.pendingG = false
 			return m.jumpTop()
 		}
@@ -46,19 +48,19 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	switch {
-	case keyMatches(keyRuntimeOpenCommandInput, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key):
 		return m.startCommandInput()
-	case keyMatches(keyRuntimeJumpTopPending, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeJumpTopPending, key):
 		m.pendingG = true
 		return m, nil
-	case keyMatches(keyRuntimeJumpBottom, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeJumpBottom, key):
 		return m.jumpBottom()
-	case keyMatches(keyRuntimeEnter, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
 		if m.viewMode == ViewRecords && m.focus == FocusContent {
 			return m.openRecordDetail()
 		}
 		return m.switchToRecords()
-	case keyMatches(keyRuntimeEdit, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEdit, key):
 		if m.viewMode == ViewRecords && m.focus == FocusContent {
 			if !m.recordFieldFocus {
 				return m.enableRecordFieldFocus()
@@ -66,7 +68,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.openEditPopup()
 		}
 		return m, nil
-	case keyMatches(keyRuntimeEsc, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		if m.viewMode == ViewRecords && m.recordFieldFocus {
 			m.recordFieldFocus = false
 			return m, nil
@@ -77,35 +79,35 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, nil
-	case keyMatches(keyRuntimeFilter, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeFilter, key):
 		return m.startFilterPopup()
-	case keyMatches(keyRuntimeSort, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeSort, key):
 		return m.startSortPopup()
-	case keyMatches(keyRuntimeRecordDetail, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeRecordDetail, key):
 		return m.openRecordDetail()
-	case keyMatches(keyRuntimeSave, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeSave, key):
 		return m.requestSaveChanges()
-	case keyMatches(keyRuntimeInsert, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeInsert, key):
 		return m.addPendingInsert()
-	case keyMatches(keyRuntimeDelete, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeDelete, key):
 		return m.toggleDeleteSelection()
-	case keyMatches(keyRuntimeUndo, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeUndo, key):
 		return m.undoStagedAction()
-	case keyMatches(keyRuntimeRedo, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeRedo, key):
 		return m.redoStagedAction()
-	case keyMatches(keyRuntimeToggleAutoFields, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeToggleAutoFields, key):
 		return m.toggleInsertAutoFields()
-	case keyMatches(keyRuntimeMoveDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveDown, key):
 		return m.moveDown()
-	case keyMatches(keyRuntimeMoveUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveUp, key):
 		return m.moveUp()
-	case keyMatches(keyRuntimeMoveLeft, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveLeft, key):
 		return m.moveLeft()
-	case keyMatches(keyRuntimeMoveRight, key):
+	case primitives.KeyMatches(primitives.KeyRuntimeMoveRight, key):
 		return m.moveRight()
-	case keyMatches(keyRuntimePageDown, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageDown, key):
 		return m.pageDown()
-	case keyMatches(keyRuntimePageUp, key):
+	case primitives.KeyMatches(primitives.KeyRuntimePageUp, key):
 		return m.pageUp()
 	default:
 		return m, nil

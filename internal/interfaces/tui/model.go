@@ -9,6 +9,7 @@ import (
 
 	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/usecase"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 const (
@@ -142,7 +143,7 @@ type Model struct {
 	stagingPolicy  *usecase.StagingPolicy
 	dirtyNavPolicy *usecase.DirtyNavigationPolicy
 	runtimeSession *RuntimeSessionState
-	styles         renderStyles
+	styles         primitives.RenderStyles
 
 	width  int
 	height int
@@ -187,6 +188,8 @@ type Model struct {
 }
 
 var _ tea.Model = (*Model)(nil)
+
+var detectRenderStyles = primitives.ResolveRenderStylesFromEnv
 
 type tablesMsg struct {
 	tables []dto.Table

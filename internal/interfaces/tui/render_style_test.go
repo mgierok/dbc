@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
 func TestResolveRenderStylesFromEnv_DisablesStylingWhenNoColorIsSet(t *testing.T) {
@@ -14,10 +15,10 @@ func TestResolveRenderStylesFromEnv_DisablesStylingWhenNoColorIsSet(t *testing.T
 	t.Setenv("TERM", "xterm-256color")
 
 	// Act
-	styles := resolveRenderStylesFromEnv()
+	styles := primitives.ResolveRenderStylesFromEnv()
 
 	// Assert
-	if styles.enabled {
+	if styles.Enabled() {
 		t.Fatal("expected render styles to be disabled when NO_COLOR is set")
 	}
 }
@@ -28,10 +29,10 @@ func TestResolveRenderStylesFromEnv_DisablesStylingWhenTermIsDumb(t *testing.T) 
 	t.Setenv("TERM", "dumb")
 
 	// Act
-	styles := resolveRenderStylesFromEnv()
+	styles := primitives.ResolveRenderStylesFromEnv()
 
 	// Assert
-	if styles.enabled {
+	if styles.Enabled() {
 		t.Fatal("expected render styles to be disabled when TERM is dumb")
 	}
 }
@@ -42,15 +43,15 @@ func TestNewModel_UsesDetectedRenderStyles(t *testing.T) {
 	t.Cleanup(func() {
 		detectRenderStyles = originalDetector
 	})
-	detectRenderStyles = func() renderStyles {
-		return renderStyles{enabled: true}
+	detectRenderStyles = func() primitives.RenderStyles {
+		return primitives.NewRenderStyles(true)
 	}
 
 	// Act
 	model := NewModel(context.Background(), nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
-	if !model.styles.enabled {
+	if !model.styles.Enabled() {
 		t.Fatal("expected model to keep detected render styles")
 	}
 }
@@ -58,7 +59,7 @@ func TestNewModel_UsesDetectedRenderStyles(t *testing.T) {
 func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
-		styles: renderStyles{enabled: true},
+		styles: primitives.NewRenderStyles(true),
 		staging: stagingState{
 			pendingUpdates: map[string]recordEdits{
 				"id=1": {
@@ -85,7 +86,7 @@ func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 func TestRenderRecords_StylesSelectedRowAndHeaderWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
-		styles:          renderStyles{enabled: true},
+		styles:          primitives.NewRenderStyles(true),
 		viewMode:        ViewRecords,
 		focus:           FocusContent,
 		recordSelection: 0,
@@ -114,28 +115,28 @@ func TestRenderRecords_StylesSelectedRowAndHeaderWhenEnabled(t *testing.T) {
 
 func TestRenderStandardizedPopup_StylesTitleSelectionAndScrollIndicatorWhenEnabled(t *testing.T) {
 	// Arrange
-	spec := standardizedPopupSpec{
-		title:               "Config",
-		summary:             "Choose action.",
-		rows:                popupSelectableRows([]string{"Save", "Discard", "Cancel"}, 1),
-		scrollOffset:        1,
-		visibleRows:         2,
-		showScrollIndicator: true,
-		defaultWidth:        50,
-		minWidth:            20,
-		maxWidth:            60,
-		styles:              renderStyles{enabled: true},
+	spec := primitives.StandardizedPopupSpec{
+		Title:               "Config",
+		Summary:             "Choose action.",
+		Rows:                primitives.PopupSelectableRows([]string{"Save", "Discard", "Cancel"}, 1),
+		ScrollOffset:        1,
+		VisibleRows:         2,
+		ShowScrollIndicator: true,
+		DefaultWidth:        50,
+		MinWidth:            20,
+		MaxWidth:            60,
+		Styles:              primitives.NewRenderStyles(true),
 	}
 
 	// Act
-	lines := renderStandardizedPopup(60, 24, spec)
+	lines := primitives.RenderStandardizedPopup(60, 24, spec)
 	popup := strings.Join(lines, "\n")
 
 	// Assert
 	if !strings.Contains(lines[0], "\x1b[1mConfig\x1b[0m") {
 		t.Fatalf("expected bold popup title, got %q", lines[0])
 	}
-	if !strings.Contains(popup, frameVertical+"\x1b[7m "+selectionSelectedPrefix()+"Discard") {
+	if !strings.Contains(popup, primitives.FrameVertical+"\x1b[7m "+primitives.SelectionSelectedPrefix()+"Discard") {
 		t.Fatalf("expected reverse-video selected popup content without styling borders, got %q", popup)
 	}
 	if !strings.Contains(popup, "\x1b[2mScroll: 2/2\x1b[0m") {
@@ -145,18 +146,18 @@ func TestRenderStandardizedPopup_StylesTitleSelectionAndScrollIndicatorWhenEnabl
 
 func TestRenderStandardizedPopup_StylesSummaryWhenEnabled(t *testing.T) {
 	// Arrange
-	spec := standardizedPopupSpec{
-		title:        "Filter",
-		summary:      "Select column",
-		rows:         popupSelectableRows([]string{"id (INTEGER)"}, 0),
-		defaultWidth: 50,
-		minWidth:     20,
-		maxWidth:     60,
-		styles:       renderStyles{enabled: true},
+	spec := primitives.StandardizedPopupSpec{
+		Title:        "Filter",
+		Summary:      "Select column",
+		Rows:         primitives.PopupSelectableRows([]string{"id (INTEGER)"}, 0),
+		DefaultWidth: 50,
+		MinWidth:     20,
+		MaxWidth:     60,
+		Styles:       primitives.NewRenderStyles(true),
 	}
 
 	// Act
-	lines := renderStandardizedPopup(60, 24, spec)
+	lines := primitives.RenderStandardizedPopup(60, 24, spec)
 
 	// Assert
 	if !strings.Contains(lines[1], "\x1b[1mSelect column\x1b[0m") {
@@ -167,7 +168,7 @@ func TestRenderStandardizedPopup_StylesSummaryWhenEnabled(t *testing.T) {
 func TestRenderEditPopup_StylesExplicitErrorRowsWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
-		styles: renderStyles{enabled: true},
+		styles: primitives.NewRenderStyles(true),
 		schema: dto.Schema{
 			Columns: []dto.SchemaColumn{
 				{
