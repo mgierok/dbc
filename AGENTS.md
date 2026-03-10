@@ -96,6 +96,8 @@ Quick examples:
 
 ### Plan Mode Rules
 
+- For coding-related plans, the plan SHOULD be iterative and SHOULD split complex implementation work into multiple chunks.
+- For coding-related plans, a chunk MUST be the smallest independently reviewable implementation increment that delivers one coherent implementation objective and working software.
 - When operating in Plan mode and persisting a generated plan to the repository, the agent MUST save that plan under `.plans/`.
 - Persisted Plan mode files MUST use a short descriptive kebab-case filename that communicates the task intent (for example `add-gitignore-plan.md`) and MUST NOT use generic names such as `plan.md` or `todo.md`.
 - A generated plan MUST include references to the documentation files that SHOULD be consulted to enrich task context for that specific task, with a short note describing why each file is relevant.
