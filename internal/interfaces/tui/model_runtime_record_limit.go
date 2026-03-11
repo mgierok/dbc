@@ -19,20 +19,12 @@ func (m *Model) applyRecordLimit(recordLimit int) (tea.Model, tea.Cmd) {
 
 	m.runtimeSession.RecordsPageLimit = recordLimit
 	m.ui.statusMessage = fmt.Sprintf("Record limit set to %d", recordLimit)
-	m.read.recordPageIndex = 0
-	m.read.recordSelection = 0
-	m.read.recordColumn = 0
-	m.read.recordTotalPages = 1
-	m.read.recordTotalCount = 0
+	m.resetReadRecordBrowsingState()
 	m.read.recordRequestID++
-	m.read.recordLoading = false
-	m.read.recordFieldFocus = false
-	m.closeRecordDetail()
 
 	if m.read.viewMode == ViewRecords {
 		return m, m.loadRecordsCmd(true)
 	}
 
-	m.read.records = nil
 	return m, nil
 }

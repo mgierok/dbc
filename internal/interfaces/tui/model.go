@@ -307,6 +307,13 @@ func (m *Model) resetTableContext() {
 	m.read.currentSort = nil
 	m.read.schema = dto.Schema{}
 	m.read.schemaIndex = 0
+	m.resetReadRecordBrowsingState()
+	m.resetTableOverlayState()
+	m.clearStagedState()
+	m.ui.pendingTableIndex = -1
+}
+
+func (m *Model) resetReadRecordBrowsingState() {
 	m.read.records = nil
 	m.read.recordPageIndex = 0
 	m.read.recordTotalPages = 1
@@ -315,14 +322,23 @@ func (m *Model) resetTableContext() {
 	m.read.recordColumn = 0
 	m.read.recordLoading = false
 	m.read.recordFieldFocus = false
+	m.closeRecordDetail()
+}
+
+func (m *Model) resetReadRecordReloadState() {
+	m.read.records = nil
+	m.read.recordSelection = 0
+	m.read.recordFieldFocus = false
+	m.closeRecordDetail()
+}
+
+func (m *Model) resetTableOverlayState() {
 	m.overlay.filterPopup = filterPopup{}
 	m.overlay.sortPopup = sortPopup{}
 	m.overlay.helpPopup = helpPopup{}
 	m.overlay.recordDetail = recordDetailState{}
 	m.overlay.editPopup = editPopup{}
 	m.overlay.confirmPopup = confirmPopup{}
-	m.clearStagedState()
-	m.ui.pendingTableIndex = -1
 	m.overlay.pendingFilterOpen = false
 	m.overlay.pendingSortOpen = false
 }
@@ -353,10 +369,7 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 	if m.read.recordLoading {
 		return nil
 	}
-	m.read.records = nil
-	m.read.recordSelection = 0
-	m.read.recordFieldFocus = false
-	m.closeRecordDetail()
+	m.resetReadRecordReloadState()
 	m.read.recordLoading = true
 	m.read.recordRequestID++
 	recordLimit := m.effectiveRecordLimit()
