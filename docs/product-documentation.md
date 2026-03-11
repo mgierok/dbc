@@ -15,8 +15,8 @@ Current product value and scope:
 
 ### Database Configuration and Access
 
-- DBC reads zero or more database entries from the active config file at `~/.config/dbc/config.toml`.
-- Empty config state (`missing file`, `empty file`, or `databases = []`) opens mandatory first-entry setup before normal browsing. Malformed config state (for example invalid TOML or invalid entry structure) stops startup with an explicit error.
+- DBC reads zero or more database entries from the active config file at `~/.config/dbc/config.json`.
+- Empty config state (`missing file`, `empty file`, or `{"databases":[]}`) opens mandatory first-entry setup before normal browsing. Malformed config state (for example invalid JSON or invalid entry structure) stops startup with an explicit error.
 - Mandatory first-entry setup requires at least one valid entry before continue and allows optional additional entries; `Esc` from the forced setup form exits the application. In selector browse mode, `Esc`, `q`, or `Ctrl+C` exits startup.
 - Each configured entry requires `name` and `db_path`. The selector shows the active config file path, keeps config-backed entries in configuration order, and uses source markers `⚙` for config-backed entries and `⌨` for session-scoped direct-launch entries.
 - If a direct-launch path does not match an existing configured SQLite path, returning to the selector during the same app session shows it as a session-scoped `⌨` entry appended after config-backed entries. If the path matches an existing configured entry, DBC reuses that config-backed entry instead of showing a duplicate session entry.

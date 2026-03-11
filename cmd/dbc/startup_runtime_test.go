@@ -19,7 +19,7 @@ func TestNewRuntimeStartupDependencies_UsesDefaultConfigPathAndBuildsUseCases(t 
 	// Arrange
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	expectedPath := filepath.Join(home, ".config", "dbc", "config.toml")
+	expectedPath := filepath.Join(home, ".config", "dbc", "config.json")
 
 	// Act
 	deps, err := newRuntimeStartupDependencies()

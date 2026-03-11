@@ -93,7 +93,7 @@ func (f *fakeSelectorManager) ActivePath(_ context.Context) (string, error) {
 		return "", f.activePathErr
 	}
 	if f.activePath == "" {
-		return "/tmp/config.toml", nil
+		return "/tmp/config.json", nil
 	}
 	return f.activePath, nil
 }

@@ -11,11 +11,7 @@ import (
 
 func TestDecode_SingleDatabase(t *testing.T) {
 	// Arrange
-	input := `
-[[databases]]
-name = "local"
-db_path = "/tmp/example.sqlite"
-`
+	input := `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"}]}`
 
 	// Act
 	cfg, err := config.Decode(strings.NewReader(input))
@@ -37,15 +33,7 @@ db_path = "/tmp/example.sqlite"
 
 func TestDecode_MultipleDatabases(t *testing.T) {
 	// Arrange
-	input := `
-[[databases]]
-name = "local"
-db_path = "/tmp/example.sqlite"
-
-[[databases]]
-name = "analytics"
-db_path = "/tmp/analytics.sqlite"
-`
+	input := `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"},{"name":"analytics","db_path":"/tmp/analytics.sqlite"}]}`
 
 	// Act
 	cfg, err := config.Decode(strings.NewReader(input))
@@ -89,7 +77,7 @@ func TestDecode_EmptyDocument(t *testing.T) {
 
 func TestDecode_UnknownTopLevelField(t *testing.T) {
 	// Arrange
-	input := `title = "dbc"`
+	input := `{"title":"dbc"}`
 
 	// Act
 	_, err := config.Decode(strings.NewReader(input))
@@ -102,7 +90,7 @@ func TestDecode_UnknownTopLevelField(t *testing.T) {
 
 func TestDecode_EmptyDatabasesList(t *testing.T) {
 	// Arrange
-	input := `databases = []`
+	input := `{"databases":[]}`
 
 	// Act
 	cfg, err := config.Decode(strings.NewReader(input))
@@ -118,11 +106,7 @@ func TestDecode_EmptyDatabasesList(t *testing.T) {
 
 func TestDecode_LegacyDatabaseSection(t *testing.T) {
 	// Arrange
-	input := `
-[database]
-name = "legacy"
-db_path = "/tmp/example.sqlite"
-`
+	input := `{"database":{"name":"legacy","db_path":"/tmp/example.sqlite"}}`
 
 	// Act
 	_, err := config.Decode(strings.NewReader(input))
@@ -135,10 +119,7 @@ db_path = "/tmp/example.sqlite"
 
 func TestDecode_MultipleDatabasesMissingName(t *testing.T) {
 	// Arrange
-	input := `
-[[databases]]
-db_path = "/tmp/example.sqlite"
-`
+	input := `{"databases":[{"db_path":"/tmp/example.sqlite"}]}`
 
 	// Act
 	_, err := config.Decode(strings.NewReader(input))
@@ -151,10 +132,7 @@ db_path = "/tmp/example.sqlite"
 
 func TestDecode_MultipleDatabasesMissingPath(t *testing.T) {
 	// Arrange
-	input := `
-[[databases]]
-name = "local"
-`
+	input := `{"databases":[{"name":"local"}]}`
 
 	// Act
 	_, err := config.Decode(strings.NewReader(input))
@@ -173,7 +151,7 @@ func TestResolvePathForOS_LinuxUsesHomeConfig(t *testing.T) {
 	path := config.ResolvePathForOS("linux", home, "")
 
 	// Assert
-	expected := filepath.Join(home, ".config", "dbc", "config.toml")
+	expected := filepath.Join(home, ".config", "dbc", "config.json")
 	if path != expected {
 		t.Fatalf("expected %q, got %q", expected, path)
 	}
@@ -187,7 +165,7 @@ func TestResolvePathForOS_MacOSUsesHomeConfig(t *testing.T) {
 	path := config.ResolvePathForOS("darwin", home, "")
 
 	// Assert
-	expected := filepath.Join(home, ".config", "dbc", "config.toml")
+	expected := filepath.Join(home, ".config", "dbc", "config.json")
 	if path != expected {
 		t.Fatalf("expected %q, got %q", expected, path)
 	}
@@ -201,7 +179,7 @@ func TestResolvePathForOS_UnknownOSUsesHomeConfig(t *testing.T) {
 	path := config.ResolvePathForOS("plan9", home, "")
 
 	// Assert
-	expected := filepath.Join(home, ".config", "dbc", "config.toml")
+	expected := filepath.Join(home, ".config", "dbc", "config.json")
 	if path != expected {
 		t.Fatalf("expected %q, got %q", expected, path)
 	}

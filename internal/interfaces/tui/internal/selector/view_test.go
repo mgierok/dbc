@@ -91,7 +91,7 @@ func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
 		entries: []dto.ConfigDatabase{
 			{Name: "local", Path: "/tmp/local.sqlite"},
 		},
-		activePath: "/tmp/config.toml",
+		activePath: "/tmp/config.json",
 	}
 	model, err := newDatabaseSelectorModel(context.Background(), manager)
 	if err != nil {
@@ -104,7 +104,7 @@ func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
 	view := stripANSI(model.View())
 
 	// Assert
-	if !strings.Contains(view, "/tmp/config.toml") {
+	if !strings.Contains(view, "/tmp/config.json") {
 		t.Fatalf("expected active config path in view, got %q", view)
 	}
 }

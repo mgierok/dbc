@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -9,13 +11,12 @@ import (
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/port"
-	"github.com/pelletier/go-toml/v2"
 )
 
 const (
 	configDirName  = ".config"
 	appDirName     = "dbc"
-	configFileName = "config.toml"
+	configFileName = "config.json"
 )
 
 var (
@@ -25,12 +26,12 @@ var (
 )
 
 type Config struct {
-	Databases []DatabaseConfig `toml:"databases"`
+	Databases []DatabaseConfig `json:"databases"`
 }
 
 type DatabaseConfig struct {
-	Name string `toml:"name"`
-	Path string `toml:"db_path"`
+	Name string `json:"name"`
+	Path string `json:"db_path"`
 }
 
 type Store struct {
@@ -43,8 +44,24 @@ func NewStore(path string) *Store {
 
 func Decode(r io.Reader) (Config, error) {
 	var cfg Config
-	decoder := toml.NewDecoder(r).DisallowUnknownFields()
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return Config{}, err
+	}
+	if strings.TrimSpace(string(content)) == "" {
+		return Config{}, nil
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(content))
+	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	var extra struct{}
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return Config{}, errors.New("config file must contain a single JSON object")
+		}
 		return Config{}, err
 	}
 	if err := cfg.Validate(); err != nil {
@@ -169,10 +186,13 @@ func saveFile(path string, cfg Config) (err error) {
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
+	if cfg.Databases == nil {
+		cfg.Databases = []DatabaseConfig{}
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(filepath.Dir(path), ".config.*.toml")
+	file, err := os.CreateTemp(filepath.Dir(path), ".config.*.json")
 	if err != nil {
 		return err
 	}
@@ -182,7 +202,8 @@ func saveFile(path string, cfg Config) (err error) {
 			_ = os.Remove(tmpPath)
 		}
 	}()
-	encoder := toml.NewEncoder(file)
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(cfg); err != nil {
 		_ = file.Close()
 		return err

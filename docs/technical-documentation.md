@@ -34,7 +34,7 @@
 - `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, and runtime-session entrypoints.
 - `internal/interfaces/tui/internal/selector`: selector-specific Bubble Tea model, selector view/state transitions, and selector option normalization.
 - `internal/interfaces/tui/internal/primitives`: terminal UI primitives shared by runtime and selector, including key/help registry, popup/layout rendering, iconography, and style helpers.
-- `internal/infrastructure/config`: TOML config loading/validation/persistence adapter.
+- `internal/infrastructure/config`: JSON config loading/validation/persistence adapter.
 - `internal/infrastructure/engine`: SQLite adapter for reads/writes/filter/sort and connectivity checks.
 
 ## Core Technical Mechanisms
@@ -51,6 +51,13 @@
 - Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
+
+### JSON Config Persistence
+
+- Guarantee: DBC reads and writes only JSON config at the active config path.
+- Guarantee: trimmed-empty config content is treated as an empty config state before JSON decoding.
+- Guarantee: unknown JSON fields are rejected during config decode.
+- Enforced in: `internal/infrastructure/config/config.go`.
 
 ### Staged Write Model
 
@@ -103,10 +110,10 @@
 
 ### Configuration Contract
 
-- Active config path: `~/.config/dbc/config.toml`.
-- Persisted config entries: `[[databases]]` with required fields `name` and `db_path`.
-- Unknown TOML fields are rejected (`DisallowUnknownFields`).
-- Missing file and empty `databases` list are valid startup states and route to mandatory first-entry setup.
+- Active config path: `~/.config/dbc/config.json`.
+- Persisted config entries: top-level `databases` array with required fields `name` and `db_path`.
+- Unknown JSON fields are rejected (`DisallowUnknownFields`).
+- Missing file, trimmed-empty file, and empty `databases` list are valid startup states and route to mandatory first-entry setup.
 - Save behavior is atomic (`CreateTemp` + `Rename`) and creates config directory with `0700`.
 
 ### Application Port Contracts
@@ -171,6 +178,12 @@
 - Rationale: deterministic automation behavior and clearer startup failure semantics.
 - Where: `cmd/dbc/main.go`, `cmd/dbc/startup_runtime.go`.
 
+### JSON-Only Config
+
+- Decision: support only `config.json` at runtime.
+- Rationale: keep config handling isolated in one adapter and use only Go stdlib JSON handling.
+- Where: `internal/infrastructure/config/config.go`.
+
 ### Centralized Keybinding and Command Registry
 
 - Decision: keep shortcut bindings, command aliases, parameterized runtime commands, and help/status hints centralized in `internal/interfaces/tui/internal/primitives`, split by concern rather than reintroduced through adapter-local bridge files.
@@ -215,7 +228,6 @@ Version source: `go.mod`.
 - Go toolchain: `go1.25.5`.
 - Direct runtime dependencies:
   - `github.com/charmbracelet/bubbletea v1.3.10`
-  - `github.com/pelletier/go-toml/v2 v2.2.4`
   - `modernc.org/sqlite v1.42.2`
 
 ## Technical Constraints and Risks

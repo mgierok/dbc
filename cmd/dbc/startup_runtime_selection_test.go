@@ -477,5 +477,5 @@ func (f *fakeStartupSelectionConfigStore) Delete(_ context.Context, index int) e
 }
 
 func (f *fakeStartupSelectionConfigStore) ActivePath(_ context.Context) (string, error) {
-	return "/tmp/config.toml", nil
+	return "/tmp/config.json", nil
 }

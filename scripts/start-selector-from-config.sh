@@ -10,10 +10,15 @@ mkdir -p "$TMP_HOME/.config/dbc"
 cp scripts/test.db "$TMP_DB"
 go build -o "$DBC_BIN" ./cmd/dbc
 
-cat > "$TMP_HOME/.config/dbc/config.toml" <<EOF
-[[databases]]
-name = "fixture"
-db_path = "$TMP_DB"
+cat > "$TMP_HOME/.config/dbc/config.json" <<EOF
+{
+  "databases": [
+    {
+      "name": "fixture",
+      "db_path": "$TMP_DB"
+    }
+  ]
+}
 EOF
 
 echo "TMP_ROOT=$TMP_ROOT"

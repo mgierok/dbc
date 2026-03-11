@@ -11,12 +11,8 @@ import (
 func TestLoadFile_LoadsConfigFromPath(t *testing.T) {
 	// Arrange
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.toml")
-	content := `
-[[databases]]
-name = "local"
-db_path = "/tmp/example.sqlite"
-`
+	path := filepath.Join(dir, "config.json")
+	content := `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
@@ -41,7 +37,7 @@ db_path = "/tmp/example.sqlite"
 
 func TestLoadFile_ReturnsErrorWhenFileDoesNotExist(t *testing.T) {
 	// Arrange
-	missingPath := filepath.Join(t.TempDir(), "missing.toml")
+	missingPath := filepath.Join(t.TempDir(), "missing.json")
 
 	// Act
 	_, err := config.LoadFile(missingPath)

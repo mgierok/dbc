@@ -51,7 +51,7 @@ func TestSelectDatabaseWithState_DelegatesStateAndUsesConfigManagementAdapter(t 
 		entries: []port.ConfigEntry{
 			{Name: "local", DBPath: "/tmp/local.sqlite"},
 		},
-		activePath: "/tmp/config.toml",
+		activePath: "/tmp/config.json",
 	}
 	checker := &fakeSelectorConnectionChecker{}
 	originalSelector := selectDatabaseWithStateFn
@@ -88,8 +88,8 @@ func TestSelectDatabaseWithState_DelegatesStateAndUsesConfigManagementAdapter(t 
 		if err != nil {
 			t.Fatalf("expected active path without error, got %v", err)
 		}
-		if activePath != "/tmp/config.toml" {
-			t.Fatalf("expected active path %q, got %q", "/tmp/config.toml", activePath)
+		if activePath != "/tmp/config.json" {
+			t.Fatalf("expected active path %q, got %q", "/tmp/config.json", activePath)
 		}
 
 		return expectedOption, nil

@@ -190,7 +190,7 @@ func TestRenderStandardizedPopup_KeepsFrameWidthAndRightBorderAlignedWithUnicode
 	// Arrange
 	spec := StandardizedPopupSpec{
 		Title:   "Select database",
-		Summary: "Config: /tmp/config.toml",
+		Summary: "Config: /tmp/config.json",
 		Rows: PopupSelectableRows([]string{
 			IconConfigSource + " local" + FrameSegmentSeparator + "/tmp/local.sqlite",
 			IconCLISource + " /tmp/direct.sqlite" + FrameSegmentSeparator + "/tmp/direct.sqlite",

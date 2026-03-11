@@ -121,7 +121,7 @@ func TestListConfiguredDatabases_MapsEntries(t *testing.T) {
 
 func TestGetActiveConfigPath_ReturnsPath(t *testing.T) {
 	// Arrange
-	store := &fakeConfigStore{activePath: "/tmp/config.toml"}
+	store := &fakeConfigStore{activePath: "/tmp/config.json"}
 	uc := usecase.NewGetActiveConfigPath(store)
 
 	// Act
@@ -131,8 +131,8 @@ func TestGetActiveConfigPath_ReturnsPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if path != "/tmp/config.toml" {
-		t.Fatalf("expected path %q, got %q", "/tmp/config.toml", path)
+	if path != "/tmp/config.json" {
+		t.Fatalf("expected path %q, got %q", "/tmp/config.json", path)
 	}
 }
 

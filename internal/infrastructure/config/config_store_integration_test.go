@@ -13,12 +13,8 @@ import (
 
 func TestConfigStore_CRUDPersistence(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
-	content := `
-[[databases]]
-name = "local"
-db_path = "/tmp/local.sqlite"
-`
+	path := filepath.Join(t.TempDir(), "config.json")
+	content := `{"databases":[{"name":"local","db_path":"/tmp/local.sqlite"}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
@@ -56,12 +52,8 @@ db_path = "/tmp/local.sqlite"
 
 func TestConfigStore_CreateRejectsInvalidEntry(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
-	content := `
-[[databases]]
-name = "local"
-db_path = "/tmp/local.sqlite"
-`
+	path := filepath.Join(t.TempDir(), "config.json")
+	content := `{"databases":[{"name":"local","db_path":"/tmp/local.sqlite"}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
@@ -78,7 +70,7 @@ db_path = "/tmp/local.sqlite"
 
 func TestConfigStore_ListReturnsEmptyWhenFileDoesNotExist(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "missing.toml")
+	path := filepath.Join(t.TempDir(), "missing.json")
 	store := config.NewStore(path)
 
 	// Act
@@ -95,8 +87,8 @@ func TestConfigStore_ListReturnsEmptyWhenFileDoesNotExist(t *testing.T) {
 
 func TestConfigStore_ListReturnsEmptyWhenConfigHasNoDatabases(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
-	if err := os.WriteFile(path, []byte("databases = []\n"), 0o600); err != nil {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"databases":[]}`), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
 	store := config.NewStore(path)
@@ -115,12 +107,8 @@ func TestConfigStore_ListReturnsEmptyWhenConfigHasNoDatabases(t *testing.T) {
 
 func TestConfigStore_ListReturnsErrorWhenConfigUsesUnknownShape(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
-	content := `
-[database]
-name = "legacy"
-db_path = "/tmp/legacy.sqlite"
-`
+	path := filepath.Join(t.TempDir(), "config.json")
+	content := `{"database":{"name":"legacy","db_path":"/tmp/legacy.sqlite"}}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
@@ -137,7 +125,7 @@ db_path = "/tmp/legacy.sqlite"
 
 func TestConfigStore_CreateCreatesConfigWhenFileDoesNotExist(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "missing.toml")
+	path := filepath.Join(t.TempDir(), "missing.json")
 	store := config.NewStore(path)
 
 	// Act
@@ -165,7 +153,7 @@ func TestConfigStore_CreateCreatesConfigWhenFileDoesNotExist(t *testing.T) {
 
 func TestConfigStore_CreateCreatesFirstEntryWhenConfigHasNoDatabases(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
+	path := filepath.Join(t.TempDir(), "config.json")
 	if err := os.WriteFile(path, []byte(""), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
@@ -196,8 +184,8 @@ func TestConfigStore_CreateCreatesFirstEntryWhenConfigHasNoDatabases(t *testing.
 
 func TestConfigStore_CreateReturnsErrorWhenConfigHasInvalidSyntax(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
-	if err := os.WriteFile(path, []byte("[[databases]\n"), 0o600); err != nil {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"databases":[`), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
 	store := config.NewStore(path)
@@ -216,12 +204,8 @@ func TestConfigStore_CreateReturnsErrorWhenConfigHasInvalidSyntax(t *testing.T) 
 
 func TestConfigStore_DeleteAllowsRemovingLastEntry(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "config.toml")
-	content := `
-[[databases]]
-name = "local"
-db_path = "/tmp/local.sqlite"
-`
+	path := filepath.Join(t.TempDir(), "config.json")
+	content := `{"databases":[{"name":"local","db_path":"/tmp/local.sqlite"}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write temp config file: %v", err)
 	}
