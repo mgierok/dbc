@@ -25,6 +25,7 @@
 
 The agent MUST use `docs/technical-documentation.md#architecture-and-boundaries` as the primary architecture guide.
 For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
+
 - The agent MUST preserve the architecture boundaries and dependency direction defined in `docs/technical-documentation.md`.
 - The agent MUST treat human and AI discoverability as first-class quality concerns.
 - The agent SHOULD prefer structures where the likely change location is predictable from naming, boundaries, and module ownership.
@@ -98,9 +99,8 @@ Quick examples:
 
 - For coding-related plans, the plan SHOULD be iterative and SHOULD split complex implementation work into multiple chunks.
 - For coding-related plans, a chunk MUST be the smallest independently reviewable implementation increment that delivers one coherent implementation objective and working software.
-- For coding-related plans that cover codebase changes, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
-- When operating in Plan mode and persisting a generated plan to the repository, the agent MUST save that plan under `.plans/`.
-- Persisted Plan mode files MUST use a short descriptive kebab-case filename that communicates the task intent (for example `add-gitignore-plan.md`) and MUST NOT use generic names such as `plan.md` or `todo.md`.
+- For coding-related plans, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
+- When operating in Plan mode and persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
 - A generated plan MUST include references to the documentation files that SHOULD be consulted to enrich task context for that specific task, with a short note describing why each file is relevant.
 
 ### Repository Consistency Rules
