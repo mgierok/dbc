@@ -103,8 +103,5 @@ Quick examples:
 
 ### Repository Consistency Rules
 
-- Whenever the agent asks the user a question, it MUST present exactly four numbered response options:
-  - Options `1`, `2`, and `3` MUST be predefined choices.
-  - Option `4` MUST allow the user to provide a custom response.
 - Whenever any file is renamed or moved, the agent MUST update inbound references to that file across the repository in the same change-set; exclude completed PRD and TASK artifacts.
 - Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change-set.
