@@ -97,9 +97,7 @@ Quick examples:
 
 ### Plan Mode Rules
 
-- For coding-related plans, the plan SHOULD be iterative and SHOULD split complex implementation work into multiple chunks.
-- For coding-related plans, a chunk MUST be the smallest independently reviewable implementation increment that delivers one coherent implementation objective and working software.
-- For coding-related plans, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
+- When operating in Plan mode, for coding-related plans, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
 - When operating in Plan mode and persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
 - A generated plan MUST include references to the documentation files that SHOULD be consulted to enrich task context for that specific task, with a short note describing why each file is relevant.
 
