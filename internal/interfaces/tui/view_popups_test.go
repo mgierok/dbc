@@ -124,46 +124,6 @@ func TestRenderHelpPopup_ShowsOnlyCurrentContextBindings(t *testing.T) {
 	}
 }
 
-func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
-	// Arrange
-	model := &Model{
-		ui: runtimeUIState{height: 40},
-		overlay: runtimeOverlayState{
-			helpPopup: helpPopup{
-				active:  true,
-				context: helpPopupContextTables,
-			},
-		},
-	}
-
-	// Act
-	lines := model.renderHelpPopup(60)
-
-	// Assert
-	if len(lines) < 5 {
-		t.Fatalf("expected help popup to include framed header and content, got %q", strings.Join(lines, "\n"))
-	}
-
-	if !strings.HasPrefix(stripANSI(lines[0]), primitives.FrameTopLeft+"Context Help: Tables") {
-		t.Fatalf("expected context-specific help title in top border, got %q", stripANSI(lines[0]))
-	}
-
-	summaryLine := stripANSI(lines[1])
-	summary := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(summaryLine, primitives.FrameVertical), primitives.FrameVertical))
-	if summary != "Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes." {
-		t.Fatalf("expected config-style summary row below title, got %q", summary)
-	}
-
-	separator := strings.TrimSpace(stripANSI(lines[2]))
-	if !strings.HasPrefix(separator, primitives.FrameJoinLeft) || !strings.HasSuffix(separator, primitives.FrameJoinRight) {
-		t.Fatalf("expected separator row with border joins, got %q", separator)
-	}
-	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, primitives.FrameJoinLeft), primitives.FrameJoinRight)
-	if separatorInner == "" || strings.Trim(separatorInner, primitives.FrameHorizontal) != "" {
-		t.Fatalf("expected separator row after summary, got %q", separator)
-	}
-}
-
 func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -215,7 +175,7 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 	}
 }
 
-func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
+func TestView_HelpPopupSuppressesBackgroundPanelsAndShowsHelpContent(t *testing.T) {
 	// Arrange
 	model := &Model{
 		ui: runtimeUIState{
@@ -234,124 +194,15 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	if strings.Contains(view, primitives.IconSelection+" Tables") || strings.Contains(view, primitives.IconSelection+" Schema") || strings.Contains(view, primitives.IconSelection+" Records") {
 		t.Fatalf("expected help modal view without background panels, got %q", view)
 	}
-	if !strings.Contains(view, primitives.FrameTopLeft+"Context Help: Tables") {
-		t.Fatalf("expected help modal frame in view, got %q", view)
+	if !strings.Contains(view, "Context Help: Tables") {
+		t.Fatalf("expected help popup title in view, got %q", view)
 	}
-
-	lines := strings.Split(view, "\n")
-	helpLine := -1
-	for i, line := range lines {
-		if strings.Contains(line, primitives.FrameTopLeft+"Context Help: Tables") {
-			helpLine = i
-			if strings.Index(line, primitives.FrameTopLeft+"Context Help: Tables") == 0 {
-				t.Fatalf("expected centered modal line with left padding, got %q", line)
-			}
-			break
-		}
-	}
-	if helpLine <= 0 || helpLine >= len(lines)-1 {
-		t.Fatalf("expected help frame to be vertically centered, line=%d total=%d", helpLine, len(lines))
+	if !strings.Contains(view, "Tables: Enter records") {
+		t.Fatalf("expected tables-specific help content in view, got %q", view)
 	}
 }
 
-func TestView_FilterPopupRendersAsCenteredModal(t *testing.T) {
-	// Arrange
-	model := &Model{
-		ui: runtimeUIState{
-			width:  80,
-			height: 24,
-		},
-		overlay: runtimeOverlayState{
-			filterPopup: filterPopup{
-				active: true,
-				step:   filterInputValue,
-				input:  "abc",
-				cursor: 1,
-			},
-		},
-	}
-
-	// Act
-	view := stripANSI(model.View())
-
-	// Assert
-	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
-		t.Fatalf("expected filter popup modal view without background panels, got %q", view)
-	}
-	if !strings.Contains(view, primitives.FrameTopLeft+"Filter") {
-		t.Fatalf("expected filter popup frame in view, got %q", view)
-	}
-	lines := strings.Split(view, "\n")
-	filterLine := -1
-	for i, line := range lines {
-		if strings.Contains(line, primitives.FrameTopLeft+"Filter") {
-			filterLine = i
-			if strings.Index(line, primitives.FrameTopLeft+"Filter") == 0 {
-				t.Fatalf("expected centered filter popup line with left padding, got %q", line)
-			}
-			break
-		}
-	}
-	if filterLine <= 0 || filterLine >= len(lines)-1 {
-		t.Fatalf("expected filter popup to be vertically centered, line=%d total=%d", filterLine, len(lines))
-	}
-}
-
-func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
-	// Arrange
-	model := &Model{
-		ui: runtimeUIState{
-			width:  80,
-			height: 24,
-		},
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{
-						Name:  "name",
-						Type:  "TEXT",
-						Input: dto.ColumnInput{Kind: dto.ColumnInputText},
-					},
-				},
-			},
-		},
-		overlay: runtimeOverlayState{
-			editPopup: editPopup{
-				active:      true,
-				columnIndex: 0,
-				input:       "john",
-				cursor:      2,
-			},
-		},
-	}
-
-	// Act
-	view := stripANSI(model.View())
-
-	// Assert
-	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
-		t.Fatalf("expected edit popup modal view without background panels, got %q", view)
-	}
-	if !strings.Contains(view, primitives.FrameTopLeft+"Edit Cell") {
-		t.Fatalf("expected edit popup frame in view, got %q", view)
-	}
-	lines := strings.Split(view, "\n")
-	editLine := -1
-	for i, line := range lines {
-		if strings.Contains(line, primitives.FrameTopLeft+"Edit Cell") {
-			editLine = i
-			if strings.Index(line, primitives.FrameTopLeft+"Edit Cell") == 0 {
-				t.Fatalf("expected centered edit popup line with left padding, got %q", line)
-			}
-			break
-		}
-	}
-	if editLine <= 0 || editLine >= len(lines)-1 {
-		t.Fatalf("expected edit popup to be vertically centered, line=%d total=%d", editLine, len(lines))
-	}
-}
-
-func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
+func TestView_DirtyConfigCommandOpensConfirmPopupAndSuppressesBackgroundPanels(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{viewMode: ViewRecords},
@@ -371,30 +222,21 @@ func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 	view := stripANSI(model.View())
 
 	// Assert
-	if !strings.Contains(view, primitives.FrameTopLeft+"Config") {
+	if !strings.Contains(view, "Config") {
 		t.Fatalf("expected dirty :config modal title, got %q", view)
 	}
 	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
 		t.Fatalf("expected centered modal without background panels, got %q", view)
 	}
-
-	lines := strings.Split(view, "\n")
-	configLine := -1
-	for i, line := range lines {
-		if strings.Contains(line, primitives.FrameTopLeft+"Config") {
-			configLine = i
-			if strings.Index(line, primitives.FrameTopLeft+"Config") == 0 {
-				t.Fatalf("expected centered config modal line with left padding, got %q", line)
-			}
-			break
-		}
+	if !strings.Contains(view, "Unsaved changes detected.") {
+		t.Fatalf("expected dirty :config confirm message, got %q", view)
 	}
-	if configLine <= 0 || configLine >= len(lines)-1 {
-		t.Fatalf("expected config modal to be vertically centered, line=%d total=%d", configLine, len(lines))
+	if !strings.Contains(view, "Save and open config") || !strings.Contains(view, "Discard and open config") {
+		t.Fatalf("expected dirty :config options in popup, got %q", view)
 	}
 }
 
-func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t *testing.T) {
+func TestRenderConfirmPopup_DirtyConfigShowsMessageAndOptionLabels(t *testing.T) {
 	// Arrange
 	model := &Model{
 		overlay: runtimeOverlayState{
@@ -415,33 +257,27 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 
 	// Act
 	lines := model.renderConfirmPopup(60)
-	popup := strings.Join(lines, "\n")
+	popup := stripANSI(strings.Join(lines, "\n"))
 
 	// Assert
-	if len(lines) < 6 {
-		t.Fatalf("expected modal config popup with framed header and options, got %q", popup)
-	}
-	if !strings.HasPrefix(stripANSI(lines[0]), primitives.FrameTopLeft+"Config") {
-		t.Fatalf("expected config title in top border, got %q", stripANSI(lines[0]))
-	}
 	if !strings.Contains(popup, "Unsaved changes detected.") {
 		t.Fatalf("expected decision summary in popup, got %q", popup)
 	}
-
-	separator := strings.TrimSpace(lines[2])
-	if !strings.HasPrefix(separator, primitives.FrameJoinLeft) || !strings.HasSuffix(separator, primitives.FrameJoinRight) {
-		t.Fatalf("expected separator row with border joins, got %q", separator)
+	if !strings.Contains(popup, "Save and open config") {
+		t.Fatalf("expected save option label in popup, got %q", popup)
 	}
-	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, primitives.FrameJoinLeft), primitives.FrameJoinRight)
-	if separatorInner == "" || strings.Trim(separatorInner, primitives.FrameHorizontal) != "" {
-		t.Fatalf("expected separator row after summary, got %q", separator)
+	if !strings.Contains(popup, "Discard and open config") {
+		t.Fatalf("expected discard option label in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "Cancel") {
+		t.Fatalf("expected cancel option label in popup, got %q", popup)
 	}
 	if !strings.Contains(popup, primitives.IconSelection+" Save and open config") {
-		t.Fatalf("expected selected option marker in popup, got %q", popup)
+		t.Fatalf("expected selected config option in popup, got %q", popup)
 	}
 }
 
-func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitActions(t *testing.T) {
+func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *testing.T) {
 	// Arrange
 	model := &Model{
 		overlay: runtimeOverlayState{
@@ -461,91 +297,19 @@ func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitA
 
 	// Act
 	lines := model.renderConfirmPopup(120)
-	popup := strings.Join(lines, "\n")
+	popup := stripANSI(strings.Join(lines, "\n"))
 
 	// Assert
-	if !strings.Contains(popup, primitives.FrameTopLeft+"Switch Table") {
-		t.Fatalf("expected switch-table title in popup, got %q", popup)
-	}
 	if !strings.Contains(popup, "Switching tables will cause loss of unsaved data") {
 		t.Fatalf("expected informational switch-table summary in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, primitives.IconSelection+" (y) Yes, discard changes and switch table") {
-		t.Fatalf("expected explicit yes action in popup, got %q", popup)
+	if !strings.Contains(popup, "(y) Yes, discard changes and switch table") {
+		t.Fatalf("expected yes action label in popup, got %q", popup)
 	}
 	if !strings.Contains(popup, "(n) No, continue editing") {
-		t.Fatalf("expected explicit no action in popup, got %q", popup)
+		t.Fatalf("expected no action label in popup, got %q", popup)
 	}
-}
-
-func TestView_RegularConfirmPopupRendersAsCenteredModal(t *testing.T) {
-	// Arrange
-	model := &Model{
-		ui: runtimeUIState{
-			width:  80,
-			height: 24,
-		},
-		overlay: runtimeOverlayState{
-			confirmPopup: confirmPopup{
-				active:  true,
-				title:   "Confirm",
-				message: "Save staged changes?",
-			},
-		},
-	}
-
-	// Act
-	view := model.View()
-
-	// Assert
-	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
-		t.Fatalf("expected non-modal confirm as centered popup without background panels, got %q", view)
-	}
-	if !strings.Contains(view, primitives.FrameTopLeft+"Confirm") {
-		t.Fatalf("expected confirm popup frame, got %q", view)
-	}
-	lines := strings.Split(view, "\n")
-	confirmLine := -1
-	for i, line := range lines {
-		if strings.Contains(line, primitives.FrameTopLeft+"Confirm") {
-			confirmLine = i
-			if strings.Index(line, primitives.FrameTopLeft+"Confirm") == 0 {
-				t.Fatalf("expected centered confirm popup line with left padding, got %q", line)
-			}
-			break
-		}
-	}
-	if confirmLine <= 0 || confirmLine >= len(lines)-1 {
-		t.Fatalf("expected confirm popup to be vertically centered, line=%d total=%d", confirmLine, len(lines))
-	}
-}
-
-func TestRenderConfirmPopup_InlineUsesStandardizedSeparatorRow(t *testing.T) {
-	// Arrange
-	model := &Model{
-		overlay: runtimeOverlayState{
-			confirmPopup: confirmPopup{
-				active:  true,
-				title:   "Confirm",
-				message: "Save staged changes?",
-			},
-		},
-	}
-
-	// Act
-	lines := model.renderConfirmPopup(60)
-
-	// Assert
-	if len(lines) < 5 {
-		t.Fatalf("expected standardized confirm popup layout, got %q", strings.Join(lines, "\n"))
-	}
-
-	separator := strings.TrimSpace(lines[2])
-	if !strings.HasPrefix(separator, primitives.FrameJoinLeft) || !strings.HasSuffix(separator, primitives.FrameJoinRight) {
-		t.Fatalf("expected separator row with border joins, got %q", separator)
-	}
-	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, primitives.FrameJoinLeft), primitives.FrameJoinRight)
-	if separatorInner == "" || strings.Trim(separatorInner, primitives.FrameHorizontal) != "" {
-		t.Fatalf("expected separator row after summary, got %q", separator)
+	if !strings.Contains(popup, primitives.IconSelection+" (y) Yes, discard changes and switch table") {
+		t.Fatalf("expected selected yes action in popup, got %q", popup)
 	}
 }

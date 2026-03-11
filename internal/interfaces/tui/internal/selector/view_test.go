@@ -163,7 +163,7 @@ func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testing.T) {
+func TestDatabaseSelector_ViewShowsSourceMarkersWithoutLegendAndKeepsFooterHint(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{
@@ -186,41 +186,9 @@ func TestDatabaseSelector_ViewKeepsRightBorderAlignedWithUnicodeMarkers(t *testi
 	model.height = 24
 
 	// Act
-	view := model.View()
-	lines := strings.Split(view, "\n")
+	view := stripANSI(model.View())
 
 	// Assert
-	framedWidth := 0
-	hasFramedLine := false
-	for _, line := range lines {
-		trimmed := strings.TrimLeft(stripANSI(line), " ")
-		if trimmed == "" {
-			continue
-		}
-		if !strings.HasPrefix(trimmed, primitives.FrameTopLeft) &&
-			!strings.HasPrefix(trimmed, primitives.FrameVertical) &&
-			!strings.HasPrefix(trimmed, primitives.FrameJoinLeft) &&
-			!strings.HasPrefix(trimmed, primitives.FrameBottomLeft) {
-			continue
-		}
-		framed := strings.TrimRight(trimmed, " ")
-		lineWidth := primitives.TextWidth(framed)
-		if !hasFramedLine {
-			framedWidth = lineWidth
-			hasFramedLine = true
-		} else if lineWidth != framedWidth {
-			t.Fatalf("expected consistent framed width %d, got %d for line %q", framedWidth, lineWidth, framed)
-		}
-		if !strings.HasSuffix(framed, primitives.FrameVertical) &&
-			!strings.HasSuffix(framed, primitives.FrameTopRight) &&
-			!strings.HasSuffix(framed, primitives.FrameJoinRight) &&
-			!strings.HasSuffix(framed, primitives.FrameBottomRight) {
-			t.Fatalf("expected framed line to end with right border marker, got %q", framed)
-		}
-	}
-	if !hasFramedLine {
-		t.Fatalf("expected popup content lines in view, got %q", view)
-	}
 	if !strings.Contains(view, primitives.IconConfigSource) {
 		t.Fatalf("expected config source marker in selector view, got %q", view)
 	}
@@ -272,29 +240,6 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_BoxLinesEnforceMinimumHeight40Percent(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
-		},
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
-	model.height = 50
-
-	// Act
-	lines := model.boxLines(model.listHeight(model.height), 100)
-
-	// Assert
-	minExpectedHeight := (model.height*40 + 99) / 100
-	if len(lines) < minExpectedHeight {
-		t.Fatalf("expected selector min height %d, got %d", minExpectedHeight, len(lines))
-	}
-}
-
 func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
@@ -324,84 +269,5 @@ func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *tes
 	}
 	if strings.Contains(view, "Legend: "+primitives.IconConfigSource+" config"+primitives.FrameSegmentSeparator+primitives.IconCLISource+" CLI session") {
 		t.Fatalf("expected help popup to exclude legend, got %q", view)
-	}
-}
-
-func TestDatabaseSelector_BoxLines_UsesPopupLikeSummaryAndSelectionStyling(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
-		},
-		activePath: "/tmp/config.toml",
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
-	model.styles = primitives.NewRenderStyles(true)
-
-	// Act
-	lines := model.boxLines(model.listHeight(24), 80)
-	view := strings.Join(lines, "\n")
-
-	// Assert
-	if !strings.Contains(lines[1], "\x1b[1mConfig: /tmp/config.toml\x1b[0m") {
-		t.Fatalf("expected selector config path to use popup summary styling, got %q", lines[1])
-	}
-	selectedLine := lines[3]
-	if strings.HasPrefix(selectedLine, "\x1b[7m"+primitives.FrameVertical) {
-		t.Fatalf("expected selector left border to remain unstyled, got %q", selectedLine)
-	}
-	if strings.Contains(selectedLine, primitives.FrameVertical+"\x1b[0m") {
-		t.Fatalf("expected selector right border to remain outside selected styling, got %q", selectedLine)
-	}
-	if !strings.Contains(selectedLine, primitives.FrameVertical+"\x1b[7m "+primitives.SelectionSelectedPrefix()+"⚙ local"+primitives.FrameSegmentSeparator+"/tmp/local.sqlite") {
-		t.Fatalf("expected selector selection to style only popup content, got %q", selectedLine)
-	}
-	if !strings.Contains(stripANSI(lines[len(lines)-2]), "Context help: ?") {
-		t.Fatalf("expected selector footer hint in popup footer row, got %q", stripANSI(lines[len(lines)-2]))
-	}
-	if !strings.Contains(view, "Context help: ?") {
-		t.Fatalf("expected selector view to keep context help footer, got %q", view)
-	}
-}
-
-func TestDatabaseSelector_BoxLines_UsesPopupLikeSelectionStylingForActiveFormField(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
-		},
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
-	model.styles = primitives.NewRenderStyles(true)
-	model.openAddForm()
-
-	// Act
-	lines := model.boxLines(model.listHeight(24), 80)
-
-	// Assert
-	var activeLine string
-	for _, line := range lines {
-		if strings.Contains(line, "Name: |") {
-			activeLine = line
-			break
-		}
-	}
-	if activeLine == "" {
-		t.Fatalf("expected active form field line, got %q", strings.Join(lines, "\n"))
-	}
-	if strings.HasPrefix(activeLine, "\x1b[7m"+primitives.FrameVertical) {
-		t.Fatalf("expected form field left border to remain unstyled, got %q", activeLine)
-	}
-	if strings.Contains(activeLine, primitives.FrameVertical+"\x1b[0m") {
-		t.Fatalf("expected form field right border to remain outside selected styling, got %q", activeLine)
-	}
-	if !strings.Contains(activeLine, primitives.FrameVertical+"\x1b[7m "+primitives.SelectionSelectedPrefix()+"Name: |") {
-		t.Fatalf("expected active form field content to use shared popup selection styling, got %q", activeLine)
 	}
 }

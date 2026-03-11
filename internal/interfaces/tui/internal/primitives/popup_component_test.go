@@ -35,6 +35,31 @@ func TestRenderStandardizedPopup_RendersSelectableRows(t *testing.T) {
 	}
 }
 
+func TestRenderStandardizedPopup_RendersSummaryDividerRow(t *testing.T) {
+	// Arrange
+	spec := StandardizedPopupSpec{
+		Title:        "Confirm",
+		Summary:      "Save staged changes?",
+		Rows:         PopupSelectableRows([]string{"Save", "Discard"}, 0),
+		DefaultWidth: 50,
+		MinWidth:     20,
+		MaxWidth:     60,
+	}
+
+	// Act
+	lines := RenderStandardizedPopup(60, 24, spec)
+	separator := stripANSI(lines[2])
+
+	// Assert
+	if !strings.HasPrefix(separator, FrameJoinLeft) || !strings.HasSuffix(separator, FrameJoinRight) {
+		t.Fatalf("expected separator row with border joins, got %q", separator)
+	}
+	separatorInner := strings.TrimSuffix(strings.TrimPrefix(separator, FrameJoinLeft), FrameJoinRight)
+	if separatorInner == "" || strings.Trim(separatorInner, FrameHorizontal) != "" {
+		t.Fatalf("expected separator row to contain only frame horizontals, got %q", separator)
+	}
+}
+
 func TestRenderStandardizedPopup_ShowsScrollIndicatorForOverflow(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
@@ -158,5 +183,73 @@ func TestRenderStandardizedPopup_ContentWidthModeUsesSelectableRowsAndFooterWidt
 	}
 	if !strings.Contains(stripANSI(lines[len(lines)-2]), "Context help: ?") {
 		t.Fatalf("expected footer row before bottom border, got %q", stripANSI(lines[len(lines)-2]))
+	}
+}
+
+func TestRenderStandardizedPopup_KeepsFrameWidthAndRightBorderAlignedWithUnicodeSourceMarkers(t *testing.T) {
+	// Arrange
+	spec := StandardizedPopupSpec{
+		Title:   "Select database",
+		Summary: "Config: /tmp/config.toml",
+		Rows: PopupSelectableRows([]string{
+			IconConfigSource + " local" + FrameSegmentSeparator + "/tmp/local.sqlite",
+			IconCLISource + " /tmp/direct.sqlite" + FrameSegmentSeparator + "/tmp/direct.sqlite",
+		}, 0),
+		Footer:    StandardizedPopupFooter{Right: "Context help: ?"},
+		WidthMode: PopupWidthContent,
+		Styles:    NewRenderStyles(true),
+	}
+
+	// Act
+	lines := RenderStandardizedPopup(120, 24, spec)
+
+	// Assert
+	expectedWidth := TextWidth(stripANSI(lines[0]))
+	for _, line := range lines {
+		stripped := stripANSI(line)
+		if TextWidth(stripped) != expectedWidth {
+			t.Fatalf("expected consistent popup width %d, got %d for line %q", expectedWidth, TextWidth(stripped), stripped)
+		}
+		if !strings.HasSuffix(stripped, FrameVertical) &&
+			!strings.HasSuffix(stripped, FrameTopRight) &&
+			!strings.HasSuffix(stripped, FrameJoinRight) &&
+			!strings.HasSuffix(stripped, FrameBottomRight) {
+			t.Fatalf("expected popup line to end with right border marker, got %q", stripped)
+		}
+	}
+	if !strings.Contains(stripANSI(strings.Join(lines, "\n")), IconConfigSource+" local"+FrameSegmentSeparator+"/tmp/local.sqlite") {
+		t.Fatalf("expected config source marker in popup, got %q", stripANSI(strings.Join(lines, "\n")))
+	}
+	if !strings.Contains(stripANSI(strings.Join(lines, "\n")), IconCLISource+" /tmp/direct.sqlite"+FrameSegmentSeparator+"/tmp/direct.sqlite") {
+		t.Fatalf("expected CLI source marker in popup, got %q", stripANSI(strings.Join(lines, "\n")))
+	}
+}
+
+func TestCenterBoxLines_AddsHorizontalAndVerticalPadding(t *testing.T) {
+	// Arrange
+	lines := []string{
+		FrameTopLeft + "Box" + FrameTopRight,
+		FrameBottomLeft + strings.Repeat(FrameHorizontal, 3) + FrameBottomRight,
+	}
+
+	// Act
+	centered := CenterBoxLines(lines, 13, 6)
+	rows := strings.Split(centered, "\n")
+
+	// Assert
+	if len(rows) != 6 {
+		t.Fatalf("expected centered output height 6, got %d", len(rows))
+	}
+	if rows[0] != strings.Repeat(" ", 13) || rows[1] != strings.Repeat(" ", 13) {
+		t.Fatalf("expected two blank top padding rows, got %q", rows[:2])
+	}
+	if rows[2] != "    "+lines[0]+strings.Repeat(" ", 4) {
+		t.Fatalf("expected horizontally centered first line, got %q", rows[2])
+	}
+	if rows[3] != "    "+lines[1]+strings.Repeat(" ", 4) {
+		t.Fatalf("expected horizontally centered second line, got %q", rows[3])
+	}
+	if rows[4] != strings.Repeat(" ", 13) || rows[5] != strings.Repeat(" ", 13) {
+		t.Fatalf("expected bottom padding rows, got %q", rows[4:])
 	}
 }
