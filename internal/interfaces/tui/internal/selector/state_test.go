@@ -2,6 +2,7 @@ package selector
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -161,5 +162,46 @@ func TestDatabaseSelector_AdditionalOptionsSurviveRefresh(t *testing.T) {
 	}
 	if model.options[1].Source != DatabaseOptionSourceCLI {
 		t.Fatalf("expected refreshed session option source %q, got %q", DatabaseOptionSourceCLI, model.options[1].Source)
+	}
+}
+
+func TestDatabaseSelector_ReturnsErrorWhenListingEntriesFails(t *testing.T) {
+	// Arrange
+	listErr := errors.New("list failed")
+	manager := &fakeSelectorManager{
+		listErr: listErr,
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+
+	// Assert
+	if model != nil {
+		t.Fatalf("expected nil model when list fails, got %#v", model)
+	}
+	if !errors.Is(err, listErr) {
+		t.Fatalf("expected list error %v, got %v", listErr, err)
+	}
+}
+
+func TestDatabaseSelector_ReturnsErrorWhenLoadingActiveConfigPathFails(t *testing.T) {
+	// Arrange
+	activePathErr := errors.New("active path failed")
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+		activePathErr: activePathErr,
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+
+	// Assert
+	if model != nil {
+		t.Fatalf("expected nil model when active config path lookup fails, got %#v", model)
+	}
+	if !errors.Is(err, activePathErr) {
+		t.Fatalf("expected active path error %v, got %v", activePathErr, err)
 	}
 }

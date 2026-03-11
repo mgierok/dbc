@@ -27,10 +27,11 @@ type fakeSelectorManager struct {
 	entries    []dto.ConfigDatabase
 	activePath string
 
-	listErr   error
-	createErr error
-	updateErr error
-	deleteErr error
+	listErr       error
+	activePathErr error
+	createErr     error
+	updateErr     error
+	deleteErr     error
 
 	created []dto.ConfigDatabase
 	updated []updatedEntry
@@ -88,6 +89,9 @@ func (f *fakeSelectorManager) Delete(_ context.Context, index int) error {
 }
 
 func (f *fakeSelectorManager) ActivePath(_ context.Context) (string, error) {
+	if f.activePathErr != nil {
+		return "", f.activePathErr
+	}
 	if f.activePath == "" {
 		return "/tmp/config.toml", nil
 	}
