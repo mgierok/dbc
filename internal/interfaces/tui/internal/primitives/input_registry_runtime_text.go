@@ -3,92 +3,92 @@ package primitives
 import "fmt"
 
 type runtimeHelpKeywordSpec struct {
-	bindings    []keyBindingID
+	bindings    []KeyBindingID
 	joinWith    string
 	description string
 }
 
 var runtimeHelpKeywordSpecs = []runtimeHelpKeywordSpec{
 	{
-		bindings:    []keyBindingID{keyRuntimeMoveDown, keyRuntimeMoveUp},
+		bindings:    []KeyBindingID{KeyRuntimeMoveDown, KeyRuntimeMoveUp},
 		joinWith:    " / ",
 		description: "Move selection down or up.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeMoveLeft, keyRuntimeMoveRight},
+		bindings:    []KeyBindingID{KeyRuntimeMoveLeft, KeyRuntimeMoveRight},
 		joinWith:    " / ",
 		description: "Move field focus left or right.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeJumpTopDisplay, keyRuntimeJumpBottom},
+		bindings:    []KeyBindingID{KeyRuntimeJumpTopDisplay, KeyRuntimeJumpBottom},
 		joinWith:    " / ",
 		description: "Jump to first or last item.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimePageDown, keyRuntimePageUp},
+		bindings:    []KeyBindingID{KeyRuntimePageDown, KeyRuntimePageUp},
 		joinWith:    " / ",
 		description: "Page down or up.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeEnter},
+		bindings:    []KeyBindingID{KeyRuntimeEnter},
 		description: "Open records, detail, or confirm action.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeEdit},
+		bindings:    []KeyBindingID{KeyRuntimeEdit},
 		description: "Enter field focus or open edit popup.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeEsc},
+		bindings:    []KeyBindingID{KeyRuntimeEsc},
 		description: "Close active popup/context.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeFilter},
+		bindings:    []KeyBindingID{KeyRuntimeFilter},
 		description: "Open filter flow for current table.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeSort},
+		bindings:    []KeyBindingID{KeyRuntimeSort},
 		description: "Open sort flow for current table.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeRecordDetail},
+		bindings:    []KeyBindingID{KeyRuntimeRecordDetail},
 		description: "Open selected record detail view.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeInsert},
+		bindings:    []KeyBindingID{KeyRuntimeInsert},
 		description: "Stage a new insert row.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeDelete},
+		bindings:    []KeyBindingID{KeyRuntimeDelete},
 		description: "Toggle delete marker/remove insert.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeUndo, keyRuntimeRedo},
+		bindings:    []KeyBindingID{KeyRuntimeUndo, KeyRuntimeRedo},
 		joinWith:    " / ",
 		description: "Undo or redo staged action.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeSave},
+		bindings:    []KeyBindingID{KeyRuntimeSave},
 		description: "Save staged changes.",
 	},
 	{
-		bindings:    []keyBindingID{keyRuntimeToggleAutoFields},
+		bindings:    []KeyBindingID{KeyRuntimeToggleAutoFields},
 		description: "Toggle auto field visibility for inserts.",
 	},
 }
 
-func runtimeHelpPopupSummaryLine() string {
+func RuntimeHelpPopupSummaryLine() string {
 	return fmt.Sprintf(
 		"Use %s, %s to scroll. %s closes.",
-		joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp),
-		joinKeyLabels("/", keyRuntimePageDown, keyRuntimePageUp),
-		keyLabel(keyRuntimeEsc),
+		joinKeyLabels("/", KeyPopupMoveDown, KeyPopupMoveUp),
+		joinKeyLabels("/", KeyRuntimePageDown, KeyRuntimePageUp),
+		keyLabel(KeyRuntimeEsc),
 	)
 }
 
 func runtimeHelpPopupContentLines() []string {
 	lines := []string{"Supported Commands"}
 	for _, command := range runtimeCommandSpecs {
-		lines = append(lines, fmt.Sprintf("%s - %s", runtimeCommandLabel(command), command.description))
+		lines = append(lines, fmt.Sprintf("%s - %s", runtimeCommandLabel(command), command.Description))
 	}
 
 	lines = append(lines, "")
@@ -103,89 +103,89 @@ func runtimeHelpPopupContentLines() []string {
 	return lines
 }
 
-func runtimeStatusEditShortcuts() string {
+func RuntimeStatusEditShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Edit: %s confirm", keyLabel(keyRuntimeEnter)),
-		fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
-		fmt.Sprintf("%s null", keyLabel(keyEditSetNull)),
+		fmt.Sprintf("Edit: %s confirm", keyLabel(KeyRuntimeEnter)),
+		fmt.Sprintf("%s cancel", keyLabel(KeyRuntimeEsc)),
+		fmt.Sprintf("%s null", keyLabel(KeyEditSetNull)),
 	)
 }
 
-func runtimeStatusConfirmShortcuts(withOptions bool) string {
+func RuntimeStatusConfirmShortcuts(withOptions bool) string {
 	if withOptions {
 		return joinShortcutSegments(
-			fmt.Sprintf("Confirm: %s choose", joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp)),
-			fmt.Sprintf("%s select", keyLabel(keyRuntimeEnter)),
-			fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
+			fmt.Sprintf("Confirm: %s choose", joinKeyLabels("/", KeyPopupMoveDown, KeyPopupMoveUp)),
+			fmt.Sprintf("%s select", keyLabel(KeyRuntimeEnter)),
+			fmt.Sprintf("%s cancel", keyLabel(KeyRuntimeEsc)),
 		)
 	}
 	return joinShortcutSegments(
-		fmt.Sprintf("Confirm: %s yes", keyLabel(keyRuntimeEnter)),
-		fmt.Sprintf("%s no", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("Confirm: %s yes", keyLabel(KeyRuntimeEnter)),
+		fmt.Sprintf("%s no", keyLabel(KeyRuntimeEsc)),
 	)
 }
 
-func runtimeStatusFilterPopupShortcuts() string {
+func RuntimeStatusFilterPopupShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Popup: %s apply", keyLabel(keyRuntimeEnter)),
-		fmt.Sprintf("%s close", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("Popup: %s apply", keyLabel(KeyRuntimeEnter)),
+		fmt.Sprintf("%s close", keyLabel(KeyRuntimeEsc)),
 	)
 }
 
-func runtimeStatusSortPopupShortcuts() string {
+func RuntimeStatusSortPopupShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Popup: %s apply", keyLabel(keyRuntimeEnter)),
-		fmt.Sprintf("%s close", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("Popup: %s apply", keyLabel(KeyRuntimeEnter)),
+		fmt.Sprintf("%s close", keyLabel(KeyRuntimeEsc)),
 	)
 }
 
-func runtimeStatusHelpPopupShortcuts() string {
+func RuntimeStatusHelpPopupShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Help: %s scroll", joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp)),
-		fmt.Sprintf("%s close", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("Help: %s scroll", joinKeyLabels("/", KeyPopupMoveDown, KeyPopupMoveUp)),
+		fmt.Sprintf("%s close", keyLabel(KeyRuntimeEsc)),
 	)
 }
 
-func runtimeStatusCommandInputShortcuts() string {
+func RuntimeStatusCommandInputShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Command: %s run", keyLabel(keyRuntimeEnter)),
-		fmt.Sprintf("%s cancel", keyLabel(keyRuntimeEsc)),
+		fmt.Sprintf("Command: %s run", keyLabel(KeyRuntimeEnter)),
+		fmt.Sprintf("%s cancel", keyLabel(KeyRuntimeEsc)),
 	)
 }
 
-func runtimeStatusTablesShortcuts() string {
-	return fmt.Sprintf("Tables: %s records", keyLabel(keyRuntimeEnter))
+func RuntimeStatusTablesShortcuts() string {
+	return fmt.Sprintf("Tables: %s records", keyLabel(KeyRuntimeEnter))
 }
 
-func runtimeStatusSchemaShortcuts() string {
-	return fmt.Sprintf("Schema: %s tables", keyLabel(keyRuntimeEsc))
+func RuntimeStatusSchemaShortcuts() string {
+	return fmt.Sprintf("Schema: %s tables", keyLabel(KeyRuntimeEsc))
 }
 
-func runtimeStatusRecordsShortcuts() string {
+func RuntimeStatusRecordsShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Records: %s tables", keyLabel(keyRuntimeEsc)),
-		fmt.Sprintf("%s edit", keyLabel(keyRuntimeEdit)),
-		fmt.Sprintf("%s detail", keyLabel(keyRuntimeRecordDetail)),
-		fmt.Sprintf("%s insert", keyLabel(keyRuntimeInsert)),
-		fmt.Sprintf("%s delete", keyLabel(keyRuntimeDelete)),
-		fmt.Sprintf("%s undo", keyLabel(keyRuntimeUndo)),
-		fmt.Sprintf("%s redo", keyLabel(keyRuntimeRedo)),
-		fmt.Sprintf("%s save", keyLabel(keyRuntimeSave)),
-		fmt.Sprintf("%s next page", keyLabel(keyRuntimePageDown)),
-		fmt.Sprintf("%s prev page", keyLabel(keyRuntimePageUp)),
-		fmt.Sprintf("%s filter", keyLabel(keyRuntimeFilter)),
-		fmt.Sprintf("%s sort", keyLabel(keyRuntimeSort)),
+		fmt.Sprintf("Records: %s tables", keyLabel(KeyRuntimeEsc)),
+		fmt.Sprintf("%s edit", keyLabel(KeyRuntimeEdit)),
+		fmt.Sprintf("%s detail", keyLabel(KeyRuntimeRecordDetail)),
+		fmt.Sprintf("%s insert", keyLabel(KeyRuntimeInsert)),
+		fmt.Sprintf("%s delete", keyLabel(KeyRuntimeDelete)),
+		fmt.Sprintf("%s undo", keyLabel(KeyRuntimeUndo)),
+		fmt.Sprintf("%s redo", keyLabel(KeyRuntimeRedo)),
+		fmt.Sprintf("%s save", keyLabel(KeyRuntimeSave)),
+		fmt.Sprintf("%s next page", keyLabel(KeyRuntimePageDown)),
+		fmt.Sprintf("%s prev page", keyLabel(KeyRuntimePageUp)),
+		fmt.Sprintf("%s filter", keyLabel(KeyRuntimeFilter)),
+		fmt.Sprintf("%s sort", keyLabel(KeyRuntimeSort)),
 	)
 }
 
-func runtimeStatusRecordDetailShortcuts() string {
+func RuntimeStatusRecordDetailShortcuts() string {
 	return joinShortcutSegments(
-		fmt.Sprintf("Detail: %s back", keyLabel(keyRuntimeEsc)),
-		fmt.Sprintf("%s scroll", joinKeyLabels("/", keyPopupMoveDown, keyPopupMoveUp)),
-		fmt.Sprintf("%s page", joinKeyLabels("/", keyRuntimePageDown, keyRuntimePageUp)),
+		fmt.Sprintf("Detail: %s back", keyLabel(KeyRuntimeEsc)),
+		fmt.Sprintf("%s scroll", joinKeyLabels("/", KeyPopupMoveDown, KeyPopupMoveUp)),
+		fmt.Sprintf("%s page", joinKeyLabels("/", KeyRuntimePageDown, KeyRuntimePageUp)),
 	)
 }
 
-func runtimeStatusContextHelpHint() string {
-	return fmt.Sprintf("Context help: %s", keyLabel(keyRuntimeOpenContextHelp))
+func RuntimeStatusContextHelpHint() string {
+	return fmt.Sprintf("Context help: %s", keyLabel(KeyRuntimeOpenContextHelp))
 }

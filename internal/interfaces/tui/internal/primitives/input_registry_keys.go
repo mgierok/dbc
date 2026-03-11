@@ -2,7 +2,7 @@ package primitives
 
 import "strings"
 
-type keyBindingID string
+type KeyBindingID string
 
 type keyBinding struct {
 	keys  []string
@@ -10,124 +10,124 @@ type keyBinding struct {
 }
 
 const (
-	keyRuntimeOpenCommandInput keyBindingID = "runtime.open_command_input"
-	keyRuntimeOpenContextHelp  keyBindingID = "runtime.open_context_help"
-	keyRuntimeJumpTopPending   keyBindingID = "runtime.jump_top_pending"
-	keyRuntimeJumpTopDisplay   keyBindingID = "runtime.jump_top_display"
-	keyRuntimeJumpBottom       keyBindingID = "runtime.jump_bottom"
-	keyRuntimeEnter            keyBindingID = "runtime.enter"
-	keyRuntimeEdit             keyBindingID = "runtime.edit"
-	keyRuntimeEsc              keyBindingID = "runtime.esc"
-	keyRuntimeFilter           keyBindingID = "runtime.filter"
-	keyRuntimeSort             keyBindingID = "runtime.sort"
-	keyRuntimeRecordDetail     keyBindingID = "runtime.record_detail"
-	keyRuntimeSave             keyBindingID = "runtime.save"
-	keyRuntimeInsert           keyBindingID = "runtime.insert"
-	keyRuntimeDelete           keyBindingID = "runtime.delete"
-	keyRuntimeUndo             keyBindingID = "runtime.undo"
-	keyRuntimeRedo             keyBindingID = "runtime.redo"
-	keyRuntimeToggleAutoFields keyBindingID = "runtime.toggle_auto_fields"
-	keyRuntimeMoveDown         keyBindingID = "runtime.move_down"
-	keyRuntimeMoveUp           keyBindingID = "runtime.move_up"
-	keyRuntimeMoveLeft         keyBindingID = "runtime.move_left"
-	keyRuntimeMoveRight        keyBindingID = "runtime.move_right"
-	keyRuntimePageDown         keyBindingID = "runtime.page_down"
-	keyRuntimePageUp           keyBindingID = "runtime.page_up"
+	KeyRuntimeOpenCommandInput KeyBindingID = "runtime.open_command_input"
+	KeyRuntimeOpenContextHelp  KeyBindingID = "runtime.open_context_help"
+	KeyRuntimeJumpTopPending   KeyBindingID = "runtime.jump_top_pending"
+	KeyRuntimeJumpTopDisplay   KeyBindingID = "runtime.jump_top_display"
+	KeyRuntimeJumpBottom       KeyBindingID = "runtime.jump_bottom"
+	KeyRuntimeEnter            KeyBindingID = "runtime.enter"
+	KeyRuntimeEdit             KeyBindingID = "runtime.edit"
+	KeyRuntimeEsc              KeyBindingID = "runtime.esc"
+	KeyRuntimeFilter           KeyBindingID = "runtime.filter"
+	KeyRuntimeSort             KeyBindingID = "runtime.sort"
+	KeyRuntimeRecordDetail     KeyBindingID = "runtime.record_detail"
+	KeyRuntimeSave             KeyBindingID = "runtime.save"
+	KeyRuntimeInsert           KeyBindingID = "runtime.insert"
+	KeyRuntimeDelete           KeyBindingID = "runtime.delete"
+	KeyRuntimeUndo             KeyBindingID = "runtime.undo"
+	KeyRuntimeRedo             KeyBindingID = "runtime.redo"
+	KeyRuntimeToggleAutoFields KeyBindingID = "runtime.toggle_auto_fields"
+	KeyRuntimeMoveDown         KeyBindingID = "runtime.move_down"
+	KeyRuntimeMoveUp           KeyBindingID = "runtime.move_up"
+	KeyRuntimeMoveLeft         KeyBindingID = "runtime.move_left"
+	KeyRuntimeMoveRight        KeyBindingID = "runtime.move_right"
+	KeyRuntimePageDown         KeyBindingID = "runtime.page_down"
+	KeyRuntimePageUp           KeyBindingID = "runtime.page_up"
 
-	keyPopupMoveDown   keyBindingID = "popup.move_down"
-	keyPopupMoveUp     keyBindingID = "popup.move_up"
-	keyPopupJumpTop    keyBindingID = "popup.jump_top"
-	keyPopupJumpBottom keyBindingID = "popup.jump_bottom"
+	KeyPopupMoveDown   KeyBindingID = "popup.move_down"
+	KeyPopupMoveUp     KeyBindingID = "popup.move_up"
+	KeyPopupJumpTop    KeyBindingID = "popup.jump_top"
+	KeyPopupJumpBottom KeyBindingID = "popup.jump_bottom"
 
-	keyInputMoveLeft  keyBindingID = "input.move_left"
-	keyInputMoveRight keyBindingID = "input.move_right"
-	keyInputBackspace keyBindingID = "input.backspace"
-	keyEditSetNull    keyBindingID = "edit.set_null"
+	KeyInputMoveLeft  KeyBindingID = "input.move_left"
+	KeyInputMoveRight KeyBindingID = "input.move_right"
+	KeyInputBackspace KeyBindingID = "input.backspace"
+	KeyEditSetNull    KeyBindingID = "edit.set_null"
 
-	keyConfirmCancel keyBindingID = "confirm.cancel"
-	keyConfirmAccept keyBindingID = "confirm.accept"
+	KeyConfirmCancel KeyBindingID = "confirm.cancel"
+	KeyConfirmAccept KeyBindingID = "confirm.accept"
 
-	keySelectorCancel          keyBindingID = "selector.cancel"
-	keySelectorQuit            keyBindingID = "selector.quit"
-	keySelectorEnter           keyBindingID = "selector.enter"
-	keySelectorMoveDown        keyBindingID = "selector.move_down"
-	keySelectorMoveUp          keyBindingID = "selector.move_up"
-	keySelectorJumpTop         keyBindingID = "selector.jump_top"
-	keySelectorJumpBottom      keyBindingID = "selector.jump_bottom"
-	keySelectorPageDown        keyBindingID = "selector.page_down"
-	keySelectorPageUp          keyBindingID = "selector.page_up"
-	keySelectorOpenContextHelp keyBindingID = "selector.open_context_help"
-	keySelectorAdd             keyBindingID = "selector.add"
-	keySelectorEdit            keyBindingID = "selector.edit"
-	keySelectorDelete          keyBindingID = "selector.delete"
-	keySelectorFormEsc         keyBindingID = "selector.form_esc"
-	keySelectorFormSwitch      keyBindingID = "selector.form_switch"
-	keySelectorFormClear       keyBindingID = "selector.form_clear"
-	keySelectorFormBackspace   keyBindingID = "selector.form_backspace"
-	keySelectorDeleteCancel    keyBindingID = "selector.delete_cancel"
-	keySelectorDeleteConfirm   keyBindingID = "selector.delete_confirm"
+	KeySelectorCancel          KeyBindingID = "selector.cancel"
+	KeySelectorQuit            KeyBindingID = "selector.quit"
+	KeySelectorEnter           KeyBindingID = "selector.enter"
+	KeySelectorMoveDown        KeyBindingID = "selector.move_down"
+	KeySelectorMoveUp          KeyBindingID = "selector.move_up"
+	KeySelectorJumpTop         KeyBindingID = "selector.jump_top"
+	KeySelectorJumpBottom      KeyBindingID = "selector.jump_bottom"
+	KeySelectorPageDown        KeyBindingID = "selector.page_down"
+	KeySelectorPageUp          KeyBindingID = "selector.page_up"
+	KeySelectorOpenContextHelp KeyBindingID = "selector.open_context_help"
+	KeySelectorAdd             KeyBindingID = "selector.add"
+	KeySelectorEdit            KeyBindingID = "selector.edit"
+	KeySelectorDelete          KeyBindingID = "selector.delete"
+	KeySelectorFormEsc         KeyBindingID = "selector.form_esc"
+	KeySelectorFormSwitch      KeyBindingID = "selector.form_switch"
+	KeySelectorFormClear       KeyBindingID = "selector.form_clear"
+	KeySelectorFormBackspace   KeyBindingID = "selector.form_backspace"
+	KeySelectorDeleteCancel    KeyBindingID = "selector.delete_cancel"
+	KeySelectorDeleteConfirm   KeyBindingID = "selector.delete_confirm"
 )
 
-var keyBindings = map[keyBindingID]keyBinding{
-	keyRuntimeOpenCommandInput: {keys: []string{":"}, label: ":"},
-	keyRuntimeOpenContextHelp:  {keys: []string{"?"}, label: "?"},
-	keyRuntimeJumpTopPending:   {keys: []string{"g"}, label: "g"},
-	keyRuntimeJumpTopDisplay:   {label: "gg"},
-	keyRuntimeJumpBottom:       {keys: []string{"G"}, label: "G"},
-	keyRuntimeEnter:            {keys: []string{"enter"}, label: "Enter"},
-	keyRuntimeEdit:             {keys: []string{"e"}, label: "e"},
-	keyRuntimeEsc:              {keys: []string{"esc"}, label: "Esc"},
-	keyRuntimeFilter:           {keys: []string{"F"}, label: "Shift+F"},
-	keyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
-	keyRuntimeRecordDetail:     {keys: []string{"enter"}, label: "Enter"},
-	keyRuntimeSave:             {keys: []string{"w"}, label: "w"},
-	keyRuntimeInsert:           {keys: []string{"i"}, label: "i"},
-	keyRuntimeDelete:           {keys: []string{"d"}, label: "d"},
-	keyRuntimeUndo:             {keys: []string{"u"}, label: "u"},
-	keyRuntimeRedo:             {keys: []string{"ctrl+r"}, label: "Ctrl+r"},
-	keyRuntimeToggleAutoFields: {keys: []string{"ctrl+a"}, label: "Ctrl+a"},
-	keyRuntimeMoveDown:         {keys: []string{"j"}, label: "j"},
-	keyRuntimeMoveUp:           {keys: []string{"k"}, label: "k"},
-	keyRuntimeMoveLeft:         {keys: []string{"h"}, label: "h"},
-	keyRuntimeMoveRight:        {keys: []string{"l"}, label: "l"},
-	keyRuntimePageDown:         {keys: []string{"ctrl+f"}, label: "Ctrl+f"},
-	keyRuntimePageUp:           {keys: []string{"ctrl+b"}, label: "Ctrl+b"},
+var keyBindings = map[KeyBindingID]keyBinding{
+	KeyRuntimeOpenCommandInput: {keys: []string{":"}, label: ":"},
+	KeyRuntimeOpenContextHelp:  {keys: []string{"?"}, label: "?"},
+	KeyRuntimeJumpTopPending:   {keys: []string{"g"}, label: "g"},
+	KeyRuntimeJumpTopDisplay:   {label: "gg"},
+	KeyRuntimeJumpBottom:       {keys: []string{"G"}, label: "G"},
+	KeyRuntimeEnter:            {keys: []string{"enter"}, label: "Enter"},
+	KeyRuntimeEdit:             {keys: []string{"e"}, label: "e"},
+	KeyRuntimeEsc:              {keys: []string{"esc"}, label: "Esc"},
+	KeyRuntimeFilter:           {keys: []string{"F"}, label: "Shift+F"},
+	KeyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
+	KeyRuntimeRecordDetail:     {keys: []string{"enter"}, label: "Enter"},
+	KeyRuntimeSave:             {keys: []string{"w"}, label: "w"},
+	KeyRuntimeInsert:           {keys: []string{"i"}, label: "i"},
+	KeyRuntimeDelete:           {keys: []string{"d"}, label: "d"},
+	KeyRuntimeUndo:             {keys: []string{"u"}, label: "u"},
+	KeyRuntimeRedo:             {keys: []string{"ctrl+r"}, label: "Ctrl+r"},
+	KeyRuntimeToggleAutoFields: {keys: []string{"ctrl+a"}, label: "Ctrl+a"},
+	KeyRuntimeMoveDown:         {keys: []string{"j"}, label: "j"},
+	KeyRuntimeMoveUp:           {keys: []string{"k"}, label: "k"},
+	KeyRuntimeMoveLeft:         {keys: []string{"h"}, label: "h"},
+	KeyRuntimeMoveRight:        {keys: []string{"l"}, label: "l"},
+	KeyRuntimePageDown:         {keys: []string{"ctrl+f"}, label: "Ctrl+f"},
+	KeyRuntimePageUp:           {keys: []string{"ctrl+b"}, label: "Ctrl+b"},
 
-	keyPopupMoveDown:   {keys: []string{"j", "down"}, label: "j"},
-	keyPopupMoveUp:     {keys: []string{"k", "up"}, label: "k"},
-	keyPopupJumpTop:    {keys: []string{"g", "home"}, label: "g"},
-	keyPopupJumpBottom: {keys: []string{"G", "end"}, label: "G"},
+	KeyPopupMoveDown:   {keys: []string{"j", "down"}, label: "j"},
+	KeyPopupMoveUp:     {keys: []string{"k", "up"}, label: "k"},
+	KeyPopupJumpTop:    {keys: []string{"g", "home"}, label: "g"},
+	KeyPopupJumpBottom: {keys: []string{"G", "end"}, label: "G"},
 
-	keyInputMoveLeft:  {keys: []string{"left"}, label: "left"},
-	keyInputMoveRight: {keys: []string{"right"}, label: "right"},
-	keyInputBackspace: {keys: []string{"backspace"}, label: "backspace"},
-	keyEditSetNull:    {keys: []string{"ctrl+n"}, label: "Ctrl+n"},
+	KeyInputMoveLeft:  {keys: []string{"left"}, label: "left"},
+	KeyInputMoveRight: {keys: []string{"right"}, label: "right"},
+	KeyInputBackspace: {keys: []string{"backspace"}, label: "backspace"},
+	KeyEditSetNull:    {keys: []string{"ctrl+n"}, label: "Ctrl+n"},
 
-	keyConfirmCancel: {keys: []string{"esc", "n"}, label: "Esc"},
-	keyConfirmAccept: {keys: []string{"enter", "y"}, label: "Enter"},
+	KeyConfirmCancel: {keys: []string{"esc", "n"}, label: "Esc"},
+	KeyConfirmAccept: {keys: []string{"enter", "y"}, label: "Enter"},
 
-	keySelectorCancel:          {keys: []string{"ctrl+c", "q", "esc"}, label: "Esc"},
-	keySelectorQuit:            {keys: []string{"q"}, label: "q"},
-	keySelectorEnter:           {keys: []string{"enter"}, label: "Enter"},
-	keySelectorMoveDown:        {keys: []string{"j", "down"}, label: "j"},
-	keySelectorMoveUp:          {keys: []string{"k", "up"}, label: "k"},
-	keySelectorJumpTop:         {keys: []string{"g", "home"}, label: "g"},
-	keySelectorJumpBottom:      {keys: []string{"G", "end"}, label: "G"},
-	keySelectorPageDown:        {keys: []string{"ctrl+f", "pgdown"}, label: "Ctrl+f"},
-	keySelectorPageUp:          {keys: []string{"ctrl+b", "pgup"}, label: "Ctrl+b"},
-	keySelectorOpenContextHelp: {keys: []string{"?"}, label: "?"},
-	keySelectorAdd:             {keys: []string{"a"}, label: "a"},
-	keySelectorEdit:            {keys: []string{"e"}, label: "e"},
-	keySelectorDelete:          {keys: []string{"d"}, label: "d"},
-	keySelectorFormEsc:         {keys: []string{"esc"}, label: "Esc"},
-	keySelectorFormSwitch:      {keys: []string{"tab", "shift+tab"}, label: "Tab"},
-	keySelectorFormClear:       {keys: []string{"ctrl+u"}, label: "Ctrl+u"},
-	keySelectorFormBackspace:   {keys: []string{"backspace", "ctrl+h"}, label: "Backspace"},
-	keySelectorDeleteCancel:    {keys: []string{"esc"}, label: "Esc"},
-	keySelectorDeleteConfirm:   {keys: []string{"enter"}, label: "Enter"},
+	KeySelectorCancel:          {keys: []string{"ctrl+c", "q", "esc"}, label: "Esc"},
+	KeySelectorQuit:            {keys: []string{"q"}, label: "q"},
+	KeySelectorEnter:           {keys: []string{"enter"}, label: "Enter"},
+	KeySelectorMoveDown:        {keys: []string{"j", "down"}, label: "j"},
+	KeySelectorMoveUp:          {keys: []string{"k", "up"}, label: "k"},
+	KeySelectorJumpTop:         {keys: []string{"g", "home"}, label: "g"},
+	KeySelectorJumpBottom:      {keys: []string{"G", "end"}, label: "G"},
+	KeySelectorPageDown:        {keys: []string{"ctrl+f", "pgdown"}, label: "Ctrl+f"},
+	KeySelectorPageUp:          {keys: []string{"ctrl+b", "pgup"}, label: "Ctrl+b"},
+	KeySelectorOpenContextHelp: {keys: []string{"?"}, label: "?"},
+	KeySelectorAdd:             {keys: []string{"a"}, label: "a"},
+	KeySelectorEdit:            {keys: []string{"e"}, label: "e"},
+	KeySelectorDelete:          {keys: []string{"d"}, label: "d"},
+	KeySelectorFormEsc:         {keys: []string{"esc"}, label: "Esc"},
+	KeySelectorFormSwitch:      {keys: []string{"tab", "shift+tab"}, label: "Tab"},
+	KeySelectorFormClear:       {keys: []string{"ctrl+u"}, label: "Ctrl+u"},
+	KeySelectorFormBackspace:   {keys: []string{"backspace", "ctrl+h"}, label: "Backspace"},
+	KeySelectorDeleteCancel:    {keys: []string{"esc"}, label: "Esc"},
+	KeySelectorDeleteConfirm:   {keys: []string{"enter"}, label: "Enter"},
 }
 
-func keyMatches(bindingID keyBindingID, key string) bool {
+func KeyMatches(bindingID KeyBindingID, key string) bool {
 	binding, ok := keyBindings[bindingID]
 	if !ok {
 		return false
@@ -140,7 +140,7 @@ func keyMatches(bindingID keyBindingID, key string) bool {
 	return false
 }
 
-func keyLabel(bindingID keyBindingID) string {
+func keyLabel(bindingID KeyBindingID) string {
 	binding, ok := keyBindings[bindingID]
 	if !ok {
 		return ""
@@ -148,7 +148,7 @@ func keyLabel(bindingID keyBindingID) string {
 	return binding.label
 }
 
-func joinKeyLabels(joinWith string, bindingIDs ...keyBindingID) string {
+func joinKeyLabels(joinWith string, bindingIDs ...KeyBindingID) string {
 	labels := make([]string, 0, len(bindingIDs))
 	for _, bindingID := range bindingIDs {
 		label := keyLabel(bindingID)
@@ -161,5 +161,5 @@ func joinKeyLabels(joinWith string, bindingIDs ...keyBindingID) string {
 }
 
 func joinShortcutSegments(parts ...string) string {
-	return strings.Join(parts, frameSegmentSeparator)
+	return strings.Join(parts, FrameSegmentSeparator)
 }

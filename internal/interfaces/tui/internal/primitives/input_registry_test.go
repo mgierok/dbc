@@ -12,18 +12,18 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
-		action      runtimeCommandAction
+		action      RuntimeCommandAction
 		recordLimit int
 	}{
-		{name: "help full", input: ":help", action: runtimeCommandActionOpenHelp},
-		{name: "help alias uppercase", input: ":H", action: runtimeCommandActionOpenHelp},
-		{name: "quit full", input: ":quit", action: runtimeCommandActionQuit},
-		{name: "quit alias", input: ":q", action: runtimeCommandActionQuit},
-		{name: "config full", input: ":config", action: runtimeCommandActionOpenConfig},
-		{name: "config alias", input: ":c", action: runtimeCommandActionOpenConfig},
-		{name: "set limit", input: ":set limit=10", action: runtimeCommandActionSetRecordLimit, recordLimit: 10},
-		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: runtimeCommandActionSetRecordLimit, recordLimit: 25},
-		{name: "set limit max boundary", input: ":set limit=1000", action: runtimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
+		{name: "help full", input: ":help", action: RuntimeCommandActionOpenHelp},
+		{name: "help alias uppercase", input: ":H", action: RuntimeCommandActionOpenHelp},
+		{name: "quit full", input: ":quit", action: RuntimeCommandActionQuit},
+		{name: "quit alias", input: ":q", action: RuntimeCommandActionQuit},
+		{name: "config full", input: ":config", action: RuntimeCommandActionOpenConfig},
+		{name: "config alias", input: ":c", action: RuntimeCommandActionOpenConfig},
+		{name: "set limit", input: ":set limit=10", action: RuntimeCommandActionSetRecordLimit, recordLimit: 10},
+		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: RuntimeCommandActionSetRecordLimit, recordLimit: 25},
+		{name: "set limit max boundary", input: ":set limit=1000", action: RuntimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
 	}
 
 	for _, tc := range tests {
@@ -31,32 +31,38 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 			// Arrange
 
 			// Act
-			command, ok := resolveRuntimeCommand(tc.input)
+			command, err := ParseRuntimeCommand(tc.input)
 
 			// Assert
-			if !ok {
-				t.Fatalf("expected command %q to resolve", tc.input)
+			if err != nil {
+				t.Fatalf("expected command %q to resolve, got error %v", tc.input, err)
 			}
-			if command.action != tc.action {
-				t.Fatalf("expected action %v for %q, got %v", tc.action, tc.input, command.action)
+			if command.Action != tc.action {
+				t.Fatalf("expected action %v for %q, got %v", tc.action, tc.input, command.Action)
 			}
-			if command.recordLimit != tc.recordLimit {
-				t.Fatalf("expected record limit %d for %q, got %d", tc.recordLimit, tc.input, command.recordLimit)
+			if command.RecordLimit != tc.recordLimit {
+				t.Fatalf("expected record limit %d for %q, got %d", tc.recordLimit, tc.input, command.RecordLimit)
 			}
 		})
 	}
 }
 
-func TestResolveRuntimeCommand_RejectsUnknownCommand(t *testing.T) {
+func TestParseRuntimeCommand_ClassifiesUnknownCommand(t *testing.T) {
 	// Arrange
 	input := ":unknown"
 
 	// Act
-	_, ok := resolveRuntimeCommand(input)
+	_, err := ParseRuntimeCommand(input)
 
 	// Assert
-	if ok {
+	if err == nil {
 		t.Fatalf("expected %q to be rejected", input)
+	}
+	if !errors.Is(err, ErrUnknownRuntimeCommand) {
+		t.Fatalf("expected unknown runtime command error for %q, got %v", input, err)
+	}
+	if !IsUnknownRuntimeCommand(err) {
+		t.Fatalf("expected IsUnknownRuntimeCommand to classify %q as unknown", input)
 	}
 }
 
@@ -79,7 +85,7 @@ func TestParseRuntimeCommand_RejectsInvalidSetLimitFormsWithValidationError(t *t
 			// Arrange
 
 			// Act
-			_, err := parseRuntimeCommand(tc.input)
+			_, err := ParseRuntimeCommand(tc.input)
 
 			// Assert
 			if err == nil {
@@ -99,7 +105,7 @@ func TestRuntimeHelpPopupSummaryLine_IsDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	summary := runtimeHelpPopupSummaryLine()
+	summary := RuntimeHelpPopupSummaryLine()
 
 	// Assert
 	if summary != "Use j/k, Ctrl+f/Ctrl+b to scroll. Esc closes." {
@@ -111,7 +117,7 @@ func TestRuntimeStatusContextHelpHint_IsDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	hint := runtimeStatusContextHelpHint()
+	hint := RuntimeStatusContextHelpHint()
 
 	// Assert
 	if hint != "Context help: ?" {
@@ -157,7 +163,7 @@ func TestRuntimeStatusRecordsShortcuts_IncludesPaginationBindings(t *testing.T) 
 	// Arrange
 
 	// Act
-	shortcuts := runtimeStatusRecordsShortcuts()
+	shortcuts := RuntimeStatusRecordsShortcuts()
 
 	// Assert
 	if !strings.Contains(shortcuts, "Ctrl+f next page") {
@@ -184,11 +190,8 @@ func TestSelectorContextHelpBinding_IsQuestionMark(t *testing.T) {
 	// Arrange
 
 	// Act + Assert
-	if !keyMatches(keySelectorOpenContextHelp, "?") {
+	if !KeyMatches(KeySelectorOpenContextHelp, "?") {
 		t.Fatalf("expected selector context-help binding to match question mark")
-	}
-	if keyLabel(keySelectorOpenContextHelp) != "?" {
-		t.Fatalf("expected selector context-help label ?, got %q", keyLabel(keySelectorOpenContextHelp))
 	}
 }
 
@@ -196,7 +199,7 @@ func TestSelectorContextLinesBrowseDefault_AreDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	lines := selectorContextLinesBrowseDefault()
+	lines := SelectorContextLinesBrowseDefault()
 
 	// Assert
 	if len(lines) != 2 {
@@ -214,7 +217,7 @@ func TestSelectorContextLinesBrowseFirstSetup_AreDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	lines := selectorContextLinesBrowseFirstSetup()
+	lines := SelectorContextLinesBrowseFirstSetup()
 
 	// Assert
 	if len(lines) != 2 {
@@ -232,9 +235,9 @@ func TestSelectorFormAndDeleteLines_AreDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	switchLine := selectorFormSwitchLine()
-	submitLine := selectorFormSubmitLine("Esc cancel")
-	deleteLine := selectorDeleteConfirmationLine()
+	switchLine := SelectorFormSwitchLine()
+	submitLine := SelectorFormSubmitLine("Esc cancel")
+	deleteLine := SelectorDeleteConfirmationLine()
 
 	// Assert
 	if switchLine != "Tab switch field | Ctrl+u clear field" {

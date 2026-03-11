@@ -5,37 +5,37 @@ import (
 	"strings"
 )
 
-type standardizedPopupWidthMode int
+type StandardizedPopupWidthMode int
 
 const (
-	popupWidthClamp standardizedPopupWidthMode = iota
-	popupWidthContent
+	PopupWidthClamp StandardizedPopupWidthMode = iota
+	PopupWidthContent
 )
 
-type standardizedPopupRow struct {
-	text       string
-	selectable bool
-	selected   bool
+type StandardizedPopupRow struct {
+	Text       string
+	Selectable bool
+	Selected   bool
 }
 
-type standardizedPopupFooter struct {
-	left  string
-	right string
+type StandardizedPopupFooter struct {
+	Left  string
+	Right string
 }
 
-type standardizedPopupSpec struct {
-	title               string
-	summary             string
-	rows                []standardizedPopupRow
-	footer              standardizedPopupFooter
-	scrollOffset        int
-	visibleRows         int
-	showScrollIndicator bool
-	widthMode           standardizedPopupWidthMode
-	defaultWidth        int
-	minWidth            int
-	maxWidth            int
-	styles              renderStyles
+type StandardizedPopupSpec struct {
+	Title               string
+	Summary             string
+	Rows                []StandardizedPopupRow
+	Footer              StandardizedPopupFooter
+	ScrollOffset        int
+	VisibleRows         int
+	ShowScrollIndicator bool
+	WidthMode           StandardizedPopupWidthMode
+	DefaultWidth        int
+	MinWidth            int
+	MaxWidth            int
+	Styles              RenderStyles
 }
 
 const (
@@ -48,12 +48,12 @@ type popupFrameRenderer struct {
 	contentWidth int
 	leftPadding  int
 	rightPadding int
-	styles       renderStyles
+	styles       RenderStyles
 }
 
-func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopupSpec) []string {
+func RenderStandardizedPopup(totalWidth, totalHeight int, spec StandardizedPopupSpec) []string {
 	width := resolvePopupWidth(totalWidth, spec)
-	title := strings.TrimSpace(spec.title)
+	title := strings.TrimSpace(spec.Title)
 	if title == "" {
 		title = "Popup"
 	}
@@ -62,17 +62,17 @@ func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopup
 	if contentInnerWidth < 1 {
 		contentInnerWidth = 1
 	}
-	frame := newPopupFrameRenderer(contentInnerWidth, spec.styles)
+	frame := newPopupFrameRenderer(contentInnerWidth, spec.Styles)
 
 	lines := []string{frame.topBorder(title)}
-	if strings.TrimSpace(spec.summary) != "" {
-		lines = append(lines, frame.contentLine(spec.styles.summary(spec.summary)))
+	if strings.TrimSpace(spec.Summary) != "" {
+		lines = append(lines, frame.contentLine(spec.Styles.Summary(spec.Summary)))
 	}
 	lines = append(lines, frame.sectionDivider())
 
-	rows := spec.rows
-	visibleRows, offset, maxOffset := popupVisibleRows(len(rows), spec.scrollOffset, spec.visibleRows)
-	end := minInt(len(rows), offset+visibleRows)
+	rows := spec.Rows
+	visibleRows, offset, maxOffset := popupVisibleRows(len(rows), spec.ScrollOffset, spec.VisibleRows)
+	end := MinInt(len(rows), offset+visibleRows)
 
 	for i := offset; i < end; i++ {
 		lines = append(lines, frame.rowLine(rows[i]))
@@ -81,13 +81,13 @@ func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopup
 		lines = append(lines, frame.blankLine())
 	}
 
-	if spec.showScrollIndicator && maxOffset > 0 {
-		indicator := spec.styles.muted(fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1))
+	if spec.ShowScrollIndicator && maxOffset > 0 {
+		indicator := spec.Styles.Muted(fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1))
 		lines = append(lines, frame.contentLine(indicator))
 	}
 
 	reservedBottomRows := 1
-	if hasPopupFooter(spec.footer) {
+	if hasPopupFooter(spec.Footer) {
 		reservedBottomRows++
 	}
 	minHeight := popupMinHeight(totalHeight)
@@ -95,34 +95,34 @@ func renderStandardizedPopup(totalWidth, totalHeight int, spec standardizedPopup
 		lines = append(lines, frame.blankLine())
 	}
 
-	if hasPopupFooter(spec.footer) {
-		lines = append(lines, frame.footerLine(spec.footer))
+	if hasPopupFooter(spec.Footer) {
+		lines = append(lines, frame.footerLine(spec.Footer))
 	}
 	lines = append(lines, frame.bottomBorder())
 	return lines
 }
 
-func popupTextRows(rows []string) []standardizedPopupRow {
-	result := make([]standardizedPopupRow, len(rows))
+func PopupTextRows(rows []string) []StandardizedPopupRow {
+	result := make([]StandardizedPopupRow, len(rows))
 	for i, row := range rows {
-		result[i] = standardizedPopupRow{text: row}
+		result[i] = StandardizedPopupRow{Text: row}
 	}
 	return result
 }
 
-func popupSelectableRows(rows []string, selected int) []standardizedPopupRow {
-	result := make([]standardizedPopupRow, len(rows))
+func PopupSelectableRows(rows []string, selected int) []StandardizedPopupRow {
+	result := make([]StandardizedPopupRow, len(rows))
 	for i, row := range rows {
-		result[i] = standardizedPopupRow{
-			text:       row,
-			selectable: true,
-			selected:   i == selected,
+		result[i] = StandardizedPopupRow{
+			Text:       row,
+			Selectable: true,
+			Selected:   i == selected,
 		}
 	}
 	return result
 }
 
-func newPopupFrameRenderer(innerWidth int, styles renderStyles) popupFrameRenderer {
+func newPopupFrameRenderer(innerWidth int, styles RenderStyles) popupFrameRenderer {
 	leftPadding := popupContentSidePadding
 	rightPadding := popupContentSidePadding
 	if innerWidth <= (popupContentSidePadding * 2) {
@@ -144,15 +144,15 @@ func newPopupFrameRenderer(innerWidth int, styles renderStyles) popupFrameRender
 }
 
 func (r popupFrameRenderer) topBorder(title string) string {
-	return renderTitledTopBorder(r.styles.title(title), r.innerWidth)
+	return renderTitledTopBorder(r.styles.Title(title), r.innerWidth)
 }
 
 func (r popupFrameRenderer) sectionDivider() string {
-	return frameJoinLeft + strings.Repeat(frameHorizontal, r.innerWidth) + frameJoinRight
+	return FrameJoinLeft + strings.Repeat(FrameHorizontal, r.innerWidth) + FrameJoinRight
 }
 
 func (r popupFrameRenderer) bottomBorder() string {
-	return frameBottomLeft + strings.Repeat(frameHorizontal, r.innerWidth) + frameBottomRight
+	return FrameBottomLeft + strings.Repeat(FrameHorizontal, r.innerWidth) + FrameBottomRight
 }
 
 func (r popupFrameRenderer) blankLine() string {
@@ -160,34 +160,34 @@ func (r popupFrameRenderer) blankLine() string {
 }
 
 func (r popupFrameRenderer) contentLine(text string) string {
-	content := strings.Repeat(" ", r.leftPadding) + padRight(text, r.contentWidth) + strings.Repeat(" ", r.rightPadding)
-	content = padRight(content, r.innerWidth)
-	return frameVertical + content + frameVertical
+	content := strings.Repeat(" ", r.leftPadding) + PadRight(text, r.contentWidth) + strings.Repeat(" ", r.rightPadding)
+	content = PadRight(content, r.innerWidth)
+	return FrameVertical + content + FrameVertical
 }
 
 func (r popupFrameRenderer) selectedContentLine(text string) string {
-	content := strings.Repeat(" ", r.leftPadding) + padRight(text, r.contentWidth) + strings.Repeat(" ", r.rightPadding)
-	content = padRight(content, r.innerWidth)
-	return frameVertical + r.styles.selected(content) + frameVertical
+	content := strings.Repeat(" ", r.leftPadding) + PadRight(text, r.contentWidth) + strings.Repeat(" ", r.rightPadding)
+	content = PadRight(content, r.innerWidth)
+	return FrameVertical + r.styles.Selected(content) + FrameVertical
 }
 
-func (r popupFrameRenderer) rowLine(row standardizedPopupRow) string {
-	text := row.text
-	if row.selectable {
-		prefix := selectionUnselectedPrefix()
-		if row.selected {
-			prefix = selectionSelectedPrefix()
+func (r popupFrameRenderer) rowLine(row StandardizedPopupRow) string {
+	text := row.Text
+	if row.Selectable {
+		prefix := SelectionUnselectedPrefix()
+		if row.Selected {
+			prefix = SelectionSelectedPrefix()
 		}
 		text = prefix + text
 	}
-	if row.selected {
+	if row.Selected {
 		return r.selectedContentLine(text)
 	}
 	return r.contentLine(text)
 }
 
-func (r popupFrameRenderer) footerLine(footer standardizedPopupFooter) string {
-	return r.contentLine(renderStatusWithRightHint(footer.left, footer.right, r.contentWidth))
+func (r popupFrameRenderer) footerLine(footer StandardizedPopupFooter) string {
+	return r.contentLine(RenderStatusWithRightHint(footer.Left, footer.Right, r.contentWidth))
 }
 
 func popupVisibleRows(totalRows, scrollOffset, visibleRows int) (int, int, int) {
@@ -206,18 +206,18 @@ func popupVisibleRows(totalRows, scrollOffset, visibleRows int) (int, int, int) 
 	return visibleRows, offset, maxOffset
 }
 
-func hasPopupFooter(footer standardizedPopupFooter) bool {
-	return strings.TrimSpace(footer.left) != "" || strings.TrimSpace(footer.right) != ""
+func hasPopupFooter(footer StandardizedPopupFooter) bool {
+	return strings.TrimSpace(footer.Left) != "" || strings.TrimSpace(footer.Right) != ""
 }
 
-func resolvePopupWidth(totalWidth int, spec standardizedPopupSpec) int {
-	if spec.widthMode == popupWidthContent {
+func resolvePopupWidth(totalWidth int, spec StandardizedPopupSpec) int {
+	if spec.WidthMode == PopupWidthContent {
 		return resolveContentPopupWidth(totalWidth, spec)
 	}
-	return clampPopupWidth(totalWidth, spec.defaultWidth, spec.minWidth, spec.maxWidth)
+	return clampPopupWidth(totalWidth, spec.DefaultWidth, spec.MinWidth, spec.MaxWidth)
 }
 
-func resolveContentPopupWidth(totalWidth int, spec standardizedPopupSpec) int {
+func resolveContentPopupWidth(totalWidth int, spec StandardizedPopupSpec) int {
 	contentWidth := popupContentWidth(spec)
 	innerWidth := contentWidth + (popupContentSidePadding * 2)
 	if innerWidth < 1 {
@@ -234,21 +234,21 @@ func resolveContentPopupWidth(totalWidth int, spec standardizedPopupSpec) int {
 	return innerWidth + 2
 }
 
-func popupContentWidth(spec standardizedPopupSpec) int {
-	maxWidth := textWidth(strings.TrimSpace(spec.title))
-	if textWidth(spec.summary) > maxWidth {
-		maxWidth = textWidth(spec.summary)
+func popupContentWidth(spec StandardizedPopupSpec) int {
+	maxWidth := TextWidth(strings.TrimSpace(spec.Title))
+	if TextWidth(spec.Summary) > maxWidth {
+		maxWidth = TextWidth(spec.Summary)
 	}
-	for _, row := range spec.rows {
-		rowWidth := textWidth(row.text)
-		if row.selectable {
-			rowWidth += textWidth(selectionSelectedPrefix())
+	for _, row := range spec.Rows {
+		rowWidth := TextWidth(row.Text)
+		if row.Selectable {
+			rowWidth += TextWidth(SelectionSelectedPrefix())
 		}
 		if rowWidth > maxWidth {
 			maxWidth = rowWidth
 		}
 	}
-	if footerWidth := popupFooterWidth(spec.footer); footerWidth > maxWidth {
+	if footerWidth := popupFooterWidth(spec.Footer); footerWidth > maxWidth {
 		maxWidth = footerWidth
 	}
 	if indicatorWidth := popupScrollIndicatorWidth(spec); indicatorWidth > maxWidth {
@@ -260,31 +260,31 @@ func popupContentWidth(spec standardizedPopupSpec) int {
 	return maxWidth
 }
 
-func popupFooterWidth(footer standardizedPopupFooter) int {
-	left := strings.TrimSpace(footer.left)
-	right := strings.TrimSpace(footer.right)
+func popupFooterWidth(footer StandardizedPopupFooter) int {
+	left := strings.TrimSpace(footer.Left)
+	right := strings.TrimSpace(footer.Right)
 	switch {
 	case left == "" && right == "":
 		return 0
 	case left == "":
-		return textWidth(right)
+		return TextWidth(right)
 	case right == "":
-		return textWidth(left)
+		return TextWidth(left)
 	default:
-		return textWidth(left) + 1 + textWidth(right)
+		return TextWidth(left) + 1 + TextWidth(right)
 	}
 }
 
-func popupScrollIndicatorWidth(spec standardizedPopupSpec) int {
-	if !spec.showScrollIndicator || spec.visibleRows <= 0 {
+func popupScrollIndicatorWidth(spec StandardizedPopupSpec) int {
+	if !spec.ShowScrollIndicator || spec.VisibleRows <= 0 {
 		return 0
 	}
-	_, offset, maxOffset := popupVisibleRows(len(spec.rows), spec.scrollOffset, spec.visibleRows)
+	_, offset, maxOffset := popupVisibleRows(len(spec.Rows), spec.ScrollOffset, spec.VisibleRows)
 	if maxOffset == 0 {
 		return 0
 	}
 	indicator := fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1)
-	return textWidth(indicator)
+	return TextWidth(indicator)
 }
 
 func popupMinHeight(totalHeight int) int {

@@ -2,7 +2,7 @@ package primitives
 
 import "strings"
 
-func renderStatusWithRightHint(left, right string, width int) string {
+func RenderStatusWithRightHint(left, right string, width int) string {
 	if width <= 0 {
 		width = 80
 	}
@@ -10,25 +10,25 @@ func renderStatusWithRightHint(left, right string, width int) string {
 	left = strings.TrimSpace(left)
 	right = strings.TrimSpace(right)
 	if right == "" {
-		return padRight(left, width)
+		return PadRight(left, width)
 	}
 
-	right = truncate(right, width)
-	rightWidth := textWidth(right)
+	right = Truncate(right, width)
+	rightWidth := TextWidth(right)
 	if rightWidth >= width {
-		return padRight(right, width)
+		return PadRight(right, width)
 	}
 
 	leftWidth := width - rightWidth - 1
 	if leftWidth <= 0 {
-		return padRight(right, width)
+		return PadRight(right, width)
 	}
 
 	if left == "" {
-		return padRight(strings.Repeat(" ", leftWidth+1)+right, width)
+		return PadRight(strings.Repeat(" ", leftWidth+1)+right, width)
 	}
 
-	return padRight(truncate(left, leftWidth), leftWidth) + " " + right
+	return PadRight(Truncate(left, leftWidth), leftWidth) + " " + right
 }
 
 func clamp(value, min, max int) int {

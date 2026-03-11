@@ -6,50 +6,50 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-func renderList(items []string, selected, height, width int, focused bool, styles renderStyles) []string {
+func RenderList(items []string, selected, height, width int, focused bool, styles RenderStyles) []string {
 	if height < 1 {
 		return nil
 	}
 	if len(items) == 0 {
-		return []string{padRight("No items.", width)}
+		return []string{PadRight("No items.", width)}
 	}
 
-	start := scrollStart(selected, height, len(items))
-	end := minInt(len(items), start+height)
+	start := ScrollStart(selected, height, len(items))
+	end := MinInt(len(items), start+height)
 	lines := make([]string, 0, height)
 	for i := start; i < end; i++ {
-		prefix := selectionUnselectedPrefix()
+		prefix := SelectionUnselectedPrefix()
 		if focused && i == selected {
-			prefix = selectionSelectedPrefix()
+			prefix = SelectionSelectedPrefix()
 		}
-		line := padRight(prefix+items[i], width)
+		line := PadRight(prefix+items[i], width)
 		if focused && i == selected {
-			line = styles.selected(line)
+			line = styles.Selected(line)
 		}
 		lines = append(lines, line)
 	}
-	return padLines(lines, height, width)
+	return PadLines(lines, height, width)
 }
 
-func selectionSelectedPrefix() string {
-	return iconSelection + " "
+func SelectionSelectedPrefix() string {
+	return IconSelection + " "
 }
 
-func selectionUnselectedPrefix() string {
-	return strings.Repeat(" ", textWidth(selectionSelectedPrefix()))
+func SelectionUnselectedPrefix() string {
+	return strings.Repeat(" ", TextWidth(SelectionSelectedPrefix()))
 }
 
-func renderPanelBox(title string, content []string, contentWidth int, styles renderStyles) []string {
+func RenderPanelBox(title string, content []string, contentWidth int, styles RenderStyles) []string {
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
-	top := renderTitledTopBorder(styles.title(title), contentWidth)
-	bottom := frameBottomLeft + strings.Repeat(frameHorizontal, contentWidth) + frameBottomRight
+	top := renderTitledTopBorder(styles.Title(title), contentWidth)
+	bottom := FrameBottomLeft + strings.Repeat(FrameHorizontal, contentWidth) + FrameBottomRight
 
 	lines := make([]string, 0, len(content)+2)
 	lines = append(lines, top)
 	for _, line := range content {
-		lines = append(lines, frameVertical+padRight(line, contentWidth)+frameVertical)
+		lines = append(lines, FrameVertical+PadRight(line, contentWidth)+FrameVertical)
 	}
 	lines = append(lines, bottom)
 	return lines
@@ -59,30 +59,30 @@ func renderTitledTopBorder(title string, contentWidth int) string {
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
-	title = truncate(strings.TrimSpace(title), contentWidth)
-	fillWidth := contentWidth - textWidth(title)
+	title = Truncate(strings.TrimSpace(title), contentWidth)
+	fillWidth := contentWidth - TextWidth(title)
 	if fillWidth < 0 {
 		fillWidth = 0
 	}
-	return frameTopLeft + title + strings.Repeat(frameHorizontal, fillWidth) + frameTopRight
+	return FrameTopLeft + title + strings.Repeat(FrameHorizontal, fillWidth) + FrameTopRight
 }
 
-func mergePanelBoxes(left, right []string, leftWidth, rightWidth, gapWidth int) []string {
+func MergePanelBoxes(left, right []string, leftWidth, rightWidth, gapWidth int) []string {
 	if gapWidth < 0 {
 		gapWidth = 0
 	}
 	gap := strings.Repeat(" ", gapWidth)
 
-	maxLines := maxInt(len(left), len(right))
+	maxLines := MaxInt(len(left), len(right))
 	lines := make([]string, 0, maxLines)
 	for i := 0; i < maxLines; i++ {
 		leftLine := strings.Repeat(" ", leftWidth)
 		if i < len(left) {
-			leftLine = padRight(left[i], leftWidth)
+			leftLine = PadRight(left[i], leftWidth)
 		}
 		rightLine := strings.Repeat(" ", rightWidth)
 		if i < len(right) {
-			rightLine = padRight(right[i], rightWidth)
+			rightLine = PadRight(right[i], rightWidth)
 		}
 		combined := leftLine + gap + rightLine
 		lines = append(lines, combined)
@@ -90,7 +90,7 @@ func mergePanelBoxes(left, right []string, leftWidth, rightWidth, gapWidth int) 
 	return lines
 }
 
-func fitLinesToHeight(lines []string, height, width int) []string {
+func FitLinesToHeight(lines []string, height, width int) []string {
 	if height < 1 {
 		return nil
 	}
@@ -98,7 +98,7 @@ func fitLinesToHeight(lines []string, height, width int) []string {
 		lines = lines[:height]
 	}
 	for i := range lines {
-		lines[i] = padRight(lines[i], width)
+		lines[i] = PadRight(lines[i], width)
 	}
 	for len(lines) < height {
 		lines = append(lines, strings.Repeat(" ", width))
@@ -106,7 +106,7 @@ func fitLinesToHeight(lines []string, height, width int) []string {
 	return lines
 }
 
-func centerBoxLines(lines []string, width, height int) string {
+func CenterBoxLines(lines []string, width, height int) string {
 	if width <= 0 {
 		width = 80
 	}
@@ -125,7 +125,7 @@ func centerBoxLines(lines []string, width, height int) string {
 
 	boxWidth := 0
 	for _, line := range lines {
-		boxWidth = maxInt(boxWidth, textWidth(line))
+		boxWidth = MaxInt(boxWidth, TextWidth(line))
 	}
 	leftPad := 0
 	if width > boxWidth {
@@ -141,7 +141,7 @@ func centerBoxLines(lines []string, width, height int) string {
 		full = append(full, strings.Repeat(" ", width))
 	}
 	for _, line := range lines {
-		full = append(full, padRight(strings.Repeat(" ", leftPad)+line, width))
+		full = append(full, PadRight(strings.Repeat(" ", leftPad)+line, width))
 	}
 	for len(full) < height {
 		full = append(full, strings.Repeat(" ", width))
@@ -149,30 +149,30 @@ func centerBoxLines(lines []string, width, height int) string {
 	return strings.Join(full, "\n")
 }
 
-func renderFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
+func RenderFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
 	switch {
 	case width <= 0:
 		return ""
 	case width == 1:
-		return truncate(leftCorner, 1)
+		return Truncate(leftCorner, 1)
 	case width == 2:
-		return truncate(leftCorner+rightCorner, 2)
+		return Truncate(leftCorner+rightCorner, 2)
 	default:
 		return leftCorner + strings.Repeat(horizontal, width-2) + rightCorner
 	}
 }
 
-func renderFrameContent(value string, width int) string {
+func RenderFrameContent(value string, width int) string {
 	switch {
 	case width <= 0:
 		return ""
 	case width == 1:
-		return truncate(frameVertical, 1)
+		return Truncate(FrameVertical, 1)
 	case width == 2:
-		return frameVertical + frameVertical
+		return FrameVertical + FrameVertical
 	default:
 		innerWidth := width - 2
-		return frameVertical + centerText(value, innerWidth) + frameVertical
+		return FrameVertical + centerText(value, innerWidth) + FrameVertical
 	}
 }
 
@@ -180,8 +180,8 @@ func centerText(value string, width int) string {
 	if width <= 0 {
 		return ""
 	}
-	value = truncate(value, width)
-	valueWidth := textWidth(value)
+	value = Truncate(value, width)
+	valueWidth := TextWidth(value)
 	if valueWidth >= width {
 		return value
 	}
@@ -190,7 +190,7 @@ func centerText(value string, width int) string {
 	return strings.Repeat(" ", leftPadding) + value + strings.Repeat(" ", rightPadding)
 }
 
-func scrollStart(selection, height, total int) int {
+func ScrollStart(selection, height, total int) int {
 	if height <= 0 || total <= height {
 		return 0
 	}
@@ -205,30 +205,30 @@ func scrollStart(selection, height, total int) int {
 	return start
 }
 
-func padLines(lines []string, height, width int) []string {
+func PadLines(lines []string, height, width int) []string {
 	for len(lines) < height {
-		lines = append(lines, padRight("", width))
+		lines = append(lines, PadRight("", width))
 	}
 	return lines
 }
 
-func padRight(text string, width int) string {
+func PadRight(text string, width int) string {
 	if width <= 0 {
 		return ""
 	}
-	text = truncate(text, width)
-	textLength := textWidth(text)
+	text = Truncate(text, width)
+	textLength := TextWidth(text)
 	if textLength >= width {
 		return text
 	}
 	return text + strings.Repeat(" ", width-textLength)
 }
 
-func truncate(text string, width int) string {
+func Truncate(text string, width int) string {
 	if width <= 0 {
 		return ""
 	}
-	if textWidth(text) <= width {
+	if TextWidth(text) <= width {
 		return text
 	}
 	if width <= 3 {
@@ -237,7 +237,7 @@ func truncate(text string, width int) string {
 	return ansi.Truncate(text, width, "...")
 }
 
-func wrapTextToWidth(text string, width int) []string {
+func WrapTextToWidth(text string, width int) []string {
 	if width <= 0 {
 		return []string{""}
 	}
@@ -269,18 +269,18 @@ func wrapTextToWidth(text string, width int) []string {
 	return lines
 }
 
-func textWidth(text string) int {
+func TextWidth(text string) int {
 	return ansi.StringWidth(text)
 }
 
-func minInt(a, b int) int {
+func MinInt(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func maxInt(a, b int) int {
+func MaxInt(a, b int) int {
 	if a > b {
 		return a
 	}

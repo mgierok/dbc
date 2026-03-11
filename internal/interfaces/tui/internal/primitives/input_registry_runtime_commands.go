@@ -9,87 +9,79 @@ import (
 	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
-type runtimeCommandAction int
+type RuntimeCommandAction int
 
 const (
-	runtimeCommandActionNone runtimeCommandAction = iota
-	runtimeCommandActionOpenHelp
-	runtimeCommandActionQuit
-	runtimeCommandActionOpenConfig
-	runtimeCommandActionSetRecordLimit
+	RuntimeCommandActionNone RuntimeCommandAction = iota
+	RuntimeCommandActionOpenHelp
+	RuntimeCommandActionQuit
+	RuntimeCommandActionOpenConfig
+	RuntimeCommandActionSetRecordLimit
 )
 
-type runtimeCommandMatcher func(input string, spec runtimeCommandSpec) (runtimeCommandSpec, bool, error)
+type runtimeCommandMatcher func(input string, spec RuntimeCommandSpec) (RuntimeCommandSpec, bool, error)
 
-type runtimeCommandSpec struct {
-	aliases     []string
-	usage       string
-	description string
-	action      runtimeCommandAction
-	recordLimit int
+type RuntimeCommandSpec struct {
+	Aliases     []string
+	Usage       string
+	Description string
+	Action      RuntimeCommandAction
+	RecordLimit int
 	matcher     runtimeCommandMatcher
 }
 
 var (
-	errUnknownRuntimeCommand = errors.New("unknown runtime command")
+	ErrUnknownRuntimeCommand = errors.New("unknown runtime command")
 	errInvalidRuntimeCommand = errors.New("invalid runtime command")
 )
 
-var runtimeCommandSpecs = []runtimeCommandSpec{
+var runtimeCommandSpecs = []RuntimeCommandSpec{
 	{
-		aliases:     []string{"config", "c"},
-		description: "Open database selector and config manager.",
-		action:      runtimeCommandActionOpenConfig,
+		Aliases:     []string{"config", "c"},
+		Description: "Open database selector and config manager.",
+		Action:      RuntimeCommandActionOpenConfig,
 	},
 	{
-		aliases:     []string{"help", "h"},
-		description: "Open runtime help popup reference.",
-		action:      runtimeCommandActionOpenHelp,
+		Aliases:     []string{"help", "h"},
+		Description: "Open runtime help popup reference.",
+		Action:      RuntimeCommandActionOpenHelp,
 	},
 	{
-		usage:       ":set limit=<n>",
-		description: "Set records page limit for the current app session.",
-		action:      runtimeCommandActionSetRecordLimit,
+		Usage:       ":set limit=<n>",
+		Description: "Set records page limit for the current app session.",
+		Action:      RuntimeCommandActionSetRecordLimit,
 		matcher:     matchSetRecordLimitCommand,
 	},
 	{
-		aliases:     []string{"quit", "q"},
-		description: "Quit the application.",
-		action:      runtimeCommandActionQuit,
+		Aliases:     []string{"quit", "q"},
+		Description: "Quit the application.",
+		Action:      RuntimeCommandActionQuit,
 	},
 }
 
-func resolveRuntimeCommand(input string) (runtimeCommandSpec, bool) {
-	spec, err := parseRuntimeCommand(input)
-	if err != nil {
-		return runtimeCommandSpec{}, false
-	}
-	return spec, true
-}
-
-func parseRuntimeCommand(input string) (runtimeCommandSpec, error) {
+func ParseRuntimeCommand(input string) (RuntimeCommandSpec, error) {
 	command := normalizeRuntimeCommand(input)
 	if command == "" {
-		return runtimeCommandSpec{}, errUnknownRuntimeCommand
+		return RuntimeCommandSpec{}, ErrUnknownRuntimeCommand
 	}
 
 	for _, candidate := range runtimeCommandSpecs {
 		if candidate.matcher != nil {
 			matched, ok, err := candidate.matcher(command, candidate)
 			if ok {
-				return matched, err
+				return cloneRuntimeCommandSpec(matched), err
 			}
 			continue
 		}
 
-		for _, alias := range candidate.aliases {
+		for _, alias := range candidate.Aliases {
 			if strings.EqualFold(command, alias) {
-				return candidate, nil
+				return cloneRuntimeCommandSpec(candidate), nil
 			}
 		}
 	}
 
-	return runtimeCommandSpec{}, errUnknownRuntimeCommand
+	return RuntimeCommandSpec{}, ErrUnknownRuntimeCommand
 }
 
 func normalizeRuntimeCommand(input string) string {
@@ -98,37 +90,37 @@ func normalizeRuntimeCommand(input string) string {
 	return strings.TrimSpace(command)
 }
 
-func matchSetRecordLimitCommand(input string, spec runtimeCommandSpec) (runtimeCommandSpec, bool, error) {
+func matchSetRecordLimitCommand(input string, spec RuntimeCommandSpec) (RuntimeCommandSpec, bool, error) {
 	setKeyword, remainder, matched := splitRuntimeCommandKeyword(input)
 	if !matched || !strings.EqualFold(setKeyword, "set") {
-		return runtimeCommandSpec{}, false, nil
+		return RuntimeCommandSpec{}, false, nil
 	}
 
 	remainder = strings.TrimSpace(remainder)
 	if remainder == "" {
-		return runtimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
+		return RuntimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
 	}
 
 	lowerRemainder := strings.ToLower(remainder)
 	if !strings.HasPrefix(lowerRemainder, "limit") {
-		return runtimeCommandSpec{}, false, nil
+		return RuntimeCommandSpec{}, false, nil
 	}
 	if !strings.HasPrefix(lowerRemainder, "limit=") {
-		return runtimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
+		return RuntimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
 	}
 
 	recordLimitText := remainder[len("limit="):]
 	if recordLimitText == "" || strings.ContainsAny(recordLimitText, " \t") {
-		return runtimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
+		return RuntimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
 	}
 
 	recordLimit, err := strconv.Atoi(recordLimitText)
 	if err != nil || !runtimecontract.IsValidRecordPageLimit(recordLimit) {
-		return runtimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
+		return RuntimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
 	}
 
 	matchedSpec := spec
-	matchedSpec.recordLimit = recordLimit
+	matchedSpec.RecordLimit = recordLimit
 	return matchedSpec, true, nil
 }
 
@@ -148,13 +140,22 @@ func invalidSetRecordLimitCommandError() error {
 	return fmt.Errorf("%w: %s", errInvalidRuntimeCommand, runtimecontract.InvalidSetRecordLimitHint())
 }
 
-func runtimeCommandLabel(command runtimeCommandSpec) string {
-	if strings.TrimSpace(command.usage) != "" {
-		return command.usage
+func IsUnknownRuntimeCommand(err error) bool {
+	return errors.Is(err, ErrUnknownRuntimeCommand)
+}
+
+func runtimeCommandLabel(command RuntimeCommandSpec) string {
+	if strings.TrimSpace(command.Usage) != "" {
+		return command.Usage
 	}
-	aliases := make([]string, 0, len(command.aliases))
-	for _, alias := range command.aliases {
+	aliases := make([]string, 0, len(command.Aliases))
+	for _, alias := range command.Aliases {
 		aliases = append(aliases, ":"+alias)
 	}
 	return strings.Join(aliases, " / ")
+}
+
+func cloneRuntimeCommandSpec(spec RuntimeCommandSpec) RuntimeCommandSpec {
+	spec.Aliases = append([]string(nil), spec.Aliases...)
+	return spec
 }
