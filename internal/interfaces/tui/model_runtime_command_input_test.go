@@ -28,8 +28,8 @@ func TestHandleKey_CommandInputAcceptsLiteralSpaceForSetLimitCommand(t *testing.
 	if runtimeSession.RecordsPageLimit != 10 {
 		t.Fatalf("expected record limit 10 after typing :set limit=10, got %d", runtimeSession.RecordsPageLimit)
 	}
-	if model.statusMessage != "Record limit set to 10" {
-		t.Fatalf("expected success status, got %q", model.statusMessage)
+	if model.ui.statusMessage != "Record limit set to 10" {
+		t.Fatalf("expected success status, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -45,11 +45,11 @@ func TestHandleKey_StartingNewCommandClearsStaleUnknownCommandStatus(t *testing.
 	status := stripANSI(model.renderStatus(200))
 
 	// Assert
-	if !model.commandInput.active {
+	if !model.overlay.commandInput.active {
 		t.Fatal("expected command input to be active after pressing :")
 	}
-	if model.statusMessage != "" {
-		t.Fatalf("expected stale status message to be cleared, got %q", model.statusMessage)
+	if model.ui.statusMessage != "" {
+		t.Fatalf("expected stale status message to be cleared, got %q", model.ui.statusMessage)
 	}
 	if strings.Contains(status, "Unknown command") {
 		t.Fatalf("expected rendered status to hide stale unknown-command message, got %q", status)

@@ -9,15 +9,15 @@ import (
 )
 
 func (m *Model) renderSchema(width, height int) []string {
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return primitives.PadLines([]string{primitives.PadRight("No schema loaded.", width)}, height, width)
 	}
 
-	items := make([]string, len(m.schema.Columns))
-	for i, column := range m.schema.Columns {
+	items := make([]string, len(m.read.schema.Columns))
+	for i, column := range m.read.schema.Columns {
 		items[i] = fmt.Sprintf("%s : %s", column.Name, column.Type)
 	}
-	lines := primitives.RenderList(items, m.schemaIndex, height, width, m.focus == FocusContent && m.viewMode == ViewSchema, m.styles)
+	lines := primitives.RenderList(items, m.read.schemaIndex, height, width, m.read.focus == FocusContent && m.read.viewMode == ViewSchema, m.styles)
 	return primitives.PadLines(lines, height, width)
 }
 
@@ -57,11 +57,11 @@ func (m *Model) renderRecords(width, height int) []string {
 	}
 
 	totalRows := m.totalRecordRows()
-	start := primitives.ScrollStart(m.recordSelection, listHeight, totalRows)
+	start := primitives.ScrollStart(m.read.recordSelection, listHeight, totalRows)
 	end := primitives.MinInt(totalRows, start+listHeight)
 	for i := start; i < end; i++ {
 		prefix := primitives.SelectionUnselectedPrefix()
-		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
+		if m.read.focus == FocusContent && m.read.viewMode == ViewRecords && i == m.read.recordSelection {
 			prefix = primitives.SelectionSelectedPrefix()
 		}
 		displayValues := make([]string, len(columns))
@@ -81,13 +81,13 @@ func (m *Model) renderRecords(width, height int) []string {
 			}
 		}
 		focusColumn := -1
-		if m.recordFieldFocus && i == m.recordSelection {
-			focusColumn = m.recordColumn
+		if m.read.recordFieldFocus && i == m.read.recordSelection {
+			focusColumn = m.read.recordColumn
 		}
 		row := formatRecordRow(displayValues, columnWidths, focusColumn)
 		rowMarker := m.recordRowMarker(i)
 		line := primitives.PadRight(prefix+rowMarker+" "+row, width)
-		if m.focus == FocusContent && m.viewMode == ViewRecords && i == m.recordSelection {
+		if m.read.focus == FocusContent && m.read.viewMode == ViewRecords && i == m.read.recordSelection {
 			line = m.styles.Selected(line)
 		}
 		lines = append(lines, line)
@@ -121,7 +121,7 @@ func (m *Model) renderRecordDetail(width, height int) []string {
 	if maxOffset < 0 {
 		maxOffset = 0
 	}
-	offset := clamp(m.recordDetail.scrollOffset, 0, maxOffset)
+	offset := clamp(m.overlay.recordDetail.scrollOffset, 0, maxOffset)
 	end := primitives.MinInt(len(contentLines), offset+height)
 
 	for i := offset; i < end; i++ {
@@ -135,12 +135,12 @@ func (m *Model) recordDetailContentLines(width int) []string {
 	if m.totalRecordRows() == 0 {
 		return []string{"No records."}
 	}
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return []string{"No columns loaded."}
 	}
 
-	rowIndex := clamp(m.recordSelection, 0, m.totalRecordRows()-1)
-	lines := make([]string, 0, len(m.schema.Columns)*4)
+	rowIndex := clamp(m.read.recordSelection, 0, m.totalRecordRows()-1)
+	lines := make([]string, 0, len(m.read.schema.Columns)*4)
 	rowLine := primitives.IconInfo + " Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
 		rowLine = primitives.IconInfo + " Pending insert"
@@ -157,7 +157,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 		valueWidth = 1
 	}
 
-	for columnIndex, column := range m.schema.Columns {
+	for columnIndex, column := range m.read.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
 		header := fmt.Sprintf("%s (%s)", m.styles.Title(column.Name), column.Type)
 		if edited {
@@ -168,7 +168,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 		for _, wrappedLine := range primitives.WrapTextToWidth(value, valueWidth) {
 			lines = append(lines, "  "+wrappedLine)
 		}
-		if columnIndex < len(m.schema.Columns)-1 {
+		if columnIndex < len(m.read.schema.Columns)-1 {
 			lines = append(lines, "")
 		}
 	}
@@ -205,14 +205,14 @@ func (m *Model) isRowEdited(rowIndex int) bool {
 }
 
 func (m *Model) schemaColumnsForRecordsHeader() []string {
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return nil
 	}
-	columns := make([]string, len(m.schema.Columns))
-	for i, column := range m.schema.Columns {
+	columns := make([]string, len(m.read.schema.Columns))
+	for i, column := range m.read.schema.Columns {
 		label := column.Name
-		if m.currentSort != nil && column.Name == m.currentSort.Column {
-			switch m.currentSort.Direction {
+		if m.read.currentSort != nil && column.Name == m.read.currentSort.Column {
+			switch m.read.currentSort.Direction {
 			case dto.SortDirectionAsc:
 				label += " " + primitives.IconSortAsc
 			case dto.SortDirectionDesc:

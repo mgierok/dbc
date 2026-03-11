@@ -7,13 +7,13 @@ import (
 )
 
 func (m *Model) openRecordDetail() (tea.Model, tea.Cmd) {
-	if m.viewMode != ViewRecords || m.focus != FocusContent {
+	if m.read.viewMode != ViewRecords || m.read.focus != FocusContent {
 		return m, nil
 	}
 	if m.totalRecordRows() == 0 {
 		return m, nil
 	}
-	m.recordDetail = recordDetailState{
+	m.overlay.recordDetail = recordDetailState{
 		active:       true,
 		scrollOffset: 0,
 	}
@@ -21,12 +21,12 @@ func (m *Model) openRecordDetail() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) closeRecordDetail() {
-	m.recordDetail = recordDetailState{}
+	m.overlay.recordDetail = recordDetailState{}
 }
 
 func (m *Model) moveRecordDetailScroll(delta int) {
 	maxOffset := m.recordDetailMaxOffset()
-	m.recordDetail.scrollOffset = clamp(m.recordDetail.scrollOffset+delta, 0, maxOffset)
+	m.overlay.recordDetail.scrollOffset = clamp(m.overlay.recordDetail.scrollOffset+delta, 0, maxOffset)
 }
 
 func (m *Model) recordDetailVisibleLines() int {
@@ -65,10 +65,10 @@ func (m *Model) handleRecordDetailKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveRecordDetailScroll(-m.recordDetailVisibleLines())
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyPopupJumpTop, key):
-		m.recordDetail.scrollOffset = 0
+		m.overlay.recordDetail.scrollOffset = 0
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyPopupJumpBottom, key):
-		m.recordDetail.scrollOffset = m.recordDetailMaxOffset()
+		m.overlay.recordDetail.scrollOffset = m.recordDetailMaxOffset()
 		return m, nil
 	default:
 		return m, nil

@@ -10,26 +10,26 @@ import (
 )
 
 func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
-	m.commandInput = commandInput{
+	m.overlay.commandInput = commandInput{
 		active: true,
 		value:  "",
 		cursor: 0,
 	}
-	m.statusMessage = ""
+	m.ui.statusMessage = ""
 	return m, nil
 }
 
 func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
-	command := ":" + strings.TrimSpace(m.commandInput.value)
-	m.commandInput = commandInput{}
+	command := ":" + strings.TrimSpace(m.overlay.commandInput.value)
+	m.overlay.commandInput = commandInput{}
 
 	commandSpec, err := primitives.ParseRuntimeCommand(command)
 	if err != nil {
 		if primitives.IsUnknownRuntimeCommand(err) {
-			m.statusMessage = fmt.Sprintf("Unknown command: %s", command)
+			m.ui.statusMessage = fmt.Sprintf("Unknown command: %s", command)
 			return m, nil
 		}
-		m.statusMessage = "Error: " + err.Error()
+		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
 
@@ -52,8 +52,8 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 			)
 			return m, nil
 		}
-		m.openConfigSelector = true
-		m.statusMessage = "Opening config manager"
+		m.ui.openConfigSelector = true
+		m.ui.statusMessage = "Opening config manager"
 		return m, tea.Quit
 	}
 
@@ -61,8 +61,8 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) openHelpPopup(context helpPopupContext) {
-	m.commandInput = commandInput{}
-	m.helpPopup = helpPopup{
+	m.overlay.commandInput = commandInput{}
+	m.overlay.helpPopup = helpPopup{
 		active:       true,
 		scrollOffset: 0,
 		context:      context,
@@ -70,12 +70,12 @@ func (m *Model) openHelpPopup(context helpPopupContext) {
 }
 
 func (m *Model) closeHelpPopup() {
-	m.helpPopup = helpPopup{}
+	m.overlay.helpPopup = helpPopup{}
 }
 
 func (m *Model) moveHelpPopupScroll(delta int) {
 	maxOffset := m.helpPopupMaxOffset()
-	m.helpPopup.scrollOffset = clamp(m.helpPopup.scrollOffset+delta, 0, maxOffset)
+	m.overlay.helpPopup.scrollOffset = clamp(m.overlay.helpPopup.scrollOffset+delta, 0, maxOffset)
 }
 
 func (m *Model) helpPopupVisibleLines() int {
@@ -102,25 +102,25 @@ func (m *Model) helpPopupMaxOffset() int {
 
 func (m *Model) currentHelpPopupContext() helpPopupContext {
 	switch {
-	case m.editPopup.active:
+	case m.overlay.editPopup.active:
 		return helpPopupContextEditPopup
-	case m.confirmPopup.active:
+	case m.overlay.confirmPopup.active:
 		return helpPopupContextConfirmPopup
-	case m.filterPopup.active:
+	case m.overlay.filterPopup.active:
 		return helpPopupContextFilterPopup
-	case m.sortPopup.active:
+	case m.overlay.sortPopup.active:
 		return helpPopupContextSortPopup
-	case m.helpPopup.active:
+	case m.overlay.helpPopup.active:
 		return helpPopupContextHelpPopup
-	case m.commandInput.active:
+	case m.overlay.commandInput.active:
 		return helpPopupContextCommandInput
-	case m.recordDetail.active:
+	case m.overlay.recordDetail.active:
 		return helpPopupContextRecordDetail
-	case m.focus == FocusTables:
+	case m.read.focus == FocusTables:
 		return helpPopupContextTables
-	case m.focus == FocusContent && m.viewMode == ViewSchema:
+	case m.read.focus == FocusContent && m.read.viewMode == ViewSchema:
 		return helpPopupContextSchema
-	case m.focus == FocusContent && m.viewMode == ViewRecords:
+	case m.read.focus == FocusContent && m.read.viewMode == ViewRecords:
 		return helpPopupContextRecords
 	default:
 		return helpPopupContextUnknown
@@ -128,7 +128,7 @@ func (m *Model) currentHelpPopupContext() helpPopupContext {
 }
 
 func (m *Model) helpPopupContextTitle() string {
-	switch m.helpPopup.context {
+	switch m.overlay.helpPopup.context {
 	case helpPopupContextTables:
 		return "Context Help: Tables"
 	case helpPopupContextSchema:
@@ -175,11 +175,11 @@ func (m *Model) helpPopupContentLines() []string {
 }
 
 func (m *Model) helpPopupContextShortcuts() string {
-	switch m.helpPopup.context {
+	switch m.overlay.helpPopup.context {
 	case helpPopupContextEditPopup:
 		return primitives.RuntimeStatusEditShortcuts()
 	case helpPopupContextConfirmPopup:
-		return primitives.RuntimeStatusConfirmShortcuts(len(m.confirmPopup.options) > 0)
+		return primitives.RuntimeStatusConfirmShortcuts(len(m.overlay.confirmPopup.options) > 0)
 	case helpPopupContextFilterPopup:
 		return primitives.RuntimeStatusFilterPopupShortcuts()
 	case helpPopupContextSortPopup:
@@ -203,7 +203,7 @@ func (m *Model) helpPopupContextShortcuts() string {
 
 func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	if m.commandInput.active {
+	if m.overlay.commandInput.active {
 		return m.handleCommandInputKey(msg)
 	}
 
@@ -226,10 +226,10 @@ func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveHelpPopupScroll(-m.helpPopupVisibleLines())
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyPopupJumpTop, key):
-		m.helpPopup.scrollOffset = 0
+		m.overlay.helpPopup.scrollOffset = 0
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyPopupJumpBottom, key):
-		m.helpPopup.scrollOffset = m.helpPopupMaxOffset()
+		m.overlay.helpPopup.scrollOffset = m.helpPopupMaxOffset()
 		return m, nil
 	default:
 		return m, nil
@@ -240,19 +240,19 @@ func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
 	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
-		m.commandInput = commandInput{}
+		m.overlay.commandInput = commandInput{}
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
 		return m.submitCommandInput()
 	case primitives.KeyMatches(primitives.KeyInputMoveLeft, key):
-		m.commandInput.cursor = clamp(m.commandInput.cursor-1, 0, len(m.commandInput.value))
+		m.overlay.commandInput.cursor = clamp(m.overlay.commandInput.cursor-1, 0, len(m.overlay.commandInput.value))
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyInputMoveRight, key):
-		m.commandInput.cursor = clamp(m.commandInput.cursor+1, 0, len(m.commandInput.value))
+		m.overlay.commandInput.cursor = clamp(m.overlay.commandInput.cursor+1, 0, len(m.overlay.commandInput.value))
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyInputBackspace, key):
-		if m.commandInput.value != "" {
-			m.commandInput.value, m.commandInput.cursor = deleteAtCursor(m.commandInput.value, m.commandInput.cursor)
+		if m.overlay.commandInput.value != "" {
+			m.overlay.commandInput.value, m.overlay.commandInput.cursor = deleteAtCursor(m.overlay.commandInput.value, m.overlay.commandInput.cursor)
 		}
 		return m, nil
 	}
@@ -262,7 +262,7 @@ func (m *Model) handleCommandInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if msg.Type == tea.KeySpace {
 			insert = " "
 		}
-		m.commandInput.value, m.commandInput.cursor = insertAtCursor(m.commandInput.value, insert, m.commandInput.cursor)
+		m.overlay.commandInput.value, m.overlay.commandInput.cursor = insertAtCursor(m.overlay.commandInput.value, insert, m.overlay.commandInput.cursor)
 	}
 	return m, nil
 }

@@ -33,8 +33,10 @@ func TestHandleKey_CtrlWPanelShortcutsAreUnsupported(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			model := &Model{
-				viewMode: ViewRecords,
-				focus:    tc.startFocus,
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					focus:    tc.startFocus,
+				},
 			}
 
 			// Act
@@ -42,8 +44,8 @@ func TestHandleKey_CtrlWPanelShortcutsAreUnsupported(t *testing.T) {
 			model.handleKey(tc.nextKey)
 
 			// Assert
-			if model.focus != tc.startFocus {
-				t.Fatalf("expected focus to stay %v, got %v", tc.startFocus, model.focus)
+			if model.read.focus != tc.startFocus {
+				t.Fatalf("expected focus to stay %v, got %v", tc.startFocus, model.read.focus)
 			}
 		})
 	}

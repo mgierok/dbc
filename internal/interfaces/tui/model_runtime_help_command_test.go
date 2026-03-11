@@ -17,7 +17,7 @@ func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			model := &Model{viewMode: ViewRecords}
+			model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 			// Act
 			_, cmd := submitTypedRuntimeCommand(model, tc.command)
@@ -43,7 +43,7 @@ func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			model := &Model{viewMode: ViewRecords}
+			model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 			// Act
 			_, cmd := submitTypedRuntimeCommand(model, tc.command)
@@ -67,11 +67,11 @@ func TestHandleKey_ContextHelpQuestionMarkOpensRecordsHelpPopup(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 
 	// Assert
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected ? to open help popup")
 	}
-	if model.helpPopup.context != helpPopupContextRecords {
-		t.Fatalf("expected records context, got %v", model.helpPopup.context)
+	if model.overlay.helpPopup.context != helpPopupContextRecords {
+		t.Fatalf("expected records context, got %v", model.overlay.helpPopup.context)
 	}
 }
 
@@ -84,14 +84,14 @@ func TestHandleKey_CommandHelpAliasOpensRecordsHelpPopup(t *testing.T) {
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, ":help")
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected :help to open help popup")
 	}
-	if model.helpPopup.context != helpPopupContextRecords {
-		t.Fatalf("expected records context for :help, got %v", model.helpPopup.context)
+	if model.overlay.helpPopup.context != helpPopupContextRecords {
+		t.Fatalf("expected records context for :help, got %v", model.overlay.helpPopup.context)
 	}
-	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-		t.Fatalf("expected no unknown-command status for :help, got %q", model.statusMessage)
+	if strings.Contains(strings.ToLower(model.ui.statusMessage), "unknown command") {
+		t.Fatalf("expected no unknown-command status for :help, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -115,7 +115,7 @@ func TestHandleKey_ContextHelpPopupShowsCurrentContextBindings(t *testing.T) {
 func TestHandleKey_HelpPopupScrollCanReachFinalContextShortcut(t *testing.T) {
 	// Arrange
 	model := newRuntimeHelpCommandModel()
-	model.height = 12
+	model.ui.height = 12
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 	initial := strings.Join(model.renderHelpPopup(60), "\n")
 
@@ -136,21 +136,21 @@ func TestHandleKey_HelpPopupScrollCanReachFinalContextShortcut(t *testing.T) {
 
 func TestHandleKey_InvalidCommandShowsErrorAndKeepsSessionActive(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 	// Act
 	_, cmd := submitTypedRuntimeCommand(model, "unknown")
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "invalid command")
-	if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-		t.Fatalf("expected unknown command status message, got %q", model.statusMessage)
+	if !strings.Contains(strings.ToLower(model.ui.statusMessage), "unknown command") {
+		t.Fatalf("expected unknown command status message, got %q", model.ui.statusMessage)
 	}
 }
 
 func TestHandleKey_HelpCommandRequiresExplicitPrefix(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 	// Act
 	for _, r := range "help" {
@@ -160,14 +160,14 @@ func TestHandleKey_HelpCommandRequiresExplicitPrefix(t *testing.T) {
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "help without prefix")
-	if model.helpPopup.active {
+	if model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to stay closed without ':' prefix")
 	}
 }
 
 func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 	// Act
 	for _, r := range "config" {
@@ -181,7 +181,7 @@ func TestHandleKey_CommandRequiresExplicitPrefix(t *testing.T) {
 
 func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 	// Act
 	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
@@ -192,7 +192,7 @@ func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 
 func TestHandleKey_CtrlCWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 	// Act
 	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlC})
@@ -203,9 +203,9 @@ func TestHandleKey_CtrlCWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 
 func TestHandleKey_CommandHelpReenterKeepsPopupOpen(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 	submitTypedRuntimeCommand(model, "help")
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to open before idempotence check")
 	}
 
@@ -214,19 +214,22 @@ func TestHandleKey_CommandHelpReenterKeepsPopupOpen(t *testing.T) {
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "repeated :help")
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to remain open when :help is re-entered")
 	}
-	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-		t.Fatalf("expected no unknown-command status for repeated :help, got %q", model.statusMessage)
+	if strings.Contains(strings.ToLower(model.ui.statusMessage), "unknown command") {
+		t.Fatalf("expected no unknown-command status for repeated :help, got %q", model.ui.statusMessage)
 	}
 }
 
 func TestHandleKey_CommandHelpReenterClearsStaleStatusBeforeNewCommand(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords, statusMessage: "existing status"}
+	model := &Model{
+		read: runtimeReadState{viewMode: ViewRecords},
+		ui:   runtimeUIState{statusMessage: "existing status"},
+	}
 	submitTypedRuntimeCommand(model, "help")
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to open before re-entering :help")
 	}
 
@@ -235,19 +238,19 @@ func TestHandleKey_CommandHelpReenterClearsStaleStatusBeforeNewCommand(t *testin
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "repeated :help after stale status")
-	if model.statusMessage != "" {
-		t.Fatalf("expected stale status message to clear before new command, got %q", model.statusMessage)
+	if model.ui.statusMessage != "" {
+		t.Fatalf("expected stale status message to clear before new command, got %q", model.ui.statusMessage)
 	}
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to remain open")
 	}
 }
 
 func TestHandleKey_HelpPopupEscClosesPopup(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 	submitTypedRuntimeCommand(model, "help")
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to open before close check")
 	}
 
@@ -255,16 +258,16 @@ func TestHandleKey_HelpPopupEscClosesPopup(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
 
 	// Assert
-	if model.helpPopup.active {
+	if model.overlay.helpPopup.active {
 		t.Fatal("expected Esc to close help popup")
 	}
 }
 
 func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 	submitTypedRuntimeCommand(model, "help")
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to open before unrelated-key check")
 	}
 
@@ -273,7 +276,7 @@ func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected unrelated keys to keep help popup open")
 	}
 }
@@ -281,11 +284,15 @@ func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
 func TestHandleKey_ContextHelpFromFilterPopupUsesFilterContext(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		filterPopup: filterPopup{
-			active: true,
-			step:   filterSelectColumn,
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active: true,
+				step:   filterSelectColumn,
+			},
 		},
 	}
 
@@ -293,58 +300,64 @@ func TestHandleKey_ContextHelpFromFilterPopupUsesFilterContext(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 
 	// Assert
-	if !model.helpPopup.active {
+	if !model.overlay.helpPopup.active {
 		t.Fatal("expected ? to open help popup from filter context")
 	}
-	if model.helpPopup.context != helpPopupContextFilterPopup {
-		t.Fatalf("expected filter-popup context help, got %v", model.helpPopup.context)
+	if model.overlay.helpPopup.context != helpPopupContextFilterPopup {
+		t.Fatalf("expected filter-popup context help, got %v", model.overlay.helpPopup.context)
 	}
-	if !model.filterPopup.active {
+	if !model.overlay.filterPopup.active {
 		t.Fatal("expected filter popup state to stay preserved under help overlay")
 	}
 }
 
 func TestHandleKey_MisspelledHelpCommandUsesUnknownCommandFallback(t *testing.T) {
 	// Arrange
-	model := &Model{viewMode: ViewRecords}
+	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
 
 	// Act
 	_, cmd := submitTypedRuntimeCommand(model, "helpp")
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "misspelled :help")
-	if model.helpPopup.active {
+	if model.overlay.helpPopup.active {
 		t.Fatal("expected misspelled :help to keep help popup closed")
 	}
-	if !strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-		t.Fatalf("expected unknown-command status for misspelled :help, got %q", model.statusMessage)
+	if !strings.Contains(strings.ToLower(model.ui.statusMessage), "unknown command") {
+		t.Fatalf("expected unknown-command status for misspelled :help, got %q", model.ui.statusMessage)
 	}
 }
 
 func TestHandleKey_PopupPriority_HelpPopupConsumesEscBeforeOtherPopups(t *testing.T) {
 	// Arrange
 	model := &Model{
-		helpPopup:   helpPopup{active: true},
-		filterPopup: filterPopup{active: true},
+		overlay: runtimeOverlayState{
+			helpPopup:   helpPopup{active: true},
+			filterPopup: filterPopup{active: true},
+		},
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
 
 	// Assert
-	if model.helpPopup.active {
+	if model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to close first")
 	}
-	if !model.filterPopup.active {
+	if !model.overlay.filterPopup.active {
 		t.Fatal("expected filter popup to remain active when help popup handled Esc")
 	}
 }
 
 func newRuntimeHelpCommandModel() *Model {
 	return &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		height:   40,
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		ui: runtimeUIState{
+			height: 40,
+		},
 	}
 }
 

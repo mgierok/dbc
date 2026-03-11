@@ -11,11 +11,13 @@ import (
 func TestHandleKey_UndoRedo_RevertsAndReappliesInsertAdd(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "name", Type: "TEXT", Nullable: false},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
 			},
 		},
 	}
@@ -48,11 +50,13 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesInsertAdd(t *testing.T) {
 func TestHandleKey_NewActionClearsRedoStack(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "name", Type: "TEXT", Nullable: false},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
 			},
 		},
 	}
@@ -79,13 +83,15 @@ func TestHandleKey_NewActionClearsRedoStack(t *testing.T) {
 func TestHandleKey_UndoRedo_RevertsAndReappliesPersistedCellEdit(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
 		},
 	}
@@ -118,13 +124,15 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesPersistedCellEdit(t *testing.T) {
 func TestHandleKey_UndoRedo_RevertsAndReappliesDeleteToggle(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
 		},
 	}

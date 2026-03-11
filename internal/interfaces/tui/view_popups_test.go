@@ -13,11 +13,13 @@ import (
 func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{
-		filterPopup: filterPopup{
-			active: true,
-			step:   filterInputValue,
-			input:  "abc",
-			cursor: 1,
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active: true,
+				step:   filterInputValue,
+				input:  "abc",
+				cursor: 1,
+			},
 		},
 	}
 
@@ -33,20 +35,24 @@ func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
 func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{
-					Name:  "name",
-					Type:  "TEXT",
-					Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{
+						Name:  "name",
+						Type:  "TEXT",
+						Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+					},
 				},
 			},
 		},
-		editPopup: editPopup{
-			active:      true,
-			columnIndex: 0,
-			input:       "john",
-			cursor:      2,
+		overlay: runtimeOverlayState{
+			editPopup: editPopup{
+				active:      true,
+				columnIndex: 0,
+				input:       "john",
+				cursor:      2,
+			},
 		},
 	}
 
@@ -62,19 +68,23 @@ func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 	// Arrange
 	model := &Model{
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{
-					Name:     "name",
-					Type:     "TEXT",
-					Nullable: true,
-					Input:    dto.ColumnInput{Kind: dto.ColumnInputText},
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{
+						Name:     "name",
+						Type:     "TEXT",
+						Nullable: true,
+						Input:    dto.ColumnInput{Kind: dto.ColumnInputText},
+					},
 				},
 			},
 		},
-		editPopup: editPopup{
-			active:      true,
-			columnIndex: 0,
+		overlay: runtimeOverlayState{
+			editPopup: editPopup{
+				active:      true,
+				columnIndex: 0,
+			},
 		},
 	}
 
@@ -90,10 +100,12 @@ func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 func TestRenderHelpPopup_ShowsOnlyCurrentContextBindings(t *testing.T) {
 	// Arrange
 	model := &Model{
-		height: 40,
-		helpPopup: helpPopup{
-			active:  true,
-			context: helpPopupContextRecords,
+		ui: runtimeUIState{height: 40},
+		overlay: runtimeOverlayState{
+			helpPopup: helpPopup{
+				active:  true,
+				context: helpPopupContextRecords,
+			},
 		},
 	}
 
@@ -115,10 +127,12 @@ func TestRenderHelpPopup_ShowsOnlyCurrentContextBindings(t *testing.T) {
 func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
 	// Arrange
 	model := &Model{
-		height: 40,
-		helpPopup: helpPopup{
-			active:  true,
-			context: helpPopupContextTables,
+		ui: runtimeUIState{height: 40},
+		overlay: runtimeOverlayState{
+			helpPopup: helpPopup{
+				active:  true,
+				context: helpPopupContextTables,
+			},
 		},
 	}
 
@@ -153,9 +167,13 @@ func TestRenderHelpPopup_UsesConfigPopupHeaderLayout(t *testing.T) {
 func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 	// Arrange
 	model := &Model{
-		height:        12,
-		helpPopup:     helpPopup{active: true, context: helpPopupContextRecords},
-		statusMessage: "",
+		ui: runtimeUIState{
+			height:        12,
+			statusMessage: "",
+		},
+		overlay: runtimeOverlayState{
+			helpPopup: helpPopup{active: true, context: helpPopupContextRecords},
+		},
 	}
 	initial := stripANSI(strings.Join(model.renderHelpPopup(60), "\n"))
 
@@ -177,8 +195,10 @@ func TestRenderHelpPopup_ScrollCanReachFinalItemWhenOverflowing(t *testing.T) {
 func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T) {
 	// Arrange
 	model := &Model{
-		height:    12,
-		helpPopup: helpPopup{active: true, context: helpPopupContextRecords},
+		ui: runtimeUIState{height: 12},
+		overlay: runtimeOverlayState{
+			helpPopup: helpPopup{active: true, context: helpPopupContextRecords},
+		},
 	}
 	for range 5 {
 		model.handleHelpPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
@@ -198,9 +218,13 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width:     80,
-		height:    24,
-		helpPopup: helpPopup{active: true, context: helpPopupContextTables},
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		overlay: runtimeOverlayState{
+			helpPopup: helpPopup{active: true, context: helpPopupContextTables},
+		},
 	}
 
 	// Act
@@ -233,13 +257,17 @@ func TestView_HelpPopupRendersModalLikeConfigSelector(t *testing.T) {
 func TestView_FilterPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width:  80,
-		height: 24,
-		filterPopup: filterPopup{
-			active: true,
-			step:   filterInputValue,
-			input:  "abc",
-			cursor: 1,
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active: true,
+				step:   filterInputValue,
+				input:  "abc",
+				cursor: 1,
+			},
 		},
 	}
 
@@ -272,22 +300,28 @@ func TestView_FilterPopupRendersAsCenteredModal(t *testing.T) {
 func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width:  80,
-		height: 24,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{
-					Name:  "name",
-					Type:  "TEXT",
-					Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{
+						Name:  "name",
+						Type:  "TEXT",
+						Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+					},
 				},
 			},
 		},
-		editPopup: editPopup{
-			active:      true,
-			columnIndex: 0,
-			input:       "john",
-			cursor:      2,
+		overlay: runtimeOverlayState{
+			editPopup: editPopup{
+				active:      true,
+				columnIndex: 0,
+				input:       "john",
+				cursor:      2,
+			},
 		},
 	}
 
@@ -320,10 +354,12 @@ func TestView_EditPopupRendersAsCenteredModal(t *testing.T) {
 func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		width:    80,
-		height:   24,
-		staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
+		read: runtimeReadState{viewMode: ViewRecords},
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 
 	// Act
@@ -361,17 +397,19 @@ func TestView_DirtyConfigPopupRendersAsCenteredModal(t *testing.T) {
 func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t *testing.T) {
 	// Arrange
 	model := &Model{
-		confirmPopup: confirmPopup{
-			active:  true,
-			title:   "Config",
-			message: "Unsaved changes detected. Choose save, discard, or cancel.",
-			options: []confirmOption{
-				{label: "Save and open config", action: confirmConfigSaveAndOpen},
-				{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
-				{label: "Cancel", action: confirmConfigCancel},
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active:  true,
+				title:   "Config",
+				message: "Unsaved changes detected. Choose save, discard, or cancel.",
+				options: []confirmOption{
+					{label: "Save and open config", action: confirmConfigSaveAndOpen},
+					{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
+					{label: "Cancel", action: confirmConfigCancel},
+				},
+				selected: 0,
+				modal:    true,
 			},
-			selected: 0,
-			modal:    true,
 		},
 	}
 
@@ -406,16 +444,18 @@ func TestRenderConfirmPopup_DirtyConfigUsesStandardizedHeaderAndOptionsLayout(t 
 func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitActions(t *testing.T) {
 	// Arrange
 	model := &Model{
-		confirmPopup: confirmPopup{
-			active:  true,
-			title:   "Switch Table",
-			message: "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?",
-			options: []confirmOption{
-				{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
-				{label: "(n) No, continue editing", action: confirmCancelTableSwitch},
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active:  true,
+				title:   "Switch Table",
+				message: "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?",
+				options: []confirmOption{
+					{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
+					{label: "(n) No, continue editing", action: confirmCancelTableSwitch},
+				},
+				selected: 0,
+				modal:    true,
 			},
-			selected: 0,
-			modal:    true,
 		},
 	}
 
@@ -441,12 +481,16 @@ func TestRenderConfirmPopup_DirtyTableSwitchUsesInformationalMessageAndExplicitA
 func TestView_RegularConfirmPopupRendersAsCenteredModal(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width:  80,
-		height: 24,
-		confirmPopup: confirmPopup{
-			active:  true,
-			title:   "Confirm",
-			message: "Save staged changes?",
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active:  true,
+				title:   "Confirm",
+				message: "Save staged changes?",
+			},
 		},
 	}
 
@@ -479,10 +523,12 @@ func TestView_RegularConfirmPopupRendersAsCenteredModal(t *testing.T) {
 func TestRenderConfirmPopup_InlineUsesStandardizedSeparatorRow(t *testing.T) {
 	// Arrange
 	model := &Model{
-		confirmPopup: confirmPopup{
-			active:  true,
-			title:   "Confirm",
-			message: "Save staged changes?",
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active:  true,
+				title:   "Confirm",
+				message: "Save staged changes?",
+			},
 		},
 	}
 

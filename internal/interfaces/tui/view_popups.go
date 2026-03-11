@@ -9,11 +9,11 @@ import (
 )
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
-	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
 		Title:               m.helpPopupContextTitle(),
 		Summary:             primitives.RuntimeHelpPopupSummaryLine(),
 		Rows:                primitives.PopupTextRows(m.helpPopupContentLines()),
-		ScrollOffset:        m.helpPopup.scrollOffset,
+		ScrollOffset:        m.overlay.helpPopup.scrollOffset,
 		VisibleRows:         m.helpPopupVisibleLines(),
 		ShowScrollIndicator: true,
 		DefaultWidth:        50,
@@ -26,37 +26,37 @@ func (m *Model) renderHelpPopup(totalWidth int) []string {
 func (m *Model) renderFilterPopup(totalWidth int) []string {
 	stepLabel := "Select column"
 	rows := []primitives.StandardizedPopupRow{}
-	switch m.filterPopup.step {
+	switch m.overlay.filterPopup.step {
 	case filterSelectColumn:
-		columnRows := make([]string, len(m.schema.Columns))
-		for i, column := range m.schema.Columns {
+		columnRows := make([]string, len(m.read.schema.Columns))
+		for i, column := range m.read.schema.Columns {
 			columnRows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
 		}
 		selected := -1
 		if len(columnRows) > 0 {
-			selected = clamp(m.filterPopup.columnIndex, 0, len(columnRows)-1)
+			selected = clamp(m.overlay.filterPopup.columnIndex, 0, len(columnRows)-1)
 		}
 		rows = primitives.PopupSelectableRows(columnRows, selected)
 	case filterSelectOperator:
 		stepLabel = "Select operator"
-		operatorRows := make([]string, len(m.filterPopup.operators))
-		for i, operator := range m.filterPopup.operators {
+		operatorRows := make([]string, len(m.overlay.filterPopup.operators))
+		for i, operator := range m.overlay.filterPopup.operators {
 			operatorRows[i] = operator.Name
 		}
 		selected := -1
 		if len(operatorRows) > 0 {
-			selected = clamp(m.filterPopup.operatorIndex, 0, len(operatorRows)-1)
+			selected = clamp(m.overlay.filterPopup.operatorIndex, 0, len(operatorRows)-1)
 		}
 		rows = primitives.PopupSelectableRows(operatorRows, selected)
 	case filterInputValue:
 		stepLabel = "Enter value"
-		input := m.filterPopup.input
-		cursor := clamp(m.filterPopup.cursor, 0, len(input))
+		input := m.overlay.filterPopup.input
+		cursor := clamp(m.overlay.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
 		rows = primitives.PopupTextRows([]string{"Value: " + value})
 	}
 
-	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
 		Title:        "Filter",
 		Summary:      stepLabel,
 		Rows:         rows,
@@ -71,15 +71,15 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 	stepLabel := "Select column"
 	rows := []primitives.StandardizedPopupRow{}
 
-	switch m.sortPopup.step {
+	switch m.overlay.sortPopup.step {
 	case sortSelectColumn:
-		columnRows := make([]string, len(m.schema.Columns))
-		for i, column := range m.schema.Columns {
+		columnRows := make([]string, len(m.read.schema.Columns))
+		for i, column := range m.read.schema.Columns {
 			columnRows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
 		}
 		selected := -1
 		if len(columnRows) > 0 {
-			selected = clamp(m.sortPopup.columnIndex, 0, len(columnRows)-1)
+			selected = clamp(m.overlay.sortPopup.columnIndex, 0, len(columnRows)-1)
 		}
 		rows = primitives.PopupSelectableRows(columnRows, selected)
 	case sortSelectDirection:
@@ -91,12 +91,12 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 		}
 		selected := -1
 		if len(directionRows) > 0 {
-			selected = clamp(m.sortPopup.directionIndex, 0, len(directionRows)-1)
+			selected = clamp(m.overlay.sortPopup.directionIndex, 0, len(directionRows)-1)
 		}
 		rows = primitives.PopupSelectableRows(directionRows, selected)
 	}
 
-	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
 		Title:        "Sort",
 		Summary:      stepLabel,
 		Rows:         rows,
@@ -112,8 +112,8 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 	nullableLabel := "NOT NULL"
 	inputKind := dto.ColumnInputText
 	var options []string
-	if m.editPopup.columnIndex >= 0 && m.editPopup.columnIndex < len(m.schema.Columns) {
-		column := m.schema.Columns[m.editPopup.columnIndex]
+	if m.overlay.editPopup.columnIndex >= 0 && m.overlay.editPopup.columnIndex < len(m.read.schema.Columns) {
+		column := m.read.schema.Columns[m.overlay.editPopup.columnIndex]
 		columnLabel = fmt.Sprintf("%s (%s)", column.Name, column.Type)
 		if column.Nullable {
 			nullableLabel = "NULLABLE"
@@ -125,34 +125,34 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 
 	if inputKind == dto.ColumnInputSelect {
 		current := "NULL"
-		if !m.editPopup.isNull {
+		if !m.overlay.editPopup.isNull {
 			if len(options) > 0 {
-				current = options[clamp(m.editPopup.optionIndex, 0, len(options)-1)]
+				current = options[clamp(m.overlay.editPopup.optionIndex, 0, len(options)-1)]
 			} else {
-				current = m.editPopup.input
+				current = m.overlay.editPopup.input
 			}
 		}
 		rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: " + current})
 		if len(options) > 0 {
-			selected := clamp(m.editPopup.optionIndex, 0, len(options)-1)
+			selected := clamp(m.overlay.editPopup.optionIndex, 0, len(options)-1)
 			rows = append(rows, primitives.PopupSelectableRows(options, selected)...)
 		}
 	} else {
-		if m.editPopup.isNull {
+		if m.overlay.editPopup.isNull {
 			rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: NULL"})
 		} else {
-			input := m.editPopup.input
-			cursor := clamp(m.editPopup.cursor, 0, len(input))
+			input := m.overlay.editPopup.input
+			cursor := clamp(m.overlay.editPopup.cursor, 0, len(input))
 			value := input[:cursor] + "|" + input[cursor:]
 			rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: " + value})
 		}
 	}
 
-	if strings.TrimSpace(m.editPopup.errorMessage) != "" {
-		rows = append(rows, primitives.StandardizedPopupRow{Text: m.styles.Error("Error: " + m.editPopup.errorMessage)})
+	if strings.TrimSpace(m.overlay.editPopup.errorMessage) != "" {
+		rows = append(rows, primitives.StandardizedPopupRow{Text: m.styles.Error("Error: " + m.overlay.editPopup.errorMessage)})
 	}
 
-	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
 		Title:        "Edit Cell",
 		Summary:      columnLabel + primitives.FrameSegmentSeparator + nullableLabel,
 		Rows:         rows,
@@ -164,25 +164,25 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 }
 
 func (m *Model) renderConfirmPopup(totalWidth int) []string {
-	title := strings.TrimSpace(m.confirmPopup.title)
+	title := strings.TrimSpace(m.overlay.confirmPopup.title)
 	if title == "" {
 		title = "Confirm"
 	}
-	message := m.confirmPopup.message
+	message := m.overlay.confirmPopup.message
 	if strings.TrimSpace(message) == "" {
 		message = "Are you sure?"
 	}
-	options := make([]string, len(m.confirmPopup.options))
-	for i, option := range m.confirmPopup.options {
+	options := make([]string, len(m.overlay.confirmPopup.options))
+	for i, option := range m.overlay.confirmPopup.options {
 		options[i] = option.label
 	}
 
 	selected := -1
 	if len(options) > 0 {
-		selected = clamp(m.confirmPopup.selected, 0, len(options)-1)
+		selected = clamp(m.overlay.confirmPopup.selected, 0, len(options)-1)
 	}
 
-	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
 		Title:        title,
 		Summary:      message,
 		Rows:         primitives.PopupSelectableRows(options, selected),

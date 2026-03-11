@@ -11,20 +11,22 @@ import (
 func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 	// Arrange
 	model := &Model{
-		styles:   primitives.NewRenderStyles(true),
-		viewMode: ViewRecords,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
-		},
-		currentSort: &dto.Sort{
-			Column:    "name",
-			Direction: dto.SortDirectionAsc,
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
+			currentSort: &dto.Sort{
+				Column:    "name",
+				Direction: dto.SortDirectionAsc,
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
 		},
 	}
 
@@ -47,19 +49,21 @@ func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
 func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
-		},
-		currentSort: &dto.Sort{
-			Column:    "name",
-			Direction: dto.SortDirectionDesc,
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
+			currentSort: &dto.Sort{
+				Column:    "name",
+				Direction: dto.SortDirectionDesc,
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
 		},
 	}
 
@@ -133,15 +137,17 @@ func TestFormatRecordsHeaderRows_UsesFullWidthBoxWithCenteredLabel(t *testing.T)
 func TestRenderRecords_RendersThreeLineFrameHeader(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
 		},
 	}
 
@@ -204,12 +210,17 @@ func TestFormatRecordsHeaderRows_UsesDoubleSpaceSeparatorBetweenColumns(t *testi
 func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
 			},
 		},
 		staging: stagingState{
@@ -221,9 +232,6 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 					},
 				},
 			},
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
 		},
 	}
 	key, ok := model.recordKeyForPersistedRow(0)
@@ -249,16 +257,18 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
 		},
 	}
 	key, ok := model.recordKeyForPersistedRow(0)
@@ -288,12 +298,18 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+				{Values: []string{"2", "bob"}},
 			},
 		},
 		staging: stagingState{
@@ -305,10 +321,6 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 					},
 				},
 			},
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
-			{Values: []string{"2", "bob"}},
 		},
 	}
 
@@ -365,20 +377,24 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	// Arrange
 	longValue := "abcdefghijklmnopqrstuvwxyz0123456789"
 	model := &Model{
-		styles:   primitives.NewRenderStyles(true),
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		recordDetail: recordDetailState{
-			active: true,
-		},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "payload", Type: "TEXT"},
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "payload", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", longValue}},
 			},
 		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", longValue}},
+		overlay: runtimeOverlayState{
+			recordDetail: recordDetailState{
+				active: true,
+			},
 		},
 	}
 
@@ -412,13 +428,15 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		// Arrange
 		model := &Model{
 			styles: primitives.NewRenderStyles(true),
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+			read: runtimeReadState{
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{
+						{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					},
 				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1"}},
+				records: []dto.RecordRow{
+					{Values: []string{"1"}},
+				},
 			},
 		}
 
@@ -434,9 +452,11 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	t.Run("pending insert row", func(t *testing.T) {
 		// Arrange
 		model := &Model{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER"},
+			read: runtimeReadState{
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{
+						{Name: "id", Type: "INTEGER"},
+					},
 				},
 			},
 			staging: stagingState{
@@ -458,13 +478,15 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	t.Run("delete-marked persisted row", func(t *testing.T) {
 		// Arrange
 		model := &Model{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+			read: runtimeReadState{
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{
+						{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					},
 				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1"}},
+				records: []dto.RecordRow{
+					{Values: []string{"1"}},
+				},
 			},
 		}
 		key, ok := model.recordKeyForPersistedRow(0)
@@ -488,14 +510,16 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		// Arrange
 		model := &Model{
 			styles: primitives.NewRenderStyles(true),
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT"},
+			read: runtimeReadState{
+				schema: dto.Schema{
+					Columns: []dto.SchemaColumn{
+						{Name: "id", Type: "INTEGER", PrimaryKey: true},
+						{Name: "name", Type: "TEXT"},
+					},
 				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alice"}},
+				records: []dto.RecordRow{
+					{Values: []string{"1", "alice"}},
+				},
 			},
 		}
 		key, ok := model.recordKeyForPersistedRow(0)

@@ -8,14 +8,14 @@ import (
 )
 
 func (m *Model) startFilterPopup() (tea.Model, tea.Cmd) {
-	if m.viewMode != ViewRecords || m.focus != FocusContent {
+	if m.read.viewMode != ViewRecords || m.read.focus != FocusContent {
 		return m, nil
 	}
 	if m.currentTableName() == "" {
 		return m, nil
 	}
-	if len(m.schema.Columns) == 0 {
-		m.pendingFilterOpen = true
+	if len(m.read.schema.Columns) == 0 {
+		m.overlay.pendingFilterOpen = true
 		return m, m.loadSchemaCmd()
 	}
 	m.openFilterPopup()
@@ -23,14 +23,14 @@ func (m *Model) startFilterPopup() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) startSortPopup() (tea.Model, tea.Cmd) {
-	if m.viewMode != ViewRecords || m.focus != FocusContent {
+	if m.read.viewMode != ViewRecords || m.read.focus != FocusContent {
 		return m, nil
 	}
 	if m.currentTableName() == "" {
 		return m, nil
 	}
-	if len(m.schema.Columns) == 0 {
-		m.pendingSortOpen = true
+	if len(m.read.schema.Columns) == 0 {
+		m.overlay.pendingSortOpen = true
 		return m, m.loadSchemaCmd()
 	}
 	m.openSortPopup()
@@ -38,7 +38,7 @@ func (m *Model) startSortPopup() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) openFilterPopup() {
-	m.filterPopup = filterPopup{
+	m.overlay.filterPopup = filterPopup{
 		active:        true,
 		step:          filterSelectColumn,
 		columnIndex:   0,
@@ -50,24 +50,24 @@ func (m *Model) openFilterPopup() {
 }
 
 func (m *Model) closeFilterPopup() {
-	m.filterPopup = filterPopup{}
+	m.overlay.filterPopup = filterPopup{}
 }
 
 func (m *Model) openSortPopup() {
 	directionIndex := 0
 	columnIndex := 0
-	if m.currentSort != nil {
-		for i, column := range m.schema.Columns {
-			if column.Name == m.currentSort.Column {
+	if m.read.currentSort != nil {
+		for i, column := range m.read.schema.Columns {
+			if column.Name == m.read.currentSort.Column {
 				columnIndex = i
 				break
 			}
 		}
-		if m.currentSort.Direction == dto.SortDirectionDesc {
+		if m.read.currentSort.Direction == dto.SortDirectionDesc {
 			directionIndex = 1
 		}
 	}
-	m.sortPopup = sortPopup{
+	m.overlay.sortPopup = sortPopup{
 		active:         true,
 		step:           sortSelectColumn,
 		columnIndex:    columnIndex,
@@ -76,7 +76,7 @@ func (m *Model) openSortPopup() {
 }
 
 func (m *Model) closeSortPopup() {
-	m.sortPopup = sortPopup{}
+	m.overlay.sortPopup = sortPopup{}
 }
 
 func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -94,25 +94,25 @@ func (m *Model) handleFilterPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.movePopupSelection(-1)
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyInputMoveLeft, key):
-		if m.filterPopup.step == filterInputValue {
-			m.filterPopup.cursor = clamp(m.filterPopup.cursor-1, 0, len(m.filterPopup.input))
+		if m.overlay.filterPopup.step == filterInputValue {
+			m.overlay.filterPopup.cursor = clamp(m.overlay.filterPopup.cursor-1, 0, len(m.overlay.filterPopup.input))
 		}
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyInputMoveRight, key):
-		if m.filterPopup.step == filterInputValue {
-			m.filterPopup.cursor = clamp(m.filterPopup.cursor+1, 0, len(m.filterPopup.input))
+		if m.overlay.filterPopup.step == filterInputValue {
+			m.overlay.filterPopup.cursor = clamp(m.overlay.filterPopup.cursor+1, 0, len(m.overlay.filterPopup.input))
 		}
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyInputBackspace, key):
-		if m.filterPopup.step == filterInputValue && m.filterPopup.input != "" {
-			m.filterPopup.input, m.filterPopup.cursor = deleteAtCursor(m.filterPopup.input, m.filterPopup.cursor)
+		if m.overlay.filterPopup.step == filterInputValue && m.overlay.filterPopup.input != "" {
+			m.overlay.filterPopup.input, m.overlay.filterPopup.cursor = deleteAtCursor(m.overlay.filterPopup.input, m.overlay.filterPopup.cursor)
 		}
 		return m, nil
 	}
 
-	if m.filterPopup.step == filterInputValue && msg.Type == tea.KeyRunes {
+	if m.overlay.filterPopup.step == filterInputValue && msg.Type == tea.KeyRunes {
 		insert := string(msg.Runes)
-		m.filterPopup.input, m.filterPopup.cursor = insertAtCursor(m.filterPopup.input, insert, m.filterPopup.cursor)
+		m.overlay.filterPopup.input, m.overlay.filterPopup.cursor = insertAtCursor(m.overlay.filterPopup.input, insert, m.overlay.filterPopup.cursor)
 	}
 	return m, nil
 }
@@ -137,59 +137,59 @@ func (m *Model) handleSortPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) confirmPopupSelection() (tea.Model, tea.Cmd) {
-	switch m.filterPopup.step {
+	switch m.overlay.filterPopup.step {
 	case filterSelectColumn:
-		if len(m.schema.Columns) == 0 {
+		if len(m.read.schema.Columns) == 0 {
 			return m, nil
 		}
-		column := m.schema.Columns[m.filterPopup.columnIndex]
+		column := m.read.schema.Columns[m.overlay.filterPopup.columnIndex]
 		operators, err := m.listOperators.Execute(m.ctx, column.Type)
 		if err != nil {
-			m.statusMessage = "Error: " + err.Error()
+			m.ui.statusMessage = "Error: " + err.Error()
 			return m, nil
 		}
-		m.filterPopup.operators = operators
-		m.filterPopup.operatorIndex = 0
-		m.filterPopup.step = filterSelectOperator
+		m.overlay.filterPopup.operators = operators
+		m.overlay.filterPopup.operatorIndex = 0
+		m.overlay.filterPopup.step = filterSelectOperator
 		return m, nil
 	case filterSelectOperator:
-		if len(m.filterPopup.operators) == 0 {
+		if len(m.overlay.filterPopup.operators) == 0 {
 			return m, nil
 		}
-		operator := m.filterPopup.operators[m.filterPopup.operatorIndex]
+		operator := m.overlay.filterPopup.operators[m.overlay.filterPopup.operatorIndex]
 		if operator.RequiresValue {
-			m.filterPopup.input = ""
-			m.filterPopup.cursor = 0
-			m.filterPopup.step = filterInputValue
+			m.overlay.filterPopup.input = ""
+			m.overlay.filterPopup.cursor = 0
+			m.overlay.filterPopup.step = filterInputValue
 			return m, nil
 		}
 		return m.applyFilter(operator, "")
 	case filterInputValue:
-		operator := m.filterPopup.operators[m.filterPopup.operatorIndex]
-		return m.applyFilter(operator, m.filterPopup.input)
+		operator := m.overlay.filterPopup.operators[m.overlay.filterPopup.operatorIndex]
+		return m.applyFilter(operator, m.overlay.filterPopup.input)
 	default:
 		return m, nil
 	}
 }
 
 func (m *Model) confirmSortPopupSelection() (tea.Model, tea.Cmd) {
-	switch m.sortPopup.step {
+	switch m.overlay.sortPopup.step {
 	case sortSelectColumn:
-		if len(m.schema.Columns) == 0 {
+		if len(m.read.schema.Columns) == 0 {
 			return m, nil
 		}
-		m.sortPopup.step = sortSelectDirection
+		m.overlay.sortPopup.step = sortSelectDirection
 		return m, nil
 	case sortSelectDirection:
-		if len(m.schema.Columns) == 0 {
+		if len(m.read.schema.Columns) == 0 {
 			return m, nil
 		}
 		directions := sortDirections()
 		if len(directions) == 0 {
 			return m, nil
 		}
-		column := m.schema.Columns[m.sortPopup.columnIndex]
-		direction := directions[clamp(m.sortPopup.directionIndex, 0, len(directions)-1)]
+		column := m.read.schema.Columns[m.overlay.sortPopup.columnIndex]
+		direction := directions[clamp(m.overlay.sortPopup.directionIndex, 0, len(directions)-1)]
 		return m.applySort(column.Name, direction)
 	default:
 		return m, nil
@@ -197,41 +197,41 @@ func (m *Model) confirmSortPopupSelection() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) movePopupSelection(delta int) {
-	switch m.filterPopup.step {
+	switch m.overlay.filterPopup.step {
 	case filterSelectColumn:
-		if len(m.schema.Columns) == 0 {
+		if len(m.read.schema.Columns) == 0 {
 			return
 		}
-		m.filterPopup.columnIndex = clamp(m.filterPopup.columnIndex+delta, 0, len(m.schema.Columns)-1)
+		m.overlay.filterPopup.columnIndex = clamp(m.overlay.filterPopup.columnIndex+delta, 0, len(m.read.schema.Columns)-1)
 	case filterSelectOperator:
-		if len(m.filterPopup.operators) == 0 {
+		if len(m.overlay.filterPopup.operators) == 0 {
 			return
 		}
-		m.filterPopup.operatorIndex = clamp(m.filterPopup.operatorIndex+delta, 0, len(m.filterPopup.operators)-1)
+		m.overlay.filterPopup.operatorIndex = clamp(m.overlay.filterPopup.operatorIndex+delta, 0, len(m.overlay.filterPopup.operators)-1)
 	}
 }
 
 func (m *Model) moveSortPopupSelection(delta int) {
-	switch m.sortPopup.step {
+	switch m.overlay.sortPopup.step {
 	case sortSelectColumn:
-		if len(m.schema.Columns) == 0 {
+		if len(m.read.schema.Columns) == 0 {
 			return
 		}
-		m.sortPopup.columnIndex = clamp(m.sortPopup.columnIndex+delta, 0, len(m.schema.Columns)-1)
+		m.overlay.sortPopup.columnIndex = clamp(m.overlay.sortPopup.columnIndex+delta, 0, len(m.read.schema.Columns)-1)
 	case sortSelectDirection:
 		directions := sortDirections()
 		if len(directions) == 0 {
 			return
 		}
-		m.sortPopup.directionIndex = clamp(m.sortPopup.directionIndex+delta, 0, len(directions)-1)
+		m.overlay.sortPopup.directionIndex = clamp(m.overlay.sortPopup.directionIndex+delta, 0, len(directions)-1)
 	}
 }
 
 func (m *Model) applyFilter(operator dto.Operator, value string) (tea.Model, tea.Cmd) {
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return m, nil
 	}
-	column := m.schema.Columns[m.filterPopup.columnIndex]
+	column := m.read.schema.Columns[m.overlay.filterPopup.columnIndex]
 	filter := &dto.Filter{
 		Column: column.Name,
 		Operator: dto.Operator{
@@ -241,17 +241,17 @@ func (m *Model) applyFilter(operator dto.Operator, value string) (tea.Model, tea
 		},
 		Value: value,
 	}
-	m.currentFilter = filter
+	m.read.currentFilter = filter
 	m.closeFilterPopup()
 
-	if m.viewMode == ViewRecords {
+	if m.read.viewMode == ViewRecords {
 		return m, m.loadRecordsCmd(true)
 	}
 	return m, nil
 }
 
 func (m *Model) applySort(column string, direction dto.SortDirection) (tea.Model, tea.Cmd) {
-	m.currentSort = &dto.Sort{
+	m.read.currentSort = &dto.Sort{
 		Column:    column,
 		Direction: direction,
 	}

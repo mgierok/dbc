@@ -22,8 +22,8 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			model := &Model{
-				viewMode: ViewRecords,
-				staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
+				read:    runtimeReadState{viewMode: ViewRecords},
+				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 			}
 
 			// Act
@@ -39,16 +39,16 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 					t.Fatalf("expected dirty :%s to wait for explicit decision", tc.command)
 				}
 			}
-			if !model.confirmPopup.active {
+			if !model.overlay.confirmPopup.active {
 				t.Fatalf("expected dirty :%s decision popup to open", tc.command)
 			}
-			if !model.confirmPopup.modal {
+			if !model.overlay.confirmPopup.modal {
 				t.Fatalf("expected dirty :%s decision popup to be modal", tc.command)
 			}
-			if model.confirmPopup.title != "Config" {
-				t.Fatalf("expected dirty :%s popup title Config, got %q", tc.command, model.confirmPopup.title)
+			if model.overlay.confirmPopup.title != "Config" {
+				t.Fatalf("expected dirty :%s popup title Config, got %q", tc.command, model.overlay.confirmPopup.title)
 			}
-			if model.openConfigSelector {
+			if model.ui.openConfigSelector {
 				t.Fatalf("expected :%s navigation to remain blocked until explicit decision", tc.command)
 			}
 		})
@@ -58,8 +58,8 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -71,13 +71,13 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
 
 	// Assert
-	if model.confirmPopup.active {
+	if model.overlay.confirmPopup.active {
 		t.Fatal("expected decision popup to close on cancel")
 	}
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to stay untouched on cancel")
 	}
-	if model.openConfigSelector {
+	if model.ui.openConfigSelector {
 		t.Fatal("expected no navigation on cancel")
 	}
 }
@@ -85,8 +85,8 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		staging:  stagingState{pendingInserts: []pendingInsertRow{{}}},
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -108,7 +108,7 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared on discard")
 	}
-	if !model.openConfigSelector {
+	if !model.ui.openConfigSelector {
 		t.Fatal("expected selector navigation after discard")
 	}
 }
@@ -118,13 +118,16 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
 		ctx:         context.Background(),
-		viewMode:    ViewRecords,
 		saveChanges: saveChanges,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-				{Name: "name", Type: "TEXT", Nullable: false},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
 			},
+			tables: []dto.Table{{Name: "users"}},
 		},
 		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
@@ -137,7 +140,6 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 				},
 			},
 		},
-		tables: []dto.Table{{Name: "users"}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -163,7 +165,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared after successful save")
 	}
-	if !model.openConfigSelector {
+	if !model.ui.openConfigSelector {
 		t.Fatal("expected selector navigation after successful save")
 	}
 }
@@ -173,13 +175,16 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 	saveChanges := &spySaveChangesUseCase{err: errors.New("boom")}
 	model := &Model{
 		ctx:         context.Background(),
-		viewMode:    ViewRecords,
 		saveChanges: saveChanges,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-				{Name: "name", Type: "TEXT", Nullable: false},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
 			},
+			tables: []dto.Table{{Name: "users"}},
 		},
 		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
@@ -192,7 +197,6 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 				},
 			},
 		},
-		tables: []dto.Table{{Name: "users"}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -217,10 +221,10 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be preserved on save error")
 	}
-	if model.openConfigSelector {
+	if model.ui.openConfigSelector {
 		t.Fatal("expected selector navigation to remain blocked on save error")
 	}
-	if !strings.Contains(model.statusMessage, "boom") {
-		t.Fatalf("expected save error status to be surfaced, got %q", model.statusMessage)
+	if !strings.Contains(model.ui.statusMessage, "boom") {
+		t.Fatalf("expected save error status to be surfaced, got %q", model.ui.statusMessage)
 	}
 }

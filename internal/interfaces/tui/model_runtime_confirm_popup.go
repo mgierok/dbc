@@ -7,7 +7,7 @@ import (
 )
 
 func (m *Model) openConfirmPopup(action confirmAction, message string) {
-	m.confirmPopup = confirmPopup{
+	m.overlay.confirmPopup = confirmPopup{
 		active:  true,
 		title:   "Confirm",
 		action:  action,
@@ -17,7 +17,7 @@ func (m *Model) openConfirmPopup(action confirmAction, message string) {
 
 func (m *Model) openModalConfirmPopupWithOptions(title, message string, options []confirmOption, selected int) {
 	if len(options) == 0 {
-		m.confirmPopup = confirmPopup{
+		m.overlay.confirmPopup = confirmPopup{
 			active:  true,
 			title:   title,
 			action:  confirmConfigCancel,
@@ -26,7 +26,7 @@ func (m *Model) openModalConfirmPopupWithOptions(title, message string, options 
 		}
 		return
 	}
-	m.confirmPopup = confirmPopup{
+	m.overlay.confirmPopup = confirmPopup{
 		active:   true,
 		title:    title,
 		message:  message,
@@ -37,31 +37,31 @@ func (m *Model) openModalConfirmPopupWithOptions(title, message string, options 
 }
 
 func (m *Model) closeConfirmPopup() {
-	m.confirmPopup = confirmPopup{}
+	m.overlay.confirmPopup = confirmPopup{}
 }
 
 func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	switch {
 	case primitives.KeyMatches(primitives.KeyPopupMoveDown, key):
-		if len(m.confirmPopup.options) > 0 {
-			m.confirmPopup.selected = clamp(m.confirmPopup.selected+1, 0, len(m.confirmPopup.options)-1)
+		if len(m.overlay.confirmPopup.options) > 0 {
+			m.overlay.confirmPopup.selected = clamp(m.overlay.confirmPopup.selected+1, 0, len(m.overlay.confirmPopup.options)-1)
 		}
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyPopupMoveUp, key):
-		if len(m.confirmPopup.options) > 0 {
-			m.confirmPopup.selected = clamp(m.confirmPopup.selected-1, 0, len(m.confirmPopup.options)-1)
+		if len(m.overlay.confirmPopup.options) > 0 {
+			m.overlay.confirmPopup.selected = clamp(m.overlay.confirmPopup.selected-1, 0, len(m.overlay.confirmPopup.options)-1)
 		}
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyConfirmCancel, key):
 		m.closeConfirmPopup()
-		m.pendingTableIndex = -1
-		m.pendingConfigOpen = false
+		m.ui.pendingTableIndex = -1
+		m.ui.pendingConfigOpen = false
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyConfirmAccept, key):
-		action := m.confirmPopup.action
-		if len(m.confirmPopup.options) > 0 {
-			action = m.confirmPopup.options[clamp(m.confirmPopup.selected, 0, len(m.confirmPopup.options)-1)].action
+		action := m.overlay.confirmPopup.action
+		if len(m.overlay.confirmPopup.options) > 0 {
+			action = m.overlay.confirmPopup.options[clamp(m.overlay.confirmPopup.selected, 0, len(m.overlay.confirmPopup.options)-1)].action
 		}
 		m.closeConfirmPopup()
 		switch action {
@@ -70,14 +70,14 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case confirmDiscardTable:
 			return m.confirmDiscardTableSwitch()
 		case confirmCancelTableSwitch:
-			m.pendingTableIndex = -1
+			m.ui.pendingTableIndex = -1
 			return m, nil
 		case confirmConfigSaveAndOpen:
 			return m.confirmConfigSaveAndOpen()
 		case confirmConfigDiscardAndOpen:
 			return m.confirmConfigDiscardAndOpen()
 		case confirmConfigCancel:
-			m.pendingConfigOpen = false
+			m.ui.pendingConfigOpen = false
 			return m, nil
 		default:
 			return m, nil

@@ -11,16 +11,20 @@ import (
 func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width:    80,
-		height:   24,
-		focus:    FocusTables,
-		viewMode: ViewSchema,
-		tables: []dto.Table{
-			{Name: "users"},
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
 		},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
+		read: runtimeReadState{
+			focus:    FocusTables,
+			viewMode: ViewSchema,
+			tables: []dto.Table{
+				{Name: "users"},
+			},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+				},
 			},
 		},
 	}
@@ -30,8 +34,8 @@ func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 	lines := strings.Split(view, "\n")
 
 	// Assert
-	if len(lines) != model.height {
-		t.Fatalf("expected runtime view height %d, got %d", model.height, len(lines))
+	if len(lines) != model.ui.height {
+		t.Fatalf("expected runtime view height %d, got %d", model.ui.height, len(lines))
 	}
 	if len(lines) < 4 {
 		t.Fatalf("expected at least 4 lines in runtime view, got %d", len(lines))
@@ -58,8 +62,8 @@ func TestView_RuntimeRendersIndependentSectionBoxes(t *testing.T) {
 		t.Fatalf("expected framed status bottom border, got %q", statusBottom)
 	}
 	for _, line := range []string{statusTop, statusContent, statusBottom} {
-		if primitives.TextWidth(line) != model.width {
-			t.Fatalf("expected status row width %d, got %d for %q", model.width, primitives.TextWidth(line), line)
+		if primitives.TextWidth(line) != model.ui.width {
+			t.Fatalf("expected status row width %d, got %d for %q", model.ui.width, primitives.TextWidth(line), line)
 		}
 	}
 }
@@ -73,12 +77,16 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 		{
 			name: "schema view",
 			model: Model{
-				width:    80,
-				height:   24,
-				viewMode: ViewSchema,
-				tables:   []dto.Table{{Name: "users"}},
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+				ui: runtimeUIState{
+					width:  80,
+					height: 24,
+				},
+				read: runtimeReadState{
+					viewMode: ViewSchema,
+					tables:   []dto.Table{{Name: "users"}},
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+					},
 				},
 			},
 			expected: primitives.FrameTopLeft + "Schema",
@@ -86,31 +94,41 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 		{
 			name: "records view",
 			model: Model{
-				width:    80,
-				height:   24,
-				viewMode: ViewRecords,
-				tables:   []dto.Table{{Name: "users"}},
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+				ui: runtimeUIState{
+					width:  80,
+					height: 24,
 				},
-				records: []dto.RecordRow{{Values: []string{"1"}}},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					tables:   []dto.Table{{Name: "users"}},
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+					},
+					records: []dto.RecordRow{{Values: []string{"1"}}},
+				},
 			},
 			expected: primitives.FrameTopLeft + "Records",
 		},
 		{
 			name: "record detail view",
 			model: Model{
-				width:    80,
-				height:   24,
-				viewMode: ViewRecords,
-				tables:   []dto.Table{{Name: "users"}},
-				recordDetail: recordDetailState{
-					active: true,
+				ui: runtimeUIState{
+					width:  80,
+					height: 24,
 				},
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					tables:   []dto.Table{{Name: "users"}},
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+					},
+					records: []dto.RecordRow{{Values: []string{"1"}}},
 				},
-				records: []dto.RecordRow{{Values: []string{"1"}}},
+				overlay: runtimeOverlayState{
+					recordDetail: recordDetailState{
+						active: true,
+					},
+				},
 			},
 			expected: primitives.FrameTopLeft + "Record Detail",
 		},

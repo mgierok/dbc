@@ -10,8 +10,10 @@ import (
 func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
 	// Arrange
 	model := &Model{
-		focus:    FocusContent,
-		viewMode: ViewRecords,
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewRecords,
+		},
 	}
 
 	// Act
@@ -26,8 +28,10 @@ func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
 func TestRenderStatus_DoesNotIncludeContextShortcutList(t *testing.T) {
 	// Arrange
 	model := &Model{
-		focus:    FocusContent,
-		viewMode: ViewRecords,
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewRecords,
+		},
 	}
 
 	// Act
@@ -42,8 +46,10 @@ func TestRenderStatus_DoesNotIncludeContextShortcutList(t *testing.T) {
 func TestRenderStatus_RightHintPriorityOnNarrowWidth(t *testing.T) {
 	// Arrange
 	model := &Model{
-		focus:    FocusContent,
-		viewMode: ViewRecords,
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewRecords,
+		},
 	}
 
 	// Act
@@ -83,7 +89,7 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 func TestRenderStatus_DoesNotShowViewIndicator(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
+		read: runtimeReadState{viewMode: ViewRecords},
 	}
 
 	// Act
@@ -98,10 +104,12 @@ func TestRenderStatus_DoesNotShowViewIndicator(t *testing.T) {
 func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
 	// Arrange
 	model := &Model{
-		commandInput: commandInput{
-			active: true,
-			value:  "config",
-			cursor: 3,
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active: true,
+				value:  "config",
+				cursor: 3,
+			},
 		},
 	}
 
@@ -117,11 +125,13 @@ func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
 func TestRenderStatus_RecordsViewShowsTotalAndPagination(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:         ViewRecords,
-		recordPageIndex:  0,
-		recordTotalPages: 7,
-		recordTotalCount: 137,
-		records:          make([]dto.RecordRow, 20),
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			recordPageIndex:  0,
+			recordTotalPages: 7,
+			recordTotalCount: 137,
+			records:          make([]dto.RecordRow, 20),
+		},
 	}
 
 	// Act
@@ -139,10 +149,12 @@ func TestRenderStatus_RecordsViewShowsTotalAndPagination(t *testing.T) {
 func TestRenderStatus_RecordsViewShowsSinglePageSummaryForEmptyResult(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:         ViewRecords,
-		recordPageIndex:  0,
-		recordTotalPages: 1,
-		recordTotalCount: 0,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			recordPageIndex:  0,
+			recordTotalPages: 1,
+			recordTotalCount: 0,
+		},
 	}
 
 	// Act

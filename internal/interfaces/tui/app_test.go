@@ -89,7 +89,7 @@ func TestRun_ReturnsOpenConfigSelectorErrorWhenModelRequestsSelector(t *testing.
 	newRuntimeProgram = func(model tea.Model, options ...tea.ProgramOption) runtimeProgram {
 		return stubRuntimeProgram{
 			run: func() (tea.Model, error) {
-				return &Model{openConfigSelector: true}, nil
+				return &Model{ui: runtimeUIState{openConfigSelector: true}}, nil
 			},
 		}
 	}

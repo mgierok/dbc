@@ -21,19 +21,23 @@ func TestSubmitCommandInput_SetLimitInRecordsModeReloadsFromFirstPage(t *testing
 	}
 	runtimeSession := &RuntimeSessionState{}
 	model := &Model{
-		ctx:              context.Background(),
-		viewMode:         ViewRecords,
-		focus:            FocusContent,
-		listRecords:      recordsSpy,
-		runtimeSession:   runtimeSession,
-		tables:           []dto.Table{{Name: "users"}},
-		recordPageIndex:  2,
-		recordTotalPages: 5,
-		recordTotalCount: 81,
-		recordSelection:  3,
-		recordColumn:     1,
-		recordFieldFocus: true,
-		recordDetail:     recordDetailState{active: true},
+		ctx:            context.Background(),
+		listRecords:    recordsSpy,
+		runtimeSession: runtimeSession,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			tables:           []dto.Table{{Name: "users"}},
+			recordPageIndex:  2,
+			recordTotalPages: 5,
+			recordTotalCount: 81,
+			recordSelection:  3,
+			recordColumn:     1,
+			recordFieldFocus: true,
+		},
+		overlay: runtimeOverlayState{
+			recordDetail: recordDetailState{active: true},
+		},
 	}
 
 	// Act
@@ -53,23 +57,23 @@ func TestSubmitCommandInput_SetLimitInRecordsModeReloadsFromFirstPage(t *testing
 	if recordsSpy.lastRecordsLimit != 10 {
 		t.Fatalf("expected records reload with limit 10, got %d", recordsSpy.lastRecordsLimit)
 	}
-	if model.recordPageIndex != 0 {
-		t.Fatalf("expected page index reset to 0, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0, got %d", model.read.recordPageIndex)
 	}
-	if model.recordSelection != 0 {
-		t.Fatalf("expected record selection reset to 0, got %d", model.recordSelection)
+	if model.read.recordSelection != 0 {
+		t.Fatalf("expected record selection reset to 0, got %d", model.read.recordSelection)
 	}
-	if model.recordFieldFocus {
+	if model.read.recordFieldFocus {
 		t.Fatal("expected field focus to be cleared after changing record limit")
 	}
-	if model.recordDetail.active {
+	if model.overlay.recordDetail.active {
 		t.Fatal("expected record detail to close after changing record limit")
 	}
-	if model.recordTotalPages != 5 {
-		t.Fatalf("expected total pages recomputed for limit 10, got %d", model.recordTotalPages)
+	if model.read.recordTotalPages != 5 {
+		t.Fatalf("expected total pages recomputed for limit 10, got %d", model.read.recordTotalPages)
 	}
-	if model.statusMessage != "Record limit set to 10" {
-		t.Fatalf("expected success status message, got %q", model.statusMessage)
+	if model.ui.statusMessage != "Record limit set to 10" {
+		t.Fatalf("expected success status message, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -77,7 +81,7 @@ func TestSubmitCommandInput_SetLimitOverwritesPreviousSessionValue(t *testing.T)
 	// Arrange
 	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 10}
 	model := &Model{
-		viewMode:       ViewSchema,
+		read:           runtimeReadState{viewMode: ViewSchema},
 		runtimeSession: runtimeSession,
 	}
 
@@ -91,8 +95,8 @@ func TestSubmitCommandInput_SetLimitOverwritesPreviousSessionValue(t *testing.T)
 	if runtimeSession.RecordsPageLimit != 25 {
 		t.Fatalf("expected record limit overwrite to 25, got %d", runtimeSession.RecordsPageLimit)
 	}
-	if model.statusMessage != "Record limit set to 25" {
-		t.Fatalf("expected success status message, got %q", model.statusMessage)
+	if model.ui.statusMessage != "Record limit set to 25" {
+		t.Fatalf("expected success status message, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -106,17 +110,19 @@ func TestSubmitCommandInput_SetLimitOutsideRecordsForcesNextRecordsEntryToReload
 	}
 	model := &Model{
 		ctx:         context.Background(),
-		viewMode:    ViewSchema,
-		focus:       FocusTables,
 		listRecords: recordsSpy,
-		tables:      []dto.Table{{Name: "users"}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
+		read: runtimeReadState{
+			viewMode: ViewSchema,
+			focus:    FocusTables,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+				},
 			},
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"cached"}},
+			records: []dto.RecordRow{
+				{Values: []string{"cached"}},
+			},
 		},
 	}
 
@@ -128,7 +134,7 @@ func TestSubmitCommandInput_SetLimitOutsideRecordsForcesNextRecordsEntryToReload
 	if recordsSpy.lastRecordsLimit != 0 {
 		t.Fatalf("expected no records load before switching to records, got limit %d", recordsSpy.lastRecordsLimit)
 	}
-	if len(model.records) != 0 {
+	if len(model.read.records) != 0 {
 		t.Fatal("expected cached records to be cleared after limit change outside records view")
 	}
 	_, switchCmd := model.switchToRecords()
@@ -144,8 +150,8 @@ func TestSubmitCommandInput_SetLimitOutsideRecordsForcesNextRecordsEntryToReload
 	if recordsSpy.lastRecordsOffset != 0 {
 		t.Fatalf("expected next records load to start from first page, got offset %d", recordsSpy.lastRecordsOffset)
 	}
-	if model.recordPageIndex != 0 {
-		t.Fatalf("expected page index reset to 0, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0, got %d", model.read.recordPageIndex)
 	}
 }
 
@@ -158,16 +164,18 @@ func TestSubmitCommandInput_SetLimitIgnoresStaleRecordsResponse(t *testing.T) {
 		},
 	}
 	model := &Model{
-		ctx:             context.Background(),
-		viewMode:        ViewRecords,
-		focus:           FocusContent,
-		listRecords:     recordsSpy,
-		runtimeSession:  &RuntimeSessionState{},
-		tables:          []dto.Table{{Name: "users"}},
-		recordRequestID: 1,
-		recordLoading:   true,
-		records: []dto.RecordRow{
-			{Values: []string{"old"}},
+		ctx:            context.Background(),
+		listRecords:    recordsSpy,
+		runtimeSession: &RuntimeSessionState{},
+		read: runtimeReadState{
+			viewMode:        ViewRecords,
+			focus:           FocusContent,
+			tables:          []dto.Table{{Name: "users"}},
+			recordRequestID: 1,
+			recordLoading:   true,
+			records: []dto.RecordRow{
+				{Values: []string{"old"}},
+			},
 		},
 	}
 	staleMsg := recordsMsg{
@@ -188,11 +196,11 @@ func TestSubmitCommandInput_SetLimitIgnoresStaleRecordsResponse(t *testing.T) {
 	model.Update(cmd())
 
 	// Assert
-	if len(model.records) != 10 {
-		t.Fatalf("expected fresh records page to be applied, got %d rows", len(model.records))
+	if len(model.read.records) != 10 {
+		t.Fatalf("expected fresh records page to be applied, got %d rows", len(model.read.records))
 	}
-	if len(model.records) > 0 && model.records[0].Values[0] == "stale" {
-		t.Fatalf("expected stale response to be ignored, got %+v", model.records[0])
+	if len(model.read.records) > 0 && model.read.records[0].Values[0] == "stale" {
+		t.Fatalf("expected stale response to be ignored, got %+v", model.read.records[0])
 	}
 	if recordsSpy.lastRecordsLimit != 10 {
 		t.Fatalf("expected fresh reload to use limit 10, got %d", recordsSpy.lastRecordsLimit)
@@ -216,11 +224,11 @@ func TestSubmitCommandInput_InvalidSetLimitKeepsPreviousValueAndShowsExplicitErr
 	if runtimeSession.RecordsPageLimit != 12 {
 		t.Fatalf("expected previous record limit to stay unchanged, got %d", runtimeSession.RecordsPageLimit)
 	}
-	if !strings.Contains(model.statusMessage, "expected :set limit=<1-1000>") {
-		t.Fatalf("expected explicit validation error, got %q", model.statusMessage)
+	if !strings.Contains(model.ui.statusMessage, "expected :set limit=<1-1000>") {
+		t.Fatalf("expected explicit validation error, got %q", model.ui.statusMessage)
 	}
-	if strings.Contains(strings.ToLower(model.statusMessage), "unknown command") {
-		t.Fatalf("expected validation error instead of unknown command, got %q", model.statusMessage)
+	if strings.Contains(strings.ToLower(model.ui.statusMessage), "unknown command") {
+		t.Fatalf("expected validation error instead of unknown command, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -235,7 +243,7 @@ func TestLoadRecordsCmd_ClampsOversizedSessionLimitBeforeUse(t *testing.T) {
 	model := &Model{
 		ctx:         context.Background(),
 		listRecords: recordsSpy,
-		tables:      []dto.Table{{Name: "users"}},
+		read:        runtimeReadState{tables: []dto.Table{{Name: "users"}}},
 		runtimeSession: &RuntimeSessionState{
 			RecordsPageLimit: primitives.RuntimeMaxRecordPageLimit + 1,
 		},
@@ -257,7 +265,7 @@ func TestLoadRecordsCmd_ClampsOversizedSessionLimitBeforeUse(t *testing.T) {
 func submitRuntimeCommand(t *testing.T, model *Model, command string) tea.Cmd {
 	t.Helper()
 
-	model.commandInput = commandInput{
+	model.overlay.commandInput = commandInput{
 		active: true,
 		value:  command,
 		cursor: len(command),

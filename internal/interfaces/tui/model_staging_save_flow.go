@@ -5,11 +5,11 @@ import (
 )
 
 func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
-	if m.viewMode != ViewRecords || !m.hasDirtyEdits() {
+	if m.read.viewMode != ViewRecords || !m.hasDirtyEdits() {
 		return m, nil
 	}
 	if m.saveChanges == nil {
-		m.statusMessage = "Error: save use case unavailable"
+		m.ui.statusMessage = "Error: save use case unavailable"
 		return m, nil
 	}
 	m.openConfirmPopup(confirmSave, "Save staged changes?")
@@ -19,7 +19,7 @@ func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
 func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	changes, err := m.buildTableChanges()
 	if err != nil {
-		m.statusMessage = "Error: " + err.Error()
+		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
 	if len(changes.Inserts) == 0 && len(changes.Updates) == 0 && len(changes.Deletes) == 0 {
@@ -30,31 +30,31 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
-	m.pendingConfigOpen = true
+	m.ui.pendingConfigOpen = true
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
-		m.pendingConfigOpen = false
+		m.ui.pendingConfigOpen = false
 	}
 	return updatedModel, cmd
 }
 
 func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
-	m.pendingConfigOpen = false
+	m.ui.pendingConfigOpen = false
 	m.clearStagedState()
-	m.openConfigSelector = true
-	m.statusMessage = "Opening config manager"
+	m.ui.openConfigSelector = true
+	m.ui.statusMessage = "Opening config manager"
 	return m, tea.Quit
 }
 
 func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
-	if m.pendingTableIndex < 0 || m.pendingTableIndex >= len(m.tables) {
-		m.pendingTableIndex = -1
+	if m.ui.pendingTableIndex < 0 || m.ui.pendingTableIndex >= len(m.read.tables) {
+		m.ui.pendingTableIndex = -1
 		return m, nil
 	}
-	target := m.pendingTableIndex
-	m.pendingTableIndex = -1
+	target := m.ui.pendingTableIndex
+	m.ui.pendingTableIndex = -1
 	m.clearStagedState()
-	m.selectedTable = target
+	m.read.selectedTable = target
 	m.resetTableContext()
 	return m, m.loadViewForSelection()
 }

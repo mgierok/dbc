@@ -6,7 +6,7 @@ import (
 )
 
 func (m *Model) buildTableChanges() (dto.TableChanges, error) {
-	return m.staging.buildTableChanges(m.translatorUseCase(), m.schema)
+	return m.staging.buildTableChanges(m.translatorUseCase(), m.read.schema)
 }
 
 func (m *Model) dirtyEditCount() int {

@@ -10,72 +10,72 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 
 	if primitives.KeyMatches(primitives.KeyRuntimeOpenContextHelp, key) {
-		if m.helpPopup.active {
+		if m.overlay.helpPopup.active {
 			return m, nil
 		}
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	}
 
-	if m.helpPopup.active {
+	if m.overlay.helpPopup.active {
 		return m.handleHelpPopupKey(msg)
 	}
-	if m.editPopup.active {
+	if m.overlay.editPopup.active {
 		return m.handleEditPopupKey(msg)
 	}
-	if m.confirmPopup.active {
+	if m.overlay.confirmPopup.active {
 		return m.handleConfirmPopupKey(msg)
 	}
-	if m.filterPopup.active {
+	if m.overlay.filterPopup.active {
 		return m.handleFilterPopupKey(msg)
 	}
-	if m.sortPopup.active {
+	if m.overlay.sortPopup.active {
 		return m.handleSortPopupKey(msg)
 	}
-	if m.commandInput.active {
+	if m.overlay.commandInput.active {
 		return m.handleCommandInputKey(msg)
 	}
-	if m.recordDetail.active {
+	if m.overlay.recordDetail.active {
 		return m.handleRecordDetailKey(msg)
 	}
 
-	if m.pendingG {
+	if m.overlay.pendingG {
 		if primitives.KeyMatches(primitives.KeyRuntimeJumpTopPending, key) {
-			m.pendingG = false
+			m.overlay.pendingG = false
 			return m.jumpTop()
 		}
-		m.pendingG = false
+		m.overlay.pendingG = false
 	}
 
 	switch {
 	case primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key):
 		return m.startCommandInput()
 	case primitives.KeyMatches(primitives.KeyRuntimeJumpTopPending, key):
-		m.pendingG = true
+		m.overlay.pendingG = true
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyRuntimeJumpBottom, key):
 		return m.jumpBottom()
 	case primitives.KeyMatches(primitives.KeyRuntimeEnter, key):
-		if m.viewMode == ViewRecords && m.focus == FocusContent {
+		if m.read.viewMode == ViewRecords && m.read.focus == FocusContent {
 			return m.openRecordDetail()
 		}
 		return m.switchToRecords()
 	case primitives.KeyMatches(primitives.KeyRuntimeEdit, key):
-		if m.viewMode == ViewRecords && m.focus == FocusContent {
-			if !m.recordFieldFocus {
+		if m.read.viewMode == ViewRecords && m.read.focus == FocusContent {
+			if !m.read.recordFieldFocus {
 				return m.enableRecordFieldFocus()
 			}
 			return m.openEditPopup()
 		}
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
-		if m.viewMode == ViewRecords && m.recordFieldFocus {
-			m.recordFieldFocus = false
+		if m.read.viewMode == ViewRecords && m.read.recordFieldFocus {
+			m.read.recordFieldFocus = false
 			return m, nil
 		}
-		if m.focus == FocusContent {
-			m.focus = FocusTables
-			m.viewMode = ViewSchema
+		if m.read.focus == FocusContent {
+			m.read.focus = FocusTables
+			m.read.viewMode = ViewSchema
 			return m, nil
 		}
 		return m, nil

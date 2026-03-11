@@ -5,7 +5,7 @@ import (
 )
 
 func (m *Model) totalRecordRows() int {
-	return len(m.staging.pendingInserts) + len(m.records)
+	return len(m.staging.pendingInserts) + len(m.read.records)
 }
 
 func (m *Model) pendingInsertIndex(rowIndex int) (int, bool) {
@@ -16,12 +16,12 @@ func (m *Model) pendingInsertIndex(rowIndex int) (int, bool) {
 }
 
 func (m *Model) pendingInsertIndexForSelection() (int, bool) {
-	return m.pendingInsertIndex(m.recordSelection)
+	return m.pendingInsertIndex(m.read.recordSelection)
 }
 
 func (m *Model) persistedRowIndex(rowIndex int) int {
 	persisted := rowIndex - len(m.staging.pendingInserts)
-	if persisted < 0 || persisted >= len(m.records) {
+	if persisted < 0 || persisted >= len(m.read.records) {
 		return -1
 	}
 	return persisted
@@ -61,8 +61,8 @@ func (m *Model) removePendingInsert(index int) (pendingInsertRow, error) {
 	}
 	removed := clonePendingInsertRow(m.staging.pendingInserts[index])
 	m.staging.pendingInserts = append(m.staging.pendingInserts[:index], m.staging.pendingInserts[index+1:]...)
-	if m.recordSelection > index {
-		m.recordSelection--
+	if m.read.recordSelection > index {
+		m.read.recordSelection--
 	}
 	m.normalizeRecordSelection()
 	return removed, nil
@@ -76,8 +76,8 @@ func (m *Model) insertPendingRowAt(index int, row pendingInsertRow) error {
 	m.staging.pendingInserts = append(m.staging.pendingInserts, pendingInsertRow{})
 	copy(m.staging.pendingInserts[index+1:], m.staging.pendingInserts[index:])
 	m.staging.pendingInserts[index] = cloned
-	if m.recordSelection >= index {
-		m.recordSelection++
+	if m.read.recordSelection >= index {
+		m.read.recordSelection++
 	}
 	m.normalizeRecordSelection()
 	return nil
@@ -86,34 +86,34 @@ func (m *Model) insertPendingRowAt(index int, row pendingInsertRow) error {
 func (m *Model) normalizeRecordSelection() {
 	totalRows := m.totalRecordRows()
 	if totalRows == 0 {
-		m.recordSelection = 0
-		m.recordFieldFocus = false
-		m.recordColumn = 0
+		m.read.recordSelection = 0
+		m.read.recordFieldFocus = false
+		m.read.recordColumn = 0
 		return
 	}
-	m.recordSelection = clamp(m.recordSelection, 0, totalRows-1)
+	m.read.recordSelection = clamp(m.read.recordSelection, 0, totalRows-1)
 	m.syncRecordColumnForSelection()
 }
 
 func (m *Model) syncRecordColumnForSelection() {
 	visibleColumns := m.visibleColumnIndicesForSelection()
 	if len(visibleColumns) == 0 {
-		m.recordColumn = 0
-		m.recordFieldFocus = false
+		m.read.recordColumn = 0
+		m.read.recordFieldFocus = false
 		return
 	}
-	if !containsInt(visibleColumns, m.recordColumn) {
-		m.recordColumn = visibleColumns[0]
+	if !containsInt(visibleColumns, m.read.recordColumn) {
+		m.read.recordColumn = visibleColumns[0]
 	}
 }
 
 func (m *Model) visibleColumnIndicesForSelection() []int {
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return nil
 	}
 	insertIndex, isInsert := m.pendingInsertIndexForSelection()
-	columns := make([]int, 0, len(m.schema.Columns))
-	for idx, column := range m.schema.Columns {
+	columns := make([]int, 0, len(m.read.schema.Columns))
+	for idx, column := range m.read.schema.Columns {
 		if isInsert && !m.staging.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
 			continue
 		}
@@ -131,12 +131,12 @@ func (m *Model) defaultRecordColumnForRow(rowIndex int) int {
 }
 
 func (m *Model) visibleColumnIndicesForRow(rowIndex int) []int {
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return nil
 	}
 	insertIndex, isInsert := m.pendingInsertIndex(rowIndex)
-	columns := make([]int, 0, len(m.schema.Columns))
-	for idx, column := range m.schema.Columns {
+	columns := make([]int, 0, len(m.read.schema.Columns))
+	for idx, column := range m.read.schema.Columns {
 		if isInsert && !m.staging.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
 			continue
 		}

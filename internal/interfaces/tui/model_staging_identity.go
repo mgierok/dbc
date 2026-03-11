@@ -8,10 +8,10 @@ import (
 )
 
 func (m *Model) recordValue(rowIndex, columnIndex int) string {
-	if rowIndex < 0 || rowIndex >= len(m.records) {
+	if rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return ""
 	}
-	values := m.records[rowIndex].Values
+	values := m.read.records[rowIndex].Values
 	if columnIndex < 0 || columnIndex >= len(values) {
 		return ""
 	}
@@ -37,10 +37,10 @@ func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (stagedEdit, bool) {
 
 func (m *Model) recordKeyForPersistedRow(rowIndex int) (string, bool) {
 	pkColumns := m.primaryKeyColumns()
-	if len(pkColumns) == 0 || rowIndex < 0 || rowIndex >= len(m.records) {
+	if len(pkColumns) == 0 || rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return "", false
 	}
-	values := m.records[rowIndex].Values
+	values := m.read.records[rowIndex].Values
 	parts := make([]string, 0, len(pkColumns))
 	for _, pk := range pkColumns {
 		if pk.index < 0 || pk.index >= len(values) {
@@ -60,18 +60,18 @@ func (m *Model) recordIdentityForVisibleRow(rowIndex int) (string, dto.RecordIde
 }
 
 func (m *Model) recordIdentityForPersistedRow(rowIndex int) (string, dto.RecordIdentity, error) {
-	if rowIndex < 0 || rowIndex >= len(m.records) {
+	if rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
 	}
-	return m.translatorUseCase().BuildRecordIdentity(m.schema, m.records[rowIndex])
+	return m.translatorUseCase().BuildRecordIdentity(m.read.schema, m.read.records[rowIndex])
 }
 
 func (m *Model) primaryKeyColumns() []pkColumn {
-	if len(m.schema.Columns) == 0 {
+	if len(m.read.schema.Columns) == 0 {
 		return nil
 	}
 	var pkColumns []pkColumn
-	for i, column := range m.schema.Columns {
+	for i, column := range m.read.schema.Columns {
 		if column.PrimaryKey {
 			pkColumns = append(pkColumns, pkColumn{index: i, column: column})
 		}

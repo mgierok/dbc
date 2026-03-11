@@ -12,11 +12,22 @@ import (
 func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:         ViewRecords,
-		focus:            FocusContent,
-		recordFieldFocus: true,
-		recordSelection:  1,
-		recordColumn:     0,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			recordFieldFocus: true,
+			recordSelection:  1,
+			recordColumn:     0,
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
 		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
 				{
@@ -28,26 +39,17 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 				},
 			},
 		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
-		},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-				{Name: "name", Type: "TEXT", Nullable: false},
-			},
-		},
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 
 	// Assert
-	if model.recordSelection != 0 {
-		t.Fatalf("expected selection to move to pending insert row, got %d", model.recordSelection)
+	if model.read.recordSelection != 0 {
+		t.Fatalf("expected selection to move to pending insert row, got %d", model.read.recordSelection)
 	}
-	if model.recordColumn != 1 {
-		t.Fatalf("expected focused column to move off hidden auto-increment field, got %d", model.recordColumn)
+	if model.read.recordColumn != 1 {
+		t.Fatalf("expected focused column to move off hidden auto-increment field, got %d", model.read.recordColumn)
 	}
 }
 
@@ -62,14 +64,16 @@ func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 		},
 	}
 	model := &Model{
-		ctx:              context.Background(),
-		viewMode:         ViewRecords,
-		focus:            FocusContent,
-		listRecords:      recordsSpy,
-		tables:           []dto.Table{{Name: "users"}},
-		recordPageIndex:  0,
-		recordTotalPages: 3,
-		recordTotalCount: 45,
+		ctx:         context.Background(),
+		listRecords: recordsSpy,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			tables:           []dto.Table{{Name: "users"}},
+			recordPageIndex:  0,
+			recordTotalPages: 3,
+			recordTotalCount: 45,
+		},
 	}
 
 	// Act
@@ -81,8 +85,8 @@ func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 	model.Update(msg)
 
 	// Assert
-	if model.recordPageIndex != 1 {
-		t.Fatalf("expected current page index 1, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 1 {
+		t.Fatalf("expected current page index 1, got %d", model.read.recordPageIndex)
 	}
 	if recordsSpy.lastRecordsOffset != 20 {
 		t.Fatalf("expected offset 20 for second page, got %d", recordsSpy.lastRecordsOffset)
@@ -90,8 +94,8 @@ func TestHandleKey_CtrlFInRecordsLoadsNextPage(t *testing.T) {
 	if recordsSpy.lastRecordsLimit != 20 {
 		t.Fatalf("expected limit 20, got %d", recordsSpy.lastRecordsLimit)
 	}
-	if model.recordTotalPages != 3 {
-		t.Fatalf("expected 3 pages, got %d", model.recordTotalPages)
+	if model.read.recordTotalPages != 3 {
+		t.Fatalf("expected 3 pages, got %d", model.read.recordTotalPages)
 	}
 }
 
@@ -106,14 +110,16 @@ func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
 		},
 	}
 	model := &Model{
-		ctx:              context.Background(),
-		viewMode:         ViewRecords,
-		focus:            FocusContent,
-		listRecords:      recordsSpy,
-		tables:           []dto.Table{{Name: "users"}},
-		recordPageIndex:  1,
-		recordTotalPages: 3,
-		recordTotalCount: 45,
+		ctx:         context.Background(),
+		listRecords: recordsSpy,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			tables:           []dto.Table{{Name: "users"}},
+			recordPageIndex:  1,
+			recordTotalPages: 3,
+			recordTotalCount: 45,
+		},
 	}
 
 	// Act
@@ -125,8 +131,8 @@ func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
 	model.Update(msg)
 
 	// Assert
-	if model.recordPageIndex != 0 {
-		t.Fatalf("expected current page index 0, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected current page index 0, got %d", model.read.recordPageIndex)
 	}
 	if recordsSpy.lastRecordsOffset != 0 {
 		t.Fatalf("expected offset 0 for first page, got %d", recordsSpy.lastRecordsOffset)
@@ -139,10 +145,12 @@ func TestHandleKey_CtrlBInRecordsLoadsPreviousPage(t *testing.T) {
 func TestHandleKey_CtrlBDoesNotGoBeforeFirstPage(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:         ViewRecords,
-		focus:            FocusContent,
-		recordPageIndex:  0,
-		recordTotalPages: 3,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			recordPageIndex:  0,
+			recordTotalPages: 3,
+		},
 	}
 
 	// Act
@@ -152,18 +160,20 @@ func TestHandleKey_CtrlBDoesNotGoBeforeFirstPage(t *testing.T) {
 	if cmd != nil {
 		t.Fatal("expected no load command on first page")
 	}
-	if model.recordPageIndex != 0 {
-		t.Fatalf("expected to stay on first page, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected to stay on first page, got %d", model.read.recordPageIndex)
 	}
 }
 
 func TestHandleKey_CtrlFDoesNotGoBeyondLastPage(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode:         ViewRecords,
-		focus:            FocusContent,
-		recordPageIndex:  2,
-		recordTotalPages: 3,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			recordPageIndex:  2,
+			recordTotalPages: 3,
+		},
 	}
 
 	// Act
@@ -173,7 +183,7 @@ func TestHandleKey_CtrlFDoesNotGoBeyondLastPage(t *testing.T) {
 	if cmd != nil {
 		t.Fatal("expected no load command on last page")
 	}
-	if model.recordPageIndex != 2 {
-		t.Fatalf("expected to stay on last page, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 2 {
+		t.Fatalf("expected to stay on last page, got %d", model.read.recordPageIndex)
 	}
 }

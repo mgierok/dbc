@@ -12,14 +12,16 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	// Arrange
 	defaultName := "guest"
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-				{Name: "name", Type: "TEXT", Nullable: false, DefaultValue: &defaultName},
-				{Name: "note", Type: "TEXT", Nullable: true},
-				{Name: "age", Type: "INTEGER", Nullable: false},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false, DefaultValue: &defaultName},
+					{Name: "note", Type: "TEXT", Nullable: true},
+					{Name: "age", Type: "INTEGER", Nullable: false},
+				},
 			},
 		},
 	}
@@ -31,11 +33,11 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	if len(model.staging.pendingInserts) != 1 {
 		t.Fatalf("expected one pending insert, got %d", len(model.staging.pendingInserts))
 	}
-	if model.recordSelection != 0 {
-		t.Fatalf("expected selection at top pending row, got %d", model.recordSelection)
+	if model.read.recordSelection != 0 {
+		t.Fatalf("expected selection at top pending row, got %d", model.read.recordSelection)
 	}
-	if model.recordColumn != 1 {
-		t.Fatalf("expected first editable column to skip auto field, got %d", model.recordColumn)
+	if model.read.recordColumn != 1 {
+		t.Fatalf("expected first editable column to skip auto field, got %d", model.read.recordColumn)
 	}
 	row := model.staging.pendingInserts[0]
 	if got := displayValue(row.values[1].Value); got != "guest" {
@@ -52,13 +54,15 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
 		},
 	}
@@ -83,8 +87,10 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 func TestHandleKey_DeleteRemovesPendingInsert(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
 		staging: stagingState{
 			pendingInserts: []pendingInsertRow{{values: map[int]stagedEdit{}}},
 		},
@@ -102,10 +108,12 @@ func TestHandleKey_DeleteRemovesPendingInsert(t *testing.T) {
 func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 	// Arrange
 	model := &Model{
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-				{Name: "name", Type: "TEXT", Nullable: false},
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
 			},
 		},
 		staging: stagingState{

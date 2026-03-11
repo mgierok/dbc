@@ -145,46 +145,10 @@ type Model struct {
 	runtimeSession *RuntimeSessionState
 	styles         primitives.RenderStyles
 
-	width  int
-	height int
-
-	focus    PanelFocus
-	viewMode ViewMode
-
-	tables        []dto.Table
-	selectedTable int
-
-	schema      dto.Schema
-	schemaIndex int
-
-	records          []dto.RecordRow
-	recordPageIndex  int
-	recordTotalPages int
-	recordTotalCount int
-	recordSelection  int
-	recordColumn     int
-	recordRequestID  int
-	recordLoading    bool
-	recordFieldFocus bool
-	staging          stagingState
-
-	currentFilter     *dto.Filter
-	currentSort       *dto.Sort
-	filterPopup       filterPopup
-	sortPopup         sortPopup
-	commandInput      commandInput
-	helpPopup         helpPopup
-	recordDetail      recordDetailState
-	editPopup         editPopup
-	confirmPopup      confirmPopup
-	pendingFilterOpen bool
-	pendingSortOpen   bool
-	pendingG          bool
-	pendingTableIndex int
-	pendingConfigOpen bool
-
-	openConfigSelector bool
-	statusMessage      string
+	staging stagingState
+	read    runtimeReadState
+	overlay runtimeOverlayState
+	ui      runtimeUIState
 }
 
 var _ tea.Model = (*Model)(nil)
@@ -243,19 +207,23 @@ func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSc
 		runtimeSession = &RuntimeSessionState{}
 	}
 	return &Model{
-		ctx:               ctx,
-		listTables:        listTables,
-		getSchema:         getSchema,
-		listRecords:       listRecords,
-		listOperators:     listOperators,
-		saveChanges:       saveChanges,
-		translator:        translator,
-		runtimeSession:    runtimeSession,
-		styles:            detectRenderStyles(),
-		focus:             FocusTables,
-		viewMode:          ViewSchema,
-		recordTotalPages:  1,
-		pendingTableIndex: -1,
+		ctx:            ctx,
+		listTables:     listTables,
+		getSchema:      getSchema,
+		listRecords:    listRecords,
+		listOperators:  listOperators,
+		saveChanges:    saveChanges,
+		translator:     translator,
+		runtimeSession: runtimeSession,
+		styles:         detectRenderStyles(),
+		read: runtimeReadState{
+			focus:            FocusTables,
+			viewMode:         ViewSchema,
+			recordTotalPages: 1,
+		},
+		ui: runtimeUIState{
+			pendingTableIndex: -1,
+		},
 	}
 }
 
@@ -266,32 +234,32 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		m.ui.width = msg.Width
+		m.ui.height = msg.Height
 		return m, nil
 	case tablesMsg:
-		m.tables = msg.tables
-		if len(m.tables) == 0 {
-			m.statusMessage = "No tables found"
+		m.read.tables = msg.tables
+		if len(m.read.tables) == 0 {
+			m.ui.statusMessage = "No tables found"
 			return m, nil
 		}
-		m.selectedTable = 0
+		m.read.selectedTable = 0
 		return m, m.loadSchemaCmd()
 	case schemaMsg:
 		if msg.tableName != m.currentTableName() {
 			return m, nil
 		}
-		m.schema = msg.schema
-		m.schemaIndex = 0
-		if m.recordColumn >= len(m.schema.Columns) {
-			m.recordColumn = 0
+		m.read.schema = msg.schema
+		m.read.schemaIndex = 0
+		if m.read.recordColumn >= len(m.read.schema.Columns) {
+			m.read.recordColumn = 0
 		}
-		if m.pendingFilterOpen {
-			m.pendingFilterOpen = false
+		if m.overlay.pendingFilterOpen {
+			m.overlay.pendingFilterOpen = false
 			m.openFilterPopup()
 		}
-		if m.pendingSortOpen {
-			m.pendingSortOpen = false
+		if m.overlay.pendingSortOpen {
+			m.overlay.pendingSortOpen = false
 			m.openSortPopup()
 		}
 		return m, nil
@@ -299,34 +267,34 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.tableName != m.currentTableName() {
 			return m, nil
 		}
-		if msg.requestID != m.recordRequestID {
+		if msg.requestID != m.read.recordRequestID {
 			return m, nil
 		}
-		m.recordLoading = false
-		m.records = msg.page.Rows
-		m.recordTotalCount = msg.page.TotalCount
-		m.recordTotalPages = m.computeTotalPages(msg.page.TotalCount)
-		m.recordPageIndex = clamp(m.recordPageIndex, 0, m.recordTotalPages-1)
+		m.read.recordLoading = false
+		m.read.records = msg.page.Rows
+		m.read.recordTotalCount = msg.page.TotalCount
+		m.read.recordTotalPages = m.computeTotalPages(msg.page.TotalCount)
+		m.read.recordPageIndex = clamp(m.read.recordPageIndex, 0, m.read.recordTotalPages-1)
 		m.normalizeRecordSelection()
 		return m, nil
 	case saveChangesMsg:
 		if msg.err != nil {
-			m.pendingConfigOpen = false
-			m.statusMessage = "Error: " + msg.err.Error()
+			m.ui.pendingConfigOpen = false
+			m.ui.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
 		}
 		m.clearStagedState()
-		if m.pendingConfigOpen {
-			m.pendingConfigOpen = false
-			m.openConfigSelector = true
-			m.statusMessage = "Opening config manager"
+		if m.ui.pendingConfigOpen {
+			m.ui.pendingConfigOpen = false
+			m.ui.openConfigSelector = true
+			m.ui.statusMessage = "Opening config manager"
 			return m, tea.Quit
 		}
-		m.statusMessage = fmt.Sprintf("Saved %d changes", msg.count)
+		m.ui.statusMessage = fmt.Sprintf("Saved %d changes", msg.count)
 		return m, m.loadRecordsCmd(true)
 	case errMsg:
-		m.recordLoading = false
-		m.statusMessage = "Error: " + msg.err.Error()
+		m.read.recordLoading = false
+		m.ui.statusMessage = "Error: " + msg.err.Error()
 		return m, nil
 	case tea.KeyMsg:
 		return m.handleKey(msg)
@@ -335,32 +303,32 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) resetTableContext() {
-	m.currentFilter = nil
-	m.currentSort = nil
-	m.schema = dto.Schema{}
-	m.schemaIndex = 0
-	m.records = nil
-	m.recordPageIndex = 0
-	m.recordTotalPages = 1
-	m.recordTotalCount = 0
-	m.recordSelection = 0
-	m.recordColumn = 0
-	m.recordLoading = false
-	m.recordFieldFocus = false
-	m.filterPopup = filterPopup{}
-	m.sortPopup = sortPopup{}
-	m.helpPopup = helpPopup{}
-	m.recordDetail = recordDetailState{}
-	m.editPopup = editPopup{}
-	m.confirmPopup = confirmPopup{}
+	m.read.currentFilter = nil
+	m.read.currentSort = nil
+	m.read.schema = dto.Schema{}
+	m.read.schemaIndex = 0
+	m.read.records = nil
+	m.read.recordPageIndex = 0
+	m.read.recordTotalPages = 1
+	m.read.recordTotalCount = 0
+	m.read.recordSelection = 0
+	m.read.recordColumn = 0
+	m.read.recordLoading = false
+	m.read.recordFieldFocus = false
+	m.overlay.filterPopup = filterPopup{}
+	m.overlay.sortPopup = sortPopup{}
+	m.overlay.helpPopup = helpPopup{}
+	m.overlay.recordDetail = recordDetailState{}
+	m.overlay.editPopup = editPopup{}
+	m.overlay.confirmPopup = confirmPopup{}
 	m.clearStagedState()
-	m.pendingTableIndex = -1
-	m.pendingFilterOpen = false
-	m.pendingSortOpen = false
+	m.ui.pendingTableIndex = -1
+	m.overlay.pendingFilterOpen = false
+	m.overlay.pendingSortOpen = false
 }
 
 func (m *Model) loadViewForSelection() tea.Cmd {
-	if m.viewMode == ViewRecords {
+	if m.read.viewMode == ViewRecords {
 		return tea.Batch(m.loadSchemaCmd(), m.loadRecordsCmd(true))
 	}
 	return m.loadSchemaCmd()
@@ -380,20 +348,20 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 		return nil
 	}
 	if reset {
-		m.recordPageIndex = 0
+		m.read.recordPageIndex = 0
 	}
-	if m.recordLoading {
+	if m.read.recordLoading {
 		return nil
 	}
-	m.records = nil
-	m.recordSelection = 0
-	m.recordFieldFocus = false
+	m.read.records = nil
+	m.read.recordSelection = 0
+	m.read.recordFieldFocus = false
 	m.closeRecordDetail()
-	m.recordLoading = true
-	m.recordRequestID++
+	m.read.recordLoading = true
+	m.read.recordRequestID++
 	recordLimit := m.effectiveRecordLimit()
-	offset := m.recordPageIndex * recordLimit
-	return loadRecordsCmd(m.ctx, m.listRecords, tableName, offset, recordLimit, m.currentFilter, m.currentSort, m.recordRequestID)
+	offset := m.read.recordPageIndex * recordLimit
+	return loadRecordsCmd(m.ctx, m.listRecords, tableName, offset, recordLimit, m.read.currentFilter, m.read.currentSort, m.read.recordRequestID)
 }
 
 func (m *Model) computeTotalPages(totalCount int) int {
@@ -416,7 +384,7 @@ func (m *Model) pageSize() int {
 	if height < 4 {
 		return 1
 	}
-	if m.focus == FocusContent && m.viewMode == ViewRecords {
+	if m.read.focus == FocusContent && m.read.viewMode == ViewRecords {
 		return height - 2
 	}
 	return height - 1
@@ -430,30 +398,30 @@ func (m *Model) effectiveRecordLimit() int {
 }
 
 func (m *Model) contentHeight() int {
-	if m.height <= 0 {
+	if m.ui.height <= 0 {
 		return 16
 	}
-	if m.height <= 6 {
+	if m.ui.height <= 6 {
 		return 1
 	}
-	return m.height - 5
+	return m.ui.height - 5
 }
 
 func (m *Model) contentSelection() int {
-	switch m.viewMode {
+	switch m.read.viewMode {
 	case ViewSchema:
-		return m.schemaIndex
+		return m.read.schemaIndex
 	case ViewRecords:
-		return m.recordSelection
+		return m.read.recordSelection
 	default:
 		return 0
 	}
 }
 
 func (m *Model) contentMaxIndex() int {
-	switch m.viewMode {
+	switch m.read.viewMode {
 	case ViewSchema:
-		return len(m.schema.Columns) - 1
+		return len(m.read.schema.Columns) - 1
 	case ViewRecords:
 		return m.totalRecordRows() - 1
 	default:
@@ -462,26 +430,26 @@ func (m *Model) contentMaxIndex() int {
 }
 
 func (m *Model) currentTableName() string {
-	if len(m.tables) == 0 {
+	if len(m.read.tables) == 0 {
 		return ""
 	}
-	if m.selectedTable < 0 || m.selectedTable >= len(m.tables) {
+	if m.read.selectedTable < 0 || m.read.selectedTable >= len(m.read.tables) {
 		return ""
 	}
-	return m.tables[m.selectedTable].Name
+	return m.read.tables[m.read.selectedTable].Name
 }
 
 func (m *Model) commandPrompt() string {
-	if !m.commandInput.active {
+	if !m.overlay.commandInput.active {
 		return ""
 	}
-	cursor := clamp(m.commandInput.cursor, 0, len(m.commandInput.value))
-	value := m.commandInput.value[:cursor] + "|" + m.commandInput.value[cursor:]
+	cursor := clamp(m.overlay.commandInput.cursor, 0, len(m.overlay.commandInput.value))
+	value := m.overlay.commandInput.value[:cursor] + "|" + m.overlay.commandInput.value[cursor:]
 	return ":" + value
 }
 
 func (m *Model) ShouldOpenConfigSelector() bool {
-	return m.openConfigSelector
+	return m.ui.openConfigSelector
 }
 
 func optionIndex(options []string, value string) int {

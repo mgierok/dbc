@@ -12,10 +12,12 @@ func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
 	// Arrange
 	longName := "table_name_for_dynamic_left_panel_width"
 	model := &Model{
-		width: 180,
-		tables: []dto.Table{
-			{Name: "users"},
-			{Name: longName},
+		ui: runtimeUIState{width: 180},
+		read: runtimeReadState{
+			tables: []dto.Table{
+				{Name: "users"},
+				{Name: longName},
+			},
 		},
 	}
 
@@ -32,8 +34,8 @@ func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
 	if leftWidth != expectedLeftWidth {
 		t.Fatalf("expected left panel width %d, got %d", expectedLeftWidth, leftWidth)
 	}
-	if rightWidth != model.width-leftWidth-nonContentWidth {
-		t.Fatalf("expected right panel width %d, got %d", model.width-leftWidth-nonContentWidth, rightWidth)
+	if rightWidth != model.ui.width-leftWidth-nonContentWidth {
+		t.Fatalf("expected right panel width %d, got %d", model.ui.width-leftWidth-nonContentWidth, rightWidth)
 	}
 }
 
@@ -41,10 +43,12 @@ func TestRenderTables_DoesNotTruncateLongestNameAtComputedMaxWidth(t *testing.T)
 	// Arrange
 	longName := "table_name_for_dynamic_left_panel_width"
 	model := &Model{
-		width: 180,
-		focus: FocusTables,
-		tables: []dto.Table{
-			{Name: longName},
+		ui: runtimeUIState{width: 180},
+		read: runtimeReadState{
+			focus: FocusTables,
+			tables: []dto.Table{
+				{Name: longName},
+			},
 		},
 	}
 
@@ -65,12 +69,14 @@ func TestRenderTables_DoesNotTruncateLongestNameAtComputedMaxWidth(t *testing.T)
 func TestRenderTables_ShowsSelectionMarkerWithoutBoldWhenTablePanelIsNotFocused(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width:         80,
-		focus:         FocusContent,
-		selectedTable: 1,
-		tables: []dto.Table{
-			{Name: "users"},
-			{Name: "orders"},
+		ui: runtimeUIState{width: 80},
+		read: runtimeReadState{
+			focus:         FocusContent,
+			selectedTable: 1,
+			tables: []dto.Table{
+				{Name: "users"},
+				{Name: "orders"},
+			},
 		},
 	}
 
@@ -99,9 +105,11 @@ func TestRenderTables_ShowsSelectionMarkerWithoutBoldWhenTablePanelIsNotFocused(
 func TestPanelWidths_PreservesMinimumRightPanelWidthInNarrowWindow(t *testing.T) {
 	// Arrange
 	model := &Model{
-		width: 30,
-		tables: []dto.Table{
-			{Name: "table_name_for_dynamic_left_panel_width"},
+		ui: runtimeUIState{width: 30},
+		read: runtimeReadState{
+			tables: []dto.Table{
+				{Name: "table_name_for_dynamic_left_panel_width"},
+			},
 		},
 	}
 
@@ -115,7 +123,7 @@ func TestPanelWidths_PreservesMinimumRightPanelWidthInNarrowWindow(t *testing.T)
 	if leftWidth != 16 {
 		t.Fatalf("expected adjusted left panel width 16, got %d", leftWidth)
 	}
-	if leftWidth+rightWidth+(panelBoxBorderWidth*2)+panelBoxGapWidth != model.width {
-		t.Fatalf("expected panel widths to match available width, got left=%d right=%d total=%d", leftWidth, rightWidth, model.width)
+	if leftWidth+rightWidth+(panelBoxBorderWidth*2)+panelBoxGapWidth != model.ui.width {
+		t.Fatalf("expected panel widths to match available width, got left=%d right=%d total=%d", leftWidth, rightWidth, model.ui.width)
 	}
 }

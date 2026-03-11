@@ -86,18 +86,20 @@ func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 func TestRenderRecords_StylesSelectedRowAndHeaderWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
-		styles:          primitives.NewRenderStyles(true),
-		viewMode:        ViewRecords,
-		focus:           FocusContent,
-		recordSelection: 0,
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			viewMode:        ViewRecords,
+			focus:           FocusContent,
+			recordSelection: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
-		},
-		records: []dto.RecordRow{
-			{Values: []string{"1", "alice"}},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
 		},
 	}
 
@@ -169,19 +171,23 @@ func TestRenderEditPopup_StylesExplicitErrorRowsWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
 		styles: primitives.NewRenderStyles(true),
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{
-					Name:  "name",
-					Type:  "TEXT",
-					Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{
+						Name:  "name",
+						Type:  "TEXT",
+						Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+					},
 				},
 			},
 		},
-		editPopup: editPopup{
-			active:       true,
-			columnIndex:  0,
-			errorMessage: "invalid value",
+		overlay: runtimeOverlayState{
+			editPopup: editPopup{
+				active:       true,
+				columnIndex:  0,
+				errorMessage: "invalid value",
+			},
 		},
 	}
 

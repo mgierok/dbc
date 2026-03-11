@@ -19,44 +19,44 @@ func (m *Model) renderStatus(width int) string {
 		mode,
 		m.statusSegment("Table", m.currentTableName()),
 	}
-	if m.viewMode == ViewRecords {
+	if m.read.viewMode == ViewRecords {
 		parts = append(parts, m.recordsSummary(), m.pageSummary())
 	}
 	parts = append(parts, m.filterSummary(), m.sortSummary())
-	if m.commandInput.active {
+	if m.overlay.commandInput.active {
 		parts = append(parts, m.statusSegment("Command", m.commandPrompt()))
 	}
-	if strings.TrimSpace(m.statusMessage) != "" {
-		parts = append(parts, m.styleStatusMessage(m.statusMessage))
+	if strings.TrimSpace(m.ui.statusMessage) != "" {
+		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage))
 	}
 	left := strings.Join(parts, primitives.FrameSegmentSeparator)
 	return primitives.RenderStatusWithRightHint(left, m.styles.Muted(primitives.RuntimeStatusContextHelpHint()), width)
 }
 
 func (m *Model) filterSummary() string {
-	if m.currentFilter == nil {
+	if m.read.currentFilter == nil {
 		return m.statusSegment("Filter", "none")
 	}
-	if m.currentFilter.Operator.RequiresValue {
-		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.currentFilter.Column, m.currentFilter.Operator.Name, m.currentFilter.Value))
+	if m.read.currentFilter.Operator.RequiresValue {
+		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name, m.read.currentFilter.Value))
 	}
-	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.currentFilter.Column, m.currentFilter.Operator.Name))
+	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name))
 }
 
 func (m *Model) sortSummary() string {
-	if m.currentSort == nil {
+	if m.read.currentSort == nil {
 		return m.statusSegment("Sort", "none")
 	}
-	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.currentSort.Column, m.currentSort.Direction))
+	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.read.currentSort.Column, m.read.currentSort.Direction))
 }
 
 func (m *Model) recordsSummary() string {
-	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.records), m.recordTotalCount))
+	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.read.records), m.read.recordTotalCount))
 }
 
 func (m *Model) pageSummary() string {
-	currentPage := clamp(m.recordPageIndex+1, 1, primitives.MaxInt(1, m.recordTotalPages))
-	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.recordTotalPages)))
+	currentPage := clamp(m.read.recordPageIndex+1, 1, primitives.MaxInt(1, m.read.recordTotalPages))
+	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.read.recordTotalPages)))
 }
 
 func (m *Model) statusSegment(label, value string) string {

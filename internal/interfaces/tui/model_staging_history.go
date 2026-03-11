@@ -55,7 +55,7 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 		}
 		row := m.staging.pendingInserts[op.insertIndex]
 		if row.values == nil {
-			row.values = make(map[int]stagedEdit, len(m.schema.Columns))
+			row.values = make(map[int]stagedEdit, len(m.read.schema.Columns))
 		}
 		if row.explicitAuto == nil {
 			row.explicitAuto = make(map[int]bool)
@@ -65,7 +65,7 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 		} else {
 			delete(row.values, op.columnIndex)
 		}
-		if op.columnIndex >= 0 && op.columnIndex < len(m.schema.Columns) && m.schema.Columns[op.columnIndex].AutoIncrement {
+		if op.columnIndex >= 0 && op.columnIndex < len(m.read.schema.Columns) && m.read.schema.Columns[op.columnIndex].AutoIncrement {
 			if explicitAuto {
 				row.explicitAuto[op.columnIndex] = true
 			} else {

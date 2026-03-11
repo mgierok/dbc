@@ -12,13 +12,15 @@ import (
 func TestHandleKey_ShiftSOpensSortPopupInRecordsView(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		tables:   []dto.Table{{Name: "users"}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
 		},
 	}
@@ -27,26 +29,28 @@ func TestHandleKey_ShiftSOpensSortPopupInRecordsView(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
 
 	// Assert
-	if !model.sortPopup.active {
+	if !model.overlay.sortPopup.active {
 		t.Fatal("expected sort popup to be active")
 	}
-	if model.sortPopup.step != sortSelectColumn {
-		t.Fatalf("expected sort popup to start at column step, got %v", model.sortPopup.step)
+	if model.overlay.sortPopup.step != sortSelectColumn {
+		t.Fatalf("expected sort popup to start at column step, got %v", model.overlay.sortPopup.step)
 	}
 }
 
 func TestHandleKey_ShiftSIgnoredOutsideRecordsView(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewSchema,
-		focus:    FocusContent,
+		read: runtimeReadState{
+			viewMode: ViewSchema,
+			focus:    FocusContent,
+		},
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
 
 	// Assert
-	if model.sortPopup.active {
+	if model.overlay.sortPopup.active {
 		t.Fatal("expected sort popup to stay closed outside records view")
 	}
 }
@@ -54,13 +58,15 @@ func TestHandleKey_ShiftSIgnoredOutsideRecordsView(t *testing.T) {
 func TestHandleKey_ShiftFOpensFilterPopupInRecordsView(t *testing.T) {
 	// Arrange
 	model := &Model{
-		viewMode: ViewRecords,
-		focus:    FocusContent,
-		tables:   []dto.Table{{Name: "users"}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
 		},
 	}
@@ -69,11 +75,11 @@ func TestHandleKey_ShiftFOpensFilterPopupInRecordsView(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'F'}})
 
 	// Assert
-	if !model.filterPopup.active {
+	if !model.overlay.filterPopup.active {
 		t.Fatal("expected filter popup to be active")
 	}
-	if model.filterPopup.step != filterSelectColumn {
-		t.Fatalf("expected filter popup to start at column step, got %v", model.filterPopup.step)
+	if model.overlay.filterPopup.step != filterSelectColumn {
+		t.Fatalf("expected filter popup to start at column step, got %v", model.overlay.filterPopup.step)
 	}
 }
 
@@ -99,13 +105,15 @@ func TestHandleKey_ShiftFIgnoredOutsideRecordsContext(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			model := &Model{
-				viewMode: tc.viewMode,
-				focus:    tc.focus,
-				tables:   []dto.Table{{Name: "users"}},
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER"},
-						{Name: "name", Type: "TEXT"},
+				read: runtimeReadState{
+					viewMode: tc.viewMode,
+					focus:    tc.focus,
+					tables:   []dto.Table{{Name: "users"}},
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER"},
+							{Name: "name", Type: "TEXT"},
+						},
 					},
 				},
 			}
@@ -114,7 +122,7 @@ func TestHandleKey_ShiftFIgnoredOutsideRecordsContext(t *testing.T) {
 			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'F'}})
 
 			// Assert
-			if model.filterPopup.active {
+			if model.overlay.filterPopup.active {
 				t.Fatal("expected filter popup to stay closed outside records context")
 			}
 		})
@@ -131,23 +139,27 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	recordsSpy := &spyListRecordsUseCase{}
 	model := &Model{
 		ctx:           context.Background(),
-		viewMode:      ViewRecords,
-		focus:         FocusContent,
 		listOperators: operatorsSpy,
 		listRecords:   recordsSpy,
-		tables:        []dto.Table{{Name: "users"}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			recordPageIndex: 3,
+		},
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active:      true,
+				step:        filterSelectColumn,
+				columnIndex: 1,
 			},
 		},
-		filterPopup: filterPopup{
-			active:      true,
-			step:        filterSelectColumn,
-			columnIndex: 1,
-		},
-		recordPageIndex: 3,
 	}
 
 	// Act
@@ -157,8 +169,8 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if cmd != nil {
 		t.Fatal("expected no command when moving from column to operator step")
 	}
-	if model.filterPopup.step != filterSelectOperator {
-		t.Fatalf("expected operator step, got %v", model.filterPopup.step)
+	if model.overlay.filterPopup.step != filterSelectOperator {
+		t.Fatalf("expected operator step, got %v", model.overlay.filterPopup.step)
 	}
 	if operatorsSpy.lastColumnType != "TEXT" {
 		t.Fatalf("expected operator lookup for TEXT column, got %q", operatorsSpy.lastColumnType)
@@ -171,8 +183,8 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if cmd != nil {
 		t.Fatal("expected no command when moving to value-input step")
 	}
-	if model.filterPopup.step != filterInputValue {
-		t.Fatalf("expected value-input step, got %v", model.filterPopup.step)
+	if model.overlay.filterPopup.step != filterInputValue {
+		t.Fatalf("expected value-input step, got %v", model.overlay.filterPopup.step)
 	}
 
 	// Act
@@ -185,23 +197,23 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	model.Update(msg)
 
 	// Assert
-	if model.filterPopup.active {
+	if model.overlay.filterPopup.active {
 		t.Fatal("expected filter popup to close after apply")
 	}
-	if model.currentFilter == nil {
+	if model.read.currentFilter == nil {
 		t.Fatal("expected current filter to be set")
 	}
-	if model.currentFilter.Column != "name" {
-		t.Fatalf("expected filter column name, got %q", model.currentFilter.Column)
+	if model.read.currentFilter.Column != "name" {
+		t.Fatalf("expected filter column name, got %q", model.read.currentFilter.Column)
 	}
-	if model.currentFilter.Value != "alice" {
-		t.Fatalf("expected filter value alice, got %q", model.currentFilter.Value)
+	if model.read.currentFilter.Value != "alice" {
+		t.Fatalf("expected filter value alice, got %q", model.read.currentFilter.Value)
 	}
-	if model.currentFilter.Operator.Kind != dto.OperatorKindEq {
-		t.Fatalf("expected operator kind %q, got %q", dto.OperatorKindEq, model.currentFilter.Operator.Kind)
+	if model.read.currentFilter.Operator.Kind != dto.OperatorKindEq {
+		t.Fatalf("expected operator kind %q, got %q", dto.OperatorKindEq, model.read.currentFilter.Operator.Kind)
 	}
-	if model.recordPageIndex != 0 {
-		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.recordPageIndex)
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.read.recordPageIndex)
 	}
 	if recordsSpy.lastFilter == nil {
 		t.Fatal("expected filter forwarded to list-records use case")
@@ -217,11 +229,13 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 func TestHandleFilterPopupKey_InputEditingSupportsCursorMovementAndBackspace(t *testing.T) {
 	// Arrange
 	model := &Model{
-		filterPopup: filterPopup{
-			active: true,
-			step:   filterInputValue,
-			input:  "ac",
-			cursor: 1,
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active: true,
+				step:   filterInputValue,
+				input:  "ac",
+				cursor: 1,
+			},
 		},
 	}
 
@@ -235,20 +249,22 @@ func TestHandleFilterPopupKey_InputEditingSupportsCursorMovementAndBackspace(t *
 	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRight})
 
 	// Assert
-	if model.filterPopup.input != "bc" {
-		t.Fatalf("expected edited input bc, got %q", model.filterPopup.input)
+	if model.overlay.filterPopup.input != "bc" {
+		t.Fatalf("expected edited input bc, got %q", model.overlay.filterPopup.input)
 	}
-	if model.filterPopup.cursor != 2 {
-		t.Fatalf("expected cursor clamped at input end, got %d", model.filterPopup.cursor)
+	if model.overlay.filterPopup.cursor != 2 {
+		t.Fatalf("expected cursor clamped at input end, got %d", model.overlay.filterPopup.cursor)
 	}
 }
 
 func TestHandleFilterPopupKey_EscClosesPopup(t *testing.T) {
 	// Arrange
 	model := &Model{
-		filterPopup: filterPopup{
-			active: true,
-			step:   filterSelectOperator,
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active: true,
+				step:   filterSelectOperator,
+			},
 		},
 	}
 
@@ -259,7 +275,7 @@ func TestHandleFilterPopupKey_EscClosesPopup(t *testing.T) {
 	if cmd != nil {
 		t.Fatal("expected no command when closing filter popup")
 	}
-	if model.filterPopup.active {
+	if model.overlay.filterPopup.active {
 		t.Fatal("expected filter popup to close on Esc")
 	}
 }
@@ -275,14 +291,16 @@ func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 	}
 	model := &Model{
 		ctx:         context.Background(),
-		viewMode:    ViewRecords,
-		focus:       FocusContent,
 		listRecords: recordsSpy,
-		tables:      []dto.Table{{Name: "users"}},
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
 			},
 		},
 	}
@@ -299,17 +317,17 @@ func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 	model.Update(msg)
 
 	// Assert
-	if model.sortPopup.active {
+	if model.overlay.sortPopup.active {
 		t.Fatal("expected sort popup to close after apply")
 	}
-	if model.currentSort == nil {
+	if model.read.currentSort == nil {
 		t.Fatal("expected current sort to be set")
 	}
-	if model.currentSort.Column != "id" {
-		t.Fatalf("expected sorted column id, got %q", model.currentSort.Column)
+	if model.read.currentSort.Column != "id" {
+		t.Fatalf("expected sorted column id, got %q", model.read.currentSort.Column)
 	}
-	if model.currentSort.Direction != dto.SortDirectionDesc {
-		t.Fatalf("expected sort direction DESC, got %s", model.currentSort.Direction)
+	if model.read.currentSort.Direction != dto.SortDirectionDesc {
+		t.Fatalf("expected sort direction DESC, got %s", model.read.currentSort.Direction)
 	}
 	if recordsSpy.lastSort == nil {
 		t.Fatal("expected engine to receive sort")

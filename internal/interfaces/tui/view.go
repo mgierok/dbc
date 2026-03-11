@@ -14,28 +14,28 @@ const (
 )
 
 func (m *Model) View() string {
-	width := m.width
+	width := m.ui.width
 	if width <= 0 {
 		width = 80
 	}
-	height := m.height
+	height := m.ui.height
 	if height <= 0 {
 		height = 24
 	}
 
-	if m.helpPopup.active {
+	if m.overlay.helpPopup.active {
 		return primitives.CenterBoxLines(m.renderHelpPopup(width), width, height)
 	}
-	if m.confirmPopup.active {
+	if m.overlay.confirmPopup.active {
 		return primitives.CenterBoxLines(m.renderConfirmPopup(width), width, height)
 	}
-	if m.editPopup.active {
+	if m.overlay.editPopup.active {
 		return primitives.CenterBoxLines(m.renderEditPopup(width), width, height)
 	}
-	if m.filterPopup.active {
+	if m.overlay.filterPopup.active {
 		return primitives.CenterBoxLines(m.renderFilterPopup(width), width, height)
 	}
-	if m.sortPopup.active {
+	if m.overlay.sortPopup.active {
 		return primitives.CenterBoxLines(m.renderSortPopup(width), width, height)
 	}
 
@@ -51,7 +51,7 @@ func (m *Model) View() string {
 }
 
 func (m *Model) panelWidths() (int, int) {
-	width := m.width
+	width := m.ui.width
 	if width <= 0 {
 		width = 80
 	}
@@ -97,8 +97,8 @@ func (m *Model) panelWidths() (int, int) {
 }
 
 func (m *Model) contentPanelTitle() string {
-	if m.viewMode == ViewRecords {
-		if m.recordDetail.active {
+	if m.read.viewMode == ViewRecords {
+		if m.overlay.recordDetail.active {
 			return "Record Detail"
 		}
 		return "Records"
@@ -114,7 +114,7 @@ func (m *Model) maxTablePanelWidth() int {
 
 	maxWidth := primitives.MaxInt(primitives.TextWidth("Tables"), primitives.TextWidth("No items."))
 	longestNameWidth := 0
-	for _, table := range m.tables {
+	for _, table := range m.read.tables {
 		longestNameWidth = primitives.MaxInt(longestNameWidth, primitives.TextWidth(table.Name))
 	}
 	if longestNameWidth == 0 {
@@ -126,19 +126,19 @@ func (m *Model) maxTablePanelWidth() int {
 }
 
 func (m *Model) renderTables(width, height int) []string {
-	items := make([]string, len(m.tables))
-	for i, table := range m.tables {
+	items := make([]string, len(m.read.tables))
+	for i, table := range m.read.tables {
 		items[i] = table.Name
 	}
 
-	listLines := primitives.RenderList(items, m.selectedTable, height, width, true, m.styles)
+	listLines := primitives.RenderList(items, m.read.selectedTable, height, width, true, m.styles)
 	return primitives.PadLines(listLines, height, width)
 }
 
 func (m *Model) renderContent(width, height int) []string {
-	switch m.viewMode {
+	switch m.read.viewMode {
 	case ViewRecords:
-		if m.recordDetail.active {
+		if m.overlay.recordDetail.active {
 			return m.renderRecordDetail(width, height)
 		}
 		return m.renderRecords(width, height)

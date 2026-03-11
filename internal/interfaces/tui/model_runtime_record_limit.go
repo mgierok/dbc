@@ -10,7 +10,7 @@ import (
 
 func (m *Model) applyRecordLimit(recordLimit int) (tea.Model, tea.Cmd) {
 	if recordLimit <= 0 || recordLimit > primitives.RuntimeMaxRecordPageLimit {
-		m.statusMessage = fmt.Sprintf("Error: expected :set limit=<1-%d>", primitives.RuntimeMaxRecordPageLimit)
+		m.ui.statusMessage = fmt.Sprintf("Error: expected :set limit=<1-%d>", primitives.RuntimeMaxRecordPageLimit)
 		return m, nil
 	}
 	if m.runtimeSession == nil {
@@ -18,21 +18,21 @@ func (m *Model) applyRecordLimit(recordLimit int) (tea.Model, tea.Cmd) {
 	}
 
 	m.runtimeSession.RecordsPageLimit = recordLimit
-	m.statusMessage = fmt.Sprintf("Record limit set to %d", recordLimit)
-	m.recordPageIndex = 0
-	m.recordSelection = 0
-	m.recordColumn = 0
-	m.recordTotalPages = 1
-	m.recordTotalCount = 0
-	m.recordRequestID++
-	m.recordLoading = false
-	m.recordFieldFocus = false
+	m.ui.statusMessage = fmt.Sprintf("Record limit set to %d", recordLimit)
+	m.read.recordPageIndex = 0
+	m.read.recordSelection = 0
+	m.read.recordColumn = 0
+	m.read.recordTotalPages = 1
+	m.read.recordTotalCount = 0
+	m.read.recordRequestID++
+	m.read.recordLoading = false
+	m.read.recordFieldFocus = false
 	m.closeRecordDetail()
 
-	if m.viewMode == ViewRecords {
+	if m.read.viewMode == ViewRecords {
 		return m, m.loadRecordsCmd(true)
 	}
 
-	m.records = nil
+	m.read.records = nil
 	return m, nil
 }
