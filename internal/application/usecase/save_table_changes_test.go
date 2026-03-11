@@ -3,6 +3,7 @@ package usecase_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -11,8 +12,9 @@ import (
 )
 
 type spyEngine struct {
-	changes model.TableChanges
-	err     error
+	tableName string
+	changes   model.TableChanges
+	err       error
 }
 
 func (s *spyEngine) ListTables(ctx context.Context) ([]model.Table, error) {
@@ -32,6 +34,7 @@ func (s *spyEngine) ListOperators(ctx context.Context, columnType string) ([]mod
 }
 
 func (s *spyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
+	s.tableName = tableName
 	s.changes = changes
 	return s.err
 }
@@ -151,6 +154,162 @@ func TestSaveTableChanges_ExecuteDTO_DelegatesChanges(t *testing.T) {
 	}
 	if len(engine.changes.Inserts) != 1 {
 		t.Fatalf("expected 1 insert, got %d", len(engine.changes.Inserts))
+	}
+}
+
+func TestSaveTableChanges_ExecuteDTO_MapsUpdateIdentityAndChanges(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+	changes := dto.TableChanges{
+		Updates: []dto.RecordUpdate{
+			{
+				Identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{
+						{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}},
+						{Column: "tenant_id", Value: dto.StagedValue{Text: "NULL", IsNull: true}},
+					},
+				},
+				Changes: []dto.ColumnValue{
+					{Column: "name", Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+				},
+			},
+		},
+	}
+
+	// Act
+	err := uc.ExecuteDTO(context.Background(), "users", changes)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	expected := []model.RecordUpdate{
+		{
+			Identity: model.RecordIdentity{
+				Keys: []model.RecordIdentityKey{
+					{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}},
+					{Column: "tenant_id", Value: model.Value{Text: "NULL", IsNull: true}},
+				},
+			},
+			Changes: []model.ColumnValue{
+				{Column: "name", Value: model.Value{Text: "alice", Raw: "alice"}},
+			},
+		},
+	}
+	if len(engine.changes.Updates) != len(expected) {
+		t.Fatalf("expected %d updates, got %d", len(expected), len(engine.changes.Updates))
+	}
+	for i := range expected {
+		if !reflect.DeepEqual(engine.changes.Updates[i], expected[i]) {
+			t.Fatalf("expected update %+v, got %+v", expected[i], engine.changes.Updates[i])
+		}
+	}
+}
+
+func TestSaveTableChanges_ExecuteDTO_MapsDeleteIdentity(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+	changes := dto.TableChanges{
+		Deletes: []dto.RecordDelete{
+			{
+				Identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{
+						{Column: "id", Value: dto.StagedValue{Text: "7", Raw: int64(7)}},
+						{Column: "tenant_id", Value: dto.StagedValue{Text: "NULL", IsNull: true}},
+					},
+				},
+			},
+		},
+	}
+
+	// Act
+	err := uc.ExecuteDTO(context.Background(), "users", changes)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	expected := []model.RecordDelete{
+		{
+			Identity: model.RecordIdentity{
+				Keys: []model.RecordIdentityKey{
+					{Column: "id", Value: model.Value{Text: "7", Raw: int64(7)}},
+					{Column: "tenant_id", Value: model.Value{Text: "NULL", IsNull: true}},
+				},
+			},
+		},
+	}
+	if len(engine.changes.Deletes) != len(expected) {
+		t.Fatalf("expected %d deletes, got %d", len(expected), len(engine.changes.Deletes))
+	}
+	for i := range expected {
+		if !reflect.DeepEqual(engine.changes.Deletes[i], expected[i]) {
+			t.Fatalf("expected delete %+v, got %+v", expected[i], engine.changes.Deletes[i])
+		}
+	}
+}
+
+func TestSaveTableChanges_ExecuteDTO_PreservesCombinedPayloadShape(t *testing.T) {
+	// Arrange
+	engine := &spyEngine{}
+	uc := usecase.NewSaveTableChanges(engine)
+	changes := dto.TableChanges{
+		Updates: []dto.RecordUpdate{
+			{
+				Identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{
+						{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}},
+						{Column: "tenant_id", Value: dto.StagedValue{Text: "NULL", IsNull: true}},
+					},
+				},
+				Changes: []dto.ColumnValue{
+					{Column: "name", Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+				},
+			},
+		},
+		Deletes: []dto.RecordDelete{
+			{
+				Identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{
+						{Column: "id", Value: dto.StagedValue{Text: "2", Raw: int64(2)}},
+						{Column: "tenant_id", Value: dto.StagedValue{Text: "tenant-a", Raw: "tenant-a"}},
+					},
+				},
+			},
+		},
+	}
+
+	// Act
+	err := uc.ExecuteDTO(context.Background(), "users", changes)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if engine.tableName != "users" {
+		t.Fatalf("expected table name users, got %q", engine.tableName)
+	}
+	if len(engine.changes.Inserts) != 0 {
+		t.Fatalf("expected 0 inserts, got %d", len(engine.changes.Inserts))
+	}
+	if len(engine.changes.Updates) != 1 {
+		t.Fatalf("expected 1 update, got %d", len(engine.changes.Updates))
+	}
+	if len(engine.changes.Deletes) != 1 {
+		t.Fatalf("expected 1 delete, got %d", len(engine.changes.Deletes))
+	}
+	if engine.changes.Updates[0].Identity.Keys[1].Value.Text != "NULL" {
+		t.Fatalf("expected null update identity value to be preserved, got %+v", engine.changes.Updates[0].Identity.Keys[1].Value)
+	}
+	if engine.changes.Updates[0].Changes[0].Value.Raw != "alice" {
+		t.Fatalf("expected update raw value alice, got %#v", engine.changes.Updates[0].Changes[0].Value.Raw)
+	}
+	if engine.changes.Deletes[0].Identity.Keys[1].Value.Raw != "tenant-a" {
+		t.Fatalf("expected delete raw value tenant-a, got %#v", engine.changes.Deletes[0].Identity.Keys[1].Value.Raw)
 	}
 }
 
