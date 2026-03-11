@@ -182,50 +182,6 @@ func (m *databaseSelectorModel) deleteConfirmationContentRows() []primitives.Sta
 	})
 }
 
-func (m *databaseSelectorModel) formLines() []string {
-	if m.mode != selectorModeAdd && m.mode != selectorModeEdit {
-		return nil
-	}
-	title := "Add database"
-	if m.mode == selectorModeEdit {
-		title = "Edit database"
-	}
-	namePrefix := primitives.SelectionUnselectedPrefix()
-	pathPrefix := primitives.SelectionUnselectedPrefix()
-	nameValue := m.form.nameValue
-	pathValue := m.form.pathValue
-	if m.form.activeField == selectorInputName {
-		namePrefix = primitives.SelectionSelectedPrefix()
-		nameValue += "|"
-	} else {
-		pathPrefix = primitives.SelectionSelectedPrefix()
-		pathValue += "|"
-	}
-
-	escLabel := "Esc cancel"
-	if m.requiresFirstEntry && len(m.options) == 0 && m.mode == selectorModeAdd {
-		escLabel = "Esc exit app"
-	}
-
-	lines := []string{
-		title,
-		"",
-		selectorFormFieldLineWithPrefix(namePrefix, "Name", nameValue),
-		selectorFormFieldLineWithPrefix(pathPrefix, "Path", pathValue),
-		"",
-		primitives.SelectorFormSwitchLine(),
-		primitives.SelectorFormSubmitLine(escLabel),
-	}
-	if strings.TrimSpace(m.form.errorMessage) != "" {
-		lines = append(lines, m.styles.Error("Error: "+m.form.errorMessage))
-	}
-	return lines
-}
-
-func selectorFormFieldLineWithPrefix(prefix, label, value string) string {
-	return prefix + selectorFormFieldLine(label, value)
-}
-
 func selectorFormFieldLine(label, value string) string {
 	return label + ": " + value
 }

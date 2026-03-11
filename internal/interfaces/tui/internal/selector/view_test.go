@@ -25,23 +25,26 @@ func TestDatabaseSelector_AddFormShowsCaretInActiveField(t *testing.T) {
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	lines := stripANSI(strings.Join(model.formLines(), "\n"))
+	lines := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, primitives.IconSelection+" Name: |") {
+	if !strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Name: |") {
 		t.Fatalf("expected caret in active name field, got %q", lines)
 	}
-	if strings.Contains(lines, primitives.IconSelection+" Path: |") {
+	if strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Path: |") {
 		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
 	}
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
-	lines = stripANSI(strings.Join(model.formLines(), "\n"))
+	lines = stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, primitives.IconSelection+" Path: |") {
+	if !strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Path: |") {
 		t.Fatalf("expected caret in active path field after tab, got %q", lines)
+	}
+	if strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Name: |") {
+		t.Fatalf("expected name field to stop being selected after tab, got %q", lines)
 	}
 }
 
@@ -59,23 +62,26 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	lines := stripANSI(strings.Join(model.formLines(), "\n"))
+	lines := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, primitives.IconSelection+" Name: local|") {
+	if !strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Name: local|") {
 		t.Fatalf("expected caret in active edit name field, got %q", lines)
 	}
-	if strings.Contains(lines, primitives.IconSelection+" Path: /tmp/local.sqlite|") {
+	if strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Path: /tmp/local.sqlite|") {
 		t.Fatalf("expected path field to stay inactive before tab, got %q", lines)
 	}
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
-	lines = stripANSI(strings.Join(model.formLines(), "\n"))
+	lines = stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 
 	// Assert
-	if !strings.Contains(lines, primitives.IconSelection+" Path: /tmp/local.sqlite|") {
+	if !strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Path: /tmp/local.sqlite|") {
 		t.Fatalf("expected caret in active edit path field after tab, got %q", lines)
+	}
+	if strings.Contains(lines, primitives.SelectionSelectedPrefix()+"Name: local|") {
+		t.Fatalf("expected name field to stop being selected after tab, got %q", lines)
 	}
 }
 
