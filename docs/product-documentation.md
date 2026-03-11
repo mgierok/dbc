@@ -42,7 +42,6 @@ Current product value and scope:
 - `Esc` from a neutral right-panel state returns focus to left-panel table selection and forces the right panel back to Table Discovery (Schema view).
 - In nested right-panel contexts, `Esc` exits the local context first before any panel transition.
 - The active panel is visually indicated.
-- `Ctrl+w h`, `Ctrl+w l`, and `Ctrl+w w` do not trigger runtime panel transitions.
 
 ### Table Discovery and Schema View
 
