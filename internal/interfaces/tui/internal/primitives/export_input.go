@@ -2,8 +2,6 @@ package primitives
 
 import "errors"
 
-const RuntimeMaxRecordPageLimit = maxRuntimeRecordLimit
-
 type KeyBindingID string
 
 const (

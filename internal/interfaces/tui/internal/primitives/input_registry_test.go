@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
 func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
@@ -21,6 +23,7 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "config alias", input: ":c", action: runtimeCommandActionOpenConfig},
 		{name: "set limit", input: ":set limit=10", action: runtimeCommandActionSetRecordLimit, recordLimit: 10},
 		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: runtimeCommandActionSetRecordLimit, recordLimit: 25},
+		{name: "set limit max boundary", input: ":set limit=1000", action: runtimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
 	}
 
 	for _, tc := range tests {

@@ -5,12 +5,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
 func (m *Model) applyRecordLimit(recordLimit int) (tea.Model, tea.Cmd) {
-	if recordLimit <= 0 || recordLimit > primitives.RuntimeMaxRecordPageLimit {
-		m.ui.statusMessage = fmt.Sprintf("Error: expected :set limit=<1-%d>", primitives.RuntimeMaxRecordPageLimit)
+	if !runtimecontract.IsValidRecordPageLimit(recordLimit) {
+		m.ui.statusMessage = fmt.Sprintf("Error: %s", runtimecontract.InvalidSetRecordLimitHint())
 		return m, nil
 	}
 	if m.runtimeSession == nil {
