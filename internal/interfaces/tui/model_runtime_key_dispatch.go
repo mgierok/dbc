@@ -16,6 +16,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	}
+	if primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key) && m.commandInputSupportedInCurrentContext() {
+		return m.startCommandInput()
+	}
 
 	if m.overlay.helpPopup.active {
 		return m.handleHelpPopupKey(msg)
@@ -48,8 +51,6 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	switch {
-	case primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key):
-		return m.startCommandInput()
 	case primitives.KeyMatches(primitives.KeyRuntimeJumpTopPending, key):
 		m.overlay.pendingG = true
 		return m, nil

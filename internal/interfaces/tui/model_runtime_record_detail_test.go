@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -89,6 +90,132 @@ func TestHandleKey_RecordDetailEscClosesDetailBeforeSwitchingPanels(t *testing.T
 	}
 	if model.read.viewMode != ViewRecords {
 		t.Fatalf("expected records view to remain active after closing detail, got %v", model.read.viewMode)
+	}
+}
+
+func TestHandleKey_RecordDetailColonOpensCommandInput(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		overlay: runtimeOverlayState{
+			recordDetail: recordDetailState{active: true},
+		},
+		ui: runtimeUIState{
+			statusMessage: "stale status",
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+
+	// Assert
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected : to open command input from record detail")
+	}
+	if !model.overlay.recordDetail.active {
+		t.Fatal("expected record detail to stay open behind command input")
+	}
+	if model.ui.statusMessage != "" {
+		t.Fatalf("expected stale status to clear when command input opens, got %q", model.ui.statusMessage)
+	}
+}
+
+func TestHandleKey_CommandInputEscClosesBeforeRecordDetail(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active: true,
+				value:  "set limit=10",
+				cursor: len("set limit=10"),
+			},
+			recordDetail: recordDetailState{active: true},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if model.overlay.commandInput.active {
+		t.Fatal("expected Esc to close command input first")
+	}
+	if !model.overlay.recordDetail.active {
+		t.Fatal("expected record detail to remain open after command input closes")
+	}
+}
+
+func TestHandleKey_RecordDetailSetLimitCommandPreservesReloadBehavior(t *testing.T) {
+	// Arrange
+	recordsSpy := &spyListRecordsUseCase{
+		page: dto.RecordPage{
+			Rows:       makeRecordRows(10),
+			TotalCount: 45,
+		},
+	}
+	runtimeSession := &RuntimeSessionState{}
+	model := &Model{
+		ctx:            context.Background(),
+		listRecords:    recordsSpy,
+		runtimeSession: runtimeSession,
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			tables:           []dto.Table{{Name: "users"}},
+			recordPageIndex:  2,
+			recordTotalPages: 5,
+			recordTotalCount: 81,
+			recordSelection:  3,
+			recordColumn:     1,
+			recordFieldFocus: true,
+		},
+		overlay: runtimeOverlayState{
+			recordDetail: recordDetailState{active: true},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	typeCommandInputText(model, "set")
+	model.handleKey(tea.KeyMsg{Type: tea.KeySpace})
+	typeCommandInputText(model, "limit=10")
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected records reload command after submitting :set limit from record detail")
+	}
+	model.Update(cmd())
+
+	// Assert
+	if runtimeSession.RecordsPageLimit != 10 {
+		t.Fatalf("expected runtime session record limit 10, got %d", runtimeSession.RecordsPageLimit)
+	}
+	if recordsSpy.lastRecordsOffset != 0 {
+		t.Fatalf("expected records reload from first page, got offset %d", recordsSpy.lastRecordsOffset)
+	}
+	if recordsSpy.lastRecordsLimit != 10 {
+		t.Fatalf("expected records reload with limit 10, got %d", recordsSpy.lastRecordsLimit)
+	}
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0, got %d", model.read.recordPageIndex)
+	}
+	if model.read.recordSelection != 0 {
+		t.Fatalf("expected record selection reset to 0, got %d", model.read.recordSelection)
+	}
+	if model.read.recordFieldFocus {
+		t.Fatal("expected field focus to be cleared after changing record limit")
+	}
+	if model.overlay.recordDetail.active {
+		t.Fatal("expected record detail to close after changing record limit")
+	}
+	if model.ui.statusMessage != "Record limit set to 10" {
+		t.Fatalf("expected success status message, got %q", model.ui.statusMessage)
 	}
 }
 

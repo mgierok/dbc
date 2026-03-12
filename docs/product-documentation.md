@@ -27,7 +27,7 @@ Current product value and scope:
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
 - Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
-- During an active session, `:` opens command entry. `:config` / `:c` returns to selector/management, `:help` / `:h` opens runtime context help, `:quit` / `:q` exits the application, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
+- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, `:help` / `:h` opens runtime context help, `:quit` / `:q` exits the application, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
 - Runtime help is context-sensitive, lists only keybindings available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
@@ -148,7 +148,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | Open context help for current state | `?` |
 | Open selected table in records panel | `Enter` |
 | Return to left panel from neutral right-panel state | `Esc` |
-| Open command entry | `:` |
+| Open command entry in non-popup runtime views | `:` |
 
 ### Records and Data Actions
 

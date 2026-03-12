@@ -263,6 +263,33 @@ func TestHandleKey_HelpPopupEscClosesPopup(t *testing.T) {
 	}
 }
 
+func TestHandleKey_HelpPopupColonDoesNotOpenCommandInput(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		overlay: runtimeOverlayState{
+			helpPopup: helpPopup{
+				active:  true,
+				context: helpPopupContextRecords,
+			},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+
+	// Assert
+	if model.overlay.commandInput.active {
+		t.Fatal("expected help popup to block command input")
+	}
+	if !model.overlay.helpPopup.active {
+		t.Fatal("expected help popup to stay open after :")
+	}
+}
+
 func TestHandleKey_HelpPopupUnrelatedKeysDoNotClosePopup(t *testing.T) {
 	// Arrange
 	model := &Model{read: runtimeReadState{viewMode: ViewRecords}}

@@ -203,16 +203,11 @@ func (m *Model) helpPopupContextShortcuts() string {
 
 func (m *Model) handleHelpPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	if m.overlay.commandInput.active {
-		return m.handleCommandInputKey(msg)
-	}
 
 	switch {
 	case primitives.KeyMatches(primitives.KeyRuntimeEsc, key):
 		m.closeHelpPopup()
 		return m, nil
-	case primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key):
-		return m.startCommandInput()
 	case primitives.KeyMatches(primitives.KeyPopupMoveDown, key):
 		m.moveHelpPopupScroll(1)
 		return m, nil
