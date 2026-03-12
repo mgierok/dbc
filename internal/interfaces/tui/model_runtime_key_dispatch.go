@@ -16,7 +16,9 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	}
-	if primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key) && m.commandInputSupportedInCurrentContext() {
+	if primitives.KeyMatches(primitives.KeyRuntimeOpenCommandInput, key) &&
+		!m.overlay.commandInput.active &&
+		m.commandInputSupportedInCurrentContext() {
 		return m.startCommandInput()
 	}
 

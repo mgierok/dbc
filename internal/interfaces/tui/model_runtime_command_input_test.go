@@ -59,6 +59,29 @@ func TestHandleKey_StartingNewCommandClearsStaleUnknownCommandStatus(t *testing.
 	}
 }
 
+func TestHandleKey_CommandInputSecondColonPreservesTypedCommand(t *testing.T) {
+	// Arrange
+	model := &Model{}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	typeCommandInputText(model, "set")
+	model.handleKey(tea.KeyMsg{Type: tea.KeySpace})
+	typeCommandInputText(model, "limit=10")
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+
+	// Assert
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected command input to remain active")
+	}
+	if model.overlay.commandInput.value != "set limit=10:" {
+		t.Fatalf("expected repeated : to append to command input, got %q", model.overlay.commandInput.value)
+	}
+	if model.overlay.commandInput.cursor != len("set limit=10:") {
+		t.Fatalf("expected cursor at end of appended command, got %d", model.overlay.commandInput.cursor)
+	}
+}
+
 func typeCommandInputText(model *Model, value string) {
 	for _, r := range value {
 		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
