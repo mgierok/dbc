@@ -20,7 +20,7 @@ func (m *Model) openModalConfirmPopupWithOptions(title, message string, options 
 		m.overlay.confirmPopup = confirmPopup{
 			active:  true,
 			title:   title,
-			action:  confirmConfigCancel,
+			action:  confirmLeaveCancel,
 			message: message,
 			modal:   true,
 		}
@@ -55,8 +55,7 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyConfirmCancel, key):
 		m.closeConfirmPopup()
-		m.ui.pendingTableIndex = -1
-		m.ui.pendingConfigOpen = false
+		m.ui.pendingLeaveTarget = leaveRuntimeNone
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyConfirmAccept, key):
 		action := m.overlay.confirmPopup.action
@@ -67,17 +66,12 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch action {
 		case confirmSave:
 			return m.confirmSaveChanges()
-		case confirmDiscardTable:
-			return m.confirmDiscardTableSwitch()
-		case confirmCancelTableSwitch:
-			m.ui.pendingTableIndex = -1
-			return m, nil
-		case confirmConfigSaveAndOpen:
-			return m.confirmConfigSaveAndOpen()
-		case confirmConfigDiscardAndOpen:
-			return m.confirmConfigDiscardAndOpen()
-		case confirmConfigCancel:
-			m.ui.pendingConfigOpen = false
+		case confirmLeaveSave:
+			return m.confirmLeaveSave()
+		case confirmLeaveDiscard:
+			return m.confirmLeaveDiscard()
+		case confirmLeaveCancel:
+			m.ui.pendingLeaveTarget = leaveRuntimeNone
 			return m, nil
 		default:
 			return m, nil

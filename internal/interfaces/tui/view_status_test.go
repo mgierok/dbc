@@ -64,7 +64,7 @@ func TestRenderStatus_RightHintPriorityOnNarrowWidth(t *testing.T) {
 func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	// Arrange
 	model := &Model{
-		staging: stagingState{
+		staging: testActiveDatabaseStaging(stagingState{
 			pendingUpdates: map[string]recordEdits{
 				"id=1": {
 					changes: map[int]stagedEdit{
@@ -74,7 +74,7 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 			},
 			pendingInserts: []pendingInsertRow{{}},
 			pendingDeletes: map[string]recordDelete{"id=2": {}},
-		},
+		}),
 	}
 
 	// Act

@@ -43,3 +43,8 @@ type TableChanges struct {
 	Updates []RecordUpdate
 	Deletes []RecordDelete
 }
+
+type NamedTableChanges struct {
+	TableName string
+	Changes   TableChanges
+}

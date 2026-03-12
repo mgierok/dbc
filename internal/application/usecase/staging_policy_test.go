@@ -70,7 +70,7 @@ func TestStagingPolicy_InitialInsertValue_UsesEmptyValueForRequiredColumnsWithou
 	}
 }
 
-func TestStagingPolicy_DirtyEditCount_CountsInsertsDeletesAndCellUpdates(t *testing.T) {
+func TestStagingPolicy_DirtyEditCount_CountsAffectedRowsInsteadOfEditedCells(t *testing.T) {
 	// Arrange
 	policy := usecase.NewStagingPolicy()
 	pendingInserts := []dto.PendingInsertRow{
@@ -92,7 +92,7 @@ func TestStagingPolicy_DirtyEditCount_CountsInsertsDeletesAndCellUpdates(t *test
 	count := policy.DirtyEditCount(pendingInserts, pendingUpdates, pendingDeletes)
 
 	// Assert
-	if count != 4 {
-		t.Fatalf("expected dirty count 4, got %d", count)
+	if count != 3 {
+		t.Fatalf("expected dirty count 3, got %d", count)
 	}
 }

@@ -40,6 +40,11 @@ type TableChanges struct {
 	Deletes []RecordDelete
 }
 
+type NamedTableChanges struct {
+	TableName string
+	Changes   TableChanges
+}
+
 type StagedEdit struct {
 	Value StagedValue
 }

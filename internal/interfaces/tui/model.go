@@ -108,11 +108,9 @@ type confirmAction int
 
 const (
 	confirmSave confirmAction = iota + 1
-	confirmDiscardTable
-	confirmCancelTableSwitch
-	confirmConfigSaveAndOpen
-	confirmConfigDiscardAndOpen
-	confirmConfigCancel
+	confirmLeaveSave
+	confirmLeaveDiscard
+	confirmLeaveCancel
 )
 
 type confirmOption struct {
@@ -143,7 +141,7 @@ type Model struct {
 	runtimeSession *RuntimeSessionState
 	styles         primitives.RenderStyles
 
-	staging stagingState
+	staging databaseStagingState
 	read    runtimeReadState
 	overlay runtimeOverlayState
 	ui      runtimeUIState
@@ -170,7 +168,7 @@ type listOperatorsUseCase interface {
 }
 
 type saveChangesUseCase interface {
-	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error
+	ExecuteDTO(ctx context.Context, changes []dto.NamedTableChanges) error
 }
 
 func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator, runtimeSession *RuntimeSessionState) *Model {
@@ -194,9 +192,6 @@ func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSc
 			focus:            FocusTables,
 			viewMode:         ViewSchema,
 			recordTotalPages: 1,
-		},
-		ui: runtimeUIState{
-			pendingTableIndex: -1,
 		},
 	}
 }

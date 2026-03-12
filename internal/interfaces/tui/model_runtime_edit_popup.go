@@ -31,7 +31,7 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 	if insertIndex, isInsert := m.pendingInsertIndexForSelection(); !isInsert && !m.canEditRecords() {
 		m.ui.statusMessage = "Error: table has no primary key"
 		return m, nil
-	} else if isInsert && (insertIndex < 0 || insertIndex >= len(m.staging.pendingInserts)) {
+	} else if isInsert && (insertIndex < 0 || insertIndex >= len(m.activeTableStaging().pendingInserts)) {
 		return m, nil
 	}
 	visibleColumns := m.visibleColumnIndicesForSelection()
@@ -47,7 +47,7 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 	column := m.read.schema.Columns[m.read.recordColumn]
 	currentValue := m.visibleRowValue(m.read.recordSelection, m.read.recordColumn)
 	if insertIndex, isInsert := m.pendingInsertIndexForSelection(); isInsert {
-		if value, ok := m.staging.pendingInserts[insertIndex].values[m.read.recordColumn]; ok {
+		if value, ok := m.activeTableStaging().pendingInserts[insertIndex].values[m.read.recordColumn]; ok {
 			currentValue = displayValue(value.Value)
 		}
 	} else if staged, ok := m.stagedEditForRow(m.read.recordSelection, m.read.recordColumn); ok {

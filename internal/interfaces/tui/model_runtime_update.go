@@ -53,6 +53,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.read.schema = msg.schema
+		m.syncActiveTableSchema()
 		m.read.schemaIndex = 0
 		if m.read.recordColumn >= len(m.read.schema.Columns) {
 			m.read.recordColumn = 0
@@ -82,15 +83,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case saveChangesMsg:
 		if msg.err != nil {
-			m.ui.pendingConfigOpen = false
+			m.ui.pendingLeaveTarget = leaveRuntimeNone
 			m.ui.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
 		}
 		m.clearStagedState()
-		if m.ui.pendingConfigOpen {
-			m.ui.pendingConfigOpen = false
+		switch m.ui.pendingLeaveTarget {
+		case leaveRuntimeConfig:
+			m.ui.pendingLeaveTarget = leaveRuntimeNone
 			m.ui.openConfigSelector = true
 			m.ui.statusMessage = "Opening database selector"
+			return m, tea.Quit
+		case leaveRuntimeQuit:
+			m.ui.pendingLeaveTarget = leaveRuntimeNone
 			return m, tea.Quit
 		}
 		m.ui.statusMessage = fmt.Sprintf("Saved %d changes", msg.count)
@@ -112,8 +117,6 @@ func (m *Model) resetTableContext() {
 	m.read.schemaIndex = 0
 	m.resetReadRecordBrowsingState()
 	m.resetTableOverlayState()
-	m.clearStagedState()
-	m.ui.pendingTableIndex = -1
 }
 
 func (m *Model) resetReadRecordBrowsingState() {
@@ -234,9 +237,9 @@ func loadRecordsCmd(ctx context.Context, uc listRecordsUseCase, tableName string
 	}
 }
 
-func saveChangesCmd(ctx context.Context, uc saveChangesUseCase, tableName string, changes dto.TableChanges, count int) tea.Cmd {
+func saveChangesCmd(ctx context.Context, uc saveChangesUseCase, changes []dto.NamedTableChanges, count int) tea.Cmd {
 	return func() tea.Msg {
-		err := uc.ExecuteDTO(ctx, tableName, changes)
+		err := uc.ExecuteDTO(ctx, changes)
 		return saveChangesMsg{count: count, err: err}
 	}
 }

@@ -210,7 +210,7 @@ func TestView_DirtyConfigCommandOpensConfirmPopupAndSuppressesBackgroundPanels(t
 			width:  80,
 			height: 24,
 		},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+		staging: testActiveDatabaseStaging(stagingState{pendingInserts: []pendingInsertRow{{}}}),
 	}
 
 	// Act
@@ -243,11 +243,11 @@ func TestRenderConfirmPopup_DirtyConfigShowsMessageAndOptionLabels(t *testing.T)
 			confirmPopup: confirmPopup{
 				active:  true,
 				title:   "Config",
-				message: "Unsaved changes detected. Choose save, discard, or cancel.",
+				message: "Unsaved changes detected. Save changes before you open config, discard them, or cancel.",
 				options: []confirmOption{
-					{label: "Save and open config", action: confirmConfigSaveAndOpen},
-					{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
-					{label: "Cancel", action: confirmConfigCancel},
+					{label: "Save and open config", action: confirmLeaveSave},
+					{label: "Discard and open config", action: confirmLeaveDiscard},
+					{label: "Cancel", action: confirmLeaveCancel},
 				},
 				selected: 0,
 				modal:    true,
@@ -277,17 +277,18 @@ func TestRenderConfirmPopup_DirtyConfigShowsMessageAndOptionLabels(t *testing.T)
 	}
 }
 
-func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *testing.T) {
+func TestRenderConfirmPopup_DirtyQuitShowsMessageAndExplicitActions(t *testing.T) {
 	// Arrange
 	model := &Model{
 		overlay: runtimeOverlayState{
 			confirmPopup: confirmPopup{
 				active:  true,
-				title:   "Switch Table",
-				message: "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?",
+				title:   "Quit",
+				message: "Unsaved changes detected. Save changes before you quit, discard them, or cancel.",
 				options: []confirmOption{
-					{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
-					{label: "(n) No, continue editing", action: confirmCancelTableSwitch},
+					{label: "Save and quit", action: confirmLeaveSave},
+					{label: "Discard and quit", action: confirmLeaveDiscard},
+					{label: "Cancel", action: confirmLeaveCancel},
 				},
 				selected: 0,
 				modal:    true,
@@ -300,16 +301,16 @@ func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *te
 	popup := stripANSI(strings.Join(lines, "\n"))
 
 	// Assert
-	if !strings.Contains(popup, "Switching tables will cause loss of unsaved data") {
-		t.Fatalf("expected informational switch-table summary in popup, got %q", popup)
+	if !strings.Contains(popup, "Save changes before you qui") {
+		t.Fatalf("expected quit summary in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "(y) Yes, discard changes and switch table") {
-		t.Fatalf("expected yes action label in popup, got %q", popup)
+	if !strings.Contains(popup, "Save and quit") {
+		t.Fatalf("expected save action label in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "(n) No, continue editing") {
-		t.Fatalf("expected no action label in popup, got %q", popup)
+	if !strings.Contains(popup, "Discard and quit") {
+		t.Fatalf("expected discard action label in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, primitives.IconSelection+" (y) Yes, discard changes and switch table") {
-		t.Fatalf("expected selected yes action in popup, got %q", popup)
+	if !strings.Contains(popup, primitives.IconSelection+" Save and quit") {
+		t.Fatalf("expected selected save action in popup, got %q", popup)
 	}
 }

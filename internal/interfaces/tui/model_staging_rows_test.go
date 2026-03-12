@@ -30,8 +30,8 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 
 	// Assert
-	if len(model.staging.pendingInserts) != 1 {
-		t.Fatalf("expected one pending insert, got %d", len(model.staging.pendingInserts))
+	if len(model.activeTableStaging().pendingInserts) != 1 {
+		t.Fatalf("expected one pending insert, got %d", len(model.activeTableStaging().pendingInserts))
 	}
 	if model.read.recordSelection != 0 {
 		t.Fatalf("expected selection at top pending row, got %d", model.read.recordSelection)
@@ -39,7 +39,7 @@ func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	if model.read.recordColumn != 1 {
 		t.Fatalf("expected first editable column to skip auto field, got %d", model.read.recordColumn)
 	}
-	row := model.staging.pendingInserts[0]
+	row := model.activeTableStaging().pendingInserts[0]
 	if got := displayValue(row.values[1].Value); got != "guest" {
 		t.Fatalf("expected default value guest, got %q", got)
 	}
@@ -71,15 +71,15 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.staging.pendingDeletes) != 1 {
-		t.Fatalf("expected one pending delete, got %d", len(model.staging.pendingDeletes))
+	if len(model.activeTableStaging().pendingDeletes) != 1 {
+		t.Fatalf("expected one pending delete, got %d", len(model.activeTableStaging().pendingDeletes))
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.staging.pendingDeletes) != 0 {
+	if len(model.activeTableStaging().pendingDeletes) != 0 {
 		t.Fatalf("expected pending delete to toggle off")
 	}
 }
@@ -91,16 +91,16 @@ func TestHandleKey_DeleteRemovesPendingInsert(t *testing.T) {
 			viewMode: ViewRecords,
 			focus:    FocusContent,
 		},
-		staging: stagingState{
+		staging: testActiveDatabaseStaging(stagingState{
 			pendingInserts: []pendingInsertRow{{values: map[int]stagedEdit{}}},
-		},
+		}),
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.staging.pendingInserts) != 0 {
+	if len(model.activeTableStaging().pendingInserts) != 0 {
 		t.Fatalf("expected pending insert to be removed")
 	}
 }
@@ -116,7 +116,7 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 				},
 			},
 		},
-		staging: stagingState{
+		staging: testActiveDatabaseStaging(stagingState{
 			pendingInserts: []pendingInsertRow{
 				{
 					values: map[int]stagedEdit{
@@ -143,7 +143,7 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 					},
 				},
 			},
-		},
+		}),
 	}
 
 	// Act
@@ -167,7 +167,7 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
 	// Arrange
 	model := &Model{
-		staging: stagingState{
+		staging: testActiveDatabaseStaging(stagingState{
 			pendingInserts: []pendingInsertRow{{}},
 			pendingDeletes: map[string]recordDelete{"id=1": {}},
 			pendingUpdates: map[string]recordEdits{
@@ -178,14 +178,14 @@ func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
 					},
 				},
 			},
-		},
+		}),
 	}
 
 	// Act
 	dirty := model.dirtyEditCount()
 
 	// Assert
-	if dirty != 4 {
-		t.Fatalf("expected dirty count 4, got %d", dirty)
+	if dirty != 3 {
+		t.Fatalf("expected dirty count 3, got %d", dirty)
 	}
 }

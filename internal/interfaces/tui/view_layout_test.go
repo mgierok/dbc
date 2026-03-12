@@ -28,9 +28,10 @@ func TestPanelWidths_UsesLongestTableNameAsMaxWidthInWideWindow(t *testing.T) {
 	const (
 		tablePrefixWidth = 2
 		nameMargin       = 1
+		dirtyMarkerWidth = 2
 	)
 	nonContentWidth := (panelBoxBorderWidth * 2) + panelBoxGapWidth
-	expectedLeftWidth := tablePrefixWidth + primitives.TextWidth(longName) + nameMargin
+	expectedLeftWidth := tablePrefixWidth + primitives.TextWidth(longName) + nameMargin + dirtyMarkerWidth
 	if leftWidth != expectedLeftWidth {
 		t.Fatalf("expected left panel width %d, got %d", expectedLeftWidth, leftWidth)
 	}

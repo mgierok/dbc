@@ -46,11 +46,24 @@ func (s *spyListOperatorsUseCase) Execute(ctx context.Context, columnType string
 }
 
 type spySaveChangesUseCase struct {
-	lastChanges dto.TableChanges
+	lastChanges []dto.NamedTableChanges
 	err         error
 }
 
-func (s *spySaveChangesUseCase) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error {
-	s.lastChanges = changes
+func (s *spySaveChangesUseCase) ExecuteDTO(ctx context.Context, changes []dto.NamedTableChanges) error {
+	s.lastChanges = append([]dto.NamedTableChanges(nil), changes...)
 	return s.err
+}
+
+func testDatabaseStaging(states map[string]stagingState) databaseStagingState {
+	converted := make(map[string]*stagingState, len(states))
+	for tableName, state := range states {
+		cloned := state
+		converted[tableName] = &cloned
+	}
+	return databaseStagingState{tables: converted}
+}
+
+func testActiveDatabaseStaging(state stagingState) databaseStagingState {
+	return testDatabaseStaging(map[string]stagingState{"": state})
 }
