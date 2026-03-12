@@ -10,6 +10,7 @@ import (
 )
 
 func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
+	m.clearPendingRuntimeKeyState()
 	m.overlay.commandInput = commandInput{
 		active: true,
 		value:  "",
@@ -17,6 +18,10 @@ func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
 	}
 	m.ui.statusMessage = ""
 	return m, nil
+}
+
+func (m *Model) clearPendingRuntimeKeyState() {
+	m.overlay.pendingG = false
 }
 
 func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {

@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/application/dto"
 )
 
 func TestHandleKey_EnterFromTablesSwitchesToRecordsAndContentFocus(t *testing.T) {
@@ -93,5 +95,35 @@ func TestHandleKey_EscFromFieldFocusThenNeutralSwitchesToTablesAndSchema(t *test
 	}
 	if model.read.viewMode != ViewSchema {
 		t.Fatalf("expected schema view to be active, got %v", model.read.viewMode)
+	}
+}
+
+func TestHandleKey_CommandInputClearsPendingGPrefix(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			focus:         FocusTables,
+			viewMode:      ViewSchema,
+			tables:        []dto.Table{{Name: "a"}, {Name: "b"}, {Name: "c"}},
+			selectedTable: 2,
+		},
+	}
+
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	if model.overlay.pendingG {
+		t.Fatal("expected starting command input to clear pending runtime key state")
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+
+	// Assert
+	if model.read.selectedTable != 2 {
+		t.Fatalf("expected first g after closing command input to keep selection in place, got %d", model.read.selectedTable)
+	}
+	if !model.overlay.pendingG {
+		t.Fatal("expected first g after closing command input to start a fresh gg sequence")
 	}
 }
