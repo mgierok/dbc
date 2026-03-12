@@ -25,7 +25,7 @@ func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
 	}
 }
 
-func TestRenderStatus_DoesNotIncludeContextShortcutList(t *testing.T) {
+func TestRenderStatus_UsesSummarySegmentsInsteadOfInlineShortcutRows(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{
@@ -39,7 +39,7 @@ func TestRenderStatus_DoesNotIncludeContextShortcutList(t *testing.T) {
 
 	// Assert
 	if strings.Contains(status, "Records: Esc tables | e edit | Enter detail") {
-		t.Fatalf("expected context shortcut list to be removed from status line, got %q", status)
+		t.Fatalf("expected status line to stay focused on summaries, got %q", status)
 	}
 }
 
@@ -86,7 +86,7 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	}
 }
 
-func TestRenderStatus_DoesNotShowViewIndicator(t *testing.T) {
+func TestRenderStatus_DoesNotRenderViewLabel(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{viewMode: ViewRecords},
@@ -97,7 +97,7 @@ func TestRenderStatus_DoesNotShowViewIndicator(t *testing.T) {
 
 	// Assert
 	if strings.Contains(status, "View: ") {
-		t.Fatalf("expected status without view indicator, got %q", status)
+		t.Fatalf("expected status line without a separate view label, got %q", status)
 	}
 }
 

@@ -407,7 +407,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 		t.Fatalf("expected information marker in detail layout, got %q", content)
 	}
 	if strings.Contains(content, "[ROW]") {
-		t.Fatalf("expected [ROW] marker to be removed in detail layout, got %q", content)
+		t.Fatalf("expected detail layout to render user-facing labels only, got %q", content)
 	}
 	if !strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER)") {
 		t.Fatalf("expected id header in detail layout, got %q", content)
@@ -416,7 +416,7 @@ func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 		t.Fatalf("expected payload header in detail layout, got %q", content)
 	}
 	if strings.Contains(content, "[COL]") {
-		t.Fatalf("expected [COL] marker to be removed in detail layout, got %q", content)
+		t.Fatalf("expected detail layout without literal column marker tokens, got %q", content)
 	}
 	if strings.Contains(content, "...") {
 		t.Fatalf("expected no truncation marker in detail layout, got %q", content)

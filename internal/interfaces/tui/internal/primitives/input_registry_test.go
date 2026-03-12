@@ -139,7 +139,7 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 		t.Fatalf("expected commands section header, got %q", lines[0])
 	}
 	joined := strings.Join(lines, "\n")
-	if !strings.Contains(joined, ":config / :c - Open database selector and config manager.") {
+	if !strings.Contains(joined, ":config / :c - Open database selector.") {
 		t.Fatalf("expected config command line in help content, got %q", joined)
 	}
 	if !strings.Contains(joined, ":help / :h - Open runtime help popup reference.") {

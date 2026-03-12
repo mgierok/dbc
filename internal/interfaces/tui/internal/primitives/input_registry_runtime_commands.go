@@ -38,7 +38,7 @@ var (
 var runtimeCommandSpecs = []RuntimeCommandSpec{
 	{
 		Aliases:     []string{"config", "c"},
-		Description: "Open database selector and config manager.",
+		Description: "Open database selector.",
 		Action:      RuntimeCommandActionOpenConfig,
 	},
 	{

@@ -53,7 +53,7 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.ui.openConfigSelector = true
-		m.ui.statusMessage = "Opening config manager"
+		m.ui.statusMessage = "Opening database selector"
 		return m, tea.Quit
 	}
 

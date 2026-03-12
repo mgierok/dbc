@@ -151,7 +151,7 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 	if !model.ui.openConfigSelector {
 		t.Fatal("expected config-selector handoff to be enabled after successful save")
 	}
-	if model.ui.statusMessage != "Opening config manager" {
+	if model.ui.statusMessage != "Opening database selector" {
 		t.Fatalf("expected config handoff status message, got %q", model.ui.statusMessage)
 	}
 	if cmd == nil {

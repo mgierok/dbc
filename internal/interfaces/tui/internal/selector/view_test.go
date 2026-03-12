@@ -109,7 +109,7 @@ func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_ForcedSetupFormHidesShortcutLegendFromMainContent(t *testing.T) {
+func TestDatabaseSelector_ForcedSetupFormKeepsMainContentFocusedOnFields(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{},
@@ -124,10 +124,10 @@ func TestDatabaseSelector_ForcedSetupFormHidesShortcutLegendFromMainContent(t *t
 
 	// Assert
 	if strings.Contains(view, primitives.SelectorFormSubmitLine("Esc exit app")) {
-		t.Fatalf("expected forced setup form to hide shortcut line from main content, got %q", view)
+		t.Fatalf("expected forced setup form main content to stay focused on fields, got %q", view)
 	}
 	if strings.Contains(view, primitives.SelectorFormSwitchLine()) {
-		t.Fatalf("expected forced setup form to hide switch shortcut line from main content, got %q", view)
+		t.Fatalf("expected forced setup form main content to omit help-only switch guidance, got %q", view)
 	}
 }
 
@@ -163,7 +163,7 @@ func TestDatabaseSelector_OptionLinesShowSourceMarkers(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_ViewShowsSourceMarkersWithoutLegendAndKeepsFooterHint(t *testing.T) {
+func TestDatabaseSelector_ViewShowsSourceMarkersAndKeepsFooterHint(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{
@@ -196,7 +196,7 @@ func TestDatabaseSelector_ViewShowsSourceMarkersWithoutLegendAndKeepsFooterHint(
 		t.Fatalf("expected CLI source marker in selector view, got %q", view)
 	}
 	if strings.Contains(view, "Legend: "+primitives.IconConfigSource+" config"+primitives.FrameSegmentSeparator+primitives.IconCLISource+" CLI session") {
-		t.Fatalf("expected legend to be removed from selector main content, got %q", view)
+		t.Fatalf("expected selector main content to stay focused on database rows, got %q", view)
 	}
 	if !strings.Contains(view, primitives.FrameTopLeft+"Select database") {
 		t.Fatalf("expected selector title in top border, got %q", view)
@@ -206,7 +206,7 @@ func TestDatabaseSelector_ViewShowsSourceMarkersWithoutLegendAndKeepsFooterHint(
 	}
 }
 
-func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
+func TestDatabaseSelector_ViewKeepsMainContentFocusedAcrossModes(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{
@@ -221,14 +221,14 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 	// Act + Assert: browse mode.
 	browse := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 	if strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault()[0]) || strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault()[1]) {
-		t.Fatalf("expected browse shortcuts to be removed from main content, got %q", browse)
+		t.Fatalf("expected browse main content to stay focused on database rows, got %q", browse)
 	}
 
 	// Act + Assert: add mode.
 	model.openAddForm()
 	addView := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 	if strings.Contains(addView, primitives.SelectorFormSwitchLine()) || strings.Contains(addView, primitives.SelectorFormSubmitLine("Esc cancel")) {
-		t.Fatalf("expected add-form shortcuts to be removed from main content, got %q", addView)
+		t.Fatalf("expected add-form main content to stay focused on editable fields, got %q", addView)
 	}
 
 	// Act + Assert: delete-confirm mode.
@@ -236,7 +236,7 @@ func TestDatabaseSelector_ViewHidesShortcutLinesAcrossModes(t *testing.T) {
 	model.openDeleteConfirmation()
 	deleteView := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
 	if strings.Contains(deleteView, primitives.SelectorDeleteConfirmationLine()) {
-		t.Fatalf("expected delete-confirm shortcuts to be removed from main content, got %q", deleteView)
+		t.Fatalf("expected delete confirmation main content to stay focused on the selected entry, got %q", deleteView)
 	}
 }
 
@@ -268,6 +268,6 @@ func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *tes
 		t.Fatalf("expected help popup to exclude browse shortcuts in form context, got %q", view)
 	}
 	if strings.Contains(view, "Legend: "+primitives.IconConfigSource+" config"+primitives.FrameSegmentSeparator+primitives.IconCLISource+" CLI session") {
-		t.Fatalf("expected help popup to exclude legend, got %q", view)
+		t.Fatalf("expected help popup to stay focused on contextual controls, got %q", view)
 	}
 }

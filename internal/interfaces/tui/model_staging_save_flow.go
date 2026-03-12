@@ -42,7 +42,7 @@ func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
 	m.ui.pendingConfigOpen = false
 	m.clearStagedState()
 	m.ui.openConfigSelector = true
-	m.ui.statusMessage = "Opening config manager"
+	m.ui.statusMessage = "Opening database selector"
 	return m, tea.Quit
 }
 

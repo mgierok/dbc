@@ -90,7 +90,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.ui.pendingConfigOpen {
 			m.ui.pendingConfigOpen = false
 			m.ui.openConfigSelector = true
-			m.ui.statusMessage = "Opening config manager"
+			m.ui.statusMessage = "Opening database selector"
 			return m, tea.Quit
 		}
 		m.ui.statusMessage = fmt.Sprintf("Saved %d changes", msg.count)
