@@ -14,7 +14,6 @@ import (
 type spyEngine struct {
 	tableName string
 	changes   model.TableChanges
-	dbChanges []model.NamedTableChanges
 	err       error
 }
 
@@ -37,11 +36,6 @@ func (s *spyEngine) ListOperators(ctx context.Context, columnType string) ([]mod
 func (s *spyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
 	s.tableName = tableName
 	s.changes = changes
-	return s.err
-}
-
-func (s *spyEngine) ApplyDatabaseChanges(ctx context.Context, changes []model.NamedTableChanges) error {
-	s.dbChanges = append([]model.NamedTableChanges(nil), changes...)
 	return s.err
 }
 

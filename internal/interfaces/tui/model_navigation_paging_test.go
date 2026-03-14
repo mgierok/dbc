@@ -28,7 +28,7 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 				},
 			},
 		},
-		staging: testActiveDatabaseStaging(stagingState{
+		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
 				{
 					values: map[int]stagedEdit{
@@ -38,7 +38,7 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 					explicitAuto: map[int]bool{},
 				},
 			},
-		}),
+		},
 	}
 
 	// Act

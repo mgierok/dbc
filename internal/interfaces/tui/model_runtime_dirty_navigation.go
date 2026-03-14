@@ -11,26 +11,37 @@ func (m *Model) dirtyNavigationPolicyUseCase() *usecase.DirtyNavigationPolicy {
 	return usecase.NewDirtyNavigationPolicy()
 }
 
-func (m *Model) confirmOptionsFromDirtyPrompt(prompt usecase.DirtyDecisionPrompt) []confirmOption {
+func (m *Model) confirmOptionsFromDirtyPrompt(prompt usecase.DirtyDecisionPrompt, configFlow bool) []confirmOption {
 	options := make([]confirmOption, 0, len(prompt.Options))
 	for _, option := range prompt.Options {
 		options = append(options, confirmOption{
 			label:  option.Label,
-			action: mapDirtyDecisionToConfirmAction(option.ID),
+			action: mapDirtyDecisionToConfirmAction(option.ID, configFlow),
 		})
 	}
 	return options
 }
 
-func mapDirtyDecisionToConfirmAction(decisionID string) confirmAction {
+func mapDirtyDecisionToConfirmAction(decisionID string, configFlow bool) confirmAction {
+	if !configFlow {
+		switch decisionID {
+		case usecase.DirtyDecisionDiscard:
+			return confirmDiscardTable
+		case usecase.DirtyDecisionCancel:
+			return confirmCancelTableSwitch
+		default:
+			return confirmCancelTableSwitch
+		}
+	}
+
 	switch decisionID {
 	case usecase.DirtyDecisionSave:
-		return confirmLeaveSave
+		return confirmConfigSaveAndOpen
 	case usecase.DirtyDecisionDiscard:
-		return confirmLeaveDiscard
+		return confirmConfigDiscardAndOpen
 	case usecase.DirtyDecisionCancel:
-		return confirmLeaveCancel
+		return confirmConfigCancel
 	default:
-		return confirmLeaveCancel
+		return confirmConfigCancel
 	}
 }

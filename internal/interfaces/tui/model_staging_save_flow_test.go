@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,60 +10,39 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
-func TestConfirmSaveChanges_SubmitsAllDirtyTableChanges_FromSaveFlow(t *testing.T) {
+func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
+	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
-			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
-			selectedTable: 1,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-						{Name: "name", Type: "TEXT", Nullable: false},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 					},
-				},
-				pendingInserts: []pendingInsertRow{
-					{
-						values: map[int]stagedEdit{
-							0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-							1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-						},
-						explicitAuto: map[int]bool{},
-					},
+					explicitAuto: map[int]bool{},
 				},
 			},
-			"orders": {
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true},
-						{Name: "status", Type: "TEXT", Nullable: false},
-					},
-				},
-				pendingUpdates: map[string]recordEdits{
-					"id=7": {
-						identity: dto.RecordIdentity{
-							Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "7", Raw: int64(7)}}},
-						},
-						changes: map[int]stagedEdit{
-							1: {Value: dto.StagedValue{Text: "paid", Raw: "paid"}},
-						},
-					},
-				},
-			},
-		}),
+		},
 	}
 
+	// Act
 	_, cmd := model.confirmSaveChanges()
-	if cmd == nil {
-		t.Fatal("expected save command")
-	}
 	msg := cmd()
 
+	// Assert
 	result, ok := msg.(saveChangesMsg)
 	if !ok {
 		t.Fatalf("expected saveChangesMsg, got %T", msg)
@@ -70,47 +50,177 @@ func TestConfirmSaveChanges_SubmitsAllDirtyTableChanges_FromSaveFlow(t *testing.
 	if result.err != nil {
 		t.Fatalf("expected no error, got %v", result.err)
 	}
-	if len(saveChanges.lastChanges) != 2 {
-		t.Fatalf("expected two dirty table batches, got %d", len(saveChanges.lastChanges))
+	if len(saveChanges.lastChanges.Inserts) != 1 {
+		t.Fatalf("expected one insert payload, got %d", len(saveChanges.lastChanges.Inserts))
 	}
 }
 
-func TestSetTableSelection_WithDirtyStateSwitchesWithoutPopupAndPreservesStaging(t *testing.T) {
+func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *testing.T) {
+	// Arrange
 	model := &Model{
 		read: runtimeReadState{
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {
-				pendingInserts: []pendingInsertRow{{}},
-			},
-			"orders": {
-				pendingInserts: []pendingInsertRow{{}},
-			},
-		}),
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
+		ui: runtimeUIState{pendingTableIndex: -1},
 	}
 
+	// Act
 	model.setTableSelection(1)
 
-	if model.overlay.confirmPopup.active {
-		t.Fatal("expected no switch-table popup")
+	// Assert
+	if !model.overlay.confirmPopup.active {
+		t.Fatalf("expected discard confirmation popup")
 	}
-	if model.read.selectedTable != 1 {
-		t.Fatalf("expected selected table 1, got %d", model.read.selectedTable)
+	if !model.overlay.confirmPopup.modal {
+		t.Fatalf("expected table switch popup to be modal")
 	}
-	if model.totalRecordRows() != 1 {
-		t.Fatalf("expected orders staging to stay visible, got %d rows", model.totalRecordRows())
+	if model.overlay.confirmPopup.title != "Switch Table" {
+		t.Fatalf("expected switch table title, got %q", model.overlay.confirmPopup.title)
 	}
-
-	model.setTableSelection(0)
-
-	if model.totalRecordRows() != 1 {
-		t.Fatalf("expected users staging to be restored, got %d rows", model.totalRecordRows())
+	if !strings.Contains(model.overlay.confirmPopup.message, "Switching tables will cause loss of unsaved data (3 changes).") {
+		t.Fatalf("expected message with unsaved changes count, got %q", model.overlay.confirmPopup.message)
+	}
+	if !strings.Contains(model.overlay.confirmPopup.message, "Are you sure you want to discard unsaved data?") {
+		t.Fatalf("expected discard confirmation question, got %q", model.overlay.confirmPopup.message)
+	}
+	if len(model.overlay.confirmPopup.options) != 2 {
+		t.Fatalf("expected two explicit options, got %d", len(model.overlay.confirmPopup.options))
+	}
+	if model.overlay.confirmPopup.options[0].label != "(y) Yes, discard changes and switch table" {
+		t.Fatalf("expected explicit yes option, got %q", model.overlay.confirmPopup.options[0].label)
+	}
+	if model.overlay.confirmPopup.options[1].label != "(n) No, continue editing" {
+		t.Fatalf("expected explicit no option, got %q", model.overlay.confirmPopup.options[1].label)
+	}
+	if model.read.selectedTable != 0 {
+		t.Fatalf("expected table selection not to change before confirmation")
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyConfigSaveStartsDatabaseSaveFlow(t *testing.T) {
+func TestSetTableSelection_WithDirtyStateYesOptionClearsStagingAndSwitches(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+			selectedTable: 0,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
+		ui: runtimeUIState{pendingTableIndex: -1},
+	}
+
+	// Act
+	model.setTableSelection(1)
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if model.read.selectedTable != 1 {
+		t.Fatalf("expected table switch after selecting yes")
+	}
+	if model.hasDirtyEdits() {
+		t.Fatalf("expected staged state to be cleared after discard")
+	}
+}
+
+func TestSetTableSelection_WithDirtyStateNoOptionPreservesStagingAndSelection(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+			selectedTable: 0,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
+		ui: runtimeUIState{pendingTableIndex: -1},
+	}
+
+	// Act
+	model.setTableSelection(1)
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if model.read.selectedTable != 0 {
+		t.Fatalf("expected table selection to stay unchanged after selecting no")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatalf("expected staged state to remain after selecting no")
+	}
+	if model.ui.pendingTableIndex != -1 {
+		t.Fatalf("expected pending table index reset after selecting no, got %d", model.ui.pendingTableIndex)
+	}
+}
+
+func TestSetTableSelection_WithDirtyStateNoKeyPreservesStagingAndSelection(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+			selectedTable: 0,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+			pendingDeletes: map[string]recordDelete{"id=2": {}},
+		},
+		ui: runtimeUIState{pendingTableIndex: -1},
+	}
+
+	// Act
+	model.setTableSelection(1)
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+
+	// Assert
+	if model.read.selectedTable != 0 {
+		t.Fatalf("expected table selection to stay unchanged after no key")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatalf("expected staged state to remain after no key")
+	}
+	if model.ui.pendingTableIndex != -1 {
+		t.Fatalf("expected pending table index reset after no key, got %d", model.ui.pendingTableIndex)
+	}
+}
+
+func TestSetTableSelection_ClearsSortOnTableSwitch(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+			selectedTable: 0,
+			currentSort: &dto.Sort{
+				Column:    "name",
+				Direction: dto.SortDirectionAsc,
+			},
+		},
+	}
+
+	// Act
+	model.setTableSelection(1)
+
+	// Assert
+	if model.read.selectedTable != 1 {
+		t.Fatalf("expected selected table to switch, got %d", model.read.selectedTable)
+	}
+	if model.read.currentSort != nil {
+		t.Fatalf("expected sort to reset on table switch, got %+v", model.read.currentSort)
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
+	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
 		saveChanges: saveChanges,
@@ -119,43 +229,40 @@ func TestHandleConfirmPopupKey_DirtyConfigSaveStartsDatabaseSaveFlow(t *testing.
 			focus:         FocusContent,
 			tables:        []dto.Table{{Name: "users"}},
 			selectedTable: 0,
-		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true},
-						{Name: "name", Type: "TEXT", Nullable: false},
-					},
-				},
-				pendingInserts: []pendingInsertRow{
-					{
-						values: map[int]stagedEdit{
-							0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-							1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-						},
-						explicitAuto: map[int]bool{},
-					},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
 				},
 			},
-		}),
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
 		overlay: runtimeOverlayState{
 			confirmPopup: confirmPopup{
 				active: true,
-				action: confirmLeaveSave,
+				action: confirmConfigSaveAndOpen,
 			},
-		},
-		ui: runtimeUIState{
-			pendingLeaveTarget: leaveRuntimeConfig,
 		},
 	}
 
+	// Act
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
+	// Assert
 	if cmd == nil {
 		t.Fatal("expected save command to be returned")
 	}
-	if model.ui.pendingLeaveTarget != leaveRuntimeConfig {
-		t.Fatalf("expected leave target to stay pending until save result, got %d", model.ui.pendingLeaveTarget)
+	if !model.ui.pendingConfigOpen {
+		t.Fatal("expected pending config open flag to be set for save-and-open flow")
 	}
 }

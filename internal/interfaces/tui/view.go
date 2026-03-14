@@ -11,7 +11,6 @@ const (
 	panelBoxGapWidth       = 0
 	panelBoxBorderWidth    = 2
 	statusBoxSidePadding   = 1
-	dirtyTableMarker       = primitives.IconEdit
 )
 
 func (m *Model) View() string {
@@ -111,7 +110,6 @@ func (m *Model) maxTablePanelWidth() int {
 	const (
 		tablePrefixWidth = 2
 		nameMargin       = 1
-		dirtyMarkerWidth = 2
 	)
 
 	maxWidth := primitives.MaxInt(primitives.TextWidth("Tables"), primitives.TextWidth("No items."))
@@ -123,37 +121,18 @@ func (m *Model) maxTablePanelWidth() int {
 		return maxWidth
 	}
 
-	tableListWidth := tablePrefixWidth + longestNameWidth + nameMargin + dirtyMarkerWidth
+	tableListWidth := tablePrefixWidth + longestNameWidth + nameMargin
 	return primitives.MaxInt(maxWidth, tableListWidth)
 }
 
 func (m *Model) renderTables(width, height int) []string {
-	if height < 1 {
-		return nil
-	}
-	if len(m.read.tables) == 0 {
-		return []string{primitives.PadRight("No items.", width)}
+	items := make([]string, len(m.read.tables))
+	for i, table := range m.read.tables {
+		items[i] = table.Name
 	}
 
-	start := primitives.ScrollStart(m.read.selectedTable, height, len(m.read.tables))
-	end := primitives.MinInt(len(m.read.tables), start+height)
-	lines := make([]string, 0, height)
-	for i := start; i < end; i++ {
-		prefix := primitives.SelectionUnselectedPrefix()
-		if i == m.read.selectedTable {
-			prefix = primitives.SelectionSelectedPrefix()
-		}
-		item := m.read.tables[i].Name
-		if m.tableHasDirtyEdits(m.read.tables[i].Name) {
-			item += " " + dirtyTableMarker
-		}
-		line := primitives.PadRight(prefix+item, width)
-		if m.read.focus == FocusTables && i == m.read.selectedTable {
-			line = m.styles.Selected(line)
-		}
-		lines = append(lines, line)
-	}
-	return primitives.PadLines(lines, height, width)
+	listLines := primitives.RenderList(items, m.read.selectedTable, height, width, true, m.styles)
+	return primitives.PadLines(listLines, height, width)
 }
 
 func (m *Model) renderContent(width, height int) []string {

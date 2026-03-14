@@ -67,10 +67,6 @@ func (f *fakeEngine) ApplyRecordChanges(ctx context.Context, tableName string, c
 	return nil
 }
 
-func (f *fakeEngine) ApplyDatabaseChanges(ctx context.Context, changes []model.NamedTableChanges) error {
-	return nil
-}
-
 func TestListTables_SortsAlphabetically(t *testing.T) {
 	// Arrange
 	engine := &fakeEngine{

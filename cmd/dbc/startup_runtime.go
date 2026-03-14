@@ -187,7 +187,7 @@ func runRuntimeSession(db *sql.DB, runtimeSession *tui.RuntimeSessionState) erro
 	getSchema := usecase.NewGetSchema(sqliteEngine)
 	listRecords := usecase.NewListRecords(sqliteEngine)
 	listOperators := usecase.NewListOperators(sqliteEngine)
-	saveChanges := usecase.NewSaveDatabaseChanges(sqliteEngine)
+	saveChanges := usecase.NewSaveTableChanges(sqliteEngine)
 	translator := usecase.NewStagedChangesTranslator()
 
 	runErr := tuiRunFn(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession)

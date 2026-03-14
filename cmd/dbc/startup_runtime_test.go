@@ -486,7 +486,7 @@ func TestRunRuntimeSession_PropagatesRunErrorAndClosesDatabase(t *testing.T) {
 		_ *usecase.GetSchema,
 		_ *usecase.ListRecords,
 		_ *usecase.ListOperators,
-		_ *usecase.SaveDatabaseChanges,
+		_ *usecase.SaveTableChanges,
 		_ *usecase.StagedChangesTranslator,
 		_ *tui.RuntimeSessionState,
 	) error {
@@ -524,7 +524,7 @@ func TestRunRuntimeSession_PassesRuntimeSessionStateToTUI(t *testing.T) {
 		_ *usecase.GetSchema,
 		_ *usecase.ListRecords,
 		_ *usecase.ListOperators,
-		_ *usecase.SaveDatabaseChanges,
+		_ *usecase.SaveTableChanges,
 		_ *usecase.StagedChangesTranslator,
 		gotRuntimeSession *tui.RuntimeSessionState,
 	) error {
@@ -561,7 +561,7 @@ func TestRunRuntimeSession_LogsCloseFailure(t *testing.T) {
 		_ *usecase.GetSchema,
 		_ *usecase.ListRecords,
 		_ *usecase.ListOperators,
-		_ *usecase.SaveDatabaseChanges,
+		_ *usecase.SaveTableChanges,
 		_ *usecase.StagedChangesTranslator,
 		_ *tui.RuntimeSessionState,
 	) error {

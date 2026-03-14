@@ -223,7 +223,7 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 				{Values: []string{"1", "alice"}},
 			},
 		},
-		staging: testActiveDatabaseStaging(stagingState{
+		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
 				{
 					values: map[int]stagedEdit{
@@ -232,13 +232,13 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 					},
 				},
 			},
-		}),
+		},
 	}
 	key, ok := model.recordKeyForPersistedRow(0)
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.activeTableStagingPtr().pendingDeletes = map[string]recordDelete{
+	model.staging.pendingDeletes = map[string]recordDelete{
 		key: {},
 	}
 
@@ -275,7 +275,7 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.activeTableStagingPtr().pendingUpdates = map[string]recordEdits{
+	model.staging.pendingUpdates = map[string]recordEdits{
 		key: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
@@ -312,7 +312,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 				{Values: []string{"2", "bob"}},
 			},
 		},
-		staging: testActiveDatabaseStaging(stagingState{
+		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
 				{
 					values: map[int]stagedEdit{
@@ -321,14 +321,14 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 					},
 				},
 			},
-		}),
+		},
 	}
 
 	editedKey, ok := model.recordKeyForPersistedRow(0)
 	if !ok {
 		t.Fatal("expected edited row key")
 	}
-	model.activeTableStagingPtr().pendingUpdates = map[string]recordEdits{
+	model.staging.pendingUpdates = map[string]recordEdits{
 		editedKey: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
@@ -340,7 +340,7 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	if !ok {
 		t.Fatal("expected delete row key")
 	}
-	model.activeTableStagingPtr().pendingDeletes = map[string]recordDelete{
+	model.staging.pendingDeletes = map[string]recordDelete{
 		deleteKey: {},
 	}
 
@@ -459,11 +459,11 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 					},
 				},
 			},
-			staging: testActiveDatabaseStaging(stagingState{
+			staging: stagingState{
 				pendingInserts: []pendingInsertRow{
 					{},
 				},
-			}),
+			},
 		}
 
 		// Act
@@ -493,7 +493,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !ok {
 			t.Fatal("expected persisted row key")
 		}
-		model.activeTableStagingPtr().pendingDeletes = map[string]recordDelete{
+		model.staging.pendingDeletes = map[string]recordDelete{
 			key: {},
 		}
 
@@ -526,7 +526,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !ok {
 			t.Fatal("expected persisted row key")
 		}
-		model.activeTableStagingPtr().pendingUpdates = map[string]recordEdits{
+		model.staging.pendingUpdates = map[string]recordEdits{
 			key: {
 				changes: map[int]stagedEdit{
 					1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},

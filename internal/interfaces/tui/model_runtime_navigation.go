@@ -151,6 +151,17 @@ func (m *Model) setTableSelection(index int) (tea.Model, tea.Cmd) {
 	if index == m.read.selectedTable {
 		return m, nil
 	}
+	if m.hasDirtyEdits() {
+		prompt := m.dirtyNavigationPolicyUseCase().BuildTableSwitchPrompt(m.dirtyEditCount())
+		m.ui.pendingTableIndex = index
+		m.openModalConfirmPopupWithOptions(
+			prompt.Title,
+			prompt.Message,
+			m.confirmOptionsFromDirtyPrompt(prompt, false),
+			0,
+		)
+		return m, nil
+	}
 	m.read.selectedTable = index
 	m.resetTableContext()
 	return m, m.loadViewForSelection()

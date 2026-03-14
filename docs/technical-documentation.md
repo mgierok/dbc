@@ -62,17 +62,15 @@
 ### Staged Write Model
 
 - Guarantee: insert/edit/delete actions are staged in memory and persisted only after explicit save confirmation.
-- Guarantee: runtime write-side session state is owned as a database-scoped staging registry keyed by table name, while each table keeps isolated undo/redo history inside its own staging bucket.
-- Guarantee: table switching resets read-side browsing state only and MUST NOT discard staged changes from other tables.
-- Guarantee: dirty-change counting and initial insert defaults are delegated to application staging policy; dirty counts are based on affected rows, not edited cells.
+- Guarantee: runtime write-side session state and undo/redo history stay behind `Model.staging` so staging mutations remain local to the TUI write workflow.
+- Guarantee: dirty-change counting and initial insert defaults are delegated to application staging policy.
 - Enforced in: `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/staging_policy.go`.
 
 ### Transactional Save Semantics
 
-- Guarantee: one save applies inserts, updates, and deletes for all dirty tables in the current runtime database session in one SQLite transaction.
+- Guarantee: one save applies inserts, updates, and deletes in one transaction for the selected table.
 - Guarantee: updates targeting rows also staged for delete are skipped.
-- Guarantee: save success clears the full database staging registry; save failure preserves all staged table state and blocks pending leave-runtime actions.
-- Enforced in: `internal/application/usecase/save_database_changes.go`, `internal/interfaces/tui/model_staging_save_flow.go`, `internal/interfaces/tui/model_runtime_update.go`, `internal/infrastructure/engine/sqlite_update.go`.
+- Enforced in: `internal/application/usecase/save_table_changes.go`, `internal/infrastructure/engine/sqlite_update.go`.
 
 ### Query-Safety Constraints for Dynamic SQL
 
@@ -120,7 +118,7 @@
 
 ### Application Port Contracts
 
-- `Engine`: list tables, read schema, read records (with optional filter/sort), list operators, apply table changes, and apply database-wide named table-change batches atomically.
+- `Engine`: list tables, read schema, read records (with optional filter/sort), list operators, apply table changes.
 - `ConfigStore`: list/create/update/delete config entries and expose active config path.
 - `DatabaseConnectionChecker`: validate candidate DB path before persisting selector add/edit changes.
 
@@ -128,7 +126,6 @@
 
 - Persisted-row updates/deletes require non-empty identity keys.
 - Identity keys are derived from primary-key columns and carried as typed staged values (`Text`, `IsNull`, optional `Raw`).
-- Database-wide save payloads carry `table name + table changes` as a named batch contract between TUI/application and application/infrastructure layers.
 - Application/domain write contracts do not depend on SQLite `rowid`.
 
 ### Records Page Contract
@@ -152,7 +149,6 @@
 - Startup database open and config add/edit validation share the same open/ping helper.
 - Runtime closes active DB handle on session end; close failures are logged.
 - Runtime session state survives `:config` round-trips within the same DBC process and is not persisted into config.
-- Dirty leave-runtime decisions are scoped to `:config` and `:quit`; dirty table switching is non-blocking because staged table state is database-scoped.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
 
@@ -166,15 +162,9 @@
 
 ### Staged Edits Before Save
 
-- Decision: write operations are staged first in a database-scoped registry and persisted only on explicit save-all.
-- Rationale: preserve recoverable in-session edits across table switching while keeping one explicit write boundary per opened database session.
-- Where: `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/save_database_changes.go`.
-
-### Database-Wide Atomic Save Contract
-
-- Decision: keep the application write contract database-scoped through named per-table batches and commit them in one SQLite transaction.
-- Rationale: prevent partial persistence across dirty tables and keep the TUI independent from SQLite transaction orchestration details.
-- Where: `internal/application/port/engine.go`, `internal/application/usecase/save_database_changes.go`, `internal/infrastructure/engine/sqlite_update.go`.
+- Decision: write operations are staged first and persisted only on explicit save.
+- Rationale: explicit write boundary and recoverable in-session edit workflow.
+- Where: `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/save_table_changes.go`.
 
 ### Primary-Key Identity for Persisted Writes
 
@@ -246,7 +236,6 @@ Version source: `go.mod`.
 - Runtime/config validation cannot bootstrap a missing database file; the selected path must already exist and be reachable.
 - Editing/deleting persisted rows requires primary keys.
 - Runtime supports one active filter and one active sort for the selected table.
-- Database-wide save requires cached schema for every dirty table staging bucket; losing that schema-to-staging association would make save payload construction fail.
 - Records reload performs `COUNT(*)` on each fetch; large tables can increase read latency.
 - Runtime-set records page limits are capped at `1000`; increasing or removing that cap requires revisiting engine-side slice preallocation in record loading.
 - Selector updates/deletes are index-based and can be sensitive to concurrent external config edits.

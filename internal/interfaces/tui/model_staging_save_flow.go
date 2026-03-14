@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -14,47 +12,49 @@ func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
 		m.ui.statusMessage = "Error: save use case unavailable"
 		return m, nil
 	}
-	message := "Save staged changes?"
-	if dirtyTables := m.dirtyTableCount(); dirtyTables > 1 {
-		message = fmt.Sprintf("Save staged changes for %d tables?", dirtyTables)
-	}
-	m.openConfirmPopup(confirmSave, message)
+	m.openConfirmPopup(confirmSave, "Save staged changes?")
 	return m, nil
 }
 
 func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
-	changes, err := m.buildDatabaseChanges()
+	changes, err := m.buildTableChanges()
 	if err != nil {
 		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
-	if len(changes) == 0 {
+	if len(changes.Inserts) == 0 && len(changes.Updates) == 0 && len(changes.Deletes) == 0 {
 		return m, nil
 	}
 	count := m.dirtyEditCount()
-	return m, saveChangesCmd(m.ctx, m.saveChanges, changes, count)
+	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes, count)
 }
 
-func (m *Model) confirmLeaveSave() (tea.Model, tea.Cmd) {
+func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
+	m.ui.pendingConfigOpen = true
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
-		m.ui.pendingLeaveTarget = leaveRuntimeNone
+		m.ui.pendingConfigOpen = false
 	}
 	return updatedModel, cmd
 }
 
-func (m *Model) confirmLeaveDiscard() (tea.Model, tea.Cmd) {
-	target := m.ui.pendingLeaveTarget
-	m.ui.pendingLeaveTarget = leaveRuntimeNone
+func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
+	m.ui.pendingConfigOpen = false
 	m.clearStagedState()
-	switch target {
-	case leaveRuntimeConfig:
-		m.ui.openConfigSelector = true
-		m.ui.statusMessage = "Opening database selector"
-		return m, tea.Quit
-	case leaveRuntimeQuit:
-		return m, tea.Quit
-	default:
+	m.ui.openConfigSelector = true
+	m.ui.statusMessage = "Opening database selector"
+	return m, tea.Quit
+}
+
+func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
+	if m.ui.pendingTableIndex < 0 || m.ui.pendingTableIndex >= len(m.read.tables) {
+		m.ui.pendingTableIndex = -1
 		return m, nil
 	}
+	target := m.ui.pendingTableIndex
+	m.ui.pendingTableIndex = -1
+	m.clearStagedState()
+	m.read.selectedTable = target
+	m.resetTableContext()
+	return m, m.loadViewForSelection()
 }

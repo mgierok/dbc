@@ -123,7 +123,7 @@ func TestUpdate_RecordsMsgIgnoresStaleRequestIDAndPreservesCurrentRecords(t *tes
 func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t *testing.T) {
 	// Arrange
 	model := &Model{
-		staging: testActiveDatabaseStaging(stagingState{
+		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
 				{
 					values: map[int]stagedEdit{
@@ -132,9 +132,9 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 					explicitAuto: map[int]bool{},
 				},
 			},
-		}),
+		},
 		ui: runtimeUIState{
-			pendingLeaveTarget: leaveRuntimeConfig,
+			pendingConfigOpen: true,
 		},
 	}
 
@@ -145,8 +145,8 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged state to be cleared after successful save")
 	}
-	if model.ui.pendingLeaveTarget != leaveRuntimeNone {
-		t.Fatalf("expected pending leave target to be cleared after successful save, got %d", model.ui.pendingLeaveTarget)
+	if model.ui.pendingConfigOpen {
+		t.Fatal("expected pending config-open flag to be cleared after successful save")
 	}
 	if !model.ui.openConfigSelector {
 		t.Fatal("expected config-selector handoff to be enabled after successful save")

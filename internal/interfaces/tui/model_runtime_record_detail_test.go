@@ -270,7 +270,7 @@ func TestRecordDetailContentLines_UsesStagedEffectiveValue(t *testing.T) {
 				{Values: []string{"1", "alice"}},
 			},
 		},
-		staging: testActiveDatabaseStaging(stagingState{
+		staging: stagingState{
 			pendingUpdates: map[string]recordEdits{
 				"id=1": {
 					changes: map[int]stagedEdit{
@@ -278,7 +278,7 @@ func TestRecordDetailContentLines_UsesStagedEffectiveValue(t *testing.T) {
 					},
 				},
 			},
-		}),
+		},
 	}
 
 	// Act

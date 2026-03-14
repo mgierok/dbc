@@ -15,14 +15,10 @@ type txExecutor interface {
 }
 
 func (e *SQLiteEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
-	return e.ApplyDatabaseChanges(ctx, []model.NamedTableChanges{{
-		TableName: tableName,
-		Changes:   changes,
-	}})
-}
-
-func (e *SQLiteEngine) ApplyDatabaseChanges(ctx context.Context, changes []model.NamedTableChanges) error {
-	if len(changes) == 0 {
+	if strings.TrimSpace(tableName) == "" {
+		return fmt.Errorf("table name is required")
+	}
+	if len(changes.Inserts) == 0 && len(changes.Updates) == 0 && len(changes.Deletes) == 0 {
 		return model.ErrMissingTableChanges
 	}
 
@@ -31,34 +27,17 @@ func (e *SQLiteEngine) ApplyDatabaseChanges(ctx context.Context, changes []model
 		return err
 	}
 
-	for _, change := range changes {
-		if err := applyNamedTableChanges(ctx, tx, change); err != nil {
-			return withRollbackError(err, tx.Rollback)
-		}
+	if err := applyRecordInserts(ctx, tx, tableName, changes.Inserts); err != nil {
+		return withRollbackError(err, tx.Rollback)
+	}
+	if err := applyRecordUpdates(ctx, tx, tableName, changes.Updates, changes.Deletes); err != nil {
+		return withRollbackError(err, tx.Rollback)
+	}
+	if err := applyRecordDeletes(ctx, tx, tableName, changes.Deletes); err != nil {
+		return withRollbackError(err, tx.Rollback)
 	}
 
 	return tx.Commit()
-}
-
-func applyNamedTableChanges(ctx context.Context, tx *sql.Tx, change model.NamedTableChanges) error {
-	tableName := strings.TrimSpace(change.TableName)
-	if tableName == "" {
-		return fmt.Errorf("table name is required")
-	}
-	if len(change.Changes.Inserts) == 0 && len(change.Changes.Updates) == 0 && len(change.Changes.Deletes) == 0 {
-		return model.ErrMissingTableChanges
-	}
-
-	if err := applyRecordInserts(ctx, tx, tableName, change.Changes.Inserts); err != nil {
-		return err
-	}
-	if err := applyRecordUpdates(ctx, tx, tableName, change.Changes.Updates, change.Changes.Deletes); err != nil {
-		return err
-	}
-	if err := applyRecordDeletes(ctx, tx, tableName, change.Changes.Deletes); err != nil {
-		return err
-	}
-	return nil
 }
 
 func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, inserts []model.RecordInsert) error {

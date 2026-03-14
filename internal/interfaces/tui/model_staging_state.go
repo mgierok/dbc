@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -87,7 +86,6 @@ type pkColumn struct {
 // edit/save changes stay local to the staging workflow instead of the top-level
 // runtime router.
 type stagingState struct {
-	schema         dto.Schema
 	pendingInserts []pendingInsertRow
 	pendingUpdates map[string]recordEdits
 	pendingDeletes map[string]recordDelete
@@ -95,105 +93,12 @@ type stagingState struct {
 	future         []stagedOperation
 }
 
-type databaseStagingState struct {
-	tables map[string]*stagingState
-}
-
-func (s *databaseStagingState) clear() {
-	s.tables = nil
-}
-
-func (s *databaseStagingState) table(tableName string) stagingState {
-	if s == nil || len(s.tables) == 0 {
-		return stagingState{}
-	}
-	if state, ok := s.tables[tableName]; ok && state != nil {
-		return *state
-	}
-	return stagingState{}
-}
-
-func (s *databaseStagingState) ensureTable(tableName string) *stagingState {
-	if s.tables == nil {
-		s.tables = make(map[string]*stagingState)
-	}
-	if state, ok := s.tables[tableName]; ok && state != nil {
-		return state
-	}
-	state := &stagingState{}
-	s.tables[tableName] = state
-	return state
-}
-
-func (s *databaseStagingState) setTable(tableName string, state stagingState) {
-	if s.tables == nil {
-		s.tables = make(map[string]*stagingState)
-	}
-	cloned := state
-	s.tables[tableName] = &cloned
-}
-
-func (s *databaseStagingState) setSchema(tableName string, schema dto.Schema) {
-	if strings.TrimSpace(tableName) == "" {
-		return
-	}
-	state := s.table(tableName)
-	state.schema = schema
-	s.setTable(tableName, state)
-}
-
-func (s *databaseStagingState) dirtyEditCount(policy *usecase.StagingPolicy) int {
-	count := 0
-	for _, state := range s.tables {
-		if state != nil {
-			count += state.dirtyEditCount(policy)
-		}
-	}
-	return count
-}
-
-func (s *databaseStagingState) dirtyTableCount(policy *usecase.StagingPolicy) int {
-	count := 0
-	for _, state := range s.tables {
-		if state != nil && state.dirtyEditCount(policy) > 0 {
-			count++
-		}
-	}
-	return count
-}
-
-func (s *databaseStagingState) hasDirtyTable(tableName string, policy *usecase.StagingPolicy) bool {
-	return s.table(tableName).dirtyEditCount(policy) > 0
-}
-
-func (s *databaseStagingState) buildDatabaseChanges(translator *usecase.StagedChangesTranslator) ([]dto.NamedTableChanges, error) {
-	tableNames := make([]string, 0, len(s.tables))
-	for tableName, state := range s.tables {
-		if state != nil && state.hasDirtyEdits() {
-			tableNames = append(tableNames, tableName)
-		}
-	}
-	sort.Strings(tableNames)
-
-	changes := make([]dto.NamedTableChanges, 0, len(tableNames))
-	for _, tableName := range tableNames {
-		state := s.tables[tableName]
-		if state == nil {
-			continue
-		}
-		if len(state.schema.Columns) == 0 {
-			return nil, fmt.Errorf("schema is required for table %q", tableName)
-		}
-		tableChanges, err := state.buildTableChanges(translator, state.schema)
-		if err != nil {
-			return nil, err
-		}
-		changes = append(changes, dto.NamedTableChanges{
-			TableName: tableName,
-			Changes:   tableChanges,
-		})
-	}
-	return changes, nil
+func (s *stagingState) clear() {
+	s.pendingInserts = nil
+	s.pendingUpdates = nil
+	s.pendingDeletes = nil
+	s.history = nil
+	s.future = nil
 }
 
 func (s stagingState) buildTableChanges(translator *usecase.StagedChangesTranslator, schema dto.Schema) (dto.TableChanges, error) {
@@ -211,10 +116,6 @@ func (s stagingState) dirtyEditCount(policy *usecase.StagingPolicy) int {
 		s.toPendingRecordEditsDTO(),
 		s.toPendingRecordDeletesDTO(),
 	)
-}
-
-func (s stagingState) hasDirtyEdits() bool {
-	return len(s.pendingInserts) > 0 || len(s.pendingUpdates) > 0 || len(s.pendingDeletes) > 0
 }
 
 func (s stagingState) toPendingInsertRowsDTO() []dto.PendingInsertRow {

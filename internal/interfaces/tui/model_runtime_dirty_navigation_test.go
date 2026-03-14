@@ -20,23 +20,20 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 		{name: "alias", command: "c"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
 			model := &Model{
-				read: runtimeReadState{
-					viewMode:      ViewRecords,
-					tables:        []dto.Table{{Name: "users"}},
-					selectedTable: 0,
-				},
-				staging: testDatabaseStaging(map[string]stagingState{
-					"users": {pendingInserts: []pendingInsertRow{{}}},
-				}),
+				read:    runtimeReadState{viewMode: ViewRecords},
+				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 			}
 
+			// Act
 			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 			for _, r := range tc.command {
 				model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 			}
 			_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
+			// Assert
 			if cmd != nil {
 				if _, ok := cmd().(tea.QuitMsg); ok {
 					t.Fatalf("expected dirty :%s to wait for explicit decision", tc.command)
@@ -59,15 +56,10 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 }
 
 func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
+	// Arrange
 	model := &Model{
-		read: runtimeReadState{
-			viewMode:      ViewRecords,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {pendingInserts: []pendingInsertRow{{}}},
-		}),
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -75,8 +67,10 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
+	// Act
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
 
+	// Assert
 	if model.overlay.confirmPopup.active {
 		t.Fatal("expected decision popup to close on cancel")
 	}
@@ -89,15 +83,10 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 }
 
 func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *testing.T) {
+	// Arrange
 	model := &Model{
-		read: runtimeReadState{
-			viewMode:      ViewRecords,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {pendingInserts: []pendingInsertRow{{}}},
-		}),
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -106,8 +95,10 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
+	// Act
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
+	// Assert
 	if cmd == nil {
 		t.Fatal("expected quit command after discard decision")
 	}
@@ -123,6 +114,7 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 }
 
 func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
+	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
 		ctx:         context.Background(),
@@ -137,25 +129,17 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-						{Name: "name", Type: "TEXT", Nullable: false},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 					},
-				},
-				pendingInserts: []pendingInsertRow{
-					{
-						values: map[int]stagedEdit{
-							0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-							1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-						},
-						explicitAuto: map[int]bool{},
-					},
+					explicitAuto: map[int]bool{},
 				},
 			},
-		}),
+		},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -163,6 +147,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
+	// Act
 	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if saveCmd == nil {
 		t.Fatal("expected save command after selecting save decision")
@@ -170,6 +155,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	msg := saveCmd()
 	_, quitCmd := model.Update(msg)
 
+	// Assert
 	if quitCmd == nil {
 		t.Fatal("expected quit command after successful save decision")
 	}
@@ -185,6 +171,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 }
 
 func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T) {
+	// Arrange
 	saveChanges := &spySaveChangesUseCase{err: errors.New("boom")}
 	model := &Model{
 		ctx:         context.Background(),
@@ -199,25 +186,17 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: testDatabaseStaging(map[string]stagingState{
-			"users": {
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-						{Name: "name", Type: "TEXT", Nullable: false},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 					},
-				},
-				pendingInserts: []pendingInsertRow{
-					{
-						values: map[int]stagedEdit{
-							0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-							1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-						},
-						explicitAuto: map[int]bool{},
-					},
+					explicitAuto: map[int]bool{},
 				},
 			},
-		}),
+		},
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -225,6 +204,7 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
+	// Act
 	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if saveCmd == nil {
 		t.Fatal("expected save command after selecting save decision")
@@ -232,6 +212,7 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 	msg := saveCmd()
 	_, quitCmd := model.Update(msg)
 
+	// Assert
 	if quitCmd != nil {
 		if _, ok := quitCmd().(tea.QuitMsg); ok {
 			t.Fatal("expected no navigation when save fails")

@@ -50,11 +50,10 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 	}
 	switch op.target {
 	case cellEditInsert:
-		staging := m.activeTableStagingPtr()
-		if op.insertIndex < 0 || op.insertIndex >= len(staging.pendingInserts) {
+		if op.insertIndex < 0 || op.insertIndex >= len(m.staging.pendingInserts) {
 			return fmt.Errorf("insert index out of range")
 		}
-		row := staging.pendingInserts[op.insertIndex]
+		row := m.staging.pendingInserts[op.insertIndex]
 		if row.values == nil {
 			row.values = make(map[int]stagedEdit, len(m.read.schema.Columns))
 		}
@@ -73,32 +72,31 @@ func (m *Model) applyCellEditState(op cellEditOperation, useBefore bool) error {
 				delete(row.explicitAuto, op.columnIndex)
 			}
 		}
-		staging.pendingInserts[op.insertIndex] = row
+		m.staging.pendingInserts[op.insertIndex] = row
 		return nil
 	case cellEditPersisted:
 		if strings.TrimSpace(op.recordKey) == "" {
 			return fmt.Errorf("record key missing")
 		}
-		staging := m.activeTableStagingPtr()
-		if staging.pendingUpdates == nil {
-			staging.pendingUpdates = make(map[string]recordEdits)
+		if m.staging.pendingUpdates == nil {
+			m.staging.pendingUpdates = make(map[string]recordEdits)
 		}
-		edits := staging.pendingUpdates[op.recordKey]
+		edits := m.staging.pendingUpdates[op.recordKey]
 		if edits.changes == nil {
 			edits.changes = make(map[int]stagedEdit)
 		}
 		edits.identity = op.identity
 		if exists {
 			edits.changes[op.columnIndex] = edit
-			staging.pendingUpdates[op.recordKey] = edits
+			m.staging.pendingUpdates[op.recordKey] = edits
 			return nil
 		}
 		delete(edits.changes, op.columnIndex)
 		if len(edits.changes) == 0 {
-			delete(staging.pendingUpdates, op.recordKey)
+			delete(m.staging.pendingUpdates, op.recordKey)
 			return nil
 		}
-		staging.pendingUpdates[op.recordKey] = edits
+		m.staging.pendingUpdates[op.recordKey] = edits
 		return nil
 	default:
 		return fmt.Errorf("unsupported cell edit target")
@@ -109,20 +107,18 @@ func (m *Model) setDeleteMark(key string, identity dto.RecordIdentity, marked bo
 	if strings.TrimSpace(key) == "" {
 		return fmt.Errorf("record key missing")
 	}
-	staging := m.activeTableStagingPtr()
-	if staging.pendingDeletes == nil {
-		staging.pendingDeletes = make(map[string]recordDelete)
+	if m.staging.pendingDeletes == nil {
+		m.staging.pendingDeletes = make(map[string]recordDelete)
 	}
 	if marked {
-		staging.pendingDeletes[key] = recordDelete{identity: identity}
+		m.staging.pendingDeletes[key] = recordDelete{identity: identity}
 		return nil
 	}
-	delete(staging.pendingDeletes, key)
+	delete(m.staging.pendingDeletes, key)
 	return nil
 }
 
 func (m *Model) recordOperation(op stagedOperation) {
-	staging := m.activeTableStagingPtr()
-	staging.history = append(staging.history, op)
-	staging.future = nil
+	m.staging.history = append(m.staging.history, op)
+	m.staging.future = nil
 }

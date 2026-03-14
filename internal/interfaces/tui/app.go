@@ -25,7 +25,7 @@ func Run(
 	getSchema *usecase.GetSchema,
 	listRecords *usecase.ListRecords,
 	listOperators *usecase.ListOperators,
-	saveChanges *usecase.SaveDatabaseChanges,
+	saveChanges *usecase.SaveTableChanges,
 	translator *usecase.StagedChangesTranslator,
 	runtimeSession *RuntimeSessionState,
 ) error {

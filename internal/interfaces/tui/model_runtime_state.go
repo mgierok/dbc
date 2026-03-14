@@ -2,14 +2,6 @@ package tui
 
 import "github.com/mgierok/dbc/internal/application/dto"
 
-type leaveRuntimeTarget int
-
-const (
-	leaveRuntimeNone leaveRuntimeTarget = iota
-	leaveRuntimeConfig
-	leaveRuntimeQuit
-)
-
 // runtimeReadState keeps the mutable read-side runtime state together so
 // navigation and data-browsing concerns stay distinct from overlays and UI.
 type runtimeReadState struct {
@@ -60,5 +52,6 @@ type runtimeUIState struct {
 
 	statusMessage      string
 	openConfigSelector bool
-	pendingLeaveTarget leaveRuntimeTarget
+	pendingTableIndex  int
+	pendingConfigOpen  bool
 }

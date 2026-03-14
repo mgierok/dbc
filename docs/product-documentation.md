@@ -32,7 +32,7 @@ Current product value and scope:
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
 - A successful `:set limit=<n>` replaces any earlier session value, is never persisted into config, survives `:config` round-trips in the same app session, and resets persisted-record pagination to page `1`. If Records view is already open, records reload immediately with the new limit.
-- If `:config` / `:c` or `:quit` / `:q` is invoked while staged changes exist anywhere in the current database session, DBC requires an explicit `save`, `discard`, or `cancel` decision before leaving the runtime.
+- If `:config` / `:c` is invoked while staged changes exist, DBC requires an explicit `save`, `discard`, or `cancel` decision before navigation.
 
 ### Main Layout and Focus Model
 
@@ -46,7 +46,6 @@ Current product value and scope:
 ### Table Discovery and Schema View
 
 - Table discovery excludes internal SQLite system tables and lists visible tables in alphabetical order.
-- Dirty tables in the left panel show a `✱` marker next to the table name.
 - Schema view shows column name and type for the selected table.
 - If schema data is not yet available, DBC shows an empty-state message.
 
@@ -92,18 +91,16 @@ Current product value and scope:
 ### Staging, Undo/Redo, and Save
 
 - All writes are staged first. The database remains unchanged until save succeeds.
-- Staged changes are preserved per table within the currently opened database session, so switching tables does not discard another table's pending edits.
-- Undo and redo are available during the current app session for staged actions in the currently selected table.
-- Save is a confirmed action that applies staged insert, update, and delete changes for all dirty tables in the current database session.
-- On save success, staged state is cleared for all dirty tables and records reload for the current table with the active filter and sort still applied.
+- Undo and redo are available during the current app session for staged actions in the selected table.
+- Save is a confirmed action that applies staged insert, update, and delete changes as a single save operation for the current table.
+- On save success, staged state is cleared and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
-- Switching tables while staged changes exist does not open a dirty-state popup.
-- Invoking `:config` / `:c` or `:quit` / `:q` with unsaved changes blocks leaving the runtime until the user explicitly chooses `save`, `discard`, or `cancel`.
+- Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss and requires an explicit discard decision before the table switch proceeds.
+- Invoking `:config` / `:c` with unsaved changes blocks navigation until the user explicitly chooses `save`, `discard`, or `cancel`.
 
 ### Visual State Communication
 
-- The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present anywhere in the current database session.
-- The dirty count `N` reflects affected rows across all dirty tables in the current database session, not the number of edited cells.
+- The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present.
 - Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
 - Visual emphasis uses terminal-native text attributes instead of application-defined colors: selected items use reverse video, titles and status labels use emphasis, secondary hints are visually subdued, and error messages are emphasized with underline.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
@@ -123,7 +120,8 @@ Current user-visible constraints:
 - There is no shortcut that switches from Records view back to Schema view while keeping right-panel focus.
 - There is no dedicated clear-filter command; filter state is replaced by applying a new filter or cleared by switching tables.
 - There is no dedicated clear-sort command; sort state is replaced by applying a new sort or cleared by switching tables.
-- Write behavior is intentionally conservative: edits are staged first, save requires explicit confirmation, dirty state stays visible, and leaving the runtime via `:config` or `:quit` with unsaved changes always requires an explicit decision.
+- Quit does not prompt to preserve unsaved staged changes.
+- Write behavior is intentionally conservative: edits are staged first, save requires explicit confirmation, dirty state stays visible, and unsaved table-switch or `:config` navigation always requires an explicit decision.
 
 Explicit non-goals in the current product state:
 

@@ -6,7 +6,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
@@ -46,14 +45,16 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	case primitives.RuntimeCommandActionQuit:
-		if m.hasDirtyEdits() {
-			m.openLeaveRuntimePrompt(leaveRuntimeQuit)
-			return m, nil
-		}
 		return m, tea.Quit
 	case primitives.RuntimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
-			m.openLeaveRuntimePrompt(leaveRuntimeConfig)
+			prompt := m.dirtyNavigationPolicyUseCase().BuildConfigPrompt()
+			m.openModalConfirmPopupWithOptions(
+				prompt.Title,
+				prompt.Message,
+				m.confirmOptionsFromDirtyPrompt(prompt, true),
+				0,
+			)
 			return m, nil
 		}
 		m.ui.openConfigSelector = true
@@ -62,25 +63,6 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
-}
-
-func (m *Model) openLeaveRuntimePrompt(target leaveRuntimeTarget) {
-	m.ui.pendingLeaveTarget = target
-
-	var prompt usecase.DirtyDecisionPrompt
-	switch target {
-	case leaveRuntimeQuit:
-		prompt = m.dirtyNavigationPolicyUseCase().BuildQuitPrompt(m.dirtyTableCount())
-	default:
-		prompt = m.dirtyNavigationPolicyUseCase().BuildConfigPrompt(m.dirtyTableCount())
-	}
-
-	m.openModalConfirmPopupWithOptions(
-		prompt.Title,
-		prompt.Message,
-		m.confirmOptionsFromDirtyPrompt(prompt),
-		0,
-	)
 }
 
 func (m *Model) openHelpPopup(context helpPopupContext) {

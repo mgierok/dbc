@@ -60,7 +60,7 @@ func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 	// Arrange
 	model := &Model{
 		styles: primitives.NewRenderStyles(true),
-		staging: testActiveDatabaseStaging(stagingState{
+		staging: stagingState{
 			pendingUpdates: map[string]recordEdits{
 				"id=1": {
 					changes: map[int]stagedEdit{
@@ -68,7 +68,7 @@ func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 					},
 				},
 			},
-		}),
+		},
 	}
 
 	// Act
