@@ -46,6 +46,8 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		return m, nil
 	case primitives.RuntimeCommandActionSave:
 		return m.requestSaveChanges()
+	case primitives.RuntimeCommandActionSaveAndQuit:
+		return m.requestSaveAndQuit()
 	case primitives.RuntimeCommandActionQuit:
 		if m.hasDirtyEdits() {
 			prompt := m.dirtyNavigationPolicyUseCase().BuildQuitPrompt(m.dirtyEditCount())

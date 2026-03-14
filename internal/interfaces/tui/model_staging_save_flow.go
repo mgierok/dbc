@@ -16,6 +16,21 @@ func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *Model) requestSaveAndQuit() (tea.Model, tea.Cmd) {
+	if !m.nonBlockingRuntimeCommandContextActive() {
+		return m, nil
+	}
+	if !m.hasDirtyEdits() {
+		return m, tea.Quit
+	}
+	if m.saveChanges == nil {
+		m.ui.statusMessage = "Error: save use case unavailable"
+		return m, nil
+	}
+	m.openConfirmPopup(confirmSaveAndQuit, "Save staged changes?")
+	return m, nil
+}
+
 func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	changes, err := m.buildTableChanges()
 	if err != nil {
@@ -28,7 +43,18 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes)
 }
 
+func (m *Model) confirmSaveAndQuit() (tea.Model, tea.Cmd) {
+	m.ui.pendingConfigOpen = false
+	m.ui.pendingQuitAfterSave = true
+	updatedModel, cmd := m.confirmSaveChanges()
+	if cmd == nil {
+		m.ui.pendingQuitAfterSave = false
+	}
+	return updatedModel, cmd
+}
+
 func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
+	m.ui.pendingQuitAfterSave = false
 	m.ui.pendingConfigOpen = true
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
@@ -38,6 +64,7 @@ func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
+	m.ui.pendingQuitAfterSave = false
 	m.ui.pendingConfigOpen = false
 	m.clearStagedState()
 	m.ui.openConfigSelector = true
@@ -59,6 +86,7 @@ func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) confirmDiscardQuit() (tea.Model, tea.Cmd) {
+	m.ui.pendingQuitAfterSave = false
 	m.clearStagedState()
 	return m, tea.Quit
 }

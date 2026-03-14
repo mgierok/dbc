@@ -83,10 +83,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case saveChangesMsg:
 		if msg.err != nil {
 			m.ui.pendingConfigOpen = false
+			m.ui.pendingQuitAfterSave = false
 			m.ui.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
 		}
 		m.clearStagedState()
+		if m.ui.pendingQuitAfterSave {
+			m.ui.pendingQuitAfterSave = false
+			return m, tea.Quit
+		}
 		if m.ui.pendingConfigOpen {
 			m.ui.pendingConfigOpen = false
 			m.ui.openConfigSelector = true

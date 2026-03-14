@@ -60,6 +60,31 @@ func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
 	}
 }
 
+func TestHandleKey_CommandSaveAndQuitQuitsRuntimeWhenClean(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "short command", command: "wq"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
+	}
+}
+
 func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -161,6 +186,36 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				t.Fatalf("expected :%s to open save action, got %v", tc.command, model.overlay.confirmPopup.action)
 			}
 		})
+	}
+}
+
+func TestHandleKey_CommandSaveAndQuitOpensSaveConfirmationWhenDirty(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ctx:         context.Background(),
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+
+	// Act
+	_, cmd := submitTypedRuntimeCommand(model, "wq")
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, ":wq")
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected :wq to open save confirmation")
+	}
+	if model.overlay.confirmPopup.action != confirmSaveAndQuit {
+		t.Fatalf("expected :wq to open save-and-quit action, got %v", model.overlay.confirmPopup.action)
+	}
+	if model.overlay.confirmPopup.message != "Save staged changes?" {
+		t.Fatalf("expected save confirmation message, got %q", model.overlay.confirmPopup.message)
 	}
 }
 

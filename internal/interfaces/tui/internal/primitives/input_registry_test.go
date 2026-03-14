@@ -23,6 +23,8 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "config alias", input: ":c", action: RuntimeCommandActionOpenConfig},
 		{name: "save alias", input: ":w", action: RuntimeCommandActionSave},
 		{name: "save full alias", input: ":write", action: RuntimeCommandActionSave},
+		{name: "save and quit", input: ":wq", action: RuntimeCommandActionSaveAndQuit},
+		{name: "save and quit uppercase", input: ":WQ", action: RuntimeCommandActionSaveAndQuit},
 		{name: "set limit", input: ":set limit=10", action: RuntimeCommandActionSetRecordLimit, recordLimit: 10},
 		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: RuntimeCommandActionSetRecordLimit, recordLimit: 25},
 		{name: "set limit max boundary", input: ":set limit=1000", action: RuntimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
@@ -149,6 +151,9 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	}
 	if !strings.Contains(joined, ":w / :write - Save staged changes.") {
 		t.Fatalf("expected save command line in help content, got %q", joined)
+	}
+	if !strings.Contains(joined, ":wq - Save staged changes and quit the application.") {
+		t.Fatalf("expected save-and-quit command line in help content, got %q", joined)
 	}
 	if !strings.Contains(joined, ":set limit=<n> - Set records page limit for the current app session.") {
 		t.Fatalf("expected set-limit command line in help content, got %q", joined)

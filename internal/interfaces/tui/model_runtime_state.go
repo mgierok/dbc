@@ -50,8 +50,9 @@ type runtimeUIState struct {
 	width  int
 	height int
 
-	statusMessage      string
-	openConfigSelector bool
-	pendingTableIndex  int
-	pendingConfigOpen  bool
+	statusMessage        string
+	openConfigSelector   bool
+	pendingTableIndex    int
+	pendingConfigOpen    bool
+	pendingQuitAfterSave bool
 }

@@ -27,7 +27,7 @@ Current product value and scope:
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
 - Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
-- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:w` / `:write` opens save confirmation for staged changes, `:quit` / `:q` exits the application when no staged changes exist, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
+- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:w` / `:write` opens save confirmation for staged changes, `:wq` opens the same save confirmation when staged changes exist and otherwise exits immediately, `:quit` / `:q` exits the application when no staged changes exist, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
 - Runtime help is context-sensitive, lists only controls available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
@@ -92,7 +92,7 @@ Current product value and scope:
 
 - All writes are staged first. The database remains unchanged until save succeeds.
 - Undo and redo are available during the current app session for staged actions in the selected table.
-- Save is a confirmed action triggered via `:w` / `:write` that applies staged insert, update, and delete changes as a single save operation for the current table.
+- Save is a confirmed action triggered via `:w` / `:write` that applies staged insert, update, and delete changes as a single save operation for the current table. `:wq` reuses the same confirmation and save behavior, then exits immediately only after a successful save.
 - On save success, staged state is cleared, the status line reports the number of saved affected rows, and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
 - Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss using the affected-row count and requires an explicit discard decision before the table switch proceeds.
@@ -121,7 +121,7 @@ Current user-visible constraints:
 - There is no shortcut that switches from Records view back to Schema view while keeping right-panel focus.
 - There is no dedicated clear-filter command; filter state is replaced by applying a new filter or cleared by switching tables.
 - There is no dedicated clear-sort command; sort state is replaced by applying a new sort or cleared by switching tables.
-- Write behavior is intentionally conservative: edits are staged first, save requires explicit confirmation, dirty state stays visible, and unsaved table-switch, `:config` navigation, or `:quit` exit always requires an explicit decision.
+- Write behavior is intentionally conservative: edits are staged first, save requires explicit confirmation, dirty state stays visible, `:wq` does not bypass save confirmation, and unsaved table-switch, `:config` navigation, or `:quit` exit always requires an explicit decision.
 
 Explicit non-goals in the current product state:
 
@@ -168,7 +168,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 
 | Context | Controls |
 | --- | --- |
-| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:w` / `:write`, `:quit` / `:q`, `:set limit=<n>` |
+| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:w` / `:write`, `:wq`, `:quit` / `:q`, `:set limit=<n>` |
 | Startup selector navigation | `j/k`, arrow keys, `g/G`, `Home`/`End`, `Ctrl+f`/`Ctrl+b`, `PgDown`/`PgUp` |
 | Startup selector browse mode | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` quit |
 | Runtime selector browse mode (from `:config` / `:c`) | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` close |

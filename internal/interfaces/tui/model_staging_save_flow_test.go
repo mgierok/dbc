@@ -315,6 +315,80 @@ func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
 	}
 }
 
+func TestHandleConfirmPopupKey_SaveAndQuitStartsSaveFlowAndSetsPendingQuitFlag(t *testing.T) {
+	// Arrange
+	saveChanges := &spySaveChangesUseCase{}
+	model := &Model{
+		saveChanges: saveChanges,
+		read: runtimeReadState{
+			viewMode:      ViewRecords,
+			focus:         FocusContent,
+			tables:        []dto.Table{{Name: "users"}},
+			selectedTable: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active: true,
+				action: confirmSaveAndQuit,
+			},
+		},
+	}
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected save command to be returned")
+	}
+	if !model.ui.pendingQuitAfterSave {
+		t.Fatal("expected pending quit flag to be set for save-and-quit flow")
+	}
+	if model.ui.pendingConfigOpen {
+		t.Fatal("expected pending config flag to stay cleared for save-and-quit flow")
+	}
+}
+
+func TestHandleConfirmPopupKey_SaveAndQuitClearsPendingQuitFlagWhenSaveDoesNotStart(t *testing.T) {
+	// Arrange
+	model := &Model{
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active: true,
+				action: confirmSaveAndQuit,
+			},
+		},
+	}
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no save command when there are no staged changes")
+	}
+	if model.ui.pendingQuitAfterSave {
+		t.Fatal("expected pending quit flag to clear when save flow does not start")
+	}
+}
+
 func TestRequestSaveChanges_OpensConfirmPopupFromSchemaWithDirtyStateStartedInRecords(t *testing.T) {
 	// Arrange
 	model := &Model{

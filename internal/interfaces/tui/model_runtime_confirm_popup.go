@@ -57,6 +57,7 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.closeConfirmPopup()
 		m.ui.pendingTableIndex = -1
 		m.ui.pendingConfigOpen = false
+		m.ui.pendingQuitAfterSave = false
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyConfirmAccept, key):
 		action := m.overlay.confirmPopup.action
@@ -67,6 +68,8 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch action {
 		case confirmSave:
 			return m.confirmSaveChanges()
+		case confirmSaveAndQuit:
+			return m.confirmSaveAndQuit()
 		case confirmDiscardTable:
 			return m.confirmDiscardTableSwitch()
 		case confirmCancelTableSwitch:

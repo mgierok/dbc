@@ -17,6 +17,7 @@ const (
 	RuntimeCommandActionQuit
 	RuntimeCommandActionOpenConfig
 	RuntimeCommandActionSave
+	RuntimeCommandActionSaveAndQuit
 	RuntimeCommandActionSetRecordLimit
 )
 
@@ -51,6 +52,11 @@ var runtimeCommandSpecs = []RuntimeCommandSpec{
 		Aliases:     []string{"w", "write"},
 		Description: "Save staged changes.",
 		Action:      RuntimeCommandActionSave,
+	},
+	{
+		Aliases:     []string{"wq"},
+		Description: "Save staged changes and quit the application.",
+		Action:      RuntimeCommandActionSaveAndQuit,
 	},
 	{
 		Usage:       ":set limit=<n>",

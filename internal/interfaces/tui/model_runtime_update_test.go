@@ -176,6 +176,45 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 	}
 }
 
+func TestUpdate_SaveChangesMsgPendingQuitAfterSaveClearsStateAndQuits(t *testing.T) {
+	// Arrange
+	model := &Model{
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+		ui: runtimeUIState{
+			pendingQuitAfterSave: true,
+		},
+	}
+
+	// Act
+	_, cmd := model.Update(saveChangesMsg{count: 1})
+
+	// Assert
+	if model.hasDirtyEdits() {
+		t.Fatal("expected staged state to be cleared after successful save")
+	}
+	if model.ui.pendingQuitAfterSave {
+		t.Fatal("expected pending quit flag to be cleared after successful save")
+	}
+	if model.ui.statusMessage != "" {
+		t.Fatalf("expected immediate quit flow not to overwrite status, got %q", model.ui.statusMessage)
+	}
+	if cmd == nil {
+		t.Fatal("expected quit command after successful save-and-quit flow")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg from quit command, got %T", cmd())
+	}
+}
+
 func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T) {
 	// Arrange
 	listRecords := &stubListRecordsUseCase{
@@ -236,6 +275,42 @@ func TestFormatSavedRowsMessage_AllowsZeroAffectedRows(t *testing.T) {
 	// Assert
 	if message != "Affected rows: 0" {
 		t.Fatalf("expected zero-count affected-row message, got %q", message)
+	}
+}
+
+func TestUpdate_SaveChangesMsgErrorClearsPendingQuitAfterSaveAndPreservesDirtyState(t *testing.T) {
+	// Arrange
+	model := &Model{
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+		ui: runtimeUIState{
+			pendingQuitAfterSave: true,
+		},
+	}
+
+	// Act
+	_, cmd := model.Update(saveChangesMsg{err: errors.New("boom")})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no follow-up command for failed save-and-quit flow")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected staged state to stay dirty after failed save")
+	}
+	if model.ui.pendingQuitAfterSave {
+		t.Fatal("expected pending quit flag to be cleared after failed save")
+	}
+	if model.ui.statusMessage != "Error: boom" {
+		t.Fatalf("expected surfaced save error, got %q", model.ui.statusMessage)
 	}
 }
 
