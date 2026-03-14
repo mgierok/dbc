@@ -54,9 +54,12 @@ func (m *databaseSelectorModel) helpPopupContentLines() []string {
 		return []string{primitives.SelectorDeleteConfirmationLine()}
 	case selectorModeBrowse:
 		if m.requiresFirstEntry {
-			return primitives.SelectorContextLinesBrowseFirstSetup()
+			return primitives.SelectorContextLinesBrowseFirstSetup("exit app")
 		}
-		return primitives.SelectorContextLinesBrowseDefault()
+		if m.browseEscBehavior == SelectorBrowseEscBehaviorRuntimeResume {
+			return primitives.SelectorContextLinesBrowseDefault("close")
+		}
+		return primitives.SelectorContextLinesBrowseDefault("quit")
 	default:
 		return []string{"No shortcuts available."}
 	}

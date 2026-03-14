@@ -220,7 +220,7 @@ func TestDatabaseSelector_ViewKeepsMainContentFocusedAcrossModes(t *testing.T) {
 
 	// Act + Assert: browse mode.
 	browse := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
-	if strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault()[0]) || strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault()[1]) {
+	if strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault("quit")[0]) || strings.Contains(browse, primitives.SelectorContextLinesBrowseDefault("quit")[1]) {
 		t.Fatalf("expected browse main content to stay focused on database rows, got %q", browse)
 	}
 
@@ -264,10 +264,37 @@ func TestDatabaseSelector_ContextHelpPopupRendersCurrentModeShortcutsOnly(t *tes
 	if !strings.Contains(view, primitives.SelectorFormSwitchLine()) || !strings.Contains(view, primitives.SelectorFormSubmitLine("Esc cancel")) {
 		t.Fatalf("expected form shortcuts in help popup, got %q", view)
 	}
-	if strings.Contains(view, primitives.SelectorContextLinesBrowseDefault()[0]) {
+	if strings.Contains(view, primitives.SelectorContextLinesBrowseDefault("quit")[0]) {
 		t.Fatalf("expected help popup to exclude browse shortcuts in form context, got %q", view)
 	}
 	if strings.Contains(view, "Legend: "+primitives.IconConfigSource+" config"+primitives.FrameSegmentSeparator+primitives.IconCLISource+" CLI session") {
 		t.Fatalf("expected help popup to stay focused on contextual controls, got %q", view)
+	}
+}
+
+func TestDatabaseSelector_ContextHelpPopupUsesRuntimeResumeBrowseEscLabel(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		BrowseEscBehavior: SelectorBrowseEscBehaviorRuntimeResume,
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+
+	// Act
+	view := stripANSI(model.View())
+
+	// Assert
+	if !strings.Contains(view, "Esc close") {
+		t.Fatalf("expected runtime-resume help label, got %q", view)
+	}
+	if strings.Contains(view, "Esc quit") {
+		t.Fatalf("expected runtime-resume help to omit startup quit label, got %q", view)
 	}
 }

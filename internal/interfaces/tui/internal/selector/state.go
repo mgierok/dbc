@@ -55,11 +55,12 @@ type databaseSelectorModel struct {
 	manager selectorManager
 	styles  primitives.RenderStyles
 
-	options  []DatabaseOption
-	width    int
-	height   int
-	chosen   bool
-	canceled bool
+	options   []DatabaseOption
+	width     int
+	height    int
+	chosen    bool
+	canceled  bool
+	dismissed bool
 
 	mode          selectorMode
 	browse        selectorBrowseState
@@ -70,6 +71,7 @@ type databaseSelectorModel struct {
 	activeConfigPath string
 
 	launchAdditionalOptions []DatabaseOption
+	browseEscBehavior       SelectorBrowseEscBehavior
 	configOptionCount       int
 	requiresFirstEntry      bool
 }
@@ -90,6 +92,7 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, laun
 		styles:                  detectRenderStyles(),
 		mode:                    selectorModeBrowse,
 		launchAdditionalOptions: normalizeAdditionalOptions(state.AdditionalOptions),
+		browseEscBehavior:       normalizeBrowseEscBehavior(state.BrowseEscBehavior),
 	}
 	if err := model.refreshOptions(); err != nil {
 		return nil, err
@@ -104,6 +107,15 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, laun
 		model.browse.statusMessage = "First database entry is required"
 	}
 	return model, nil
+}
+
+func normalizeBrowseEscBehavior(behavior SelectorBrowseEscBehavior) SelectorBrowseEscBehavior {
+	switch behavior {
+	case SelectorBrowseEscBehaviorRuntimeResume:
+		return SelectorBrowseEscBehaviorRuntimeResume
+	default:
+		return SelectorBrowseEscBehaviorStartupExit
+	}
 }
 
 func (m *databaseSelectorModel) applyLaunchState(state SelectorLaunchState) {
@@ -184,7 +196,11 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch {
 		case primitives.KeyMatches(primitives.KeySelectorCancel, key):
-			m.canceled = true
+			if m.browseEscBehavior == SelectorBrowseEscBehaviorRuntimeResume {
+				m.dismissed = true
+			} else {
+				m.canceled = true
+			}
 			return m, tea.Quit
 		case primitives.KeyMatches(primitives.KeySelectorEnter, key):
 			if len(m.options) == 0 {

@@ -136,6 +136,36 @@ func TestSelectDatabaseWithState_ReturnsCanceledError(t *testing.T) {
 	}
 }
 
+func TestSelectDatabaseWithState_ReturnsDismissedError(t *testing.T) {
+	// Arrange
+	originalFactory := newSelectorProgram
+	t.Cleanup(func() {
+		newSelectorProgram = originalFactory
+	})
+	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
+		return stubSelectorProgram{
+			run: func() (tea.Model, error) {
+				return &databaseSelectorModel{dismissed: true}, nil
+			},
+		}
+	}
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+
+	// Act
+	_, err := SelectDatabaseWithState(context.Background(), manager, SelectorLaunchState{
+		BrowseEscBehavior: SelectorBrowseEscBehaviorRuntimeResume,
+	})
+
+	// Assert
+	if !errors.Is(err, ErrDatabaseSelectionDismissed) {
+		t.Fatalf("expected error %v, got %v", ErrDatabaseSelectionDismissed, err)
+	}
+}
+
 func TestSelectDatabaseWithState_ReturnsUnfinishedErrorWhenSelectionNotConfirmed(t *testing.T) {
 	// Arrange
 	originalFactory := newSelectorProgram

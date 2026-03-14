@@ -17,7 +17,7 @@ Current product value and scope:
 
 - DBC reads zero or more database entries from the active config file at `~/.config/dbc/config.json`.
 - Empty config state (`missing file`, `empty file`, or `{"databases":[]}`) opens mandatory first-entry setup before normal browsing. Malformed config state (for example invalid JSON or invalid entry structure) stops startup with an explicit error.
-- Mandatory first-entry setup requires at least one valid entry before continue and allows optional additional entries; `Esc` from the forced setup form exits the application. In selector browse mode, `Esc`, `q`, or `Ctrl+C` exits startup.
+- Mandatory first-entry setup requires at least one valid entry before continue and allows optional additional entries; `Esc` from the forced setup form exits the application. In startup selector browse mode, `Esc` exits startup.
 - Each configured entry requires `name` and `db_path`. The selector shows the active config file path, keeps config-backed entries in configuration order, and uses source markers `⚙` for config-backed entries and `⌨` for session-scoped direct-launch entries.
 - If a direct-launch path does not match an existing configured SQLite path, returning to the selector during the same app session shows it as a session-scoped `⌨` entry appended after config-backed entries. If the path matches an existing configured entry, DBC reuses that config-backed entry instead of showing a duplicate session entry.
 - The selector main view shows database options, selector status, and a right-aligned help hint: `Context help: ?`.
@@ -27,7 +27,7 @@ Current product value and scope:
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
 - Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
-- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, `:help` / `:h` opens runtime context help, `:quit` / `:q` exits the application when no staged changes exist, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
+- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:quit` / `:q` exits the application when no staged changes exist, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
 - Runtime help is context-sensitive, lists only keybindings available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
@@ -171,7 +171,8 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | --- | --- |
 | Runtime commands | `:config` / `:c`, `:help` / `:h`, `:quit` / `:q`, `:set limit=<n>` |
 | Startup selector navigation | `j/k`, arrow keys, `g/G`, `Home`/`End`, `Ctrl+f`/`Ctrl+b`, `PgDown`/`PgUp` |
-| Startup selector browse mode | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` / `q` / `Ctrl+C` quit |
+| Startup selector browse mode | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` quit |
+| Runtime selector browse mode (from `:config` / `:c`) | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` close |
 | Selector form | `Tab` / `Shift+Tab` switch field, `Ctrl+u` clear field, `Backspace` / `Ctrl+h` delete character, `Enter` save, `Esc` cancel (`Esc` exits app during mandatory first-entry setup) |
 | Filter popup | `j/k` select, `Enter` confirm step, `Esc` close; value-entry step also supports typing, `left/right`, and `Backspace` |
 | Sort popup | `j/k` select, `Enter` confirm step, `Esc` close |

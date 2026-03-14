@@ -113,14 +113,14 @@ In v1, `tea.KeyMsg` was a struct you'd match on for key presses. In v2, it's an 
 // Before:
 case tea.KeyMsg:
     switch msg.String() {
-    case "q":
+    case "esc":
         return m, tea.Quit
     }
 
 // After:
 case tea.KeyPressMsg:
     switch msg.String() {
-    case "q":
+    case "esc":
         return m, tea.Quit
     }
 ```
@@ -145,7 +145,6 @@ case tea.KeyMsg:
 | `msg.Runes` | `msg.Text` | Now a `string`, not `[]rune` |
 | `msg.Alt` | `msg.Mod` | `msg.Mod.Contains(tea.ModAlt)` for alt, etc. |
 | `tea.KeyRune` | — | Check `len(msg.Text) > 0` instead |
-| `tea.KeyCtrlC` | — | Use `msg.String() == "ctrl+c"` or check `msg.Code` + `msg.Mod` |
 
 ### Space bar changed
 
@@ -161,24 +160,24 @@ case "space":
 
 `key.Code` is still `' '` and `key.Text` is still `" "`, but `String()` returns `"space"`.
 
-### Ctrl+key matching
+### Modifier-key matching
 
 ```go
 // Before:
-case tea.KeyCtrlC:
-    // ctrl+c
+case tea.KeyCtrlR:
+    // ctrl+r
 
 // After (option A — string matching):
 case tea.KeyPressMsg:
     switch msg.String() {
-    case "ctrl+c":
-        // ctrl+c
+    case "ctrl+r":
+        // ctrl+r
     }
 
 // After (option B — field matching):
 case tea.KeyPressMsg:
-    if msg.Code == 'c' && msg.Mod == tea.ModCtrl {
-        // ctrl+c
+    if msg.Code == 'r' && msg.Mod == tea.ModCtrl {
+        // ctrl+r
     }
 ```
 
@@ -375,7 +374,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
     switch msg := msg.(type) {
     case tea.KeyMsg:
         switch msg.String() {
-        case "q", "ctrl+c":
+        case "esc":
             return m, tea.Quit
         case " ":
             m.count++
@@ -389,7 +388,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-    return fmt.Sprintf("Count: %d\n\nSpace or click to increment. q to quit.\n", m.count)
+    return fmt.Sprintf("Count: %d\n\nSpace or click to increment. Esc closes.\n", m.count)
 }
 
 func main() {
@@ -425,7 +424,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
     switch msg := msg.(type) {
     case tea.KeyPressMsg:
         switch msg.String() {
-        case "q", "ctrl+c":
+        case "esc":
             return m, tea.Quit
         case "space":
             m.count++
@@ -439,7 +438,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() tea.View {
-    v := tea.NewView(fmt.Sprintf("Count: %d\n\nSpace or click to increment. q to quit.\n", m.count))
+    v := tea.NewView(fmt.Sprintf("Count: %d\n\nSpace or click to increment. Esc closes.\n", m.count))
     v.AltScreen = true
     v.MouseMode = tea.MouseModeCellMotion
     return v
@@ -482,7 +481,6 @@ A flat old → new lookup table. Handy for search-and-replace and LLM-assisted m
 | `msg.Runes` | `msg.Text` (string, not `[]rune`) |
 | `msg.Alt` | `msg.Mod.Contains(tea.ModAlt)` |
 | `tea.KeyRune` | check `len(msg.Text) > 0` |
-| `tea.KeyCtrlC` | `msg.Code == 'c' && msg.Mod == tea.ModCtrl` or `msg.String() == "ctrl+c"` |
 | `case " ":` (space) | `case "space":` |
 
 ### Mouse Events

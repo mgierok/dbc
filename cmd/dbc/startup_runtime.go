@@ -53,6 +53,7 @@ type runtimeStartupOrchestrator struct {
 	selectorState         tui.SelectorLaunchState
 	runtimeSessionState   tui.RuntimeSessionState
 	sessionScopedOptions  []tui.DatabaseOption
+	resumeSelected        *tui.DatabaseOption
 	directLaunchPending   bool
 	selectDatabaseFn      func() (tui.DatabaseOption, startupPath, error)
 	runSelectedDatabaseFn func(tui.DatabaseOption, startupPath) (bool, error)
@@ -96,10 +97,20 @@ func (o *runtimeStartupOrchestrator) run() error {
 	for {
 		selected, selectedStartupPath, err := selectDatabaseFn()
 		if err != nil {
-			if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
+			switch {
+			case errors.Is(err, tui.ErrDatabaseSelectionDismissed):
+				if o.resumeSelected == nil {
+					return fmt.Errorf("failed to select database: %w", err)
+				}
+				selected = *o.resumeSelected
+				selectedStartupPath = startupPathSelector
+			case errors.Is(err, tui.ErrDatabaseSelectionCanceled):
 				return nil
+			default:
+				return fmt.Errorf("failed to select database: %w", err)
 			}
-			return fmt.Errorf("failed to select database: %w", err)
+		} else {
+			o.resumeSelected = nil
 		}
 
 		o.sessionScopedOptions = trackSessionScopedDirectLaunchOption(o.sessionScopedOptions, selectedStartupPath, selected)
@@ -110,6 +121,7 @@ func (o *runtimeStartupOrchestrator) run() error {
 			return err
 		}
 		if !shouldContinue {
+			o.resumeSelected = nil
 			return nil
 		}
 	}
@@ -166,9 +178,12 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 
 	runErr := runRuntimeSessionFn(db, &o.runtimeSessionState)
 	if errors.Is(runErr, tui.ErrOpenConfigSelector) {
+		resumeSelected := selected
+		o.resumeSelected = &resumeSelected
 		o.selectorState = tui.SelectorLaunchState{
 			PreferConnString:  selected.ConnString,
 			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
+			BrowseEscBehavior: tui.SelectorBrowseEscBehaviorRuntimeResume,
 		}
 		return true, nil
 	}

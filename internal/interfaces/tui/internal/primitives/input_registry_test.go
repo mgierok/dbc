@@ -195,11 +195,26 @@ func TestSelectorContextHelpBinding_IsQuestionMark(t *testing.T) {
 	}
 }
 
+func TestSelectorCancelBinding_IsEscOnly(t *testing.T) {
+	// Arrange
+
+	// Act + Assert
+	if !KeyMatches(KeySelectorCancel, "esc") {
+		t.Fatal("expected selector cancel binding to match Esc")
+	}
+	if KeyMatches(KeySelectorCancel, "q") {
+		t.Fatal("expected selector cancel binding not to match q")
+	}
+	if KeyMatches(KeySelectorCancel, "ctrl+c") {
+		t.Fatal("expected selector cancel binding not to match Ctrl+C")
+	}
+}
+
 func TestSelectorContextLinesBrowseDefault_AreDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	lines := SelectorContextLinesBrowseDefault()
+	lines := SelectorContextLinesBrowseDefault("quit")
 
 	// Assert
 	if len(lines) != 2 {
@@ -208,7 +223,7 @@ func TestSelectorContextLinesBrowseDefault_AreDeterministic(t *testing.T) {
 	if lines[0] != "j/k navigate | Enter select | a add | e edit | d delete" {
 		t.Fatalf("expected deterministic browse shortcut line, got %q", lines[0])
 	}
-	if lines[1] != "Esc cancel | q quit" {
+	if lines[1] != "Esc quit" {
 		t.Fatalf("expected deterministic browse exit line, got %q", lines[1])
 	}
 }
@@ -217,7 +232,7 @@ func TestSelectorContextLinesBrowseFirstSetup_AreDeterministic(t *testing.T) {
 	// Arrange
 
 	// Act
-	lines := SelectorContextLinesBrowseFirstSetup()
+	lines := SelectorContextLinesBrowseFirstSetup("exit app")
 
 	// Assert
 	if len(lines) != 2 {
@@ -226,8 +241,23 @@ func TestSelectorContextLinesBrowseFirstSetup_AreDeterministic(t *testing.T) {
 	if lines[0] != "First setup: Enter continue | a add database" {
 		t.Fatalf("expected deterministic first-setup action line, got %q", lines[0])
 	}
-	if lines[1] != "j/k navigate | q quit" {
+	if lines[1] != "j/k navigate | Esc exit app" {
 		t.Fatalf("expected deterministic first-setup exit line, got %q", lines[1])
+	}
+}
+
+func TestSelectorContextLinesBrowseDefault_RuntimeResumeAreDeterministic(t *testing.T) {
+	// Arrange
+
+	// Act
+	lines := SelectorContextLinesBrowseDefault("close")
+
+	// Assert
+	if len(lines) != 2 {
+		t.Fatalf("expected two selector browse help lines, got %v", lines)
+	}
+	if lines[1] != "Esc close" {
+		t.Fatalf("expected runtime-resume browse exit line, got %q", lines[1])
 	}
 }
 

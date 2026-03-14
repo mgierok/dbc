@@ -2,7 +2,7 @@ package primitives
 
 import "fmt"
 
-func SelectorContextLinesBrowseDefault() []string {
+func SelectorContextLinesBrowseDefault(escAction string) []string {
 	return []string{
 		joinShortcutSegments(
 			fmt.Sprintf("%s navigate", joinKeyLabels("/", KeySelectorMoveDown, KeySelectorMoveUp)),
@@ -11,14 +11,11 @@ func SelectorContextLinesBrowseDefault() []string {
 			fmt.Sprintf("%s edit", keyLabel(KeySelectorEdit)),
 			fmt.Sprintf("%s delete", keyLabel(KeySelectorDelete)),
 		),
-		joinShortcutSegments(
-			fmt.Sprintf("%s cancel", keyLabel(KeyRuntimeEsc)),
-			fmt.Sprintf("%s quit", keyLabel(KeySelectorQuit)),
-		),
+		fmt.Sprintf("%s %s", keyLabel(KeySelectorCancel), escAction),
 	}
 }
 
-func SelectorContextLinesBrowseFirstSetup() []string {
+func SelectorContextLinesBrowseFirstSetup(escAction string) []string {
 	return []string{
 		joinShortcutSegments(
 			fmt.Sprintf("First setup: %s continue", keyLabel(KeySelectorEnter)),
@@ -26,7 +23,7 @@ func SelectorContextLinesBrowseFirstSetup() []string {
 		),
 		joinShortcutSegments(
 			fmt.Sprintf("%s navigate", joinKeyLabels("/", KeySelectorMoveDown, KeySelectorMoveUp)),
-			fmt.Sprintf("%s quit", keyLabel(KeySelectorQuit)),
+			fmt.Sprintf("%s %s", keyLabel(KeySelectorCancel), escAction),
 		),
 	}
 }

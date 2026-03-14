@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrDatabaseSelectionCanceled   = errors.New("database selection canceled")
+	ErrDatabaseSelectionDismissed  = errors.New("database selection dismissed")
 	ErrDatabaseSelectionUnfinished = errors.New("database selection not confirmed")
 )
 
@@ -29,10 +30,18 @@ type DatabaseOption struct {
 	managerIndex int
 }
 
+type SelectorBrowseEscBehavior int
+
+const (
+	SelectorBrowseEscBehaviorStartupExit SelectorBrowseEscBehavior = iota
+	SelectorBrowseEscBehaviorRuntimeResume
+)
+
 type SelectorLaunchState struct {
 	StatusMessage     string
 	PreferConnString  string
 	AdditionalOptions []DatabaseOption
+	BrowseEscBehavior SelectorBrowseEscBehavior
 }
 
 type Manager interface {
@@ -75,6 +84,9 @@ func SelectDatabaseWithState(ctx context.Context, manager Manager, state Selecto
 	selector, ok := final.(*databaseSelectorModel)
 	if !ok {
 		return DatabaseOption{}, errors.New("unexpected selector state")
+	}
+	if selector.dismissed {
+		return DatabaseOption{}, ErrDatabaseSelectionDismissed
 	}
 	if selector.canceled {
 		return DatabaseOption{}, ErrDatabaseSelectionCanceled

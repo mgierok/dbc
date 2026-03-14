@@ -50,6 +50,7 @@
 - Guarantee: selector-first startup is default; `-d`/`--database` enables direct-launch path.
 - Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
+- Guarantee: selector browse-mode `Esc` behavior is launch-context dependent: startup-launched selector exits startup, while runtime `:config` re-entry dismisses the selector and resumes the previously active database session.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
 
 ### JSON Config Persistence
@@ -109,6 +110,7 @@
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
 - Runtime startup re-entry reuses `internal/interfaces/tui.RuntimeSessionState` across repeated runtime launches in the same DBC process.
 - Selector-return signal: `internal/interfaces/tui.ErrOpenConfigSelector`.
+- Selector dismissal contract: selector browse-mode `Esc` can return either cancel-or-exit or dismiss-and-resume depending on `internal/interfaces/tui.SelectorLaunchState.BrowseEscBehavior`; runtime `:config` round-trips use the dismiss-and-resume path.
 
 ### Configuration Contract
 
@@ -140,6 +142,7 @@
 ### Selector Launch Contract
 
 - Selector launch state supports preferred connection string reselection and additional session-scoped options.
+- Selector launch state also controls browse-mode `Esc` policy; zero-value/default means startup-exit, and runtime config re-entry sets resume-on-dismiss explicitly.
 - Session-scoped options are CLI-origin and are not persisted into config.
 - Selector edit/delete operations are allowed only for config-backed entries.
 
@@ -151,6 +154,7 @@
 - Startup database open and config add/edit validation share the same open/ping helper.
 - Runtime closes active DB handle on session end; close failures are logged.
 - Runtime session state survives `:config` round-trips within the same DBC process and is not persisted into config.
+- Runtime config-selector dismissal reopens the previously selected database within the same DBC process instead of terminating startup, and it preserves the in-memory runtime session state reused across that round-trip.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
 

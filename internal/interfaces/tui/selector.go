@@ -11,16 +11,21 @@ import (
 
 var (
 	ErrDatabaseSelectionCanceled   = selectorpkg.ErrDatabaseSelectionCanceled
+	ErrDatabaseSelectionDismissed  = selectorpkg.ErrDatabaseSelectionDismissed
 	ErrDatabaseSelectionUnfinished = selectorpkg.ErrDatabaseSelectionUnfinished
 )
 
 var selectDatabaseWithStateFn = selectorpkg.SelectDatabaseWithState
 
 type DatabaseOptionSource = selectorpkg.DatabaseOptionSource
+type SelectorBrowseEscBehavior = selectorpkg.SelectorBrowseEscBehavior
 
 const (
 	DatabaseOptionSourceConfig = selectorpkg.DatabaseOptionSourceConfig
 	DatabaseOptionSourceCLI    = selectorpkg.DatabaseOptionSourceCLI
+
+	SelectorBrowseEscBehaviorStartupExit   = selectorpkg.SelectorBrowseEscBehaviorStartupExit
+	SelectorBrowseEscBehaviorRuntimeResume = selectorpkg.SelectorBrowseEscBehaviorRuntimeResume
 )
 
 type DatabaseOption = selectorpkg.DatabaseOption

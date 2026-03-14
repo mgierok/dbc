@@ -48,7 +48,6 @@ const (
 	KeyConfirmAccept KeyBindingID = "confirm.accept"
 
 	KeySelectorCancel          KeyBindingID = "selector.cancel"
-	KeySelectorQuit            KeyBindingID = "selector.quit"
 	KeySelectorEnter           KeyBindingID = "selector.enter"
 	KeySelectorMoveDown        KeyBindingID = "selector.move_down"
 	KeySelectorMoveUp          KeyBindingID = "selector.move_up"
@@ -106,8 +105,7 @@ var keyBindings = map[KeyBindingID]keyBinding{
 	KeyConfirmCancel: {keys: []string{"esc", "n"}, label: "Esc"},
 	KeyConfirmAccept: {keys: []string{"enter", "y"}, label: "Enter"},
 
-	KeySelectorCancel:          {keys: []string{"ctrl+c", "q", "esc"}, label: "Esc"},
-	KeySelectorQuit:            {keys: []string{"q"}, label: "q"},
+	KeySelectorCancel:          {keys: []string{"esc"}, label: "Esc"},
 	KeySelectorEnter:           {keys: []string{"enter"}, label: "Enter"},
 	KeySelectorMoveDown:        {keys: []string{"j", "down"}, label: "j"},
 	KeySelectorMoveUp:          {keys: []string{"k", "up"}, label: "k"},
