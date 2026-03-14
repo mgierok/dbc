@@ -1,6 +1,6 @@
 ---
 name: authoring-readme-file
-description: Assess whether changes require updating `README.md`, and create/update `README.md` only when required. Use only when the user explicitly requests README assessment or README changes.
+description: Assess whether changes require updating `README.md`, and create/update `README.md` only when required. Use when the user explicitly requests README assessment or README changes, and whenever the agent updates `README.md`.
 ---
 
 # Authoring README File
@@ -9,8 +9,9 @@ description: Assess whether changes require updating `README.md`, and create/upd
 
 - This skill MUST be the single source of truth for deciding whether README updates are required.
 - This skill MUST be the single source of truth for authoring README updates.
-- This skill MUST be used only for an explicit user request to assess, create, or modify `README.md`.
-- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files.
+- This skill MUST be used for an explicit user request to assess, create, or modify `README.md`.
+- This skill MUST be used whenever the agent updates `README.md`, even if the user did not name this skill explicitly.
+- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files without updating `README.md`.
 
 ## Scope
 

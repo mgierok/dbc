@@ -1,6 +1,6 @@
 ---
 name: authoring-product-documentation
-description: Assess whether changes require updating `docs/product-documentation.md`, and create/update that file only when required. Use only when the user explicitly requests product-documentation assessment or product-documentation changes.
+description: Assess whether changes require updating `docs/product-documentation.md`, and create/update that file only when required. Use when the user explicitly requests product-documentation assessment or product-documentation changes, and whenever the agent updates `docs/product-documentation.md`.
 ---
 
 # Authoring Product Documentation
@@ -9,8 +9,9 @@ description: Assess whether changes require updating `docs/product-documentation
 
 - This skill MUST be the single source of truth for deciding whether `docs/product-documentation.md` requires an update.
 - This skill MUST be the single source of truth for authoring updates to `docs/product-documentation.md`.
-- This skill MUST be used only for an explicit user request to assess, create, or modify `docs/product-documentation.md`.
-- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files.
+- This skill MUST be used for an explicit user request to assess, create, or modify `docs/product-documentation.md`.
+- This skill MUST be used whenever the agent updates `docs/product-documentation.md`, even if the user did not name this skill explicitly.
+- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files without updating `docs/product-documentation.md`.
 
 ## Scope
 

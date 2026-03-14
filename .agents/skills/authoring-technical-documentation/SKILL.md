@@ -1,6 +1,6 @@
 ---
 name: authoring-technical-documentation
-description: Assess whether changes require updating `docs/technical-documentation.md`, and create/update that file only when required. Use only when the user explicitly requests technical-documentation assessment or technical-documentation changes.
+description: Assess whether changes require updating `docs/technical-documentation.md`, and create/update that file only when required. Use when the user explicitly requests technical-documentation assessment or technical-documentation changes, and whenever the agent updates `docs/technical-documentation.md`.
 ---
 
 # Authoring Technical Documentation
@@ -9,8 +9,9 @@ description: Assess whether changes require updating `docs/technical-documentati
 
 - This skill MUST be the single source of truth for deciding whether technical documentation updates are required.
 - This skill MUST be the single source of truth for authoring updates to technical documentation.
-- This skill MUST be used only for an explicit user request to assess, create, or modify `docs/technical-documentation.md`.
-- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files.
+- This skill MUST be used for an explicit user request to assess, create, or modify `docs/technical-documentation.md`.
+- This skill MUST be used whenever the agent updates `docs/technical-documentation.md`, even if the user did not name this skill explicitly.
+- This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files without updating `docs/technical-documentation.md`.
 - When explicitly invoked, this skill MUST decide if an update is required based on material technical impact in the latest implementation changes.
 
 ## Scope
