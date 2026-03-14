@@ -24,10 +24,10 @@ func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_UsesExpectedCopyAndOptions
 	if len(prompt.Options) != 2 {
 		t.Fatalf("expected 2 options, got %d", len(prompt.Options))
 	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "(y) Yes, discard changes and switch table" {
+	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "Discard changes and switch table" {
 		t.Fatalf("unexpected first option: %#v", prompt.Options[0])
 	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "(n) No, continue editing" {
+	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "Continue editing" {
 		t.Fatalf("unexpected second option: %#v", prompt.Options[1])
 	}
 }
@@ -92,10 +92,10 @@ func TestDirtyNavigationPolicy_BuildQuitPrompt_UsesExpectedCopyAndOptions(t *tes
 	if len(prompt.Options) != 2 {
 		t.Fatalf("expected 2 options, got %d", len(prompt.Options))
 	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "(y) Yes, discard changes and quit" {
+	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "Discard changes and quit" {
 		t.Fatalf("unexpected first option: %#v", prompt.Options[0])
 	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "(n) No, continue editing" {
+	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "Continue editing" {
 		t.Fatalf("unexpected second option: %#v", prompt.Options[1])
 	}
 }

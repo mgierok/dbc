@@ -289,7 +289,7 @@ func TestHandleConfirmPopupKey_DirtyQuitEscapeKeepsStagedState(t *testing.T) {
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyQuitNoOptionKeepsStagedState(t *testing.T) {
+func TestHandleConfirmPopupKey_DirtyQuitNKeyIsIgnored(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read:    runtimeReadState{viewMode: ViewRecords},
@@ -302,16 +302,16 @@ func TestHandleConfirmPopupKey_DirtyQuitNoOptionKeepsStagedState(t *testing.T) {
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 
 	// Assert
-	assertRuntimeSessionActive(t, cmd, "dirty quit no option")
-	if model.overlay.confirmPopup.active {
-		t.Fatal("expected decision popup to close on no option")
+	assertRuntimeSessionActive(t, cmd, "dirty quit n ignored")
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected decision popup to remain open on n key")
 	}
 	if !model.hasDirtyEdits() {
-		t.Fatal("expected staged changes to stay untouched on no option")
+		t.Fatal("expected staged changes to stay untouched on n key")
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyQuitDiscardClearsStateAndQuits(t *testing.T) {
+func TestHandleConfirmPopupKey_DirtyQuitYKeyIsIgnored(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read:    runtimeReadState{viewMode: ViewRecords},
@@ -323,13 +323,11 @@ func TestHandleConfirmPopupKey_DirtyQuitDiscardClearsStateAndQuits(t *testing.T)
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 
 	// Assert
-	if cmd == nil {
-		t.Fatal("expected quit command after discard decision")
+	assertRuntimeSessionActive(t, cmd, "dirty quit y ignored")
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected decision popup to remain open on y key")
 	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg after discard decision, got %T", cmd())
-	}
-	if model.hasDirtyEdits() {
-		t.Fatal("expected staged changes to be cleared on discard")
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to stay untouched on y key")
 	}
 }

@@ -129,8 +129,8 @@ func RuntimeStatusConfirmShortcuts(withOptions bool) string {
 		)
 	}
 	return joinShortcutSegments(
-		fmt.Sprintf("Confirm: %s yes", keyLabel(KeyRuntimeEnter)),
-		fmt.Sprintf("%s no", keyLabel(KeyRuntimeEsc)),
+		fmt.Sprintf("Confirm: %s confirm", keyLabel(KeyRuntimeEnter)),
+		fmt.Sprintf("%s cancel", keyLabel(KeyRuntimeEsc)),
 	)
 }
 

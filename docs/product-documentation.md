@@ -179,7 +179,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | Sort popup | `j/k` select, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` when field is nullable; text entry supports typing, `left/right`, and `Backspace`, while select-style fields use `j/k` |
 | Command input | Type command text, `left/right` move caret, `Backspace` delete, `Enter` run, `Esc` cancel |
-| Confirm and dirty-decision popups | `j/k` choose action, `Enter` or `y` select the current action, `Esc` or `n` cancel |
+| Confirm and dirty-decision popups | `j/k` choose action, `Enter` select the current action, `Esc` cancel |
 | Help and record-detail popups | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 
 ## Glossary

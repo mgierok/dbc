@@ -183,18 +183,18 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 	if len(model.overlay.confirmPopup.options) != 2 {
 		t.Fatalf("expected two explicit options, got %d", len(model.overlay.confirmPopup.options))
 	}
-	if model.overlay.confirmPopup.options[0].label != "(y) Yes, discard changes and switch table" {
-		t.Fatalf("expected explicit yes option, got %q", model.overlay.confirmPopup.options[0].label)
+	if model.overlay.confirmPopup.options[0].label != "Discard changes and switch table" {
+		t.Fatalf("expected discard option label, got %q", model.overlay.confirmPopup.options[0].label)
 	}
-	if model.overlay.confirmPopup.options[1].label != "(n) No, continue editing" {
-		t.Fatalf("expected explicit no option, got %q", model.overlay.confirmPopup.options[1].label)
+	if model.overlay.confirmPopup.options[1].label != "Continue editing" {
+		t.Fatalf("expected continue-editing option label, got %q", model.overlay.confirmPopup.options[1].label)
 	}
 	if model.read.selectedTable != 0 {
 		t.Fatalf("expected table selection not to change before confirmation")
 	}
 }
 
-func TestSetTableSelection_WithDirtyStateYesOptionClearsStagingAndSwitches(t *testing.T) {
+func TestSetTableSelection_WithDirtyStateDiscardOptionClearsStagingAndSwitches(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{
@@ -215,14 +215,14 @@ func TestSetTableSelection_WithDirtyStateYesOptionClearsStagingAndSwitches(t *te
 
 	// Assert
 	if model.read.selectedTable != 1 {
-		t.Fatalf("expected table switch after selecting yes")
+		t.Fatalf("expected table switch after selecting discard")
 	}
 	if model.hasDirtyEdits() {
 		t.Fatalf("expected staged state to be cleared after discard")
 	}
 }
 
-func TestSetTableSelection_WithDirtyStateNoOptionPreservesStagingAndSelection(t *testing.T) {
+func TestSetTableSelection_WithDirtyStateContinueEditingOptionPreservesStagingAndSelection(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{
@@ -244,17 +244,17 @@ func TestSetTableSelection_WithDirtyStateNoOptionPreservesStagingAndSelection(t 
 
 	// Assert
 	if model.read.selectedTable != 0 {
-		t.Fatalf("expected table selection to stay unchanged after selecting no")
+		t.Fatalf("expected table selection to stay unchanged after selecting continue editing")
 	}
 	if !model.hasDirtyEdits() {
-		t.Fatalf("expected staged state to remain after selecting no")
+		t.Fatalf("expected staged state to remain after selecting continue editing")
 	}
 	if model.ui.pendingTableIndex != -1 {
-		t.Fatalf("expected pending table index reset after selecting no, got %d", model.ui.pendingTableIndex)
+		t.Fatalf("expected pending table index reset after selecting continue editing, got %d", model.ui.pendingTableIndex)
 	}
 }
 
-func TestSetTableSelection_WithDirtyStateNoKeyPreservesStagingAndSelection(t *testing.T) {
+func TestSetTableSelection_WithDirtyStateNKeyIsIgnored(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{
@@ -274,14 +274,17 @@ func TestSetTableSelection_WithDirtyStateNoKeyPreservesStagingAndSelection(t *te
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 
 	// Assert
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected n key to leave table-switch popup open")
+	}
 	if model.read.selectedTable != 0 {
-		t.Fatalf("expected table selection to stay unchanged after no key")
+		t.Fatalf("expected table selection to stay unchanged after n key")
 	}
 	if !model.hasDirtyEdits() {
-		t.Fatalf("expected staged state to remain after no key")
+		t.Fatalf("expected staged state to remain after n key")
 	}
-	if model.ui.pendingTableIndex != -1 {
-		t.Fatalf("expected pending table index reset after no key, got %d", model.ui.pendingTableIndex)
+	if model.ui.pendingTableIndex != 1 {
+		t.Fatalf("expected pending table index to remain pending after n key, got %d", model.ui.pendingTableIndex)
 	}
 }
 

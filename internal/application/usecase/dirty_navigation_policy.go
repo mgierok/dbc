@@ -36,8 +36,8 @@ func (p *DirtyNavigationPolicy) BuildTableSwitchPrompt(changeCount int) DirtyDec
 			changeCount,
 		),
 		Options: []DirtyDecisionOption{
-			{ID: DirtyDecisionDiscard, Label: "(y) Yes, discard changes and switch table"},
-			{ID: DirtyDecisionCancel, Label: "(n) No, continue editing"},
+			{ID: DirtyDecisionDiscard, Label: "Discard changes and switch table"},
+			{ID: DirtyDecisionCancel, Label: "Continue editing"},
 		},
 	}
 }
@@ -65,8 +65,8 @@ func (p *DirtyNavigationPolicy) BuildQuitPrompt(changeCount int) DirtyDecisionPr
 			changeCount,
 		),
 		Options: []DirtyDecisionOption{
-			{ID: DirtyDecisionDiscard, Label: "(y) Yes, discard changes and quit"},
-			{ID: DirtyDecisionCancel, Label: "(n) No, continue editing"},
+			{ID: DirtyDecisionDiscard, Label: "Discard changes and quit"},
+			{ID: DirtyDecisionCancel, Label: "Continue editing"},
 		},
 	}
 }

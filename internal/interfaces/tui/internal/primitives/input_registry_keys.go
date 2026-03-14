@@ -100,8 +100,8 @@ var keyBindings = map[KeyBindingID]keyBinding{
 	KeyInputBackspace: {keys: []string{"backspace"}, label: "backspace"},
 	KeyEditSetNull:    {keys: []string{"ctrl+n"}, label: "Ctrl+n"},
 
-	KeyConfirmCancel: {keys: []string{"esc", "n"}, label: "Esc"},
-	KeyConfirmAccept: {keys: []string{"enter", "y"}, label: "Enter"},
+	KeyConfirmCancel: {keys: []string{"esc"}, label: "Esc"},
+	KeyConfirmAccept: {keys: []string{"enter"}, label: "Enter"},
 
 	KeySelectorCancel:          {keys: []string{"esc"}, label: "Esc"},
 	KeySelectorEnter:           {keys: []string{"enter"}, label: "Enter"},

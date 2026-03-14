@@ -246,6 +246,24 @@ func TestSelectorCancelBinding_IsEscOnly(t *testing.T) {
 	}
 }
 
+func TestConfirmBindings_UseEnterAndEscOnly(t *testing.T) {
+	// Arrange
+
+	// Act + Assert
+	if !KeyMatches(KeyConfirmAccept, "enter") {
+		t.Fatal("expected confirm accept binding to match Enter")
+	}
+	if KeyMatches(KeyConfirmAccept, "y") {
+		t.Fatal("expected confirm accept binding not to match y")
+	}
+	if !KeyMatches(KeyConfirmCancel, "esc") {
+		t.Fatal("expected confirm cancel binding to match Esc")
+	}
+	if KeyMatches(KeyConfirmCancel, "n") {
+		t.Fatal("expected confirm cancel binding not to match n")
+	}
+}
+
 func TestSelectorContextLinesBrowseDefault_AreDeterministic(t *testing.T) {
 	// Arrange
 
