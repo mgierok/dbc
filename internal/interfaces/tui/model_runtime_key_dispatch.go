@@ -88,8 +88,6 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.startSortPopup()
 	case primitives.KeyMatches(primitives.KeyRuntimeRecordDetail, key):
 		return m.openRecordDetail()
-	case primitives.KeyMatches(primitives.KeyRuntimeSave, key):
-		return m.requestSaveChanges()
 	case primitives.KeyMatches(primitives.KeyRuntimeInsert, key):
 		return m.addPendingInsert()
 	case primitives.KeyMatches(primitives.KeyRuntimeDelete, key):

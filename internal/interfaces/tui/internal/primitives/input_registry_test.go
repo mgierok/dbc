@@ -21,6 +21,8 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "quit alias", input: ":q", action: RuntimeCommandActionQuit},
 		{name: "config full", input: ":config", action: RuntimeCommandActionOpenConfig},
 		{name: "config alias", input: ":c", action: RuntimeCommandActionOpenConfig},
+		{name: "save alias", input: ":w", action: RuntimeCommandActionSave},
+		{name: "save full alias", input: ":write", action: RuntimeCommandActionSave},
 		{name: "set limit", input: ":set limit=10", action: RuntimeCommandActionSetRecordLimit, recordLimit: 10},
 		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: RuntimeCommandActionSetRecordLimit, recordLimit: 25},
 		{name: "set limit max boundary", input: ":set limit=1000", action: RuntimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
@@ -145,6 +147,9 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	if !strings.Contains(joined, ":help / :h - Open runtime help popup reference.") {
 		t.Fatalf("expected help command line in help content, got %q", joined)
 	}
+	if !strings.Contains(joined, ":w / :write - Save staged changes.") {
+		t.Fatalf("expected save command line in help content, got %q", joined)
+	}
 	if !strings.Contains(joined, ":set limit=<n> - Set records page limit for the current app session.") {
 		t.Fatalf("expected set-limit command line in help content, got %q", joined)
 	}
@@ -166,6 +171,9 @@ func TestRuntimeStatusRecordsShortcuts_IncludesPaginationBindings(t *testing.T) 
 	shortcuts := RuntimeStatusRecordsShortcuts()
 
 	// Assert
+	if !strings.Contains(shortcuts, ":w / :write save") {
+		t.Fatalf("expected save command hint in records shortcuts, got %q", shortcuts)
+	}
 	if !strings.Contains(shortcuts, "Ctrl+f next page") {
 		t.Fatalf("expected next-page shortcut in records shortcuts, got %q", shortcuts)
 	}

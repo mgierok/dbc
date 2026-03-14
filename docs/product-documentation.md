@@ -27,8 +27,8 @@ Current product value and scope:
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
 - Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
-- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:quit` / `:q` exits the application when no staged changes exist, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
-- Runtime help is context-sensitive, lists only keybindings available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
+- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:w` / `:write` opens save confirmation for staged changes, `:quit` / `:q` exits the application when no staged changes exist, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
+- Runtime help is context-sensitive, lists only controls available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
 - A successful `:set limit=<n>` replaces any earlier session value, is never persisted into config, survives `:config` round-trips in the same app session, and resets persisted-record pagination to page `1`. If Records view is already open, records reload immediately with the new limit.
@@ -92,7 +92,7 @@ Current product value and scope:
 
 - All writes are staged first. The database remains unchanged until save succeeds.
 - Undo and redo are available during the current app session for staged actions in the selected table.
-- Save is a confirmed action that applies staged insert, update, and delete changes as a single save operation for the current table.
+- Save is a confirmed action triggered via `:w` / `:write` that applies staged insert, update, and delete changes as a single save operation for the current table.
 - On save success, staged state is cleared, the status line reports the number of saved affected rows, and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
 - Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss using the affected-row count and requires an explicit discard decision before the table switch proceeds.
@@ -162,14 +162,13 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | Toggle delete marker / remove pending insert | `d` |
 | Undo staged action | `u` |
 | Redo staged action | `Ctrl+r` |
-| Save staged changes | `w` |
 | Toggle auto-increment fields in pending insert | `Ctrl+a` |
 
 ### Commands, Selector, and Popup Controls
 
 | Context | Controls |
 | --- | --- |
-| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:quit` / `:q`, `:set limit=<n>` |
+| Runtime commands | `:config` / `:c`, `:help` / `:h`, `:w` / `:write`, `:quit` / `:q`, `:set limit=<n>` |
 | Startup selector navigation | `j/k`, arrow keys, `g/G`, `Home`/`End`, `Ctrl+f`/`Ctrl+b`, `PgDown`/`PgUp` |
 | Startup selector browse mode | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` quit |
 | Runtime selector browse mode (from `:config` / `:c`) | `Enter` select, `a` add, `e` edit selected config-backed entry, `d` delete selected config-backed entry, `Esc` close |

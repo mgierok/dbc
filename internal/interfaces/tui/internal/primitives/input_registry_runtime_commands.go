@@ -16,6 +16,7 @@ const (
 	RuntimeCommandActionOpenHelp
 	RuntimeCommandActionQuit
 	RuntimeCommandActionOpenConfig
+	RuntimeCommandActionSave
 	RuntimeCommandActionSetRecordLimit
 )
 
@@ -45,6 +46,11 @@ var runtimeCommandSpecs = []RuntimeCommandSpec{
 		Aliases:     []string{"help", "h"},
 		Description: "Open runtime help popup reference.",
 		Action:      RuntimeCommandActionOpenHelp,
+	},
+	{
+		Aliases:     []string{"w", "write"},
+		Description: "Save staged changes.",
+		Action:      RuntimeCommandActionSave,
 	},
 	{
 		Usage:       ":set limit=<n>",
@@ -153,6 +159,15 @@ func runtimeCommandLabel(command RuntimeCommandSpec) string {
 		aliases = append(aliases, ":"+alias)
 	}
 	return strings.Join(aliases, " / ")
+}
+
+func runtimeCommandLabelForAction(action RuntimeCommandAction) string {
+	for _, command := range runtimeCommandSpecs {
+		if command.Action == action {
+			return runtimeCommandLabel(command)
+		}
+	}
+	return ""
 }
 
 func cloneRuntimeCommandSpec(spec RuntimeCommandSpec) RuntimeCommandSpec {

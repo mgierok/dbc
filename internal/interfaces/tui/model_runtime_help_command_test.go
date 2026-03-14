@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -54,6 +55,43 @@ func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
 			}
 			if _, ok := cmd().(tea.QuitMsg); !ok {
 				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
+	}
+}
+
+func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "short command", command: "w"},
+		{name: "full command", command: "write"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				ctx:         context.Background(),
+				saveChanges: &spySaveChangesUseCase{},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					focus:    FocusContent,
+				},
+				staging: stagingState{
+					pendingInserts: []pendingInsertRow{{}},
+				},
+			}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			assertRuntimeSessionActive(t, cmd, ":"+tc.command)
+			if !model.overlay.confirmPopup.active {
+				t.Fatalf("expected :%s to open save confirmation", tc.command)
+			}
+			if model.overlay.confirmPopup.action != confirmSave {
+				t.Fatalf("expected :%s to open save action, got %v", tc.command, model.overlay.confirmPopup.action)
 			}
 		})
 	}
@@ -188,6 +226,28 @@ func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "q without prefix")
+}
+
+func TestHandleKey_WKeyWithoutCommandPrefixDoesNotOpenSaveConfirmation(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "w without prefix")
+	if model.overlay.confirmPopup.active {
+		t.Fatal("expected raw w to leave save confirmation closed")
+	}
 }
 
 func TestHandleKey_CtrlCWithoutCommandPrefixKeepsSessionActive(t *testing.T) {

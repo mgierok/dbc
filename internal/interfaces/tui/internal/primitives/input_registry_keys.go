@@ -21,7 +21,6 @@ const (
 	KeyRuntimeFilter           KeyBindingID = "runtime.filter"
 	KeyRuntimeSort             KeyBindingID = "runtime.sort"
 	KeyRuntimeRecordDetail     KeyBindingID = "runtime.record_detail"
-	KeyRuntimeSave             KeyBindingID = "runtime.save"
 	KeyRuntimeInsert           KeyBindingID = "runtime.insert"
 	KeyRuntimeDelete           KeyBindingID = "runtime.delete"
 	KeyRuntimeUndo             KeyBindingID = "runtime.undo"
@@ -79,7 +78,6 @@ var keyBindings = map[KeyBindingID]keyBinding{
 	KeyRuntimeFilter:           {keys: []string{"F"}, label: "Shift+F"},
 	KeyRuntimeSort:             {keys: []string{"S"}, label: "Shift+S"},
 	KeyRuntimeRecordDetail:     {keys: []string{"enter"}, label: "Enter"},
-	KeyRuntimeSave:             {keys: []string{"w"}, label: "w"},
 	KeyRuntimeInsert:           {keys: []string{"i"}, label: "i"},
 	KeyRuntimeDelete:           {keys: []string{"d"}, label: "d"},
 	KeyRuntimeUndo:             {keys: []string{"u"}, label: "u"},

@@ -5,6 +5,7 @@ import "fmt"
 type runtimeHelpKeywordSpec struct {
 	bindings    []KeyBindingID
 	joinWith    string
+	command     RuntimeCommandAction
 	description string
 }
 
@@ -67,7 +68,7 @@ var runtimeHelpKeywordSpecs = []runtimeHelpKeywordSpec{
 		description: "Undo or redo staged action.",
 	},
 	{
-		bindings:    []KeyBindingID{KeyRuntimeSave},
+		command:     RuntimeCommandActionSave,
 		description: "Save staged changes.",
 	},
 	{
@@ -94,13 +95,21 @@ func runtimeHelpPopupContentLines() []string {
 	lines = append(lines, "")
 	lines = append(lines, "Supported Keywords")
 	for _, keyword := range runtimeHelpKeywordSpecs {
-		joinWith := keyword.joinWith
-		if joinWith == "" {
-			joinWith = " / "
-		}
-		lines = append(lines, fmt.Sprintf("%s - %s", joinKeyLabels(joinWith, keyword.bindings...), keyword.description))
+		lines = append(lines, fmt.Sprintf("%s - %s", runtimeHelpKeywordLabel(keyword), keyword.description))
 	}
 	return lines
+}
+
+func runtimeHelpKeywordLabel(keyword runtimeHelpKeywordSpec) string {
+	if keyword.command != RuntimeCommandActionNone {
+		return runtimeCommandLabelForAction(keyword.command)
+	}
+
+	joinWith := keyword.joinWith
+	if joinWith == "" {
+		joinWith = " / "
+	}
+	return joinKeyLabels(joinWith, keyword.bindings...)
 }
 
 func RuntimeStatusEditShortcuts() string {
@@ -162,6 +171,7 @@ func RuntimeStatusSchemaShortcuts() string {
 }
 
 func RuntimeStatusRecordsShortcuts() string {
+	saveCommand := runtimeCommandLabelForAction(RuntimeCommandActionSave)
 	return joinShortcutSegments(
 		fmt.Sprintf("Records: %s tables", keyLabel(KeyRuntimeEsc)),
 		fmt.Sprintf("%s edit", keyLabel(KeyRuntimeEdit)),
@@ -170,7 +180,7 @@ func RuntimeStatusRecordsShortcuts() string {
 		fmt.Sprintf("%s delete", keyLabel(KeyRuntimeDelete)),
 		fmt.Sprintf("%s undo", keyLabel(KeyRuntimeUndo)),
 		fmt.Sprintf("%s redo", keyLabel(KeyRuntimeRedo)),
-		fmt.Sprintf("%s save", keyLabel(KeyRuntimeSave)),
+		fmt.Sprintf("%s save", saveCommand),
 		fmt.Sprintf("%s next page", keyLabel(KeyRuntimePageDown)),
 		fmt.Sprintf("%s prev page", keyLabel(KeyRuntimePageUp)),
 		fmt.Sprintf("%s filter", keyLabel(KeyRuntimeFilter)),

@@ -116,8 +116,8 @@ func TestRenderHelpPopup_ShowsOnlyCurrentContextBindings(t *testing.T) {
 	if !strings.Contains(popup, "Records: Esc tables") {
 		t.Fatalf("expected records context shortcut row in help popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "w save") {
-		t.Fatalf("expected records save shortcut in help popup, got %q", popup)
+	if !strings.Contains(popup, ":w / :write save") {
+		t.Fatalf("expected records save command hint in help popup, got %q", popup)
 	}
 	if strings.Contains(popup, "Supported Commands") || strings.Contains(popup, "Supported Keywords") {
 		t.Fatalf("expected context-help popup without global help sections, got %q", popup)
