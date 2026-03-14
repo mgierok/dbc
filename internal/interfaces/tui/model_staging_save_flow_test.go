@@ -103,6 +103,49 @@ func TestConfirmSaveChanges_UsesAppliedRowCountFromUseCaseInsteadOfDirtyRowCount
 	}
 }
 
+func TestConfirmSaveChanges_StartsBlockingSaveStateAndShowsSavingStatus(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ctx:         context.Background(),
+		saveChanges: &spySaveChangesUseCase{count: 1},
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+			tables: []dto.Table{{Name: "users"}},
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+		ui: runtimeUIState{statusMessage: "stale status"},
+	}
+
+	// Act
+	_, cmd := model.confirmSaveChanges()
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected save command to be returned")
+	}
+	if !model.ui.saveInFlight {
+		t.Fatal("expected save-in-flight flag to be enabled when save starts")
+	}
+	if model.ui.statusMessage != "Saving changes..." {
+		t.Fatalf("expected saving status message, got %q", model.ui.statusMessage)
+	}
+}
+
 func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *testing.T) {
 	// Arrange
 	model := &Model{
@@ -386,6 +429,71 @@ func TestHandleConfirmPopupKey_SaveAndQuitClearsPendingQuitFlagWhenSaveDoesNotSt
 	}
 	if model.ui.pendingQuitAfterSave {
 		t.Fatal("expected pending quit flag to clear when save flow does not start")
+	}
+}
+
+func TestHandleConfirmPopupKey_SaveAndQuitBlocksRuntimeInputUntilSaveResponse(t *testing.T) {
+	// Arrange
+	saveChanges := &spySaveChangesUseCase{count: 1}
+	model := &Model{
+		ctx:         context.Background(),
+		saveChanges: saveChanges,
+		read: runtimeReadState{
+			focus:         FocusContent,
+			viewMode:      ViewRecords,
+			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
+			selectedTable: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active: true,
+				action: confirmSaveAndQuit,
+			},
+		},
+	}
+
+	// Act
+	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if saveCmd == nil {
+		t.Fatal("expected save command to be returned")
+	}
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	msg := saveCmd()
+	_, quitCmd := model.Update(msg)
+
+	// Assert
+	if model.overlay.commandInput.active {
+		t.Fatal("expected command input to stay blocked while save is in flight")
+	}
+	if model.read.selectedTable != 0 {
+		t.Fatalf("expected table selection to stay unchanged while save is in flight, got %d", model.read.selectedTable)
+	}
+	if model.ui.pendingQuitAfterSave {
+		t.Fatal("expected pending quit flag to clear after save response")
+	}
+	if quitCmd == nil {
+		t.Fatal("expected save-and-quit flow to quit after save response")
+	}
+	if _, ok := quitCmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after save response, got %T", quitCmd())
 	}
 }
 

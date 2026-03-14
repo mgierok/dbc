@@ -12,6 +12,8 @@ func (m *Model) saveSupportedInCurrentContext() bool {
 
 func (m *Model) nonBlockingRuntimeCommandContextActive() bool {
 	switch {
+	case m.ui.saveInFlight:
+		return false
 	case m.overlay.helpPopup.active:
 		return false
 	case m.overlay.filterPopup.active:

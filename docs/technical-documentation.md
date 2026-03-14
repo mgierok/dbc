@@ -92,7 +92,7 @@
 ### Centralized Runtime and Selector Command Registry
 
 - Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
-- Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts.
+- Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts, and all of them are disabled while `saveInFlight` is active.
 - Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, but remains the single source of truth for runtime/selector input semantics.
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
 - Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_command_context.go`, `internal/interfaces/tui/model_staging_save_flow.go`.
@@ -159,6 +159,7 @@
 - Runtime session state survives `:config` round-trips within the same DBC process and is not persisted into config.
 - Runtime config-selector dismissal reopens the previously selected database within the same DBC process instead of terminating startup, and it preserves the in-memory runtime session state reused across that round-trip.
 - Runtime config-selector recovery also survives selector-side connect failures during a `:config` switch attempt; dismissing the retry selector still resumes the prior runtime session within the same DBC process.
+- Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
 

@@ -93,6 +93,8 @@ Current product value and scope:
 - All writes are staged first. The database remains unchanged until save succeeds.
 - Undo and redo are available during the current app session for staged actions in the selected table.
 - Save is a confirmed action triggered via `:w` / `:write` that applies staged insert, update, and delete changes as a single save operation for the current table. `:wq` reuses the same confirmation and save behavior, then exits immediately only after a successful save.
+- After save confirmation, the status line immediately shows `Saving changes...` until the save result arrives.
+- While save is in progress, runtime navigation and command entry are temporarily blocked until the save result arrives.
 - On save success, staged state is cleared, the status line reports the number of saved affected rows, and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
 - Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss using the affected-row count and requires an explicit discard decision before the table switch proceeds.

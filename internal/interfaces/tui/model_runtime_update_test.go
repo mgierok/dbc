@@ -149,6 +149,7 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 		},
 		ui: runtimeUIState{
 			pendingConfigOpen: true,
+			saveInFlight:      true,
 		},
 	}
 
@@ -161,6 +162,9 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 	}
 	if model.ui.pendingConfigOpen {
 		t.Fatal("expected pending config-open flag to be cleared after successful save")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected save-in-flight flag to be cleared after successful save")
 	}
 	if !model.ui.openConfigSelector {
 		t.Fatal("expected config-selector handoff to be enabled after successful save")
@@ -191,6 +195,7 @@ func TestUpdate_SaveChangesMsgPendingQuitAfterSaveClearsStateAndQuits(t *testing
 		},
 		ui: runtimeUIState{
 			pendingQuitAfterSave: true,
+			saveInFlight:         true,
 		},
 	}
 
@@ -203,6 +208,9 @@ func TestUpdate_SaveChangesMsgPendingQuitAfterSaveClearsStateAndQuits(t *testing
 	}
 	if model.ui.pendingQuitAfterSave {
 		t.Fatal("expected pending quit flag to be cleared after successful save")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected save-in-flight flag to be cleared after successful save")
 	}
 	if model.ui.statusMessage != "" {
 		t.Fatalf("expected immediate quit flow not to overwrite status, got %q", model.ui.statusMessage)
@@ -240,6 +248,9 @@ func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T
 				},
 			},
 		},
+		ui: runtimeUIState{
+			saveInFlight: true,
+		},
 	}
 
 	// Act
@@ -248,6 +259,9 @@ func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T
 	// Assert
 	if model.ui.statusMessage != "Affected rows: 1" {
 		t.Fatalf("expected affected-row status message, got %q", model.ui.statusMessage)
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected save-in-flight flag to be cleared after successful save")
 	}
 	if cmd == nil {
 		t.Fatal("expected records reload command after successful save")
@@ -293,6 +307,7 @@ func TestUpdate_SaveChangesMsgErrorClearsPendingQuitAfterSaveAndPreservesDirtySt
 		},
 		ui: runtimeUIState{
 			pendingQuitAfterSave: true,
+			saveInFlight:         true,
 		},
 	}
 
@@ -308,6 +323,9 @@ func TestUpdate_SaveChangesMsgErrorClearsPendingQuitAfterSaveAndPreservesDirtySt
 	}
 	if model.ui.pendingQuitAfterSave {
 		t.Fatal("expected pending quit flag to be cleared after failed save")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected save-in-flight flag to be cleared after failed save")
 	}
 	if model.ui.statusMessage != "Error: boom" {
 		t.Fatalf("expected surfaced save error, got %q", model.ui.statusMessage)

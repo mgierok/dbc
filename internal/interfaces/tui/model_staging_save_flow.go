@@ -40,6 +40,8 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	if len(changes.Inserts) == 0 && len(changes.Updates) == 0 && len(changes.Deletes) == 0 {
 		return m, nil
 	}
+	m.ui.saveInFlight = true
+	m.ui.statusMessage = "Saving changes..."
 	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes)
 }
 

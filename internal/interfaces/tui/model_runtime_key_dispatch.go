@@ -7,6 +7,10 @@ import (
 )
 
 func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.ui.saveInFlight {
+		return m, nil
+	}
+
 	key := msg.String()
 
 	if primitives.KeyMatches(primitives.KeyRuntimeOpenContextHelp, key) {

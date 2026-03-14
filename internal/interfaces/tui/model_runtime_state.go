@@ -51,6 +51,7 @@ type runtimeUIState struct {
 	height int
 
 	statusMessage        string
+	saveInFlight         bool
 	openConfigSelector   bool
 	pendingTableIndex    int
 	pendingConfigOpen    bool

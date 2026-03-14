@@ -81,6 +81,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.normalizeRecordSelection()
 		return m, nil
 	case saveChangesMsg:
+		m.ui.saveInFlight = false
 		if msg.err != nil {
 			m.ui.pendingConfigOpen = false
 			m.ui.pendingQuitAfterSave = false
