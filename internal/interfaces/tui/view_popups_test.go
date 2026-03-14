@@ -313,3 +313,43 @@ func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *te
 		t.Fatalf("expected selected yes action in popup, got %q", popup)
 	}
 }
+
+func TestRenderConfirmPopup_DirtyQuitShowsMessageAndExplicitActions(t *testing.T) {
+	// Arrange
+	model := &Model{
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active:  true,
+				title:   "Quit",
+				message: "Quitting will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data and quit?",
+				options: []confirmOption{
+					{label: "(y) Yes, discard changes and quit"},
+					{label: "(n) No, continue editing"},
+				},
+				selected: 0,
+				modal:    true,
+			},
+		},
+	}
+
+	// Act
+	lines := model.renderConfirmPopup(120)
+	popup := stripANSI(strings.Join(lines, "\n"))
+
+	// Assert
+	if !strings.Contains(popup, "Quit") {
+		t.Fatalf("expected quit title in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "Quitting will cause loss of unsaved data (3 rows).") {
+		t.Fatalf("expected quit message in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "(y) Yes, discard changes and quit") {
+		t.Fatalf("expected quit yes action label in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, "(n) No, continue editing") {
+		t.Fatalf("expected quit no action label in popup, got %q", popup)
+	}
+	if !strings.Contains(popup, primitives.IconSelection+" (y) Yes, discard changes and quit") {
+		t.Fatalf("expected selected quit yes action in popup, got %q", popup)
+	}
+}

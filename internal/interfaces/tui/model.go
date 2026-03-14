@@ -104,6 +104,14 @@ type editPopup struct {
 	errorMessage string
 }
 
+type dirtyConfirmFlow int
+
+const (
+	dirtyConfirmFlowTableSwitch dirtyConfirmFlow = iota + 1
+	dirtyConfirmFlowConfig
+	dirtyConfirmFlowQuit
+)
+
 type confirmAction int
 
 const (
@@ -113,6 +121,8 @@ const (
 	confirmConfigSaveAndOpen
 	confirmConfigDiscardAndOpen
 	confirmConfigCancel
+	confirmDiscardQuit
+	confirmCancelQuit
 )
 
 type confirmOption struct {

@@ -157,7 +157,7 @@ func (m *Model) setTableSelection(index int) (tea.Model, tea.Cmd) {
 		m.openModalConfirmPopupWithOptions(
 			prompt.Title,
 			prompt.Message,
-			m.confirmOptionsFromDirtyPrompt(prompt, false),
+			m.confirmOptionsFromDirtyPrompt(prompt, dirtyConfirmFlowTableSwitch),
 			0,
 		)
 		return m, nil

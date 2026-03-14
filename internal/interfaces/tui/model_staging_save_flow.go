@@ -57,3 +57,8 @@ func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
 	m.resetTableContext()
 	return m, m.loadViewForSelection()
 }
+
+func (m *Model) confirmDiscardQuit() (tea.Model, tea.Cmd) {
+	m.clearStagedState()
+	return m, tea.Quit
+}

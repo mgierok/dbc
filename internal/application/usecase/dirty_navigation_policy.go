@@ -53,3 +53,20 @@ func (p *DirtyNavigationPolicy) BuildConfigPrompt() DirtyDecisionPrompt {
 		},
 	}
 }
+
+func (p *DirtyNavigationPolicy) BuildQuitPrompt(changeCount int) DirtyDecisionPrompt {
+	if changeCount < 0 {
+		changeCount = 0
+	}
+	return DirtyDecisionPrompt{
+		Title: "Quit",
+		Message: fmt.Sprintf(
+			"Quitting will cause loss of unsaved data (%d rows). Are you sure you want to discard unsaved data and quit?",
+			changeCount,
+		),
+		Options: []DirtyDecisionOption{
+			{ID: DirtyDecisionDiscard, Label: "(y) Yes, discard changes and quit"},
+			{ID: DirtyDecisionCancel, Label: "(n) No, continue editing"},
+		},
+	}
+}

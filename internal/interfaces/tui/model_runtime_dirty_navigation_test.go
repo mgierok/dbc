@@ -228,3 +228,108 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 		t.Fatalf("expected save error status to be surfaced, got %q", model.ui.statusMessage)
 	}
 }
+
+func TestHandleKey_DirtyQuitCommandOpensDecisionPrompt(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "full command", command: "quit"},
+		{name: "alias", command: "q"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				read:    runtimeReadState{viewMode: ViewRecords},
+				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+			}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			assertRuntimeSessionActive(t, cmd, "dirty :"+tc.command)
+			if !model.overlay.confirmPopup.active {
+				t.Fatalf("expected dirty :%s decision popup to open", tc.command)
+			}
+			if !model.overlay.confirmPopup.modal {
+				t.Fatalf("expected dirty :%s decision popup to be modal", tc.command)
+			}
+			if model.overlay.confirmPopup.title != "Quit" {
+				t.Fatalf("expected dirty :%s popup title Quit, got %q", tc.command, model.overlay.confirmPopup.title)
+			}
+			if model.overlay.confirmPopup.message != "Quitting will cause loss of unsaved data (1 rows). Are you sure you want to discard unsaved data and quit?" {
+				t.Fatalf("unexpected dirty :%s popup message: %q", tc.command, model.overlay.confirmPopup.message)
+			}
+			if len(model.overlay.confirmPopup.options) != 2 {
+				t.Fatalf("expected dirty :%s popup to show two explicit options, got %d", tc.command, len(model.overlay.confirmPopup.options))
+			}
+		})
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyQuitEscapeKeepsStagedState(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+	}
+	submitTypedRuntimeCommand(model, "quit")
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "dirty quit cancel")
+	if model.overlay.confirmPopup.active {
+		t.Fatal("expected decision popup to close on escape")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to stay untouched on escape")
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyQuitNoOptionKeepsStagedState(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+	}
+	submitTypedRuntimeCommand(model, "quit")
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "dirty quit no option")
+	if model.overlay.confirmPopup.active {
+		t.Fatal("expected decision popup to close on no option")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to stay untouched on no option")
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyQuitDiscardClearsStateAndQuits(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read:    runtimeReadState{viewMode: ViewRecords},
+		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+	}
+	submitTypedRuntimeCommand(model, "quit")
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected quit command after discard decision")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after discard decision, got %T", cmd())
+	}
+	if model.hasDirtyEdits() {
+		t.Fatal("expected staged changes to be cleared on discard")
+	}
+}

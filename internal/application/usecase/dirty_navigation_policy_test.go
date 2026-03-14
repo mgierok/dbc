@@ -73,3 +73,43 @@ func TestDirtyNavigationPolicy_BuildConfigPrompt_UsesExpectedCopyAndOptions(t *t
 		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
 	}
 }
+
+func TestDirtyNavigationPolicy_BuildQuitPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
+	// Arrange
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	// Act
+	prompt := policy.BuildQuitPrompt(3)
+
+	// Assert
+	if prompt.Title != "Quit" {
+		t.Fatalf("expected title Quit, got %q", prompt.Title)
+	}
+	expectedMessage := "Quitting will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data and quit?"
+	if prompt.Message != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	}
+	if len(prompt.Options) != 2 {
+		t.Fatalf("expected 2 options, got %d", len(prompt.Options))
+	}
+	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "(y) Yes, discard changes and quit" {
+		t.Fatalf("unexpected first option: %#v", prompt.Options[0])
+	}
+	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "(n) No, continue editing" {
+		t.Fatalf("unexpected second option: %#v", prompt.Options[1])
+	}
+}
+
+func TestDirtyNavigationPolicy_BuildQuitPrompt_ClampsNegativeCountToZero(t *testing.T) {
+	// Arrange
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	// Act
+	prompt := policy.BuildQuitPrompt(-5)
+
+	// Assert
+	expectedMessage := "Quitting will cause loss of unsaved data (0 rows). Are you sure you want to discard unsaved data and quit?"
+	if prompt.Message != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	}
+}

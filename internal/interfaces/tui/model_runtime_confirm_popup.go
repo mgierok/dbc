@@ -79,6 +79,10 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case confirmConfigCancel:
 			m.ui.pendingConfigOpen = false
 			return m, nil
+		case confirmDiscardQuit:
+			return m.confirmDiscardQuit()
+		case confirmCancelQuit:
+			return m, nil
 		default:
 			return m, nil
 		}

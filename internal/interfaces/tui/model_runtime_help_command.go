@@ -45,6 +45,16 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	case primitives.RuntimeCommandActionQuit:
+		if m.hasDirtyEdits() {
+			prompt := m.dirtyNavigationPolicyUseCase().BuildQuitPrompt(m.dirtyEditCount())
+			m.openModalConfirmPopupWithOptions(
+				prompt.Title,
+				prompt.Message,
+				m.confirmOptionsFromDirtyPrompt(prompt, dirtyConfirmFlowQuit),
+				0,
+			)
+			return m, nil
+		}
 		return m, tea.Quit
 	case primitives.RuntimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
@@ -52,7 +62,7 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 			m.openModalConfirmPopupWithOptions(
 				prompt.Title,
 				prompt.Message,
-				m.confirmOptionsFromDirtyPrompt(prompt, true),
+				m.confirmOptionsFromDirtyPrompt(prompt, dirtyConfirmFlowConfig),
 				0,
 			)
 			return m, nil
