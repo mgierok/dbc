@@ -102,6 +102,7 @@ These rules apply only in Plan mode.
 - For non-trivial coding plans, the agent MUST inspect the current implementation at the most likely change seams before finalizing the plan.
 - The agent MUST distinguish explicitly between confirmed facts, assumptions, and open questions.
 - If a decision-critical open question remains unresolved, the agent MUST NOT present the plan as execution-ready and MUST call out the gap explicitly.
+- When planning a change to existing behavior or functionality, the agent MUST keep repository planning artifacts focused on the intended resulting state and MUST NOT leave information about the previous state unless the user explicitly requests that historical context.
 - When persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
 - A generated plan MUST include references to the documentation files that SHOULD be consulted to enrich task context for that specific task, with a short note describing why each file is relevant.
 
