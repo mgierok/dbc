@@ -3,7 +3,9 @@
 ## Global Normative and Language Rules
 
 - The keywords `MUST`, `MUST NOT`, `SHOULD`, `SHOULD NOT`, and `MAY` in this file MUST be interpreted as described in RFC 2119.
-- The agent MUST use English regardless of the language used in user instructions.
+- The agent MUST communicate with the user in Polish by default.
+- The agent MUST use English for identifiers, code, internal technical documentation, and operational artifacts.
+- Exception: The agent MAY use another language for direct user communication when the user explicitly requests it.
 - If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
 
 ## Source Documents
