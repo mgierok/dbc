@@ -12,7 +12,7 @@ import (
 
 func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 	// Arrange
-	saveChanges := &spySaveChangesUseCase{}
+	saveChanges := &spySaveChangesUseCase{count: 1}
 	model := &Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
@@ -50,8 +50,56 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 	if result.err != nil {
 		t.Fatalf("expected no error, got %v", result.err)
 	}
+	if result.count != 1 {
+		t.Fatalf("expected save message count 1, got %d", result.count)
+	}
 	if len(saveChanges.lastChanges.Inserts) != 1 {
 		t.Fatalf("expected one insert payload, got %d", len(saveChanges.lastChanges.Inserts))
+	}
+}
+
+func TestConfirmSaveChanges_UsesAppliedRowCountFromUseCaseInsteadOfDirtyRowCount(t *testing.T) {
+	// Arrange
+	saveChanges := &spySaveChangesUseCase{count: 1}
+	model := &Model{
+		ctx:         context.Background(),
+		saveChanges: saveChanges,
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+					{Name: "email", Type: "TEXT", Nullable: false},
+				},
+			},
+			tables: []dto.Table{{Name: "users"}},
+		},
+		staging: stagingState{
+			pendingUpdates: map[string]recordEdits{
+				"id=1": {
+					identity: dto.RecordIdentity{
+						Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+					},
+					changes: map[int]stagedEdit{
+						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+						2: {Value: dto.StagedValue{Text: "alice@example.com", Raw: "alice@example.com"}},
+					},
+				},
+			},
+		},
+	}
+
+	// Act
+	_, cmd := model.confirmSaveChanges()
+	msg := cmd()
+
+	// Assert
+	result, ok := msg.(saveChangesMsg)
+	if !ok {
+		t.Fatalf("expected saveChangesMsg, got %T", msg)
+	}
+	if result.count != 1 {
+		t.Fatalf("expected applied row count 1 from use case, got %d", result.count)
 	}
 }
 
@@ -83,8 +131,8 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 	if model.overlay.confirmPopup.title != "Switch Table" {
 		t.Fatalf("expected switch table title, got %q", model.overlay.confirmPopup.title)
 	}
-	if !strings.Contains(model.overlay.confirmPopup.message, "Switching tables will cause loss of unsaved data (3 changes).") {
-		t.Fatalf("expected message with unsaved changes count, got %q", model.overlay.confirmPopup.message)
+	if !strings.Contains(model.overlay.confirmPopup.message, "Switching tables will cause loss of unsaved data (3 rows).") {
+		t.Fatalf("expected message with unsaved row count, got %q", model.overlay.confirmPopup.message)
 	}
 	if !strings.Contains(model.overlay.confirmPopup.message, "Are you sure you want to discard unsaved data?") {
 		t.Fatalf("expected discard confirmation question, got %q", model.overlay.confirmPopup.message)

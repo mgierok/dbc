@@ -47,10 +47,11 @@ func (s *spyListOperatorsUseCase) Execute(ctx context.Context, columnType string
 
 type spySaveChangesUseCase struct {
 	lastChanges dto.TableChanges
+	count       int
 	err         error
 }
 
-func (s *spySaveChangesUseCase) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error {
+func (s *spySaveChangesUseCase) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) (int, error) {
 	s.lastChanges = changes
-	return s.err
+	return s.count, s.err
 }

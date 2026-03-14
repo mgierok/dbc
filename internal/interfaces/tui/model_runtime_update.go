@@ -93,7 +93,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ui.statusMessage = "Opening database selector"
 			return m, tea.Quit
 		}
-		m.ui.statusMessage = fmt.Sprintf("Saved %d changes", msg.count)
+		m.ui.statusMessage = formatSavedRowsMessage(msg.count)
 		return m, m.loadRecordsCmd(true)
 	case errMsg:
 		m.read.recordLoading = false
@@ -234,9 +234,13 @@ func loadRecordsCmd(ctx context.Context, uc listRecordsUseCase, tableName string
 	}
 }
 
-func saveChangesCmd(ctx context.Context, uc saveChangesUseCase, tableName string, changes dto.TableChanges, count int) tea.Cmd {
+func saveChangesCmd(ctx context.Context, uc saveChangesUseCase, tableName string, changes dto.TableChanges) tea.Cmd {
 	return func() tea.Msg {
-		err := uc.ExecuteDTO(ctx, tableName, changes)
+		count, err := uc.ExecuteDTO(ctx, tableName, changes)
 		return saveChangesMsg{count: count, err: err}
 	}
+}
+
+func formatSavedRowsMessage(count int) string {
+	return fmt.Sprintf("Affected rows: %d", count)
 }

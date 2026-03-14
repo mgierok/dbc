@@ -164,7 +164,7 @@ func TestBuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 	}
 }
 
-func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
+func TestDirtyEditCount_CountsAffectedRowsAcrossInsertsDeletesAndUpdates(t *testing.T) {
 	// Arrange
 	model := &Model{
 		staging: stagingState{
@@ -185,7 +185,7 @@ func TestDirtyEditCount_IncludesInsertsDeletesAndUpdates(t *testing.T) {
 	dirty := model.dirtyEditCount()
 
 	// Assert
-	if dirty != 4 {
-		t.Fatalf("expected dirty count 4, got %d", dirty)
+	if dirty != 3 {
+		t.Fatalf("expected dirty count 3, got %d", dirty)
 	}
 }

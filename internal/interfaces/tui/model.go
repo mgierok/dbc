@@ -170,7 +170,7 @@ type listOperatorsUseCase interface {
 }
 
 type saveChangesUseCase interface {
-	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error
+	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) (int, error)
 }
 
 func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator, runtimeSession *RuntimeSessionState) *Model {

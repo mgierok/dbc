@@ -16,12 +16,26 @@ type stubGetSchemaUseCase struct {
 	err           error
 }
 
+type stubListRecordsUseCase struct {
+	lastTableName string
+	page          dto.RecordPage
+	err           error
+}
+
 func (s *stubGetSchemaUseCase) Execute(ctx context.Context, tableName string) (dto.Schema, error) {
 	s.lastTableName = tableName
 	if s.err != nil {
 		return dto.Schema{}, s.err
 	}
 	return s.schema, nil
+}
+
+func (s *stubListRecordsUseCase) Execute(ctx context.Context, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort) (dto.RecordPage, error) {
+	s.lastTableName = tableName
+	if s.err != nil {
+		return dto.RecordPage{}, s.err
+	}
+	return s.page, nil
 }
 
 func TestUpdate_TablesMsgStoresTablesSelectsFirstTableAndStartsSchemaLoad(t *testing.T) {
@@ -159,6 +173,69 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 	}
 	if _, ok := cmd().(tea.QuitMsg); !ok {
 		t.Fatalf("expected tea.QuitMsg from quit command, got %T", cmd())
+	}
+}
+
+func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T) {
+	// Arrange
+	listRecords := &stubListRecordsUseCase{
+		page: dto.RecordPage{
+			Rows:       []dto.RecordRow{{Values: []string{"1", "alice"}}},
+			TotalCount: 1,
+		},
+	}
+	model := &Model{
+		ctx:         context.Background(),
+		listRecords: listRecords,
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			tables:   []dto.Table{{Name: "users"}},
+		},
+		staging: stagingState{
+			pendingUpdates: map[string]recordEdits{
+				"id=1": {
+					changes: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+						1: {Value: dto.StagedValue{Text: "alice@example.com", Raw: "alice@example.com"}},
+					},
+				},
+			},
+		},
+	}
+
+	// Act
+	_, cmd := model.Update(saveChangesMsg{count: 1})
+
+	// Assert
+	if model.ui.statusMessage != "Affected rows: 1" {
+		t.Fatalf("expected affected-row status message, got %q", model.ui.statusMessage)
+	}
+	if cmd == nil {
+		t.Fatal("expected records reload command after successful save")
+	}
+
+	msg := cmd()
+	recordsMsg, ok := msg.(recordsMsg)
+	if !ok {
+		t.Fatalf("expected recordsMsg from reload command, got %T", msg)
+	}
+	if listRecords.lastTableName != "users" {
+		t.Fatalf("expected records reload for users table, got %q", listRecords.lastTableName)
+	}
+	if recordsMsg.tableName != "users" {
+		t.Fatalf("expected records message for users table, got %q", recordsMsg.tableName)
+	}
+}
+
+func TestFormatSavedRowsMessage_AllowsZeroAffectedRows(t *testing.T) {
+	// Arrange
+
+	// Act
+	message := formatSavedRowsMessage(0)
+
+	// Assert
+	if message != "Affected rows: 0" {
+		t.Fatalf("expected zero-count affected-row message, got %q", message)
 	}
 }
 

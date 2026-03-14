@@ -93,14 +93,14 @@ Current product value and scope:
 - All writes are staged first. The database remains unchanged until save succeeds.
 - Undo and redo are available during the current app session for staged actions in the selected table.
 - Save is a confirmed action that applies staged insert, update, and delete changes as a single save operation for the current table.
-- On save success, staged state is cleared and records reload for the current table with the active filter and sort still applied.
+- On save success, staged state is cleared, the status line reports the number of saved affected rows, and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
-- Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss and requires an explicit discard decision before the table switch proceeds.
+- Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss using the affected-row count and requires an explicit discard decision before the table switch proceeds.
 - Invoking `:config` / `:c` with unsaved changes blocks navigation until the user explicitly chooses `save`, `discard`, or `cancel`.
 
 ### Visual State Communication
 
-- The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present.
+- The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present, where `N` is the number of unique affected rows in the current table.
 - Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
 - Visual emphasis uses terminal-native text attributes instead of application-defined colors: selected items use reverse video, titles and status labels use emphasis, secondary hints are visually subdued, and error messages are emphasized with underline.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
@@ -189,4 +189,4 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 - Filter: The single active condition applied to the selected table's records.
 - Sort: The single active column ordering (`ASC` or `DESC`) applied to the selected table's records.
 - Staged Change: Pending insert, edit, or delete that has not yet been saved to the database.
-- Dirty State: Session state in which staged changes exist and the mode indicator shows an unsaved change count.
+- Dirty State: Session state in which staged changes exist and the mode indicator shows an unsaved affected-row count.

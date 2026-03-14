@@ -63,12 +63,14 @@
 
 - Guarantee: insert/edit/delete actions are staged in memory and persisted only after explicit save confirmation.
 - Guarantee: runtime write-side session state and undo/redo history stay behind `Model.staging` so staging mutations remain local to the TUI write workflow.
-- Guarantee: dirty-change counting and initial insert defaults are delegated to application staging policy.
+- Guarantee: dirty-row counting and initial insert defaults are delegated to application staging policy.
+- Guarantee: the dirty count represents unique affected rows in the current table: each pending insert counts once, each persisted row with staged edits counts once regardless of edited columns, and pending deletes are deduplicated against the same persisted row already staged for update.
 - Enforced in: `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/staging_policy.go`.
 
 ### Transactional Save Semantics
 
 - Guarantee: one save applies inserts, updates, and deletes in one transaction for the selected table.
+- Guarantee: the save path returns the database operation's actual applied-row total aggregated across insert, update, and delete statements in that transaction.
 - Guarantee: updates targeting rows also staged for delete are skipped.
 - Enforced in: `internal/application/usecase/save_table_changes.go`, `internal/infrastructure/engine/sqlite_update.go`.
 
@@ -118,7 +120,7 @@
 
 ### Application Port Contracts
 
-- `Engine`: list tables, read schema, read records (with optional filter/sort), list operators, apply table changes.
+- `Engine`: list tables, read schema, read records (with optional filter/sort), list operators, apply table changes, and return the total applied-row count for that save operation.
 - `ConfigStore`: list/create/update/delete config entries and expose active config path.
 - `DatabaseConnectionChecker`: validate candidate DB path before persisting selector add/edit changes.
 

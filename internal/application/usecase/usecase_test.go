@@ -63,8 +63,8 @@ func (f *fakeEngine) ListOperators(ctx context.Context, columnType string) ([]mo
 	return f.operators, nil
 }
 
-func (f *fakeEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
-	return nil
+func (f *fakeEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) (int, error) {
+	return 0, nil
 }
 
 func TestListTables_SortsAlphabetically(t *testing.T) {

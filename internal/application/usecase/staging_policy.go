@@ -23,11 +23,12 @@ func (p *StagingPolicy) DirtyEditCount(
 	pendingUpdates map[string]dto.PendingRecordEdits,
 	pendingDeletes map[string]dto.PendingRecordDelete,
 ) int {
-	count := 0
-	for _, edits := range pendingUpdates {
-		count += len(edits.Changes)
+	count := len(pendingInserts) + len(pendingUpdates)
+	for key := range pendingDeletes {
+		if _, ok := pendingUpdates[key]; ok {
+			continue
+		}
+		count++
 	}
-	count += len(pendingInserts)
-	count += len(pendingDeletes)
 	return count
 }

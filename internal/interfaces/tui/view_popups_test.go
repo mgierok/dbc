@@ -284,7 +284,7 @@ func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *te
 			confirmPopup: confirmPopup{
 				active:  true,
 				title:   "Switch Table",
-				message: "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?",
+				message: "Switching tables will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data?",
 				options: []confirmOption{
 					{label: "(y) Yes, discard changes and switch table", action: confirmDiscardTable},
 					{label: "(n) No, continue editing", action: confirmCancelTableSwitch},

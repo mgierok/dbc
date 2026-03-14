@@ -32,7 +32,7 @@ func (p *DirtyNavigationPolicy) BuildTableSwitchPrompt(changeCount int) DirtyDec
 	return DirtyDecisionPrompt{
 		Title: "Switch Table",
 		Message: fmt.Sprintf(
-			"Switching tables will cause loss of unsaved data (%d changes). Are you sure you want to discard unsaved data?",
+			"Switching tables will cause loss of unsaved data (%d rows). Are you sure you want to discard unsaved data?",
 			changeCount,
 		),
 		Options: []DirtyDecisionOption{

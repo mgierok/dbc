@@ -14,33 +14,41 @@ type txExecutor interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
-func (e *SQLiteEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
+func (e *SQLiteEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) (int, error) {
 	if strings.TrimSpace(tableName) == "" {
-		return fmt.Errorf("table name is required")
+		return 0, fmt.Errorf("table name is required")
 	}
 	if len(changes.Inserts) == 0 && len(changes.Updates) == 0 && len(changes.Deletes) == 0 {
-		return model.ErrMissingTableChanges
+		return 0, model.ErrMissingTableChanges
 	}
 
 	tx, err := e.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	if err := applyRecordInserts(ctx, tx, tableName, changes.Inserts); err != nil {
-		return withRollbackError(err, tx.Rollback)
+	inserted, err := applyRecordInserts(ctx, tx, tableName, changes.Inserts)
+	if err != nil {
+		return 0, withRollbackError(err, tx.Rollback)
 	}
-	if err := applyRecordUpdates(ctx, tx, tableName, changes.Updates, changes.Deletes); err != nil {
-		return withRollbackError(err, tx.Rollback)
+	updated, err := applyRecordUpdates(ctx, tx, tableName, changes.Updates, changes.Deletes)
+	if err != nil {
+		return 0, withRollbackError(err, tx.Rollback)
 	}
-	if err := applyRecordDeletes(ctx, tx, tableName, changes.Deletes); err != nil {
-		return withRollbackError(err, tx.Rollback)
+	deleted, err := applyRecordDeletes(ctx, tx, tableName, changes.Deletes)
+	if err != nil {
+		return 0, withRollbackError(err, tx.Rollback)
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return inserted + updated + deleted, nil
 }
 
-func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, inserts []model.RecordInsert) error {
+func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, inserts []model.RecordInsert) (int, error) {
+	total := 0
 	for _, insert := range inserts {
 		orderedColumns := make([]string, 0, len(insert.Values)+len(insert.ExplicitAutoValues))
 		columnValues := make(map[string]model.Value, len(insert.Values)+len(insert.ExplicitAutoValues))
@@ -48,7 +56,7 @@ func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, in
 		for _, value := range insert.Values {
 			column := strings.TrimSpace(value.Column)
 			if column == "" {
-				return model.ErrMissingInsertValues
+				return 0, model.ErrMissingInsertValues
 			}
 			if _, exists := columnValues[column]; !exists {
 				orderedColumns = append(orderedColumns, column)
@@ -58,7 +66,7 @@ func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, in
 		for _, value := range insert.ExplicitAutoValues {
 			column := strings.TrimSpace(value.Column)
 			if column == "" {
-				return model.ErrMissingInsertValues
+				return 0, model.ErrMissingInsertValues
 			}
 			if _, exists := columnValues[column]; !exists {
 				orderedColumns = append(orderedColumns, column)
@@ -66,7 +74,7 @@ func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, in
 			columnValues[column] = value.Value
 		}
 		if len(orderedColumns) == 0 {
-			return model.ErrMissingInsertValues
+			return 0, model.ErrMissingInsertValues
 		}
 
 		columns := make([]string, 0, len(orderedColumns))
@@ -84,68 +92,76 @@ func applyRecordInserts(ctx context.Context, tx txExecutor, tableName string, in
 			strings.Join(columns, ", "),
 			strings.Join(placeholders, ", "),
 		)
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return err
+		affected, err := execAffectedRows(ctx, tx, query, args...)
+		if err != nil {
+			return 0, err
 		}
+		total += affected
 	}
-	return nil
+	return total, nil
 }
 
-func applyRecordUpdates(ctx context.Context, tx txExecutor, tableName string, updates []model.RecordUpdate, deletes []model.RecordDelete) error {
+func applyRecordUpdates(ctx context.Context, tx txExecutor, tableName string, updates []model.RecordUpdate, deletes []model.RecordDelete) (int, error) {
 	skippedDeletes := make(map[string]struct{}, len(deletes))
 	for _, deleteChange := range deletes {
 		signature, err := recordIdentitySignature(deleteChange.Identity)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		skippedDeletes[signature] = struct{}{}
 	}
 
+	total := 0
 	for _, update := range updates {
 		if len(update.Changes) == 0 {
-			return model.ErrMissingRecordChanges
+			return 0, model.ErrMissingRecordChanges
 		}
 		signature, err := recordIdentitySignature(update.Identity)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		if _, skip := skippedDeletes[signature]; skip {
 			continue
 		}
 		whereClause, whereArgs, err := buildRecordIdentityClause(update.Identity)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		setParts := make([]string, 0, len(update.Changes))
 		args := make([]any, 0, len(update.Changes)+len(whereArgs))
 		for _, change := range update.Changes {
 			if strings.TrimSpace(change.Column) == "" {
-				return model.ErrMissingRecordChanges
+				return 0, model.ErrMissingRecordChanges
 			}
 			setParts = append(setParts, fmt.Sprintf("%s = ?", quoteIdentifier(change.Column)))
 			args = append(args, bindValue(change.Value))
 		}
 		args = append(args, whereArgs...)
 		query := fmt.Sprintf("UPDATE %s SET %s %s", quoteIdentifier(tableName), strings.Join(setParts, ", "), whereClause)
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return err
+		affected, err := execAffectedRows(ctx, tx, query, args...)
+		if err != nil {
+			return 0, err
 		}
+		total += affected
 	}
-	return nil
+	return total, nil
 }
 
-func applyRecordDeletes(ctx context.Context, tx txExecutor, tableName string, deletes []model.RecordDelete) error {
+func applyRecordDeletes(ctx context.Context, tx txExecutor, tableName string, deletes []model.RecordDelete) (int, error) {
+	total := 0
 	for _, deleteChange := range deletes {
 		whereClause, whereArgs, err := buildRecordIdentityClause(deleteChange.Identity)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		query := fmt.Sprintf("DELETE FROM %s %s", quoteIdentifier(tableName), whereClause)
-		if _, err := tx.ExecContext(ctx, query, whereArgs...); err != nil {
-			return err
+		affected, err := execAffectedRows(ctx, tx, query, whereArgs...)
+		if err != nil {
+			return 0, err
 		}
+		total += affected
 	}
-	return nil
+	return total, nil
 }
 
 func recordIdentitySignature(identity model.RecordIdentity) (string, error) {
@@ -184,6 +200,18 @@ func bindValue(value model.Value) any {
 		return value.Raw
 	}
 	return value.Text
+}
+
+func execAffectedRows(ctx context.Context, tx txExecutor, query string, args ...any) (int, error) {
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(affected), nil
 }
 
 func withRollbackError(cause error, rollback func() error) error {

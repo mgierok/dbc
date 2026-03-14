@@ -55,11 +55,14 @@ func TestSQLiteEngine_ApplyRecordChanges_AppliesInsertUpdateDeleteInOneTransacti
 	}
 
 	// Act
-	err := engine.ApplyRecordChanges(context.Background(), "users", changes)
+	count, err := engine.ApplyRecordChanges(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("expected affected row count 3, got %d", count)
 	}
 	var (
 		countAll   int
@@ -120,7 +123,7 @@ func TestSQLiteEngine_ApplyRecordChanges_RollsBackOnError(t *testing.T) {
 	}
 
 	// Act
-	err := engine.ApplyRecordChanges(context.Background(), "users", changes)
+	_, err := engine.ApplyRecordChanges(context.Background(), "users", changes)
 
 	// Assert
 	if err == nil {
@@ -169,11 +172,14 @@ func TestSQLiteEngine_ApplyRecordChanges_DeletesByCompositePrimaryKey(t *testing
 	}
 
 	// Act
-	err := engine.ApplyRecordChanges(context.Background(), "memberships", changes)
+	count, err := engine.ApplyRecordChanges(context.Background(), "memberships", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected affected row count 1, got %d", count)
 	}
 	var countAll int
 	if err := db.QueryRow("SELECT COUNT(*) FROM memberships").Scan(&countAll); err != nil {
@@ -215,11 +221,14 @@ func TestSQLiteEngine_ApplyRecordChanges_InsertsWithDefaultsAndExplicitAutoIncre
 	}
 
 	// Act
-	err := engine.ApplyRecordChanges(context.Background(), "events", changes)
+	count, err := engine.ApplyRecordChanges(context.Background(), "events", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("expected affected row count 2, got %d", count)
 	}
 	var (
 		firstName  string
@@ -270,11 +279,14 @@ func TestSQLiteEngine_ApplyRecordChanges_SkipsUpdatesForRowsMarkedDelete(t *test
 	}
 
 	// Act
-	err := engine.ApplyRecordChanges(context.Background(), "users", changes)
+	count, err := engine.ApplyRecordChanges(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected affected row count 1, got %d", count)
 	}
 	var countAll int
 	if err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&countAll); err != nil {
@@ -282,6 +294,76 @@ func TestSQLiteEngine_ApplyRecordChanges_SkipsUpdatesForRowsMarkedDelete(t *test
 	}
 	if countAll != 0 {
 		t.Fatalf("expected deleted row to be removed, got %d rows", countAll)
+	}
+}
+
+func TestSQLiteEngine_ApplyRecordChanges_ReturnsZeroForStaleDelete(t *testing.T) {
+	// Arrange
+	db := setupSQLiteUpdateDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+	changes := model.TableChanges{
+		Deletes: []model.RecordDelete{
+			{
+				Identity: model.RecordIdentity{
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+				},
+			},
+		},
+	}
+
+	// Act
+	count, err := engine.ApplyRecordChanges(context.Background(), "users", changes)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected affected row count 0, got %d", count)
+	}
+}
+
+func TestSQLiteEngine_ApplyRecordChanges_ReturnsOnlyAppliedRowsWhenMixedWithStaleStatement(t *testing.T) {
+	// Arrange
+	db := setupSQLiteUpdateDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+		INSERT INTO users (id, name) VALUES (1, 'alice');
+	`)
+	engine := NewSQLiteEngine(db)
+	changes := model.TableChanges{
+		Updates: []model.RecordUpdate{
+			{
+				Identity: model.RecordIdentity{
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "1", Raw: int64(1)}}},
+				},
+				Changes: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "bob", Raw: "bob"}}},
+			},
+			{
+				Identity: model.RecordIdentity{
+					Keys: []model.RecordIdentityKey{{Column: "id", Value: model.Value{Text: "99", Raw: int64(99)}}},
+				},
+				Changes: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "ghost", Raw: "ghost"}}},
+			},
+		},
+	}
+
+	// Act
+	count, err := engine.ApplyRecordChanges(context.Background(), "users", changes)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected affected row count 1, got %d", count)
 	}
 }
 

@@ -70,12 +70,9 @@ func TestStagingPolicy_InitialInsertValue_UsesEmptyValueForRequiredColumnsWithou
 	}
 }
 
-func TestStagingPolicy_DirtyEditCount_CountsInsertsDeletesAndCellUpdates(t *testing.T) {
+func TestStagingPolicy_DirtyEditCount_CountsOneRowForMultipleEditedColumns(t *testing.T) {
 	// Arrange
 	policy := usecase.NewStagingPolicy()
-	pendingInserts := []dto.PendingInsertRow{
-		{},
-	}
 	pendingUpdates := map[string]dto.PendingRecordEdits{
 		"id=1": {
 			Changes: map[int]dto.StagedEdit{
@@ -84,15 +81,78 @@ func TestStagingPolicy_DirtyEditCount_CountsInsertsDeletesAndCellUpdates(t *test
 			},
 		},
 	}
+
+	// Act
+	count := policy.DirtyEditCount(nil, pendingUpdates, nil)
+
+	// Assert
+	if count != 1 {
+		t.Fatalf("expected dirty count 1, got %d", count)
+	}
+}
+
+func TestStagingPolicy_DirtyEditCount_CountsOneRowPerInsert(t *testing.T) {
+	// Arrange
+	policy := usecase.NewStagingPolicy()
+	pendingInserts := []dto.PendingInsertRow{{}}
+
+	// Act
+	count := policy.DirtyEditCount(pendingInserts, nil, nil)
+
+	// Assert
+	if count != 1 {
+		t.Fatalf("expected dirty count 1, got %d", count)
+	}
+}
+
+func TestStagingPolicy_DirtyEditCount_CountsOneRowPerDelete(t *testing.T) {
+	// Arrange
+	policy := usecase.NewStagingPolicy()
 	pendingDeletes := map[string]dto.PendingRecordDelete{
 		"id=2": {},
 	}
 
 	// Act
-	count := policy.DirtyEditCount(pendingInserts, pendingUpdates, pendingDeletes)
+	count := policy.DirtyEditCount(nil, nil, pendingDeletes)
 
 	// Assert
-	if count != 4 {
-		t.Fatalf("expected dirty count 4, got %d", count)
+	if count != 1 {
+		t.Fatalf("expected dirty count 1, got %d", count)
+	}
+}
+
+func TestStagingPolicy_DirtyEditCount_DeduplicatesEditedThenDeletedPersistedRow(t *testing.T) {
+	// Arrange
+	policy := usecase.NewStagingPolicy()
+	pendingUpdates := map[string]dto.PendingRecordEdits{
+		"id=1": {
+			Changes: map[int]dto.StagedEdit{
+				0: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+			},
+		},
+	}
+	pendingDeletes := map[string]dto.PendingRecordDelete{
+		"id=1": {},
+	}
+
+	// Act
+	count := policy.DirtyEditCount(nil, pendingUpdates, pendingDeletes)
+
+	// Assert
+	if count != 1 {
+		t.Fatalf("expected dirty count 1, got %d", count)
+	}
+}
+
+func TestStagingPolicy_DirtyEditCount_ReturnsZeroWhenRemovedInsertNoLongerExists(t *testing.T) {
+	// Arrange
+	policy := usecase.NewStagingPolicy()
+
+	// Act
+	count := policy.DirtyEditCount(nil, nil, nil)
+
+	// Assert
+	if count != 0 {
+		t.Fatalf("expected dirty count 0, got %d", count)
 	}
 }

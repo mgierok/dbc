@@ -25,8 +25,7 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	if len(changes.Inserts) == 0 && len(changes.Updates) == 0 && len(changes.Deletes) == 0 {
 		return m, nil
 	}
-	count := m.dirtyEditCount()
-	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes, count)
+	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes)
 }
 
 func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {

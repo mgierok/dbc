@@ -18,17 +18,17 @@ func NewSaveTableChanges(engine port.Engine) *SaveTableChanges {
 	return &SaveTableChanges{engine: engine}
 }
 
-func (uc *SaveTableChanges) Execute(ctx context.Context, tableName string, changes model.TableChanges) error {
+func (uc *SaveTableChanges) Execute(ctx context.Context, tableName string, changes model.TableChanges) (int, error) {
 	if strings.TrimSpace(tableName) == "" {
-		return fmt.Errorf("table name is required")
+		return 0, fmt.Errorf("table name is required")
 	}
 	if err := validateTableChanges(changes); err != nil {
-		return err
+		return 0, err
 	}
 	return uc.engine.ApplyRecordChanges(ctx, tableName, changes)
 }
 
-func (uc *SaveTableChanges) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) error {
+func (uc *SaveTableChanges) ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) (int, error) {
 	return uc.Execute(ctx, tableName, toDomainTableChanges(changes))
 }
 

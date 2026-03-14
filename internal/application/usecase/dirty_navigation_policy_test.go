@@ -17,7 +17,7 @@ func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_UsesExpectedCopyAndOptions
 	if prompt.Title != "Switch Table" {
 		t.Fatalf("expected title Switch Table, got %q", prompt.Title)
 	}
-	expectedMessage := "Switching tables will cause loss of unsaved data (3 changes). Are you sure you want to discard unsaved data?"
+	expectedMessage := "Switching tables will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data?"
 	if prompt.Message != expectedMessage {
 		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
 	}
@@ -40,7 +40,7 @@ func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_ClampsNegativeCountToZero(
 	prompt := policy.BuildTableSwitchPrompt(-5)
 
 	// Assert
-	expectedMessage := "Switching tables will cause loss of unsaved data (0 changes). Are you sure you want to discard unsaved data?"
+	expectedMessage := "Switching tables will cause loss of unsaved data (0 rows). Are you sure you want to discard unsaved data?"
 	if prompt.Message != expectedMessage {
 		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
 	}

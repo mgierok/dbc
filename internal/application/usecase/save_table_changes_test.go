@@ -14,6 +14,7 @@ import (
 type spyEngine struct {
 	tableName string
 	changes   model.TableChanges
+	count     int
 	err       error
 }
 
@@ -33,15 +34,15 @@ func (s *spyEngine) ListOperators(ctx context.Context, columnType string) ([]mod
 	return nil, nil
 }
 
-func (s *spyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) error {
+func (s *spyEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes model.TableChanges) (int, error) {
 	s.tableName = tableName
 	s.changes = changes
-	return s.err
+	return s.count, s.err
 }
 
-func TestSaveTableChanges_DelegatesChanges(t *testing.T) {
+func TestSaveTableChanges_DelegatesChangesAndReturnsAppliedRowCount(t *testing.T) {
 	// Arrange
-	engine := &spyEngine{}
+	engine := &spyEngine{count: 1}
 	uc := usecase.NewSaveTableChanges(engine)
 	changes := model.TableChanges{
 		Inserts: []model.RecordInsert{
@@ -52,11 +53,14 @@ func TestSaveTableChanges_DelegatesChanges(t *testing.T) {
 	}
 
 	// Act
-	err := uc.Execute(context.Background(), "users", changes)
+	count, err := uc.Execute(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected applied row count 1, got %d", count)
 	}
 	if len(engine.changes.Inserts) != 1 {
 		t.Fatalf("expected 1 insert, got %d", len(engine.changes.Inserts))
@@ -70,7 +74,7 @@ func TestSaveTableChanges_ReturnsError(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "users", model.TableChanges{
+	count, err := uc.Execute(context.Background(), "users", model.TableChanges{
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
@@ -82,6 +86,9 @@ func TestSaveTableChanges_ReturnsError(t *testing.T) {
 	})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count on error, got %d", count)
+	}
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected error %v, got %v", expectedErr, err)
 	}
@@ -93,9 +100,12 @@ func TestSaveTableChanges_ValidatesMissingChanges(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "users", model.TableChanges{})
+	count, err := uc.Execute(context.Background(), "users", model.TableChanges{})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count for validation failure, got %d", count)
+	}
 	if !errors.Is(err, model.ErrMissingTableChanges) {
 		t.Fatalf("expected error %v, got %v", model.ErrMissingTableChanges, err)
 	}
@@ -107,11 +117,14 @@ func TestSaveTableChanges_ValidatesInsertValues(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "users", model.TableChanges{
+	count, err := uc.Execute(context.Background(), "users", model.TableChanges{
 		Inserts: []model.RecordInsert{{}},
 	})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count for validation failure, got %d", count)
+	}
 	if !errors.Is(err, model.ErrMissingInsertValues) {
 		t.Fatalf("expected error %v, got %v", model.ErrMissingInsertValues, err)
 	}
@@ -123,19 +136,22 @@ func TestSaveTableChanges_ValidatesDeleteIdentity(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "users", model.TableChanges{
+	count, err := uc.Execute(context.Background(), "users", model.TableChanges{
 		Deletes: []model.RecordDelete{{}},
 	})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count for validation failure, got %d", count)
+	}
 	if !errors.Is(err, model.ErrMissingDeleteIdentity) {
 		t.Fatalf("expected error %v, got %v", model.ErrMissingDeleteIdentity, err)
 	}
 }
 
-func TestSaveTableChanges_ExecuteDTO_DelegatesChanges(t *testing.T) {
+func TestSaveTableChanges_ExecuteDTO_DelegatesChangesAndReturnsAppliedRowCount(t *testing.T) {
 	// Arrange
-	engine := &spyEngine{}
+	engine := &spyEngine{count: 1}
 	uc := usecase.NewSaveTableChanges(engine)
 	changes := dto.TableChanges{
 		Inserts: []dto.RecordInsert{
@@ -146,11 +162,14 @@ func TestSaveTableChanges_ExecuteDTO_DelegatesChanges(t *testing.T) {
 	}
 
 	// Act
-	err := uc.ExecuteDTO(context.Background(), "users", changes)
+	count, err := uc.ExecuteDTO(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected applied row count 1, got %d", count)
 	}
 	if len(engine.changes.Inserts) != 1 {
 		t.Fatalf("expected 1 insert, got %d", len(engine.changes.Inserts))
@@ -178,11 +197,14 @@ func TestSaveTableChanges_ExecuteDTO_MapsUpdateIdentityAndChanges(t *testing.T) 
 	}
 
 	// Act
-	err := uc.ExecuteDTO(context.Background(), "users", changes)
+	count, err := uc.ExecuteDTO(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected applied row count 0, got %d", count)
 	}
 
 	expected := []model.RecordUpdate{
@@ -226,11 +248,14 @@ func TestSaveTableChanges_ExecuteDTO_MapsDeleteIdentity(t *testing.T) {
 	}
 
 	// Act
-	err := uc.ExecuteDTO(context.Background(), "users", changes)
+	count, err := uc.ExecuteDTO(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected applied row count 0, got %d", count)
 	}
 
 	expected := []model.RecordDelete{
@@ -284,11 +309,14 @@ func TestSaveTableChanges_ExecuteDTO_PreservesCombinedPayloadShape(t *testing.T)
 	}
 
 	// Act
-	err := uc.ExecuteDTO(context.Background(), "users", changes)
+	count, err := uc.ExecuteDTO(context.Background(), "users", changes)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected applied row count 0, got %d", count)
 	}
 	if engine.tableName != "users" {
 		t.Fatalf("expected table name users, got %q", engine.tableName)
@@ -319,7 +347,7 @@ func TestSaveTableChanges_ValidatesMissingTableName(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "   ", model.TableChanges{
+	count, err := uc.Execute(context.Background(), "   ", model.TableChanges{
 		Inserts: []model.RecordInsert{
 			{
 				Values: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "alice", Raw: "alice"}}},
@@ -328,6 +356,9 @@ func TestSaveTableChanges_ValidatesMissingTableName(t *testing.T) {
 	})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count for missing table name, got %d", count)
+	}
 	if err == nil {
 		t.Fatal("expected error for missing table name")
 	}
@@ -342,7 +373,7 @@ func TestSaveTableChanges_ValidatesUpdateIdentity(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "users", model.TableChanges{
+	count, err := uc.Execute(context.Background(), "users", model.TableChanges{
 		Updates: []model.RecordUpdate{
 			{
 				Changes: []model.ColumnValue{{Column: "name", Value: model.Value{Text: "bob", Raw: "bob"}}},
@@ -351,6 +382,9 @@ func TestSaveTableChanges_ValidatesUpdateIdentity(t *testing.T) {
 	})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count for validation failure, got %d", count)
+	}
 	if !errors.Is(err, model.ErrMissingRecordIdentity) {
 		t.Fatalf("expected error %v, got %v", model.ErrMissingRecordIdentity, err)
 	}
@@ -362,7 +396,7 @@ func TestSaveTableChanges_ValidatesUpdateChanges(t *testing.T) {
 	uc := usecase.NewSaveTableChanges(engine)
 
 	// Act
-	err := uc.Execute(context.Background(), "users", model.TableChanges{
+	count, err := uc.Execute(context.Background(), "users", model.TableChanges{
 		Updates: []model.RecordUpdate{
 			{
 				Identity: model.RecordIdentity{
@@ -373,6 +407,9 @@ func TestSaveTableChanges_ValidatesUpdateChanges(t *testing.T) {
 	})
 
 	// Assert
+	if count != 0 {
+		t.Fatalf("expected zero count for validation failure, got %d", count)
+	}
 	if !errors.Is(err, model.ErrMissingRecordChanges) {
 		t.Fatalf("expected error %v, got %v", model.ErrMissingRecordChanges, err)
 	}
