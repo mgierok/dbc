@@ -92,7 +92,7 @@ Current product value and scope:
 
 - All writes are staged first. The database remains unchanged until save succeeds.
 - Undo and redo are available during the current app session for staged actions in the selected table.
-- Save is a confirmed action triggered via `:w` / `:write` that applies staged insert, update, and delete changes as a single save operation for the current table. `:wq` reuses the same confirmation and save behavior, then exits immediately only after a successful save.
+- Save is a confirmed action triggered via `:w` / `:write` that opens a save decision popup with `Save changes` and `Cancel`, then applies staged insert, update, and delete changes as a single save operation for the current table when the save option is selected. `:wq` opens the same style of decision popup with `Save changes and quit` and `Cancel`, then exits immediately only after a successful save.
 - After save confirmation, the status line immediately shows `Saving changes...` until the save result arrives.
 - While save is in progress, runtime navigation and command entry are temporarily blocked until the save result arrives.
 - On save success, staged state is cleared, the status line reports the number of saved affected rows, and records reload for the current table with the active filter and sort still applied.
@@ -179,7 +179,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | Sort popup | `j/k` select, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` when field is nullable; text entry supports typing, `left/right`, and `Backspace`, while select-style fields use `j/k` |
 | Command input | Type command text, `left/right` move caret, `Backspace` delete, `Enter` run, `Esc` cancel |
-| Confirm and dirty-decision popups | `j/k` choose action, `Enter` or `y` confirm, `Esc` or `n` cancel |
+| Confirm and dirty-decision popups | `j/k` choose action, `Enter` or `y` select the current action, `Esc` or `n` cancel |
 | Help and record-detail popups | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 
 ## Glossary

@@ -182,8 +182,23 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 			if !model.overlay.confirmPopup.active {
 				t.Fatalf("expected :%s to open save confirmation", tc.command)
 			}
-			if model.overlay.confirmPopup.action != confirmSave {
-				t.Fatalf("expected :%s to open save action, got %v", tc.command, model.overlay.confirmPopup.action)
+			if !model.overlay.confirmPopup.modal {
+				t.Fatalf("expected :%s to open modal save confirmation", tc.command)
+			}
+			if len(model.overlay.confirmPopup.options) != 2 {
+				t.Fatalf("expected :%s to show two explicit save options, got %d", tc.command, len(model.overlay.confirmPopup.options))
+			}
+			if model.overlay.confirmPopup.options[0].action != confirmSave {
+				t.Fatalf("expected :%s primary option to trigger save, got %v", tc.command, model.overlay.confirmPopup.options[0].action)
+			}
+			if model.overlay.confirmPopup.options[0].label != "Save changes" {
+				t.Fatalf("expected :%s primary option label, got %q", tc.command, model.overlay.confirmPopup.options[0].label)
+			}
+			if model.overlay.confirmPopup.options[1].label != "Cancel" {
+				t.Fatalf("expected :%s cancel option label, got %q", tc.command, model.overlay.confirmPopup.options[1].label)
+			}
+			if model.overlay.confirmPopup.selected != 0 {
+				t.Fatalf("expected :%s to default to primary save option, got %d", tc.command, model.overlay.confirmPopup.selected)
 			}
 		})
 	}
@@ -211,11 +226,23 @@ func TestHandleKey_CommandSaveAndQuitOpensSaveConfirmationWhenDirty(t *testing.T
 	if !model.overlay.confirmPopup.active {
 		t.Fatal("expected :wq to open save confirmation")
 	}
-	if model.overlay.confirmPopup.action != confirmSaveAndQuit {
-		t.Fatalf("expected :wq to open save-and-quit action, got %v", model.overlay.confirmPopup.action)
+	if !model.overlay.confirmPopup.modal {
+		t.Fatal("expected :wq to open modal save confirmation")
 	}
-	if model.overlay.confirmPopup.message != "Save staged changes?" {
-		t.Fatalf("expected save confirmation message, got %q", model.overlay.confirmPopup.message)
+	if len(model.overlay.confirmPopup.options) != 2 {
+		t.Fatalf("expected :wq to show two explicit save options, got %d", len(model.overlay.confirmPopup.options))
+	}
+	if model.overlay.confirmPopup.options[0].action != confirmSaveAndQuit {
+		t.Fatalf("expected :wq primary option to trigger save-and-quit, got %v", model.overlay.confirmPopup.options[0].action)
+	}
+	if model.overlay.confirmPopup.options[0].label != "Save changes and quit" {
+		t.Fatalf("expected :wq primary option label, got %q", model.overlay.confirmPopup.options[0].label)
+	}
+	if model.overlay.confirmPopup.options[1].label != "Cancel" {
+		t.Fatalf("expected :wq cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
+	}
+	if model.overlay.confirmPopup.selected != 0 {
+		t.Fatalf("expected :wq to default to primary save option, got %d", model.overlay.confirmPopup.selected)
 	}
 }
 

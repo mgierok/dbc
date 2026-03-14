@@ -517,8 +517,26 @@ func TestRequestSaveChanges_OpensConfirmPopupFromSchemaWithDirtyStateStartedInRe
 	if !model.overlay.confirmPopup.active {
 		t.Fatal("expected schema save request to open confirm popup")
 	}
-	if model.overlay.confirmPopup.action != confirmSave {
-		t.Fatalf("expected confirmSave action, got %v", model.overlay.confirmPopup.action)
+	if !model.overlay.confirmPopup.modal {
+		t.Fatal("expected schema save request to open modal confirm popup")
+	}
+	if len(model.overlay.confirmPopup.options) != 2 {
+		t.Fatalf("expected schema save request to show two options, got %d", len(model.overlay.confirmPopup.options))
+	}
+	if model.overlay.confirmPopup.options[0].label != "Save changes" {
+		t.Fatalf("expected primary save option label, got %q", model.overlay.confirmPopup.options[0].label)
+	}
+	if model.overlay.confirmPopup.options[0].action != confirmSave {
+		t.Fatalf("expected primary save option action, got %v", model.overlay.confirmPopup.options[0].action)
+	}
+	if model.overlay.confirmPopup.options[1].label != "Cancel" {
+		t.Fatalf("expected cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
+	}
+	if model.overlay.confirmPopup.options[1].action != confirmConfigCancel {
+		t.Fatalf("expected cancel option action, got %v", model.overlay.confirmPopup.options[1].action)
+	}
+	if model.overlay.confirmPopup.selected != 0 {
+		t.Fatalf("expected primary save option to be selected by default, got %d", model.overlay.confirmPopup.selected)
 	}
 }
 
@@ -542,7 +560,221 @@ func TestRequestSaveChanges_OpensConfirmPopupFromTablesWithDirtyStateStartedInRe
 	if !model.overlay.confirmPopup.active {
 		t.Fatal("expected tables save request to open confirm popup")
 	}
-	if model.overlay.confirmPopup.action != confirmSave {
-		t.Fatalf("expected confirmSave action, got %v", model.overlay.confirmPopup.action)
+	if !model.overlay.confirmPopup.modal {
+		t.Fatal("expected tables save request to open modal confirm popup")
+	}
+	if len(model.overlay.confirmPopup.options) != 2 {
+		t.Fatalf("expected tables save request to show two options, got %d", len(model.overlay.confirmPopup.options))
+	}
+	if model.overlay.confirmPopup.options[0].label != "Save changes" {
+		t.Fatalf("expected primary save option label, got %q", model.overlay.confirmPopup.options[0].label)
+	}
+	if model.overlay.confirmPopup.options[0].action != confirmSave {
+		t.Fatalf("expected primary save option action, got %v", model.overlay.confirmPopup.options[0].action)
+	}
+	if model.overlay.confirmPopup.options[1].label != "Cancel" {
+		t.Fatalf("expected cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
+	}
+	if model.overlay.confirmPopup.options[1].action != confirmConfigCancel {
+		t.Fatalf("expected cancel option action, got %v", model.overlay.confirmPopup.options[1].action)
+	}
+	if model.overlay.confirmPopup.selected != 0 {
+		t.Fatalf("expected primary save option to be selected by default, got %d", model.overlay.confirmPopup.selected)
+	}
+}
+
+func TestRequestSaveAndQuit_OpensConfirmPopupWithSaveAndQuitAndCancelOptions(t *testing.T) {
+	// Arrange
+	model := &Model{
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+
+	// Act
+	model.requestSaveAndQuit()
+
+	// Assert
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected save-and-quit request to open confirm popup")
+	}
+	if !model.overlay.confirmPopup.modal {
+		t.Fatal("expected save-and-quit request to open modal confirm popup")
+	}
+	if len(model.overlay.confirmPopup.options) != 2 {
+		t.Fatalf("expected save-and-quit request to show two options, got %d", len(model.overlay.confirmPopup.options))
+	}
+	if model.overlay.confirmPopup.options[0].label != "Save changes and quit" {
+		t.Fatalf("expected primary save-and-quit option label, got %q", model.overlay.confirmPopup.options[0].label)
+	}
+	if model.overlay.confirmPopup.options[0].action != confirmSaveAndQuit {
+		t.Fatalf("expected primary save-and-quit option action, got %v", model.overlay.confirmPopup.options[0].action)
+	}
+	if model.overlay.confirmPopup.options[1].label != "Cancel" {
+		t.Fatalf("expected cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
+	}
+	if model.overlay.confirmPopup.options[1].action != confirmConfigCancel {
+		t.Fatalf("expected cancel option action, got %v", model.overlay.confirmPopup.options[1].action)
+	}
+	if model.overlay.confirmPopup.selected != 0 {
+		t.Fatalf("expected primary save-and-quit option to be selected by default, got %d", model.overlay.confirmPopup.selected)
+	}
+}
+
+func TestHandleConfirmPopupKey_SaveRequestPrimaryOptionStartsSaveFlow(t *testing.T) {
+	// Arrange
+	saveChanges := &spySaveChangesUseCase{count: 1}
+	model := &Model{
+		ctx:         context.Background(),
+		saveChanges: saveChanges,
+		read: runtimeReadState{
+			viewMode:      ViewRecords,
+			focus:         FocusContent,
+			tables:        []dto.Table{{Name: "users"}},
+			selectedTable: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+	}
+	model.requestSaveChanges()
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected primary save option to start save flow")
+	}
+	if !model.ui.saveInFlight {
+		t.Fatal("expected save flow to enter save-in-flight state")
+	}
+}
+
+func TestHandleConfirmPopupKey_SaveAndQuitRequestPrimaryOptionStartsSaveFlow(t *testing.T) {
+	// Arrange
+	saveChanges := &spySaveChangesUseCase{count: 1}
+	model := &Model{
+		ctx:         context.Background(),
+		saveChanges: saveChanges,
+		read: runtimeReadState{
+			viewMode:      ViewRecords,
+			focus:         FocusContent,
+			tables:        []dto.Table{{Name: "users"}},
+			selectedTable: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
+	}
+	model.requestSaveAndQuit()
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected primary save-and-quit option to start save flow")
+	}
+	if !model.ui.pendingQuitAfterSave {
+		t.Fatal("expected save-and-quit flow to set pending quit flag")
+	}
+}
+
+func TestHandleConfirmPopupKey_SaveRequestCancelOptionClosesPopupWithoutStartingSave(t *testing.T) {
+	// Arrange
+	model := &Model{
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+	model.requestSaveChanges()
+	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected cancel option not to start save flow")
+	}
+	if model.overlay.confirmPopup.active {
+		t.Fatal("expected cancel option to close save popup")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected cancel option to keep save out of flight")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected cancel option to preserve staged changes")
+	}
+}
+
+func TestHandleConfirmPopupKey_SaveRequestEscapeClosesPopupWithoutStartingSave(t *testing.T) {
+	// Arrange
+	model := &Model{
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+	model.requestSaveChanges()
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected escape not to start save flow")
+	}
+	if model.overlay.confirmPopup.active {
+		t.Fatal("expected escape to close save popup")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected escape to keep save out of flight")
+	}
+	if !model.hasDirtyEdits() {
+		t.Fatal("expected escape to preserve staged changes")
 	}
 }

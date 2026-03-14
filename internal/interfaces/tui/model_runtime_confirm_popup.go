@@ -6,15 +6,6 @@ import (
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
-func (m *Model) openConfirmPopup(action confirmAction, message string) {
-	m.overlay.confirmPopup = confirmPopup{
-		active:  true,
-		title:   "Confirm",
-		action:  action,
-		message: message,
-	}
-}
-
 func (m *Model) openModalConfirmPopupWithOptions(title, message string, options []confirmOption, selected int) {
 	if len(options) == 0 {
 		m.overlay.confirmPopup = confirmPopup{

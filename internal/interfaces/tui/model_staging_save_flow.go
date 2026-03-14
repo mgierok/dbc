@@ -4,6 +4,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func saveConfirmOptions(primaryLabel string, primaryAction confirmAction) []confirmOption {
+	return []confirmOption{
+		{label: primaryLabel, action: primaryAction},
+		{label: "Cancel", action: confirmConfigCancel},
+	}
+}
+
 func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
 	if !m.saveSupportedInCurrentContext() {
 		return m, nil
@@ -12,7 +19,12 @@ func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
 		m.ui.statusMessage = "Error: save use case unavailable"
 		return m, nil
 	}
-	m.openConfirmPopup(confirmSave, "Save staged changes?")
+	m.openModalConfirmPopupWithOptions(
+		"Save",
+		"Choose whether to save staged changes.",
+		saveConfirmOptions("Save changes", confirmSave),
+		0,
+	)
 	return m, nil
 }
 
@@ -27,7 +39,12 @@ func (m *Model) requestSaveAndQuit() (tea.Model, tea.Cmd) {
 		m.ui.statusMessage = "Error: save use case unavailable"
 		return m, nil
 	}
-	m.openConfirmPopup(confirmSaveAndQuit, "Save staged changes?")
+	m.openModalConfirmPopupWithOptions(
+		"Save",
+		"Choose whether to save staged changes before quitting.",
+		saveConfirmOptions("Save changes and quit", confirmSaveAndQuit),
+		0,
+	)
 	return m, nil
 }
 
