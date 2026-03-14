@@ -109,8 +109,6 @@ func (o *runtimeStartupOrchestrator) run() error {
 			default:
 				return fmt.Errorf("failed to select database: %w", err)
 			}
-		} else {
-			o.resumeSelected = nil
 		}
 
 		o.sessionScopedOptions = trackSessionScopedDirectLaunchOption(o.sessionScopedOptions, selectedStartupPath, selected)
@@ -162,13 +160,19 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 			)
 		}
 
-		o.selectorState = tui.SelectorLaunchState{
+		retryState := tui.SelectorLaunchState{
 			StatusMessage:     buildConnectionFailureStatus(selected, err.Error()),
 			PreferConnString:  selected.ConnString,
 			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
 		}
+		if o.resumeSelected != nil {
+			retryState = o.buildRuntimeResumeSelectorState(selected.ConnString, retryState.StatusMessage)
+		}
+
+		o.selectorState = retryState
 		return true, nil
 	}
+	o.resumeSelected = nil
 	o.selectorState = tui.SelectorLaunchState{}
 
 	runRuntimeSessionFn := o.runRuntimeSessionFn
@@ -180,11 +184,7 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 	if errors.Is(runErr, tui.ErrOpenConfigSelector) {
 		resumeSelected := selected
 		o.resumeSelected = &resumeSelected
-		o.selectorState = tui.SelectorLaunchState{
-			PreferConnString:  selected.ConnString,
-			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
-			BrowseEscBehavior: tui.SelectorBrowseEscBehaviorRuntimeResume,
-		}
+		o.selectorState = o.buildRuntimeResumeSelectorState(selected.ConnString, "")
 		return true, nil
 	}
 	if runErr != nil {
@@ -194,6 +194,15 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 		)
 	}
 	return false, nil
+}
+
+func (o *runtimeStartupOrchestrator) buildRuntimeResumeSelectorState(preferConnString, statusMessage string) tui.SelectorLaunchState {
+	return tui.SelectorLaunchState{
+		StatusMessage:     statusMessage,
+		PreferConnString:  preferConnString,
+		AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
+		BrowseEscBehavior: tui.SelectorBrowseEscBehaviorRuntimeResume,
+	}
 }
 
 func runRuntimeSession(db *sql.DB, runtimeSession *tui.RuntimeSessionState) error {
