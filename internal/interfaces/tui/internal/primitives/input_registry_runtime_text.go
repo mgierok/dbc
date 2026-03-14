@@ -162,16 +162,25 @@ func RuntimeStatusCommandInputShortcuts() string {
 	)
 }
 
+func runtimeSaveShortcutSegment() string {
+	return fmt.Sprintf("%s save", runtimeCommandLabelForAction(RuntimeCommandActionSave))
+}
+
 func RuntimeStatusTablesShortcuts() string {
-	return fmt.Sprintf("Tables: %s records", keyLabel(KeyRuntimeEnter))
+	return joinShortcutSegments(
+		fmt.Sprintf("Tables: %s records", keyLabel(KeyRuntimeEnter)),
+		runtimeSaveShortcutSegment(),
+	)
 }
 
 func RuntimeStatusSchemaShortcuts() string {
-	return fmt.Sprintf("Schema: %s tables", keyLabel(KeyRuntimeEsc))
+	return joinShortcutSegments(
+		fmt.Sprintf("Schema: %s tables", keyLabel(KeyRuntimeEsc)),
+		runtimeSaveShortcutSegment(),
+	)
 }
 
 func RuntimeStatusRecordsShortcuts() string {
-	saveCommand := runtimeCommandLabelForAction(RuntimeCommandActionSave)
 	return joinShortcutSegments(
 		fmt.Sprintf("Records: %s tables", keyLabel(KeyRuntimeEsc)),
 		fmt.Sprintf("%s edit", keyLabel(KeyRuntimeEdit)),
@@ -180,7 +189,7 @@ func RuntimeStatusRecordsShortcuts() string {
 		fmt.Sprintf("%s delete", keyLabel(KeyRuntimeDelete)),
 		fmt.Sprintf("%s undo", keyLabel(KeyRuntimeUndo)),
 		fmt.Sprintf("%s redo", keyLabel(KeyRuntimeRedo)),
-		fmt.Sprintf("%s save", saveCommand),
+		runtimeSaveShortcutSegment(),
 		fmt.Sprintf("%s next page", keyLabel(KeyRuntimePageDown)),
 		fmt.Sprintf("%s prev page", keyLabel(KeyRuntimePageUp)),
 		fmt.Sprintf("%s filter", keyLabel(KeyRuntimeFilter)),
@@ -193,6 +202,7 @@ func RuntimeStatusRecordDetailShortcuts() string {
 		fmt.Sprintf("Detail: %s back", keyLabel(KeyRuntimeEsc)),
 		fmt.Sprintf("%s scroll", joinKeyLabels("/", KeyPopupMoveDown, KeyPopupMoveUp)),
 		fmt.Sprintf("%s page", joinKeyLabels("/", KeyRuntimePageDown, KeyRuntimePageUp)),
+		runtimeSaveShortcutSegment(),
 	)
 }
 

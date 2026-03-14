@@ -1,8 +1,16 @@
 package tui
 
-// command entry is available only in non-popup runtime contexts that own the
-// active status bar workflow.
+// runtime command entry is available only in non-blocking runtime contexts that
+// own the active status bar workflow.
 func (m *Model) commandInputSupportedInCurrentContext() bool {
+	return m.nonBlockingRuntimeCommandContextActive()
+}
+
+func (m *Model) saveSupportedInCurrentContext() bool {
+	return m.nonBlockingRuntimeCommandContextActive() && m.hasDirtyEdits()
+}
+
+func (m *Model) nonBlockingRuntimeCommandContextActive() bool {
 	switch {
 	case m.overlay.helpPopup.active:
 		return false

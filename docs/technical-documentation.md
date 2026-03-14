@@ -92,9 +92,10 @@
 ### Centralized Runtime and Selector Command Registry
 
 - Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
+- Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts.
 - Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, but remains the single source of truth for runtime/selector input semantics.
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
-- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`.
+- Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_command_context.go`, `internal/interfaces/tui/model_staging_save_flow.go`.
 
 ### Terminal-Native TUI Styling
 
@@ -248,7 +249,7 @@ Version source: `go.mod`.
 - Records reload performs `COUNT(*)` on each fetch; large tables can increase read latency.
 - Runtime-set records page limits are capped at `1000`; increasing or removing that cap requires revisiting engine-side slice preallocation in record loading.
 - Selector updates/deletes are index-based and can be sensitive to concurrent external config edits.
-- Shortcut/command changes must keep input registry and help/status rendering synchronized.
+- Shortcut/command changes must keep input registry, help/status rendering, and adapter-side runtime context gating synchronized.
 - Dynamic SQL paths must preserve identifier quoting, operator allowlists, and value placeholders.
 
 ## Deep-Dive References

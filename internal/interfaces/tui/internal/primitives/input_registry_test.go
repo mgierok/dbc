@@ -182,6 +182,29 @@ func TestRuntimeStatusRecordsShortcuts_IncludesPaginationBindings(t *testing.T) 
 	}
 }
 
+func TestRuntimeStatusContextShortcuts_IncludeSharedSaveCommandWhereSupported(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		shortcuts string
+	}{
+		{name: "tables", shortcuts: RuntimeStatusTablesShortcuts()},
+		{name: "schema", shortcuts: RuntimeStatusSchemaShortcuts()},
+		{name: "records", shortcuts: RuntimeStatusRecordsShortcuts()},
+		{name: "record detail", shortcuts: RuntimeStatusRecordDetailShortcuts()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+
+			// Act
+
+			// Assert
+			if !strings.Contains(tc.shortcuts, ":w / :write save") {
+				t.Fatalf("expected shared save shortcut in %s shortcuts, got %q", tc.name, tc.shortcuts)
+			}
+		})
+	}
+}
+
 func TestJoinShortcutSegments_UsesASCIIPipeSeparator(t *testing.T) {
 	// Arrange
 

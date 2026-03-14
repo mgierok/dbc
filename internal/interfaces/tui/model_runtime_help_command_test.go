@@ -64,13 +64,12 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		command string
+		model   *Model
 	}{
-		{name: "short command", command: "w"},
-		{name: "full command", command: "write"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			model := &Model{
+		{
+			name:    "short command in records",
+			command: "w",
+			model: &Model{
 				ctx:         context.Background(),
 				saveChanges: &spySaveChangesUseCase{},
 				read: runtimeReadState{
@@ -80,7 +79,75 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				staging: stagingState{
 					pendingInserts: []pendingInsertRow{{}},
 				},
-			}
+			},
+		},
+		{
+			name:    "full command in records",
+			command: "write",
+			model: &Model{
+				ctx:         context.Background(),
+				saveChanges: &spySaveChangesUseCase{},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					focus:    FocusContent,
+				},
+				staging: stagingState{
+					pendingInserts: []pendingInsertRow{{}},
+				},
+			},
+		},
+		{
+			name:    "save from schema",
+			command: "w",
+			model: &Model{
+				ctx:         context.Background(),
+				saveChanges: &spySaveChangesUseCase{},
+				read: runtimeReadState{
+					viewMode: ViewSchema,
+					focus:    FocusContent,
+				},
+				staging: stagingState{
+					pendingInserts: []pendingInsertRow{{}},
+				},
+			},
+		},
+		{
+			name:    "save from tables",
+			command: "w",
+			model: &Model{
+				ctx:         context.Background(),
+				saveChanges: &spySaveChangesUseCase{},
+				read: runtimeReadState{
+					viewMode: ViewSchema,
+					focus:    FocusTables,
+				},
+				staging: stagingState{
+					pendingInserts: []pendingInsertRow{{}},
+				},
+			},
+		},
+		{
+			name:    "save from record detail",
+			command: "w",
+			model: &Model{
+				ctx:         context.Background(),
+				saveChanges: &spySaveChangesUseCase{},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					focus:    FocusContent,
+				},
+				staging: stagingState{
+					pendingInserts: []pendingInsertRow{{}},
+				},
+				overlay: runtimeOverlayState{
+					recordDetail: recordDetailState{active: true},
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := tc.model
 
 			// Act
 			_, cmd := submitTypedRuntimeCommand(model, tc.command)
@@ -147,6 +214,77 @@ func TestHandleKey_ContextHelpPopupShowsCurrentContextBindings(t *testing.T) {
 	}
 	if strings.Contains(popup, "Supported Commands") || strings.Contains(popup, "Supported Keywords") {
 		t.Fatalf("expected context-only help content, got %q", popup)
+	}
+}
+
+func TestHandleKey_ContextHelpPopupShowsSaveInSchemaTablesAndRecordDetail(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		model          *Model
+		expectedHeader string
+		expectedRow    string
+	}{
+		{
+			name: "schema",
+			model: &Model{
+				ui: runtimeUIState{height: 40},
+				read: runtimeReadState{
+					viewMode: ViewSchema,
+					focus:    FocusContent,
+				},
+			},
+			expectedHeader: "Context Help: Schema",
+			expectedRow:    "Schema: Esc tables",
+		},
+		{
+			name: "tables",
+			model: &Model{
+				ui: runtimeUIState{height: 40},
+				read: runtimeReadState{
+					viewMode: ViewSchema,
+					focus:    FocusTables,
+				},
+			},
+			expectedHeader: "Context Help: Tables",
+			expectedRow:    "Tables: Enter records",
+		},
+		{
+			name: "record detail",
+			model: &Model{
+				ui: runtimeUIState{height: 40},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					focus:    FocusContent,
+				},
+				overlay: runtimeOverlayState{
+					recordDetail: recordDetailState{active: true},
+				},
+			},
+			expectedHeader: "Context Help: Record Detail",
+			expectedRow:    "Detail: Esc back",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+
+			// Act
+			tc.model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+			popup := strings.Join(tc.model.renderHelpPopup(60), "\n")
+
+			// Assert
+			if !tc.model.overlay.helpPopup.active {
+				t.Fatal("expected help popup to open")
+			}
+			if !strings.Contains(popup, tc.expectedHeader) {
+				t.Fatalf("expected help popup header %q, got %q", tc.expectedHeader, popup)
+			}
+			if !strings.Contains(popup, tc.expectedRow) {
+				t.Fatalf("expected context row %q, got %q", tc.expectedRow, popup)
+			}
+			if !strings.Contains(popup, ":w / :write save") {
+				t.Fatalf("expected save shortcut in %s help popup, got %q", tc.name, popup)
+			}
+		})
 	}
 }
 

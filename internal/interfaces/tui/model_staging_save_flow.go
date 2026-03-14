@@ -5,7 +5,7 @@ import (
 )
 
 func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
-	if m.read.viewMode != ViewRecords || !m.hasDirtyEdits() {
+	if !m.saveSupportedInCurrentContext() {
 		return m, nil
 	}
 	if m.saveChanges == nil {

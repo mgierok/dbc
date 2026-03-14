@@ -314,3 +314,53 @@ func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
 		t.Fatal("expected pending config open flag to be set for save-and-open flow")
 	}
 }
+
+func TestRequestSaveChanges_OpensConfirmPopupFromSchemaWithDirtyStateStartedInRecords(t *testing.T) {
+	// Arrange
+	model := &Model{
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewSchema,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+
+	// Act
+	model.requestSaveChanges()
+
+	// Assert
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected schema save request to open confirm popup")
+	}
+	if model.overlay.confirmPopup.action != confirmSave {
+		t.Fatalf("expected confirmSave action, got %v", model.overlay.confirmPopup.action)
+	}
+}
+
+func TestRequestSaveChanges_OpensConfirmPopupFromTablesWithDirtyStateStartedInRecords(t *testing.T) {
+	// Arrange
+	model := &Model{
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			focus:    FocusTables,
+			viewMode: ViewSchema,
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+	}
+
+	// Act
+	model.requestSaveChanges()
+
+	// Assert
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected tables save request to open confirm popup")
+	}
+	if model.overlay.confirmPopup.action != confirmSave {
+		t.Fatalf("expected confirmSave action, got %v", model.overlay.confirmPopup.action)
+	}
+}
