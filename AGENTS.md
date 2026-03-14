@@ -97,8 +97,12 @@ Quick examples:
 
 ### Plan Mode Rules
 
-- When operating in Plan mode, for coding-related plans, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
-- When operating in Plan mode and persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
+These rules apply only in Plan mode.
+- For coding-related plans, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
+- For non-trivial coding plans, the agent MUST inspect the current implementation at the most likely change seams before finalizing the plan.
+- The agent MUST distinguish explicitly between confirmed facts, assumptions, and open questions.
+- If a decision-critical open question remains unresolved, the agent MUST NOT present the plan as execution-ready and MUST call out the gap explicitly.
+- When persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
 - A generated plan MUST include references to the documentation files that SHOULD be consulted to enrich task context for that specific task, with a short note describing why each file is relevant.
 
 ### Repository Consistency Rules
