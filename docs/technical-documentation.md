@@ -63,7 +63,6 @@
 
 - Guarantee: insert/edit/delete actions are staged in memory and persisted only after explicit save confirmation.
 - Guarantee: runtime write-side session state is owned as a database-scoped staging registry keyed by table name, while each table keeps isolated undo/redo history inside its own staging bucket.
-- Guarantee: database-wide save payload construction preserves dirty-table order for the current dirty session instead of normalizing table names alphabetically; tables that become clean and later dirty again re-enter at the end of the current dirty-session order.
 - Guarantee: table switching resets read-side browsing state only and MUST NOT discard staged changes from other tables.
 - Guarantee: dirty-change counting and initial insert defaults are delegated to application staging policy; dirty counts are based on affected rows, not edited cells.
 - Enforced in: `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/staging_policy.go`.
@@ -71,9 +70,6 @@
 ### Transactional Save Semantics
 
 - Guarantee: one save applies inserts, updates, and deletes for all dirty tables in the current runtime database session in one SQLite transaction.
-- Guarantee: SQLite save execution enforces foreign-key-safe table ordering per phase for dirty tables only: inserts and updates run parent-before-child, deletes run child-before-parent.
-- Guarantee: save execution is planned across the whole dirty-table batch rather than executed strictly per-table `insert -> update -> delete`, but repeated batches for the same table preserve caller order even when their phases differ.
-- Guarantee: incoming batch order remains the tie-breaker for unrelated tables and the fallback order when dependency cycles prevent strict ordering.
 - Guarantee: updates targeting rows also staged for delete are skipped.
 - Guarantee: save success clears the full database staging registry; save failure preserves all staged table state and blocks pending leave-runtime actions.
 - Enforced in: `internal/application/usecase/save_database_changes.go`, `internal/interfaces/tui/model_staging_save_flow.go`, `internal/interfaces/tui/model_runtime_update.go`, `internal/infrastructure/engine/sqlite_update.go`.
@@ -180,12 +176,6 @@
 - Rationale: prevent partial persistence across dirty tables and keep the TUI independent from SQLite transaction orchestration details.
 - Where: `internal/application/port/engine.go`, `internal/application/usecase/save_database_changes.go`, `internal/infrastructure/engine/sqlite_update.go`.
 
-### FK-Aware Save Ordering Inside SQLite Adapter
-
-- Decision: keep foreign-key dependency ordering inside the SQLite adapter instead of pushing parent/child ordering requirements into the TUI or application layers.
-- Rationale: preserve the existing database-wide save contract while making multi-table saves correct for immediate foreign keys even when caller batch order is child-first or parent-first.
-- Where: `internal/infrastructure/engine/sqlite_update.go`, `internal/infrastructure/engine/sqlite_update_database_integration_test.go`.
-
 ### Primary-Key Identity for Persisted Writes
 
 - Decision: persisted update/delete operations use primary-key-derived identities.
@@ -257,7 +247,6 @@ Version source: `go.mod`.
 - Editing/deleting persisted rows requires primary keys.
 - Runtime supports one active filter and one active sort for the selected table.
 - Database-wide save requires cached schema for every dirty table staging bucket; losing that schema-to-staging association would make save payload construction fail.
-- Immediate foreign-key cycles across dirty tables are not resolved by the save planner; when dependency cycles make strict ordering impossible, execution falls back to incoming batch order and SQLite still enforces the constraint.
 - Records reload performs `COUNT(*)` on each fetch; large tables can increase read latency.
 - Runtime-set records page limits are capped at `1000`; increasing or removing that cap requires revisiting engine-side slice preallocation in record loading.
 - Selector updates/deletes are index-based and can be sensitive to concurrent external config edits.
