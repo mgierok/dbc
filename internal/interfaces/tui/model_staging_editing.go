@@ -67,7 +67,6 @@ func (m *Model) toggleDeleteSelection() (tea.Model, tea.Cmd) {
 		m.ui.statusMessage = "Error: table has no primary key"
 		return m, nil
 	}
-	m.syncActiveTableSchema()
 	key, identity, err := m.recordIdentityForVisibleRow(m.read.recordSelection)
 	if err != nil {
 		m.ui.statusMessage = "Error: " + err.Error()
