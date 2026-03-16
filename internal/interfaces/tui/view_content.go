@@ -61,7 +61,8 @@ func (m *Model) renderRecords(width, height int) []string {
 	end := primitives.MinInt(totalRows, start+listHeight)
 	for i := start; i < end; i++ {
 		prefix := primitives.SelectionUnselectedPrefix()
-		if m.read.focus == FocusContent && m.read.viewMode == ViewRecords && i == m.read.recordSelection {
+		selected := m.read.focus == FocusContent && m.read.viewMode == ViewRecords && i == m.read.recordSelection
+		if selected {
 			prefix = primitives.SelectionSelectedPrefix()
 		}
 		displayValues := make([]string, len(columns))
@@ -86,8 +87,17 @@ func (m *Model) renderRecords(width, height int) []string {
 		}
 		row := formatRecordRow(displayValues, columnWidths, focusColumn)
 		rowMarker := m.recordRowMarker(i)
-		line := primitives.PadRight(prefix+rowMarker+" "+row, width)
-		if m.read.focus == FocusContent && m.read.viewMode == ViewRecords && i == m.read.recordSelection {
+		prefixWithMarker := prefix + rowMarker + " "
+		if m.isRowMarkedDelete(i) {
+			if selected {
+				prefixWithMarker = m.styles.Selected(prefixWithMarker)
+				row = m.styles.SelectedDeleted(row)
+			} else {
+				row = m.styles.Deleted(row)
+			}
+		}
+		line := primitives.PadRight(prefixWithMarker+row, width)
+		if selected && !m.isRowMarkedDelete(i) {
 			line = m.styles.Selected(line)
 		}
 		lines = append(lines, line)
@@ -141,10 +151,11 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	rowIndex := clamp(m.read.recordSelection, 0, m.totalRecordRows()-1)
 	lines := make([]string, 0, len(m.read.schema.Columns)*4)
+	deleted := m.isRowMarkedDelete(rowIndex)
 	rowLine := primitives.IconInfo + " Persisted record"
 	if _, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
 		rowLine = primitives.IconInfo + " Pending insert"
-	} else if m.isRowMarkedDelete(rowIndex) {
+	} else if deleted {
 		rowLine = primitives.IconInfo + " Marked for delete"
 	} else if m.isRowEdited(rowIndex) {
 		rowLine = primitives.IconInfo + " Edited record"
@@ -166,6 +177,9 @@ func (m *Model) recordDetailContentLines(width int) []string {
 		lines = append(lines, primitives.WrapTextToWidth(header, width)...)
 
 		for _, wrappedLine := range primitives.WrapTextToWidth(value, valueWidth) {
+			if deleted {
+				wrappedLine = m.styles.Deleted(wrappedLine)
+			}
 			lines = append(lines, "  "+wrappedLine)
 		}
 		if columnIndex < len(m.read.schema.Columns)-1 {

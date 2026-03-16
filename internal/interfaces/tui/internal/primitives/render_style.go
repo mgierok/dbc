@@ -10,6 +10,7 @@ const (
 	sgrFaint     = "2"
 	sgrUnderline = "4"
 	sgrReverse   = "7"
+	sgrStrike    = "9"
 	sgrReset     = "\x1b[0m"
 )
 
@@ -41,6 +42,14 @@ func (s RenderStyles) Title(text string) string {
 
 func (s RenderStyles) Selected(text string) string {
 	return s.wrap(text, sgrReverse)
+}
+
+func (s RenderStyles) Deleted(text string) string {
+	return s.wrap(text, sgrStrike)
+}
+
+func (s RenderStyles) SelectedDeleted(text string) string {
+	return s.wrap(text, sgrReverse, sgrStrike)
 }
 
 func (s RenderStyles) Muted(text string) string {

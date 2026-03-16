@@ -55,7 +55,9 @@ Current product value and scope:
 - Pending insert rows marked with `✚` stay pinned at the top of the records list and do not count toward persisted-record page size.
 - Row selection is visible in the focused records panel. Field focus mode supports cell-level navigation inside the records grid.
 - Cell content in the records grid is width-constrained and may be truncated in the list view.
+- Delete-marked persisted rows keep their structural row chrome (`selection prefix` and `✖` marker) readable while applying strikethrough to the row's cell content shown in the records list. If the same row also has staged edits, the list continues to show the effective staged values with the same strikethrough treatment.
 - Opening single-record detail renders the effective row state, including staged insert or edit values, as stacked field blocks: each field shows a `column (type)` header followed by wrapped value lines. Edited fields show `✱` on the field header. Detail content is wrapped instead of truncated, supports scrolling, and closes with `Esc`.
+- In record detail, a delete-marked persisted row keeps the `Marked for delete` summary line and field headers readable without strikethrough, while the wrapped field value lines render with strikethrough. If the row also has staged edits, detail continues to show the effective staged values with that same strikethrough treatment.
 - Records view supports a guided sort flow that selects one column and one direction (`ASC` or `DESC`).
 - Exactly one sort can be active per selected table. Re-running sort replaces the current sort, and switching tables resets sort state.
 - Pending insert rows stay at the top even when sort is active.
@@ -106,6 +108,7 @@ Current product value and scope:
 - The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present, where `N` is the number of unique affected rows in the current table.
 - Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
 - Visual emphasis uses terminal-native text attributes instead of application-defined colors: selected items use reverse video, titles and status labels use emphasis, secondary hints are visually subdued, and error messages are emphasized with underline.
+- When ANSI styling is available, delete-marked persisted record content uses strikethrough as an additional emphasis treatment; when styling is disabled (`NO_COLOR` or `TERM=dumb`), DBC falls back to the textual delete affordances only.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
 - The status bar always communicates current mode, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`).
 - Every active editable text field in the product shows a visible caret `|`.

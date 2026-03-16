@@ -373,6 +373,101 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 	}
 }
 
+func TestRenderRecords_StrikesThroughDeleteMarkedRowCellContent(t *testing.T) {
+	// Arrange
+	model := &Model{
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingUpdates = map[string]recordEdits{
+		key: {
+			changes: map[int]stagedEdit{
+				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
+			},
+		},
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	lines := model.renderRecords(80, 6)
+
+	// Assert
+	if len(lines) < 4 {
+		t.Fatalf("expected rendered row, got %v", lines)
+	}
+	rowLine := lines[3]
+	if !strings.Contains(rowLine, "\x1b[9m") {
+		t.Fatalf("expected delete-marked row values to use strikethrough, got %q", rowLine)
+	}
+	if !strings.Contains(rowLine, "alice2") {
+		t.Fatalf("expected effective staged value in delete-marked row, got %q", rowLine)
+	}
+}
+
+func TestRenderRecords_CombinesSelectedAndDeletedStylesWithoutStrikingPrefixOrMarker(t *testing.T) {
+	// Arrange
+	model := &Model{
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			viewMode:        ViewRecords,
+			focus:           FocusContent,
+			recordSelection: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	lines := model.renderRecords(80, 6)
+
+	// Assert
+	if len(lines) < 4 {
+		t.Fatalf("expected rendered row, got %v", lines)
+	}
+	rowLine := lines[3]
+	if !strings.Contains(rowLine, "\x1b[7;9m") {
+		t.Fatalf("expected selected delete-marked row to preserve reverse video with strikethrough, got %q", rowLine)
+	}
+	expectedPrefix := primitives.SelectionSelectedPrefix() + primitives.IconDelete + " "
+	if !strings.Contains(rowLine, expectedPrefix) {
+		t.Fatalf("expected selection prefix and delete marker outside strikethrough, got %q", rowLine)
+	}
+	if strings.Contains(rowLine, expectedPrefix+"\x1b[9m") || strings.Contains(rowLine, expectedPrefix+"\x1b[7;9m") {
+		t.Fatalf("expected delete strikethrough to start after selection prefix and marker, got %q", rowLine)
+	}
+}
+
 func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
 	// Arrange
 	longValue := "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -549,4 +644,98 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 			t.Fatalf("expected no edit icon on unmodified field header in detail content, got %q", content)
 		}
 	})
+}
+
+func TestRecordDetailContentLines_StrikesDeleteMarkedFieldValuesOnly(t *testing.T) {
+	// Arrange
+	model := &Model{
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingUpdates = map[string]recordEdits{
+		key: {
+			changes: map[int]stagedEdit{
+				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
+			},
+		},
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	lines := model.recordDetailContentLines(40)
+	content := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(content, "  \x1b[9malice2\x1b[0m") {
+		t.Fatalf("expected delete-marked detail value lines to use strikethrough, got %q", content)
+	}
+	if strings.Contains(lines[0], "\x1b[9m") {
+		t.Fatalf("expected delete summary line to remain readable without strikethrough, got %q", lines[0])
+	}
+	if strings.Contains(content, "\x1b[9m\x1b[1mname\x1b[0m (TEXT)") || strings.Contains(content, "\x1b[1mname\x1b[0m (TEXT)\x1b[9m") {
+		t.Fatalf("expected detail field header to remain unstruck, got %q", content)
+	}
+}
+
+func TestDeleteMarkedViews_FallBackToPlainTextWhenStylesAreDisabled(t *testing.T) {
+	// Arrange
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("TERM", "xterm-256color")
+
+	model := &Model{
+		styles: primitives.ResolveRenderStylesFromEnv(),
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	recordLines := model.renderRecords(80, 6)
+	detailLines := model.recordDetailContentLines(40)
+	recordContent := strings.Join(recordLines, "\n")
+	detailContent := strings.Join(detailLines, "\n")
+
+	// Assert
+	if strings.Contains(recordContent, "\x1b[") || strings.Contains(detailContent, "\x1b[") {
+		t.Fatalf("expected plain-text fallback without ANSI styling, got records=%q detail=%q", recordContent, detailContent)
+	}
+	if !strings.Contains(recordContent, primitives.IconDelete+" ") {
+		t.Fatalf("expected delete marker to remain visible without ANSI styling, got %q", recordContent)
+	}
+	if !strings.Contains(detailLines[0], primitives.IconInfo+" Marked for delete") {
+		t.Fatalf("expected detail delete summary to remain visible without ANSI styling, got %q", detailLines[0])
+	}
 }
