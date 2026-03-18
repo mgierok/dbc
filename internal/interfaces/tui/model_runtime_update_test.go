@@ -134,8 +134,13 @@ func TestUpdate_RecordsMsgIgnoresStaleRequestIDAndPreservesCurrentRecords(t *tes
 	}
 }
 
-func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t *testing.T) {
+func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateAndOpensRuntimeDatabaseSelector(t *testing.T) {
 	// Arrange
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
 	model := &Model{
 		staging: stagingState{
 			pendingInserts: []pendingInsertRow{
@@ -148,9 +153,11 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 			},
 		},
 		ui: runtimeUIState{
-			pendingConfigOpen: true,
-			saveInFlight:      true,
+			pendingConfigOpen:           true,
+			pendingDatabaseSelectorOpen: true,
+			saveInFlight:                true,
 		},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 
 	// Act
@@ -169,14 +176,13 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateSetsHandoffAndQuits(t 
 	if !model.ui.openConfigSelector {
 		t.Fatal("expected config-selector handoff to be enabled after successful save")
 	}
-	if model.ui.statusMessage != "Opening database selector" {
-		t.Fatalf("expected config handoff status message, got %q", model.ui.statusMessage)
+	if !model.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector popup to open after successful save-and-open flow")
 	}
-	if cmd == nil {
-		t.Fatal("expected quit command after successful save-and-open flow")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg from quit command, got %T", cmd())
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatalf("expected runtime to stay active after successful save-and-open flow, got %T", cmd())
+		}
 	}
 }
 

@@ -28,6 +28,7 @@ type runtimeStartupDependencies struct {
 	updateConfiguredDB      *usecase.UpdateConfiguredDatabase
 	deleteConfiguredDB      *usecase.DeleteConfiguredDatabase
 	getActiveConfigPath     *usecase.GetActiveConfigPath
+	validateDatabaseConn    *usecase.ValidateDatabaseConnection
 }
 
 func newRuntimeStartupDependencies() (runtimeStartupDependencies, error) {
@@ -44,6 +45,7 @@ func newRuntimeStartupDependencies() (runtimeStartupDependencies, error) {
 		updateConfiguredDB:      usecase.NewUpdateConfiguredDatabase(configStore, connectionChecker),
 		deleteConfiguredDB:      usecase.NewDeleteConfiguredDatabase(configStore),
 		getActiveConfigPath:     usecase.NewGetActiveConfigPath(configStore),
+		validateDatabaseConn:    usecase.NewValidateDatabaseConnection(connectionChecker),
 	}, nil
 }
 
@@ -53,12 +55,12 @@ type runtimeStartupOrchestrator struct {
 	selectorState         tui.SelectorLaunchState
 	runtimeSessionState   tui.RuntimeSessionState
 	sessionScopedOptions  []tui.DatabaseOption
-	resumeSelected        *tui.DatabaseOption
+	pendingRuntimeSwitch  *tui.DatabaseOption
 	directLaunchPending   bool
 	selectDatabaseFn      func() (tui.DatabaseOption, startupPath, error)
 	runSelectedDatabaseFn func(tui.DatabaseOption, startupPath) (bool, error)
 	connectDatabaseFn     func(tui.DatabaseOption) (*sql.DB, error)
-	runRuntimeSessionFn   func(*sql.DB, *tui.RuntimeSessionState) error
+	runRuntimeSessionFn   func(*sql.DB, tui.RuntimeDatabaseSelectorDeps, *tui.RuntimeSessionState) (tui.RuntimeExitRequest, error)
 }
 
 func newRuntimeStartupOrchestrator(options startupOptions, deps runtimeStartupDependencies) *runtimeStartupOrchestrator {
@@ -95,23 +97,26 @@ func (o *runtimeStartupOrchestrator) run() error {
 	}
 
 	for {
-		selected, selectedStartupPath, err := selectDatabaseFn()
-		if err != nil {
-			switch {
-			case errors.Is(err, tui.ErrDatabaseSelectionDismissed):
-				if o.resumeSelected == nil {
-					return fmt.Errorf("failed to select database: %w", err)
+		var (
+			selected            tui.DatabaseOption
+			selectedStartupPath startupPath
+			err                 error
+		)
+		if o.pendingRuntimeSwitch != nil {
+			selected = *o.pendingRuntimeSwitch
+			selectedStartupPath = startupPathRuntimeSwitch
+			o.pendingRuntimeSwitch = nil
+		} else {
+			selected, selectedStartupPath, err = selectDatabaseFn()
+			if err != nil {
+				if errors.Is(err, tui.ErrDatabaseSelectionCanceled) {
+					return nil
 				}
-				selected = *o.resumeSelected
-				selectedStartupPath = startupPathSelector
-			case errors.Is(err, tui.ErrDatabaseSelectionCanceled):
-				return nil
-			default:
 				return fmt.Errorf("failed to select database: %w", err)
 			}
 		}
 
-		o.sessionScopedOptions = trackSessionScopedDirectLaunchOption(o.sessionScopedOptions, selectedStartupPath, selected)
+		o.sessionScopedOptions = trackSessionScopedCLIOption(o.sessionScopedOptions, selected)
 		o.directLaunchPending = false
 
 		shouldContinue, err := runSelectedDatabaseFn(selected, selectedStartupPath)
@@ -119,7 +124,6 @@ func (o *runtimeStartupOrchestrator) run() error {
 			return err
 		}
 		if !shouldContinue {
-			o.resumeSelected = nil
 			return nil
 		}
 	}
@@ -165,14 +169,9 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 			PreferConnString:  selected.ConnString,
 			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
 		}
-		if o.resumeSelected != nil {
-			retryState = o.buildRuntimeResumeSelectorState(selected.ConnString, retryState.StatusMessage)
-		}
-
 		o.selectorState = retryState
 		return true, nil
 	}
-	o.resumeSelected = nil
 	o.selectorState = tui.SelectorLaunchState{}
 
 	runRuntimeSessionFn := o.runRuntimeSessionFn
@@ -180,32 +179,31 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 		runRuntimeSessionFn = runRuntimeSession
 	}
 
-	runErr := runRuntimeSessionFn(db, &o.runtimeSessionState)
-	if errors.Is(runErr, tui.ErrOpenConfigSelector) {
-		resumeSelected := selected
-		o.resumeSelected = &resumeSelected
-		o.selectorState = o.buildRuntimeResumeSelectorState(selected.ConnString, "")
-		return true, nil
-	}
+	exitRequest, runErr := runRuntimeSessionFn(db, tui.RuntimeDatabaseSelectorDeps{
+		ListConfiguredDatabases:    o.deps.listConfiguredDatabases,
+		CreateConfiguredDatabase:   o.deps.createConfiguredDB,
+		UpdateConfiguredDatabase:   o.deps.updateConfiguredDB,
+		DeleteConfiguredDatabase:   o.deps.deleteConfiguredDB,
+		GetActiveConfigPath:        o.deps.getActiveConfigPath,
+		ValidateDatabaseConnection: o.deps.validateDatabaseConn,
+		CurrentDatabase:            selected,
+		AdditionalOptions:          cloneDatabaseOptions(o.sessionScopedOptions),
+	}, &o.runtimeSessionState)
 	if runErr != nil {
 		return false, newPresentedStartupFailure(
 			startupExitCodeRuntimeFailure,
 			fmt.Sprintf("application error: %v", runErr),
 		)
 	}
+	if exitRequest.Action == tui.RuntimeExitActionSwitchDatabase {
+		nextSelected := exitRequest.Database
+		o.pendingRuntimeSwitch = &nextSelected
+		return true, nil
+	}
 	return false, nil
 }
 
-func (o *runtimeStartupOrchestrator) buildRuntimeResumeSelectorState(preferConnString, statusMessage string) tui.SelectorLaunchState {
-	return tui.SelectorLaunchState{
-		StatusMessage:     statusMessage,
-		PreferConnString:  preferConnString,
-		AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
-		BrowseEscBehavior: tui.SelectorBrowseEscBehaviorRuntimeResume,
-	}
-}
-
-func runRuntimeSession(db *sql.DB, runtimeSession *tui.RuntimeSessionState) error {
+func runRuntimeSession(db *sql.DB, runtimeDatabaseSelectorDeps tui.RuntimeDatabaseSelectorDeps, runtimeSession *tui.RuntimeSessionState) (tui.RuntimeExitRequest, error) {
 	sqliteEngine := engine.NewSQLiteEngine(db)
 	listTables := usecase.NewListTables(sqliteEngine)
 	getSchema := usecase.NewGetSchema(sqliteEngine)
@@ -214,9 +212,9 @@ func runRuntimeSession(db *sql.DB, runtimeSession *tui.RuntimeSessionState) erro
 	saveChanges := usecase.NewSaveTableChanges(sqliteEngine)
 	translator := usecase.NewStagedChangesTranslator()
 
-	runErr := tuiRunFn(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession)
+	exitRequest, runErr := tuiRunFn(context.Background(), listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession, &runtimeDatabaseSelectorDeps)
 	if closeErr := closeDatabaseFn(db); closeErr != nil {
 		logPrintfFn("failed to close database: %v", closeErr)
 	}
-	return runErr
+	return exitRequest, runErr
 }

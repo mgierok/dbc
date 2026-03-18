@@ -21,9 +21,15 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
+			current := DatabaseOption{
+				Name:       "primary",
+				ConnString: "/tmp/primary.sqlite",
+				Source:     DatabaseOptionSourceConfig,
+			}
 			model := &Model{
-				read:    runtimeReadState{viewMode: ViewRecords},
-				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+				read:                        runtimeReadState{viewMode: ViewRecords},
+				staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
+				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 			}
 
 			// Act
@@ -57,9 +63,15 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 
 func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	// Arrange
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
 	model := &Model{
-		read:    runtimeReadState{viewMode: ViewRecords},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+		read:                        runtimeReadState{viewMode: ViewRecords},
+		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -84,9 +96,15 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 
 func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *testing.T) {
 	// Arrange
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
 	model := &Model{
-		read:    runtimeReadState{viewMode: ViewRecords},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+		read:                        runtimeReadState{viewMode: ViewRecords},
+		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -99,23 +117,23 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	if cmd == nil {
-		t.Fatal("expected quit command after discard decision")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg after discard decision, got %T", cmd())
-	}
+	assertRuntimeSessionActive(t, cmd, "discard config decision")
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared on discard")
 	}
-	if !model.ui.openConfigSelector {
-		t.Fatal("expected selector navigation after discard")
+	if !model.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector popup after discard")
 	}
 }
 
 func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
 	model := &Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
@@ -140,6 +158,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 				},
 			},
 		},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -156,23 +175,23 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 	_, quitCmd := model.Update(msg)
 
 	// Assert
-	if quitCmd == nil {
-		t.Fatal("expected quit command after successful save decision")
-	}
-	if _, ok := quitCmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg after successful save decision, got %T", quitCmd())
-	}
+	assertRuntimeSessionActive(t, quitCmd, "save config decision")
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared after successful save")
 	}
-	if !model.ui.openConfigSelector {
-		t.Fatal("expected selector navigation after successful save")
+	if !model.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector popup after successful save")
 	}
 }
 
 func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{err: errors.New("boom")}
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
 	model := &Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
@@ -197,6 +216,7 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 				},
 			},
 		},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -221,7 +241,7 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be preserved on save error")
 	}
-	if model.ui.openConfigSelector {
+	if model.overlay.databaseSelector.active {
 		t.Fatal("expected selector navigation to remain blocked on save error")
 	}
 	if !strings.Contains(model.ui.statusMessage, "boom") {

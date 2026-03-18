@@ -31,8 +31,8 @@
 - `internal/application/usecase`: read/write orchestration, config management, staging policy, and dirty-navigation policy.
 - `internal/application/port`: application boundary interfaces for infrastructure implementations.
 - `internal/application/dto`: adapter-facing data contracts exchanged between use cases and interfaces.
-- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, and runtime-session entrypoints.
-- `internal/interfaces/tui/internal/selector`: selector-specific Bubble Tea model, selector view/state transitions, and selector option normalization.
+- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, runtime database-selector popup hosting, and runtime-session entrypoints.
+- `internal/interfaces/tui/internal/selector`: shared database-selector controller plus selector host rendering reused by startup selection and the runtime database-selector popup.
 - `internal/interfaces/tui/internal/primitives`: terminal UI primitives shared by runtime and selector, including key/help registry, popup/layout rendering, iconography, and style helpers.
 - `internal/infrastructure/config`: JSON config loading/validation/persistence adapter.
 - `internal/infrastructure/engine`: SQLite adapter for reads/writes/filter/sort and connectivity checks.
@@ -50,8 +50,8 @@
 - Guarantee: selector-first startup is default; `-d`/`--database` enables direct-launch path.
 - Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
-- Guarantee: selector browse-mode `Esc` behavior is launch-context dependent: startup-launched selector exits startup, while runtime `:config` re-entry dismisses the selector and resumes the previously active database session.
-- Guarantee: runtime `:config` recovery keeps the previously active database as the resume target across selector-side connect failures until either a newly selected database opens successfully or the previous runtime is resumed successfully.
+- Guarantee: startup selector flow is separate from runtime database switching; runtime `:config` / `:c` opens a runtime overlay popup instead of restarting the runtime model.
+- Guarantee: runtime database-selector popup dismissal is in-model only, so popup close automatically restores the prior runtime view without per-popup resume snapshots.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
 
 ### JSON Config Persistence
@@ -111,8 +111,7 @@
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
 - Runtime startup re-entry reuses `internal/interfaces/tui.RuntimeSessionState` across repeated runtime launches in the same DBC process.
-- Selector-return signal: `internal/interfaces/tui.ErrOpenConfigSelector`.
-- Selector dismissal contract: selector browse-mode `Esc` can return either cancel-or-exit or dismiss-and-resume depending on `internal/interfaces/tui.SelectorLaunchState.BrowseEscBehavior`; runtime `:config` round-trips use the dismiss-and-resume path.
+- Runtime completion contract: `internal/interfaces/tui.Run(...)` returns an explicit `RuntimeExitRequest`; normal runtime exit returns the zero-value request, and database-switch flow returns `RuntimeExitActionSwitchDatabase` with the selected target.
 
 ### Configuration Contract
 
@@ -144,8 +143,7 @@
 ### Selector Launch Contract
 
 - Selector launch state supports preferred connection string reselection and additional session-scoped options.
-- Selector launch state also controls browse-mode `Esc` policy; zero-value/default means startup-exit, and runtime config re-entry sets resume-on-dismiss explicitly.
-- Runtime-resume selector retries after connect failures must preserve `BrowseEscBehavior=RuntimeResume`; startup-path retries must keep the default startup-exit behavior.
+- Startup selector API remains `SelectDatabaseWithState(...)` and is startup-only; runtime popup selection does not route through that startup contract.
 - Session-scoped options are CLI-origin and are not persisted into config.
 - Selector edit/delete operations are allowed only for config-backed entries.
 
@@ -156,9 +154,9 @@
 - SQLite open contract requires existing file path (missing files and directory paths fail fast).
 - Startup database open and config add/edit validation share the same open/ping helper.
 - Runtime closes active DB handle on session end; close failures are logged.
-- Runtime session state survives `:config` round-trips within the same DBC process and is not persisted into config.
-- Runtime config-selector dismissal reopens the previously selected database within the same DBC process instead of terminating startup, and it preserves the in-memory runtime session state reused across that round-trip.
-- Runtime config-selector recovery also survives selector-side connect failures during a `:config` switch attempt; dismissing the retry selector still resumes the prior runtime session within the same DBC process.
+- Runtime session state survives startup database switches within the same DBC process and is not persisted into config.
+- Runtime `:config` / `:c` opens an in-runtime database-selector popup over the current layout; `Esc` closes only that popup and leaves runtime state untouched.
+- Runtime database switching performs a preflight connectivity check inside the popup; failed preflight keeps the popup open with selector status, while successful preflight ends runtime with an explicit switch request for startup orchestration.
 - Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
@@ -205,13 +203,13 @@
 ### Session-Scoped Runtime Overrides
 
 - Decision: keep runtime-only overrides, including the records page limit, in runtime session state owned by startup/runtime orchestration instead of persisting them to config.
-- Rationale: preserve temporary per-process behavior across `:config` round-trips without mutating the config file contract.
+- Rationale: preserve temporary per-process behavior across runtime database switches without mutating the config file contract.
 - Where: `cmd/dbc/startup_runtime.go`, `internal/interfaces/tui/app.go`, `internal/interfaces/tui/runtime_session.go`.
 
 ### Selector-First Decomposition Inside The TUI Adapter
 
-- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, keep runtime write-side state behind `Model.staging`, and keep runtime overlay dispatch in one router with overlay workflows split into seam-specific runtime files.
-- Rationale: reduce mixed-context hotspots while preserving the adapter boundary, stable top-level runtime entry points used by `cmd/dbc`, and a predictable change location for each overlay workflow.
+- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, keep runtime write-side state behind `Model.staging`, keep runtime overlay dispatch in one router, and reuse one selector controller across a startup host and a runtime popup host.
+- Rationale: reduce mixed-context hotspots while preserving the adapter boundary, stable top-level runtime entry points used by `cmd/dbc`, and a predictable change location for each overlay workflow without reintroducing runtime restart/resume logic for selector dismissal.
 - Where: `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_filter_sort.go`, `internal/interfaces/tui/model_runtime_edit_popup.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_record_detail.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
 
 ### Terminal-Theme-Driven TUI Styling

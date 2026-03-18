@@ -72,9 +72,8 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 			)
 			return m, nil
 		}
-		m.ui.openConfigSelector = true
-		m.ui.statusMessage = "Opening database selector"
-		return m, tea.Quit
+		m.openRuntimeDatabaseSelectorPopup()
+		return m, nil
 	}
 
 	return m, nil

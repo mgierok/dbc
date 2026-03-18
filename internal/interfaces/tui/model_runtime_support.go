@@ -74,8 +74,8 @@ func (m *Model) commandInputValueWithCaret() string {
 	return m.overlay.commandInput.value[:cursor] + "|" + m.overlay.commandInput.value[cursor:]
 }
 
-func (m *Model) ShouldOpenConfigSelector() bool {
-	return m.ui.openConfigSelector
+func (m *Model) RuntimeExitRequest() RuntimeExitRequest {
+	return m.ui.exitRequest
 }
 
 func optionIndex(options []string, value string) int {

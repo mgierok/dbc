@@ -31,13 +31,14 @@ type runtimeReadState struct {
 // runtimeOverlayState keeps popup/input state and overlay-specific deferred
 // actions together so modal workflow ownership stays explicit.
 type runtimeOverlayState struct {
-	filterPopup  filterPopup
-	sortPopup    sortPopup
-	commandInput commandInput
-	helpPopup    helpPopup
-	recordDetail recordDetailState
-	editPopup    editPopup
-	confirmPopup confirmPopup
+	filterPopup      filterPopup
+	sortPopup        sortPopup
+	commandInput     commandInput
+	helpPopup        helpPopup
+	recordDetail     recordDetailState
+	editPopup        editPopup
+	confirmPopup     confirmPopup
+	databaseSelector runtimeDatabaseSelectorPopup
 
 	pendingFilterOpen bool
 	pendingSortOpen   bool
@@ -50,10 +51,12 @@ type runtimeUIState struct {
 	width  int
 	height int
 
-	statusMessage        string
-	saveInFlight         bool
-	openConfigSelector   bool
-	pendingTableIndex    int
-	pendingConfigOpen    bool
-	pendingQuitAfterSave bool
+	statusMessage               string
+	saveInFlight                bool
+	exitRequest                 RuntimeExitRequest
+	openConfigSelector          bool
+	pendingTableIndex           int
+	pendingDatabaseSelectorOpen bool
+	pendingConfigOpen           bool
+	pendingQuitAfterSave        bool
 }

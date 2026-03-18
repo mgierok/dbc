@@ -8,6 +8,7 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
 )
 
 const (
@@ -141,18 +142,39 @@ type confirmPopup struct {
 	modal    bool
 }
 
+type runtimeDatabaseSelectorPopup struct {
+	active     bool
+	controller *selectorpkg.Controller
+}
+
+type DatabaseConnectionValidator interface {
+	Execute(ctx context.Context, connString string) error
+}
+
+type RuntimeDatabaseSelectorDeps struct {
+	ListConfiguredDatabases    *usecase.ListConfiguredDatabases
+	CreateConfiguredDatabase   *usecase.CreateConfiguredDatabase
+	UpdateConfiguredDatabase   *usecase.UpdateConfiguredDatabase
+	DeleteConfiguredDatabase   *usecase.DeleteConfiguredDatabase
+	GetActiveConfigPath        *usecase.GetActiveConfigPath
+	ValidateDatabaseConnection DatabaseConnectionValidator
+	CurrentDatabase            DatabaseOption
+	AdditionalOptions          []DatabaseOption
+}
+
 type Model struct {
-	ctx            context.Context
-	listTables     listTablesUseCase
-	getSchema      getSchemaUseCase
-	listRecords    listRecordsUseCase
-	listOperators  listOperatorsUseCase
-	saveChanges    saveChangesUseCase
-	translator     *usecase.StagedChangesTranslator
-	stagingPolicy  *usecase.StagingPolicy
-	dirtyNavPolicy *usecase.DirtyNavigationPolicy
-	runtimeSession *RuntimeSessionState
-	styles         primitives.RenderStyles
+	ctx                         context.Context
+	listTables                  listTablesUseCase
+	getSchema                   getSchemaUseCase
+	listRecords                 listRecordsUseCase
+	listOperators               listOperatorsUseCase
+	saveChanges                 saveChangesUseCase
+	translator                  *usecase.StagedChangesTranslator
+	stagingPolicy               *usecase.StagingPolicy
+	dirtyNavPolicy              *usecase.DirtyNavigationPolicy
+	runtimeSession              *RuntimeSessionState
+	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps
+	styles                      primitives.RenderStyles
 
 	staging stagingState
 	read    runtimeReadState
@@ -184,7 +206,7 @@ type saveChangesUseCase interface {
 	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) (int, error)
 }
 
-func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator, runtimeSession *RuntimeSessionState) *Model {
+func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator, runtimeSession *RuntimeSessionState, runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps) *Model {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -192,15 +214,16 @@ func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSc
 		runtimeSession = &RuntimeSessionState{}
 	}
 	return &Model{
-		ctx:            ctx,
-		listTables:     listTables,
-		getSchema:      getSchema,
-		listRecords:    listRecords,
-		listOperators:  listOperators,
-		saveChanges:    saveChanges,
-		translator:     translator,
-		runtimeSession: runtimeSession,
-		styles:         detectRenderStyles(),
+		ctx:                         ctx,
+		listTables:                  listTables,
+		getSchema:                   getSchema,
+		listRecords:                 listRecords,
+		listOperators:               listOperators,
+		saveChanges:                 saveChanges,
+		translator:                  translator,
+		runtimeSession:              runtimeSession,
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDeps,
+		styles:                      detectRenderStyles(),
 		read: runtimeReadState{
 			focus:            FocusTables,
 			viewMode:         ViewSchema,

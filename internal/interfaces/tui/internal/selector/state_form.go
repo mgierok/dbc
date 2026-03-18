@@ -14,8 +14,8 @@ func (m *databaseSelectorModel) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cm
 	switch {
 	case primitives.KeyMatches(primitives.KeySelectorFormEsc, key):
 		if m.requiresFirstEntry && len(m.options) == 0 {
-			m.canceled = true
-			return m, tea.Quit
+			m.requestClose()
+			return m, nil
 		}
 		m.mode = selectorModeBrowse
 		m.form = selectorForm{}

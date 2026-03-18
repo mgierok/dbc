@@ -17,6 +17,7 @@ type startupPath int
 const (
 	startupPathSelector startupPath = iota
 	startupPathDirectLaunch
+	startupPathRuntimeSwitch
 )
 
 type startupSelectionStrategy interface {
@@ -160,8 +161,8 @@ func buildDirectLaunchFailureMessage(connString, reason string) string {
 	)
 }
 
-func trackSessionScopedDirectLaunchOption(existing []tui.DatabaseOption, selectedStartupPath startupPath, selected tui.DatabaseOption) []tui.DatabaseOption {
-	if selectedStartupPath != startupPathDirectLaunch || selected.Source != tui.DatabaseOptionSourceCLI {
+func trackSessionScopedCLIOption(existing []tui.DatabaseOption, selected tui.DatabaseOption) []tui.DatabaseOption {
+	if selected.Source != tui.DatabaseOptionSourceCLI {
 		return existing
 	}
 
@@ -182,6 +183,10 @@ func trackSessionScopedDirectLaunchOption(existing []tui.DatabaseOption, selecte
 	sessionOption := selected
 	sessionOption.Source = tui.DatabaseOptionSourceCLI
 	return append(existing, sessionOption)
+}
+
+func trackSessionScopedDirectLaunchOption(existing []tui.DatabaseOption, _ startupPath, selected tui.DatabaseOption) []tui.DatabaseOption {
+	return trackSessionScopedCLIOption(existing, selected)
 }
 
 func cloneDatabaseOptions(options []tui.DatabaseOption) []tui.DatabaseOption {

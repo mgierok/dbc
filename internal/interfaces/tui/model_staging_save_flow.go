@@ -64,6 +64,7 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 
 func (m *Model) confirmSaveAndQuit() (tea.Model, tea.Cmd) {
 	m.ui.pendingConfigOpen = false
+	m.ui.pendingDatabaseSelectorOpen = false
 	m.ui.pendingQuitAfterSave = true
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
@@ -75,9 +76,11 @@ func (m *Model) confirmSaveAndQuit() (tea.Model, tea.Cmd) {
 func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
 	m.ui.pendingQuitAfterSave = false
 	m.ui.pendingConfigOpen = true
+	m.ui.pendingDatabaseSelectorOpen = true
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
 		m.ui.pendingConfigOpen = false
+		m.ui.pendingDatabaseSelectorOpen = false
 	}
 	return updatedModel, cmd
 }
@@ -85,10 +88,10 @@ func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
 func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
 	m.ui.pendingQuitAfterSave = false
 	m.ui.pendingConfigOpen = false
+	m.ui.pendingDatabaseSelectorOpen = false
 	m.clearStagedState()
-	m.ui.openConfigSelector = true
-	m.ui.statusMessage = "Opening database selector"
-	return m, tea.Quit
+	m.openRuntimeDatabaseSelectorPopup()
+	return m, nil
 }
 
 func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {

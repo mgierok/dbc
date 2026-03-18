@@ -52,11 +52,10 @@ func TestDatabaseSelector_EscCancels(t *testing.T) {
 	if !selector.canceled {
 		t.Fatal("expected selection to be canceled")
 	}
-	if cmd == nil {
-		t.Fatal("expected quit command on Esc")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg from Esc, got %T", cmd())
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatalf("expected controller Esc not to emit quit directly, got %T", cmd())
+		}
 	}
 }
 
@@ -85,11 +84,10 @@ func TestDatabaseSelector_EscDismissesWhenBrowseEscBehaviorIsRuntimeResume(t *te
 	if !selector.dismissed {
 		t.Fatal("expected runtime-resume Esc to dismiss selector")
 	}
-	if cmd == nil {
-		t.Fatal("expected quit command on runtime-resume Esc")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg from runtime-resume Esc, got %T", cmd())
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatalf("expected controller Esc not to emit quit directly, got %T", cmd())
+		}
 	}
 }
 

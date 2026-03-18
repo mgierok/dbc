@@ -40,6 +40,9 @@ func (m *Model) View() string {
 	}
 
 	lines := m.renderRuntimeLayout(width, height)
+	if m.overlay.databaseSelector.active && m.overlay.databaseSelector.controller != nil {
+		lines = primitives.OverlayCenteredBoxLines(lines, m.overlay.databaseSelector.controller.PopupLines(width, height), width, height)
+	}
 	if m.overlay.commandInput.active {
 		lines = primitives.OverlayCenteredBoxLines(lines, m.renderCommandSpotlight(width), width, height)
 	}

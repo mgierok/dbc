@@ -39,6 +39,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.ui.width = msg.Width
 		m.ui.height = msg.Height
+		if m.overlay.databaseSelector.active && m.overlay.databaseSelector.controller != nil {
+			m.overlay.databaseSelector.controller.Handle(msg)
+		}
 		return m, nil
 	case tablesMsg:
 		m.read.tables = msg.tables
@@ -84,6 +87,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ui.saveInFlight = false
 		if msg.err != nil {
 			m.ui.pendingConfigOpen = false
+			m.ui.pendingDatabaseSelectorOpen = false
 			m.ui.pendingQuitAfterSave = false
 			m.ui.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
@@ -93,11 +97,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ui.pendingQuitAfterSave = false
 			return m, tea.Quit
 		}
-		if m.ui.pendingConfigOpen {
+		if m.ui.pendingDatabaseSelectorOpen {
 			m.ui.pendingConfigOpen = false
-			m.ui.openConfigSelector = true
-			m.ui.statusMessage = "Opening database selector"
-			return m, tea.Quit
+			m.ui.pendingDatabaseSelectorOpen = false
+			m.openRuntimeDatabaseSelectorPopup()
+			return m, nil
 		}
 		m.ui.statusMessage = formatSavedRowsMessage(msg.count)
 		return m, m.loadRecordsCmd(true)
@@ -148,8 +152,10 @@ func (m *Model) resetTableOverlayState() {
 	m.overlay.recordDetail = recordDetailState{}
 	m.overlay.editPopup = editPopup{}
 	m.overlay.confirmPopup = confirmPopup{}
+	m.overlay.databaseSelector = runtimeDatabaseSelectorPopup{}
 	m.overlay.pendingFilterOpen = false
 	m.overlay.pendingSortOpen = false
+	m.ui.openConfigSelector = false
 }
 
 func (m *Model) loadViewForSelection() tea.Cmd {

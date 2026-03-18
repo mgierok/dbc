@@ -62,6 +62,117 @@ var newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) sel
 	return tea.NewProgram(model, options...)
 }
 
+type IntentType int
+
+const (
+	IntentTypeNone IntentType = iota
+	IntentTypeClose
+	IntentTypeSelect
+)
+
+type Intent struct {
+	Type   IntentType
+	Option DatabaseOption
+}
+
+type Controller struct {
+	model *databaseSelectorModel
+}
+
+func NewStartupController(ctx context.Context, manager Manager, state SelectorLaunchState) (*Controller, error) {
+	model, err := newDatabaseSelectorModelWithHost(ctx, manager, controllerHostConfig{
+		browseEscActionLabel:     "quit",
+		firstSetupEscActionLabel: "exit app",
+	}, state)
+	if err != nil {
+		return nil, err
+	}
+	return &Controller{model: model}, nil
+}
+
+func NewRuntimeController(ctx context.Context, manager Manager, state SelectorLaunchState) (*Controller, error) {
+	model, err := newDatabaseSelectorModelWithHost(ctx, manager, controllerHostConfig{
+		browseEscActionLabel:     "close",
+		firstSetupEscActionLabel: "close",
+	}, state)
+	if err != nil {
+		return nil, err
+	}
+	return &Controller{model: model}, nil
+}
+
+func (c *Controller) Handle(msg tea.Msg) tea.Cmd {
+	if c == nil || c.model == nil {
+		return nil
+	}
+	_, cmd := c.model.Update(msg)
+	return cmd
+}
+
+func (c *Controller) ConsumeIntent() Intent {
+	if c == nil || c.model == nil {
+		return Intent{}
+	}
+	return c.model.consumeIntent()
+}
+
+func (c *Controller) PopupLines(totalWidth, totalHeight int) []string {
+	if c == nil || c.model == nil {
+		return nil
+	}
+	return c.model.popupLines(totalWidth, totalHeight)
+}
+
+func (c *Controller) View() string {
+	if c == nil || c.model == nil {
+		return ""
+	}
+	return c.model.View()
+}
+
+func (c *Controller) SetStatusMessage(message string) {
+	if c == nil || c.model == nil {
+		return
+	}
+	c.model.browse.statusMessage = message
+}
+
+func (c *Controller) SetSelectedIndex(index int) {
+	if c == nil || c.model == nil || len(c.model.options) == 0 {
+		return
+	}
+	c.model.browse.selected = clamp(index, 0, len(c.model.options)-1)
+}
+
+type startupHostModel struct {
+	controller *Controller
+}
+
+func (m *startupHostModel) Init() tea.Cmd {
+	if m == nil || m.controller == nil || m.controller.model == nil {
+		return nil
+	}
+	return m.controller.model.Init()
+}
+
+func (m *startupHostModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m == nil || m.controller == nil || m.controller.model == nil {
+		return m, nil
+	}
+	cmd := m.controller.Handle(msg)
+	if m.controller.model.peekIntent().Type != IntentTypeNone {
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m *startupHostModel) View() string {
+	if m == nil || m.controller == nil || m.controller.model == nil {
+		return ""
+	}
+	return m.controller.model.View()
+}
+
 func SelectDatabase(ctx context.Context, manager Manager) (DatabaseOption, error) {
 	return SelectDatabaseWithState(ctx, manager, SelectorLaunchState{})
 }
@@ -71,31 +182,32 @@ func SelectDatabaseWithState(ctx context.Context, manager Manager, state Selecto
 		return DatabaseOption{}, errors.New("selector manager is required")
 	}
 
-	model, err := newDatabaseSelectorModel(ctx, manager, state)
+	controller, err := NewStartupController(ctx, manager, state)
 	if err != nil {
 		return DatabaseOption{}, err
 	}
 
-	program := newSelectorProgram(model, tea.WithAltScreen())
+	program := newSelectorProgram(&startupHostModel{controller: controller}, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {
 		return DatabaseOption{}, err
 	}
-	selector, ok := final.(*databaseSelectorModel)
+	hostModel, ok := final.(*startupHostModel)
 	if !ok {
 		return DatabaseOption{}, errors.New("unexpected selector state")
 	}
-	if selector.dismissed {
+	intent := hostModel.controller.model.peekIntent()
+	if hostModel.controller.model.dismissed {
 		return DatabaseOption{}, ErrDatabaseSelectionDismissed
 	}
-	if selector.canceled {
+	if intent.Type == IntentTypeClose {
 		return DatabaseOption{}, ErrDatabaseSelectionCanceled
 	}
-	if !selector.chosen {
+	if intent.Type != IntentTypeSelect {
 		return DatabaseOption{}, ErrDatabaseSelectionUnfinished
 	}
-	if selector.browse.selected < 0 || selector.browse.selected >= len(selector.options) {
+	if intent.Option.ConnString == "" {
 		return DatabaseOption{}, ErrDatabaseSelectionUnfinished
 	}
-	return selector.options[selector.browse.selected], nil
+	return intent.Option, nil
 }

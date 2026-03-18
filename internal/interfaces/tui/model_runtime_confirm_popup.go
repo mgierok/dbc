@@ -48,6 +48,7 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.closeConfirmPopup()
 		m.ui.pendingTableIndex = -1
 		m.ui.pendingConfigOpen = false
+		m.ui.pendingDatabaseSelectorOpen = false
 		m.ui.pendingQuitAfterSave = false
 		return m, nil
 	case primitives.KeyMatches(primitives.KeyConfirmAccept, key):
@@ -72,6 +73,7 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.confirmConfigDiscardAndOpen()
 		case confirmConfigCancel:
 			m.ui.pendingConfigOpen = false
+			m.ui.pendingDatabaseSelectorOpen = false
 			return m, nil
 		case confirmDiscardQuit:
 			return m.confirmDiscardQuit()

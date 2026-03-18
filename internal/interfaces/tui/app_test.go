@@ -46,7 +46,7 @@ func TestRun_ReturnsProgramError(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
+	_, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -69,7 +69,7 @@ func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
+	_, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if err == nil {
@@ -80,7 +80,7 @@ func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	}
 }
 
-func TestRun_ReturnsOpenConfigSelectorErrorWhenModelRequestsSelector(t *testing.T) {
+func TestRun_ReturnsRuntimeExitRequestWhenModelRequestsDatabaseSwitch(t *testing.T) {
 	// Arrange
 	originalFactory := newRuntimeProgram
 	t.Cleanup(func() {
@@ -89,17 +89,28 @@ func TestRun_ReturnsOpenConfigSelectorErrorWhenModelRequestsSelector(t *testing.
 	newRuntimeProgram = func(model tea.Model, options ...tea.ProgramOption) runtimeProgram {
 		return stubRuntimeProgram{
 			run: func() (tea.Model, error) {
-				return &Model{ui: runtimeUIState{openConfigSelector: true}}, nil
+				return &Model{ui: runtimeUIState{
+					exitRequest: RuntimeExitRequest{
+						Action:   RuntimeExitActionSwitchDatabase,
+						Database: DatabaseOption{ConnString: "/tmp/analytics.sqlite"},
+					},
+				}}, nil
 			},
 		}
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
+	exitRequest, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
-	if !errors.Is(err, ErrOpenConfigSelector) {
-		t.Fatalf("expected error %v, got %v", ErrOpenConfigSelector, err)
+	if err != nil {
+		t.Fatalf("expected no run error, got %v", err)
+	}
+	if exitRequest.Action != RuntimeExitActionSwitchDatabase {
+		t.Fatalf("expected switch-database exit request, got %+v", exitRequest)
+	}
+	if exitRequest.Database.ConnString != "/tmp/analytics.sqlite" {
+		t.Fatalf("expected switch target /tmp/analytics.sqlite, got %q", exitRequest.Database.ConnString)
 	}
 }
 
@@ -118,10 +129,13 @@ func TestRun_ReturnsNilOnNormalCompletion(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil)
+	exitRequest, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if exitRequest.Action != RuntimeExitActionNone {
+		t.Fatalf("expected no runtime exit request, got %+v", exitRequest)
 	}
 }

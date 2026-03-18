@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
+func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		command string
@@ -18,17 +18,24 @@ func TestHandleKey_CommandConfigQuitsToOpenSelector(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
+			current := DatabaseOption{
+				Name:       "primary",
+				ConnString: "/tmp/primary.sqlite",
+				Source:     DatabaseOptionSourceConfig,
+			}
+			model := &Model{
+				read:                        runtimeReadState{viewMode: ViewRecords},
+				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+			}
 
 			// Act
-			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+			updated, cmd := submitTypedRuntimeCommand(model, tc.command)
 
 			// Assert
-			if cmd == nil {
-				t.Fatalf("expected quit command for :%s", tc.command)
-			}
-			if _, ok := cmd().(tea.QuitMsg); !ok {
-				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			assertRuntimeSessionActive(t, cmd, ":"+tc.command)
+			runtimeModel := updated.(*Model)
+			if !runtimeModel.overlay.databaseSelector.active {
+				t.Fatalf("expected runtime database selector popup for :%s", tc.command)
 			}
 		})
 	}

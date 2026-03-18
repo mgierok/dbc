@@ -176,11 +176,10 @@ func TestDatabaseSelector_ForcedSetupEscCancelsStartup(t *testing.T) {
 	if !selector.canceled {
 		t.Fatal("expected forced setup Esc to cancel selector startup")
 	}
-	if cmd == nil {
-		t.Fatal("expected quit command on forced setup Esc")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatal("expected tea.QuitMsg from quit command")
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatalf("expected controller Esc not to emit quit directly, got %T", cmd())
+		}
 	}
 }
 

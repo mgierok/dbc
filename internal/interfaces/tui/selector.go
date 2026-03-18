@@ -99,3 +99,12 @@ func SelectDatabaseWithState(
 		active: getActiveConfigPath,
 	}, state)
 }
+
+func cloneDatabaseOptions(options []DatabaseOption) []DatabaseOption {
+	if len(options) == 0 {
+		return nil
+	}
+	cloned := make([]DatabaseOption, len(options))
+	copy(cloned, options)
+	return cloned
+}

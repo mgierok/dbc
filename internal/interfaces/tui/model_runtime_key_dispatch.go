@@ -11,6 +11,10 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	if m.overlay.databaseSelector.active {
+		return m.handleRuntimeDatabaseSelectorKey(msg)
+	}
+
 	key := msg.String()
 
 	if primitives.KeyMatches(primitives.KeyRuntimeOpenContextHelp, key) {

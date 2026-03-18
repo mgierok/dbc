@@ -50,6 +50,11 @@ type selectorBrowseState struct {
 	statusMessage string
 }
 
+type controllerHostConfig struct {
+	browseEscActionLabel     string
+	firstSetupEscActionLabel string
+}
+
 type databaseSelectorModel struct {
 	ctx     context.Context
 	manager selectorManager
@@ -61,6 +66,7 @@ type databaseSelectorModel struct {
 	chosen    bool
 	canceled  bool
 	dismissed bool
+	intent    Intent
 
 	mode          selectorMode
 	browse        selectorBrowseState
@@ -72,6 +78,7 @@ type databaseSelectorModel struct {
 
 	launchAdditionalOptions []DatabaseOption
 	browseEscBehavior       SelectorBrowseEscBehavior
+	hostConfig              controllerHostConfig
 	configOptionCount       int
 	requiresFirstEntry      bool
 }
@@ -79,20 +86,36 @@ type databaseSelectorModel struct {
 var detectRenderStyles = primitives.ResolveRenderStylesFromEnv
 
 func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, launchState ...SelectorLaunchState) (*databaseSelectorModel, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	state := SelectorLaunchState{}
 	if len(launchState) > 0 {
 		state = launchState[0]
+	}
+	hostConfig := controllerHostConfig{
+		browseEscActionLabel:     "quit",
+		firstSetupEscActionLabel: "exit app",
+	}
+	if state.BrowseEscBehavior == SelectorBrowseEscBehaviorRuntimeResume {
+		hostConfig.browseEscActionLabel = "close"
+		hostConfig.firstSetupEscActionLabel = "close"
+	}
+	return newDatabaseSelectorModelWithHost(ctx, manager, controllerHostConfig{
+		browseEscActionLabel:     hostConfig.browseEscActionLabel,
+		firstSetupEscActionLabel: hostConfig.firstSetupEscActionLabel,
+	}, state)
+}
+
+func newDatabaseSelectorModelWithHost(ctx context.Context, manager selectorManager, hostConfig controllerHostConfig, launchState SelectorLaunchState) (*databaseSelectorModel, error) {
+	if ctx == nil {
+		ctx = context.Background()
 	}
 	model := &databaseSelectorModel{
 		ctx:                     ctx,
 		manager:                 manager,
 		styles:                  detectRenderStyles(),
 		mode:                    selectorModeBrowse,
-		launchAdditionalOptions: normalizeAdditionalOptions(state.AdditionalOptions),
-		browseEscBehavior:       normalizeBrowseEscBehavior(state.BrowseEscBehavior),
+		launchAdditionalOptions: normalizeAdditionalOptions(launchState.AdditionalOptions),
+		browseEscBehavior:       launchState.BrowseEscBehavior,
+		hostConfig:              hostConfig,
 	}
 	if err := model.refreshOptions(); err != nil {
 		return nil, err
@@ -100,7 +123,7 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, laun
 	if err := model.refreshActivePath(); err != nil {
 		return nil, err
 	}
-	model.applyLaunchState(state)
+	model.applyLaunchState(launchState)
 	if len(model.options) == 0 {
 		model.requiresFirstEntry = true
 		model.openAddForm()
@@ -109,13 +132,20 @@ func newDatabaseSelectorModel(ctx context.Context, manager selectorManager, laun
 	return model, nil
 }
 
-func normalizeBrowseEscBehavior(behavior SelectorBrowseEscBehavior) SelectorBrowseEscBehavior {
-	switch behavior {
-	case SelectorBrowseEscBehaviorRuntimeResume:
-		return SelectorBrowseEscBehaviorRuntimeResume
-	default:
-		return SelectorBrowseEscBehaviorStartupExit
+func (m *databaseSelectorModel) browseEscActionLabel() string {
+	label := strings.TrimSpace(m.hostConfig.browseEscActionLabel)
+	if label == "" {
+		return "quit"
 	}
+	return label
+}
+
+func (m *databaseSelectorModel) firstSetupEscActionLabel() string {
+	label := strings.TrimSpace(m.hostConfig.firstSetupEscActionLabel)
+	if label == "" {
+		return "exit app"
+	}
+	return label
 }
 
 func (m *databaseSelectorModel) applyLaunchState(state SelectorLaunchState) {
@@ -171,6 +201,37 @@ func (m *databaseSelectorModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m *databaseSelectorModel) peekIntent() Intent {
+	return m.intent
+}
+
+func (m *databaseSelectorModel) consumeIntent() Intent {
+	intent := m.intent
+	m.intent = Intent{}
+	return intent
+}
+
+func (m *databaseSelectorModel) requestClose() {
+	if m.browseEscBehavior == SelectorBrowseEscBehaviorRuntimeResume {
+		m.dismissed = true
+	} else {
+		m.canceled = true
+	}
+	m.intent = Intent{Type: IntentTypeClose}
+}
+
+func (m *databaseSelectorModel) requestSelect() {
+	m.chosen = true
+	if m.browse.selected < 0 || m.browse.selected >= len(m.options) {
+		m.intent = Intent{Type: IntentTypeSelect}
+		return
+	}
+	m.intent = Intent{
+		Type:   IntentTypeSelect,
+		Option: m.options[m.browse.selected],
+	}
+}
+
 func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -196,12 +257,8 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch {
 		case primitives.KeyMatches(primitives.KeySelectorCancel, key):
-			if m.browseEscBehavior == SelectorBrowseEscBehaviorRuntimeResume {
-				m.dismissed = true
-			} else {
-				m.canceled = true
-			}
-			return m, tea.Quit
+			m.requestClose()
+			return m, nil
 		case primitives.KeyMatches(primitives.KeySelectorEnter, key):
 			if len(m.options) == 0 {
 				if m.requiresFirstEntry {
@@ -210,8 +267,8 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
-			m.chosen = true
-			return m, tea.Quit
+			m.requestSelect()
+			return m, nil
 		case primitives.KeyMatches(primitives.KeySelectorMoveDown, key):
 			m.moveSelection(1)
 			return m, nil

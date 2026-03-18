@@ -16,12 +16,15 @@ func (m *databaseSelectorModel) View() string {
 		height = 24
 	}
 
-	if m.helpPopup.active {
-		return primitives.CenterBoxLines(m.renderHelpPopup(width, height), width, height)
-	}
+	return primitives.CenterBoxLines(m.popupLines(width, height), width, height)
+}
 
-	listHeight := m.listHeight(height)
-	return primitives.CenterBoxLines(m.boxLines(listHeight, width), width, height)
+func (m *databaseSelectorModel) popupLines(totalWidth, totalHeight int) []string {
+	if m.helpPopup.active {
+		return m.renderHelpPopup(totalWidth, totalHeight)
+	}
+	listHeight := m.listHeight(totalHeight)
+	return m.boxLines(listHeight, totalWidth, totalHeight)
 }
 
 func (m *databaseSelectorModel) renderHelpPopup(totalWidth, totalHeight int) []string {
@@ -44,7 +47,7 @@ func (m *databaseSelectorModel) helpPopupContentLines() []string {
 	case selectorModeAdd, selectorModeEdit:
 		escLabel := "Esc cancel"
 		if m.requiresFirstEntry && len(m.options) == 0 && m.helpPopup.context == selectorModeAdd {
-			escLabel = "Esc exit app"
+			escLabel = "Esc " + m.firstSetupEscActionLabel()
 		}
 		return []string{
 			primitives.SelectorFormSwitchLine(),
@@ -54,12 +57,9 @@ func (m *databaseSelectorModel) helpPopupContentLines() []string {
 		return []string{primitives.SelectorDeleteConfirmationLine()}
 	case selectorModeBrowse:
 		if m.requiresFirstEntry {
-			return primitives.SelectorContextLinesBrowseFirstSetup("exit app")
+			return primitives.SelectorContextLinesBrowseFirstSetup(m.firstSetupEscActionLabel())
 		}
-		if m.browseEscBehavior == SelectorBrowseEscBehaviorRuntimeResume {
-			return primitives.SelectorContextLinesBrowseDefault("close")
-		}
-		return primitives.SelectorContextLinesBrowseDefault("quit")
+		return primitives.SelectorContextLinesBrowseDefault(m.browseEscActionLabel())
 	default:
 		return []string{"No shortcuts available."}
 	}
@@ -79,13 +79,17 @@ func (m *databaseSelectorModel) listHeight(totalHeight int) int {
 	return maxListHeight
 }
 
-func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int) []string {
+func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int, totalHeight ...int) []string {
 	title := "Select database"
 	configPath := m.activeConfigPath
 	if strings.TrimSpace(configPath) == "" {
 		configPath = "unavailable"
 	}
-	return primitives.RenderStandardizedPopup(totalWidth, m.height, primitives.StandardizedPopupSpec{
+	resolvedHeight := m.height
+	if len(totalHeight) > 0 {
+		resolvedHeight = totalHeight[0]
+	}
+	return primitives.RenderStandardizedPopup(totalWidth, resolvedHeight, primitives.StandardizedPopupSpec{
 		Title:     title,
 		Summary:   "Config: " + configPath,
 		Rows:      m.mainContentRows(listHeight),

@@ -9,7 +9,17 @@ import (
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
-var ErrOpenConfigSelector = errors.New("open config selector requested")
+type RuntimeExitAction int
+
+const (
+	RuntimeExitActionNone RuntimeExitAction = iota
+	RuntimeExitActionSwitchDatabase
+)
+
+type RuntimeExitRequest struct {
+	Action   RuntimeExitAction
+	Database DatabaseOption
+}
 
 type runtimeProgram interface {
 	Run() (tea.Model, error)
@@ -28,19 +38,17 @@ func Run(
 	saveChanges *usecase.SaveTableChanges,
 	translator *usecase.StagedChangesTranslator,
 	runtimeSession *RuntimeSessionState,
-) error {
-	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession)
+	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps,
+) (RuntimeExitRequest, error) {
+	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession, runtimeDatabaseSelectorDeps)
 	program := newRuntimeProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {
-		return err
+		return RuntimeExitRequest{}, err
 	}
 	runtimeModel, ok := final.(*Model)
 	if !ok {
-		return errors.New("unexpected runtime model type")
+		return RuntimeExitRequest{}, errors.New("unexpected runtime model type")
 	}
-	if runtimeModel.ShouldOpenConfigSelector() {
-		return ErrOpenConfigSelector
-	}
-	return nil
+	return runtimeModel.RuntimeExitRequest(), nil
 }

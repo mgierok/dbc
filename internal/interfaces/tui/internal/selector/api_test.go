@@ -117,7 +117,10 @@ func TestSelectDatabaseWithState_ReturnsCanceledError(t *testing.T) {
 	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
 		return stubSelectorProgram{
 			run: func() (tea.Model, error) {
-				return &databaseSelectorModel{canceled: true}, nil
+				return &startupHostModel{controller: &Controller{model: &databaseSelectorModel{
+					canceled: true,
+					intent:   Intent{Type: IntentTypeClose},
+				}}}, nil
 			},
 		}
 	}
@@ -145,7 +148,10 @@ func TestSelectDatabaseWithState_ReturnsDismissedError(t *testing.T) {
 	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
 		return stubSelectorProgram{
 			run: func() (tea.Model, error) {
-				return &databaseSelectorModel{dismissed: true}, nil
+				return &startupHostModel{controller: &Controller{model: &databaseSelectorModel{
+					dismissed: true,
+					intent:    Intent{Type: IntentTypeClose},
+				}}}, nil
 			},
 		}
 	}
@@ -175,11 +181,11 @@ func TestSelectDatabaseWithState_ReturnsUnfinishedErrorWhenSelectionNotConfirmed
 	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
 		return stubSelectorProgram{
 			run: func() (tea.Model, error) {
-				return &databaseSelectorModel{
+				return &startupHostModel{controller: &Controller{model: &databaseSelectorModel{
 					options: []DatabaseOption{
 						{Name: "local", ConnString: "/tmp/local.sqlite"},
 					},
-				}, nil
+				}}}, nil
 			},
 		}
 	}
@@ -207,15 +213,15 @@ func TestSelectDatabaseWithState_ReturnsUnfinishedErrorWhenSelectedIndexIsInvali
 	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
 		return stubSelectorProgram{
 			run: func() (tea.Model, error) {
-				return &databaseSelectorModel{
-					chosen: true,
+				return &startupHostModel{controller: &Controller{model: &databaseSelectorModel{
 					browse: selectorBrowseState{
 						selected: 2,
 					},
 					options: []DatabaseOption{
 						{Name: "local", ConnString: "/tmp/local.sqlite"},
 					},
-				}, nil
+					intent: Intent{Type: IntentTypeSelect},
+				}}}, nil
 			},
 		}
 	}
@@ -244,8 +250,7 @@ func TestSelectDatabaseWithState_ReturnsSelectedOption(t *testing.T) {
 	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
 		return stubSelectorProgram{
 			run: func() (tea.Model, error) {
-				return &databaseSelectorModel{
-					chosen: true,
+				return &startupHostModel{controller: &Controller{model: &databaseSelectorModel{
 					browse: selectorBrowseState{
 						selected: 1,
 					},
@@ -253,7 +258,8 @@ func TestSelectDatabaseWithState_ReturnsSelectedOption(t *testing.T) {
 						{Name: "local", ConnString: "/tmp/local.sqlite"},
 						expected,
 					},
-				}, nil
+					intent: Intent{Type: IntentTypeSelect, Option: expected},
+				}}}, nil
 			},
 		}
 	}
@@ -286,12 +292,12 @@ func TestSelectDatabase_UsesDefaultLaunchState(t *testing.T) {
 	newSelectorProgram = func(model tea.Model, options ...tea.ProgramOption) selectorProgram {
 		return stubSelectorProgram{
 			run: func() (tea.Model, error) {
-				return &databaseSelectorModel{
-					chosen: true,
+				return &startupHostModel{controller: &Controller{model: &databaseSelectorModel{
 					options: []DatabaseOption{
 						expected,
 					},
-				}, nil
+					intent: Intent{Type: IntentTypeSelect, Option: expected},
+				}}}, nil
 			},
 		}
 	}
