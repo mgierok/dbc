@@ -268,6 +268,41 @@ func TestHandleKey_DirtyQuitCommandOpensDecisionPrompt(t *testing.T) {
 	}
 }
 
+func TestHandleKey_DirtyForcedQuitCommandDiscardsStateWithoutPrompt(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "full command", command: "quit!"},
+		{name: "alias", command: "q!"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				read:    runtimeReadState{viewMode: ViewRecords},
+				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+			}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for dirty :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for dirty :%s, got %T", tc.command, cmd())
+			}
+			if model.overlay.confirmPopup.active {
+				t.Fatalf("expected dirty :%s to bypass confirmation popup", tc.command)
+			}
+			if model.hasDirtyEdits() {
+				t.Fatalf("expected dirty :%s to clear staged changes before quit", tc.command)
+			}
+		})
+	}
+}
+
 func TestHandleConfirmPopupKey_DirtyQuitEscapeKeepsStagedState(t *testing.T) {
 	// Arrange
 	model := &Model{

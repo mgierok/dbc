@@ -60,6 +60,32 @@ func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
 	}
 }
 
+func TestHandleKey_CommandForcedQuitQuitsRuntime(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+	}{
+		{name: "short command", command: "q!"},
+		{name: "full command", command: "quit!"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{read: runtimeReadState{viewMode: ViewRecords}}
+
+			// Act
+			_, cmd := submitTypedRuntimeCommand(model, tc.command)
+
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected quit command for :%s", tc.command)
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatalf("expected tea.QuitMsg for :%s, got %T", tc.command, cmd())
+			}
+		})
+	}
+}
+
 func TestHandleKey_CommandSaveAndQuitQuitsRuntimeWhenClean(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

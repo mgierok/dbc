@@ -19,6 +19,9 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "help alias uppercase", input: ":H", action: RuntimeCommandActionOpenHelp},
 		{name: "quit full", input: ":quit", action: RuntimeCommandActionQuit},
 		{name: "quit alias", input: ":q", action: RuntimeCommandActionQuit},
+		{name: "forced quit full", input: ":quit!", action: RuntimeCommandActionForcedQuit},
+		{name: "forced quit alias", input: ":q!", action: RuntimeCommandActionForcedQuit},
+		{name: "forced quit uppercase", input: ":Q!", action: RuntimeCommandActionForcedQuit},
 		{name: "config full", input: ":config", action: RuntimeCommandActionOpenConfig},
 		{name: "config alias", input: ":c", action: RuntimeCommandActionOpenConfig},
 		{name: "save alias", input: ":w", action: RuntimeCommandActionSave},
@@ -160,6 +163,9 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	}
 	if !strings.Contains(joined, ":quit / :q - Quit the application.") {
 		t.Fatalf("expected quit command line in help content, got %q", joined)
+	}
+	if !strings.Contains(joined, ":quit! / :q! - Discard staged changes and quit the application immediately.") {
+		t.Fatalf("expected forced-quit command line in help content, got %q", joined)
 	}
 	if !strings.Contains(joined, "Shift+F - Open filter flow for current table.") {
 		t.Fatalf("expected filter keyword in help content, got %q", joined)

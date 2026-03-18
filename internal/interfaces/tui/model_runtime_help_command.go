@@ -60,6 +60,8 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, tea.Quit
+	case primitives.RuntimeCommandActionForcedQuit:
+		return m.confirmDiscardQuit()
 	case primitives.RuntimeCommandActionOpenConfig:
 		if m.hasDirtyEdits() {
 			prompt := m.dirtyNavigationPolicyUseCase().BuildConfigPrompt()

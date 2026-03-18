@@ -15,6 +15,7 @@ const (
 	RuntimeCommandActionNone RuntimeCommandAction = iota
 	RuntimeCommandActionOpenHelp
 	RuntimeCommandActionQuit
+	RuntimeCommandActionForcedQuit
 	RuntimeCommandActionOpenConfig
 	RuntimeCommandActionSave
 	RuntimeCommandActionSaveAndQuit
@@ -68,6 +69,11 @@ var runtimeCommandSpecs = []RuntimeCommandSpec{
 		Aliases:     []string{"quit", "q"},
 		Description: "Quit the application.",
 		Action:      RuntimeCommandActionQuit,
+	},
+	{
+		Aliases:     []string{"quit!", "q!"},
+		Description: "Discard staged changes and quit the application immediately.",
+		Action:      RuntimeCommandActionForcedQuit,
 	},
 }
 
