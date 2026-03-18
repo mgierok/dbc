@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
 
 func (o DatabaseOption) source() DatabaseOptionSource {
@@ -33,13 +34,14 @@ func normalizeAdditionalOptions(options []DatabaseOption) []DatabaseOption {
 	seen := make(map[string]struct{}, len(options))
 	for _, option := range options {
 		connString := strings.TrimSpace(option.ConnString)
-		if connString == "" {
+		identity := sqliteidentity.Normalize(connString)
+		if identity == "" {
 			continue
 		}
-		if _, exists := seen[connString]; exists {
+		if _, exists := seen[identity]; exists {
 			continue
 		}
-		seen[connString] = struct{}{}
+		seen[identity] = struct{}{}
 
 		name := strings.TrimSpace(option.Name)
 		if name == "" {
@@ -65,7 +67,7 @@ func mergeConfigAndAdditionalOptions(configOptions []DatabaseOption, additionalO
 
 	seen := make(map[string]struct{}, len(configOptions)+len(additionalOptions))
 	for _, option := range configOptions {
-		key := strings.TrimSpace(option.ConnString)
+		key := sqliteidentity.Normalize(option.ConnString)
 		if key == "" {
 			continue
 		}
@@ -73,7 +75,7 @@ func mergeConfigAndAdditionalOptions(configOptions []DatabaseOption, additionalO
 	}
 
 	for _, option := range additionalOptions {
-		key := strings.TrimSpace(option.ConnString)
+		key := sqliteidentity.Normalize(option.ConnString)
 		if key != "" {
 			if _, exists := seen[key]; exists {
 				continue

@@ -6,6 +6,20 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
+func (m *Model) applyRuntimeRunDeps(runtimeDeps RuntimeRunDeps) {
+	if m == nil {
+		return
+	}
+	m.listTables = runtimeDeps.ListTables
+	m.getSchema = runtimeDeps.GetSchema
+	m.listRecords = runtimeDeps.ListRecords
+	m.listOperators = runtimeDeps.ListOperators
+	m.saveChanges = runtimeDeps.SaveChanges
+	m.translator = runtimeDeps.Translator
+	m.runtimeDatabaseSelectorDeps = runtimeDeps.DatabaseSelector
+	m.runtimeClose = runtimeDeps.Close
+}
+
 func (m *Model) pageSize() int {
 	height := m.contentHeight()
 	if height < 4 {
@@ -74,8 +88,13 @@ func (m *Model) commandInputValueWithCaret() string {
 	return m.overlay.commandInput.value[:cursor] + "|" + m.overlay.commandInput.value[cursor:]
 }
 
-func (m *Model) RuntimeExitRequest() RuntimeExitRequest {
-	return m.ui.exitRequest
+func (m *Model) closeRuntimeResources() {
+	if m == nil || m.runtimeClose == nil {
+		return
+	}
+	closeFn := m.runtimeClose
+	m.runtimeClose = nil
+	closeFn()
 }
 
 func optionIndex(options []string, value string) int {

@@ -25,7 +25,7 @@ func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) 
 			}
 			model := &Model{
 				read:                        runtimeReadState{viewMode: ViewRecords},
-				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 			}
 
 			// Act

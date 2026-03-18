@@ -53,7 +53,7 @@ type runtimeUIState struct {
 
 	statusMessage               string
 	saveInFlight                bool
-	exitRequest                 RuntimeExitRequest
+	runtimeSwitchInFlight       bool
 	openConfigSelector          bool
 	pendingTableIndex           int
 	pendingDatabaseSelectorOpen bool

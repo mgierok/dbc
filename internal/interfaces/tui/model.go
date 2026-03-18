@@ -152,14 +152,14 @@ type DatabaseConnectionValidator interface {
 }
 
 type RuntimeDatabaseSelectorDeps struct {
-	ListConfiguredDatabases    *usecase.ListConfiguredDatabases
-	CreateConfiguredDatabase   *usecase.CreateConfiguredDatabase
-	UpdateConfiguredDatabase   *usecase.UpdateConfiguredDatabase
-	DeleteConfiguredDatabase   *usecase.DeleteConfiguredDatabase
-	GetActiveConfigPath        *usecase.GetActiveConfigPath
-	ValidateDatabaseConnection DatabaseConnectionValidator
-	CurrentDatabase            DatabaseOption
-	AdditionalOptions          []DatabaseOption
+	ListConfiguredDatabases  *usecase.ListConfiguredDatabases
+	CreateConfiguredDatabase *usecase.CreateConfiguredDatabase
+	UpdateConfiguredDatabase *usecase.UpdateConfiguredDatabase
+	DeleteConfiguredDatabase *usecase.DeleteConfiguredDatabase
+	GetActiveConfigPath      *usecase.GetActiveConfigPath
+	SwitchDatabase           RuntimeDatabaseSwitcher
+	CurrentDatabase          DatabaseOption
+	AdditionalOptions        []DatabaseOption
 }
 
 type Model struct {
@@ -174,6 +174,7 @@ type Model struct {
 	dirtyNavPolicy              *usecase.DirtyNavigationPolicy
 	runtimeSession              *RuntimeSessionState
 	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps
+	runtimeClose                func()
 	styles                      primitives.RenderStyles
 
 	staging stagingState
@@ -206,24 +207,17 @@ type saveChangesUseCase interface {
 	ExecuteDTO(ctx context.Context, tableName string, changes dto.TableChanges) (int, error)
 }
 
-func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSchemaUseCase, listRecords listRecordsUseCase, listOperators listOperatorsUseCase, saveChanges saveChangesUseCase, translator *usecase.StagedChangesTranslator, runtimeSession *RuntimeSessionState, runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps) *Model {
+func NewModel(ctx context.Context, runtimeDeps RuntimeRunDeps, runtimeSession *RuntimeSessionState) *Model {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	if runtimeSession == nil {
 		runtimeSession = &RuntimeSessionState{}
 	}
-	return &Model{
-		ctx:                         ctx,
-		listTables:                  listTables,
-		getSchema:                   getSchema,
-		listRecords:                 listRecords,
-		listOperators:               listOperators,
-		saveChanges:                 saveChanges,
-		translator:                  translator,
-		runtimeSession:              runtimeSession,
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDeps,
-		styles:                      detectRenderStyles(),
+	model := &Model{
+		ctx:            ctx,
+		runtimeSession: runtimeSession,
+		styles:         detectRenderStyles(),
 		read: runtimeReadState{
 			focus:            FocusTables,
 			viewMode:         ViewSchema,
@@ -233,6 +227,8 @@ func NewModel(ctx context.Context, listTables listTablesUseCase, getSchema getSc
 			pendingTableIndex: -1,
 		},
 	}
+	model.applyRuntimeRunDeps(runtimeDeps)
+	return model
 }
 
 func (m *Model) Init() tea.Cmd {

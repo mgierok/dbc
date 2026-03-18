@@ -9,16 +9,25 @@ import (
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
-type RuntimeExitAction int
+type RuntimeRunDeps struct {
+	ListTables       *usecase.ListTables
+	GetSchema        *usecase.GetSchema
+	ListRecords      *usecase.ListRecords
+	ListOperators    *usecase.ListOperators
+	SaveChanges      *usecase.SaveTableChanges
+	Translator       *usecase.StagedChangesTranslator
+	DatabaseSelector *RuntimeDatabaseSelectorDeps
+	Close            func()
+}
 
-const (
-	RuntimeExitActionNone RuntimeExitAction = iota
-	RuntimeExitActionSwitchDatabase
-)
+type RuntimeDatabaseSwitcher interface {
+	Switch(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error)
+}
 
-type RuntimeExitRequest struct {
-	Action   RuntimeExitAction
-	Database DatabaseOption
+type RuntimeDatabaseSwitchFunc func(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error)
+
+func (f RuntimeDatabaseSwitchFunc) Switch(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error) {
+	return f(ctx, selected)
 }
 
 type runtimeProgram interface {
@@ -31,24 +40,21 @@ var newRuntimeProgram = func(model tea.Model, options ...tea.ProgramOption) runt
 
 func Run(
 	ctx context.Context,
-	listTables *usecase.ListTables,
-	getSchema *usecase.GetSchema,
-	listRecords *usecase.ListRecords,
-	listOperators *usecase.ListOperators,
-	saveChanges *usecase.SaveTableChanges,
-	translator *usecase.StagedChangesTranslator,
+	runtimeDeps RuntimeRunDeps,
 	runtimeSession *RuntimeSessionState,
-	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps,
-) (RuntimeExitRequest, error) {
-	model := NewModel(ctx, listTables, getSchema, listRecords, listOperators, saveChanges, translator, runtimeSession, runtimeDatabaseSelectorDeps)
+) error {
+	model := NewModel(ctx, runtimeDeps, runtimeSession)
 	program := newRuntimeProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {
-		return RuntimeExitRequest{}, err
+		model.closeRuntimeResources()
+		return err
 	}
 	runtimeModel, ok := final.(*Model)
 	if !ok {
-		return RuntimeExitRequest{}, errors.New("unexpected runtime model type")
+		model.closeRuntimeResources()
+		return errors.New("unexpected runtime model type")
 	}
-	return runtimeModel.RuntimeExitRequest(), nil
+	runtimeModel.closeRuntimeResources()
+	return nil
 }

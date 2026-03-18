@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
 
 type selectorMode int
@@ -152,12 +153,12 @@ func (m *databaseSelectorModel) applyLaunchState(state SelectorLaunchState) {
 	if strings.TrimSpace(state.StatusMessage) != "" {
 		m.browse.statusMessage = state.StatusMessage
 	}
-	preferredConnString := strings.TrimSpace(state.PreferConnString)
+	preferredConnString := sqliteidentity.Normalize(state.PreferConnString)
 	if preferredConnString == "" || len(m.options) == 0 {
 		return
 	}
 	for i, option := range m.options {
-		if strings.TrimSpace(option.ConnString) == preferredConnString {
+		if sqliteidentity.Equivalent(option.ConnString, preferredConnString) {
 			m.browse.selected = i
 			return
 		}

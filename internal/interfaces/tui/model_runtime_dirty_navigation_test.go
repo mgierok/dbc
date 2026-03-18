@@ -29,7 +29,7 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 			model := &Model{
 				read:                        runtimeReadState{viewMode: ViewRecords},
 				staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 			}
 
 			// Act
@@ -71,7 +71,7 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	model := &Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -104,7 +104,7 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 	model := &Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -158,7 +158,7 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 				},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {
@@ -216,7 +216,7 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 				},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 	for _, r := range "config" {

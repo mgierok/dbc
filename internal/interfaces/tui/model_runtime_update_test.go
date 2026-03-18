@@ -157,7 +157,7 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateAndOpensRuntimeDatabas
 			pendingDatabaseSelectorOpen: true,
 			saveInFlight:                true,
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
 
 	// Act

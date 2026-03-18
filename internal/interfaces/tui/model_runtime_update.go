@@ -105,6 +105,26 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.ui.statusMessage = formatSavedRowsMessage(msg.count)
 		return m, m.loadRecordsCmd(true)
+	case runtimeDatabaseSwitchCompletedMsg:
+		m.ui.runtimeSwitchInFlight = false
+		if msg.err != nil {
+			if m.overlay.databaseSelector.controller != nil {
+				m.overlay.databaseSelector.controller.SetStatusMessage(
+					formatRuntimeDatabaseSelectionFailure(msg.selected, msg.err.Error()),
+				)
+			}
+			return m, nil
+		}
+		previousClose := m.runtimeClose
+		replacement := NewModel(m.ctx, msg.deps, m.runtimeSession)
+		replacement.styles = m.styles
+		replacement.ui.width = m.ui.width
+		replacement.ui.height = m.ui.height
+		*m = *replacement
+		if previousClose != nil {
+			previousClose()
+		}
+		return m, m.Init()
 	case errMsg:
 		m.read.recordLoading = false
 		m.ui.statusMessage = "Error: " + msg.err.Error()

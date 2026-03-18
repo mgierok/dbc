@@ -3,6 +3,8 @@ package selector
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -74,6 +76,30 @@ func TestDatabaseSelector_PrefersSelectionByConnString(t *testing.T) {
 	}
 }
 
+func TestDatabaseSelector_PrefersSelectionByEquivalentConnString(t *testing.T) {
+	// Arrange
+	basePath := filepath.Join(t.TempDir(), "analytics.sqlite")
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+			{Name: "analytics", Path: basePath},
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		PreferConnString: basePath + string(os.PathSeparator) + ".",
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if model.browse.selected != 1 {
+		t.Fatalf("expected preferred equivalent selection index %d, got %d", 1, model.browse.selected)
+	}
+}
+
 func TestDatabaseSelector_IgnoresMissingPreferredConnString(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
@@ -94,6 +120,38 @@ func TestDatabaseSelector_IgnoresMissingPreferredConnString(t *testing.T) {
 	}
 	if model.browse.selected != 0 {
 		t.Fatalf("expected default selection index %d, got %d", 0, model.browse.selected)
+	}
+}
+
+func TestDatabaseSelector_DeduplicatesEquivalentAdditionalOptionsAgainstConfig(t *testing.T) {
+	// Arrange
+	basePath := filepath.Join(t.TempDir(), "local.sqlite")
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: basePath},
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       basePath + string(os.PathSeparator) + ".",
+				ConnString: basePath + string(os.PathSeparator) + ".",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if len(model.options) != 1 {
+		t.Fatalf("expected equivalent config and CLI entries to deduplicate, got %d options", len(model.options))
+	}
+	if model.options[0].Source != DatabaseOptionSourceConfig {
+		t.Fatalf("expected deduplicated option to remain config-backed, got %q", model.options[0].Source)
 	}
 }
 

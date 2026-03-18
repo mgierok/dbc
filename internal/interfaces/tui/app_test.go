@@ -33,6 +33,7 @@ func (stubFinalModel) View() string {
 func TestRun_ReturnsProgramError(t *testing.T) {
 	// Arrange
 	expectedErr := errors.New("run failed")
+	closed := false
 	originalFactory := newRuntimeProgram
 	t.Cleanup(func() {
 		newRuntimeProgram = originalFactory
@@ -46,16 +47,24 @@ func TestRun_ReturnsProgramError(t *testing.T) {
 	}
 
 	// Act
-	_, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), RuntimeRunDeps{
+		Close: func() {
+			closed = true
+		},
+	}, nil)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("expected error %v, got %v", expectedErr, err)
 	}
+	if !closed {
+		t.Fatal("expected runtime resources to close on program error")
+	}
 }
 
 func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	// Arrange
+	closed := false
 	originalFactory := newRuntimeProgram
 	t.Cleanup(func() {
 		newRuntimeProgram = originalFactory
@@ -69,7 +78,11 @@ func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	}
 
 	// Act
-	_, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), RuntimeRunDeps{
+		Close: func() {
+			closed = true
+		},
+	}, nil)
 
 	// Assert
 	if err == nil {
@@ -78,10 +91,14 @@ func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	if err.Error() != "unexpected runtime model type" {
 		t.Fatalf("expected unexpected model type error, got %v", err)
 	}
+	if !closed {
+		t.Fatal("expected runtime resources to close when final model type is unexpected")
+	}
 }
 
-func TestRun_ReturnsRuntimeExitRequestWhenModelRequestsDatabaseSwitch(t *testing.T) {
+func TestRun_ClosesFinalRuntimeResourcesOnNormalCompletion(t *testing.T) {
 	// Arrange
+	closed := false
 	originalFactory := newRuntimeProgram
 	t.Cleanup(func() {
 		newRuntimeProgram = originalFactory
@@ -89,28 +106,24 @@ func TestRun_ReturnsRuntimeExitRequestWhenModelRequestsDatabaseSwitch(t *testing
 	newRuntimeProgram = func(model tea.Model, options ...tea.ProgramOption) runtimeProgram {
 		return stubRuntimeProgram{
 			run: func() (tea.Model, error) {
-				return &Model{ui: runtimeUIState{
-					exitRequest: RuntimeExitRequest{
-						Action:   RuntimeExitActionSwitchDatabase,
-						Database: DatabaseOption{ConnString: "/tmp/analytics.sqlite"},
+				return &Model{
+					runtimeClose: func() {
+						closed = true
 					},
-				}}, nil
+				}, nil
 			},
 		}
 	}
 
 	// Act
-	exitRequest, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), RuntimeRunDeps{}, nil)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no run error, got %v", err)
 	}
-	if exitRequest.Action != RuntimeExitActionSwitchDatabase {
-		t.Fatalf("expected switch-database exit request, got %+v", exitRequest)
-	}
-	if exitRequest.Database.ConnString != "/tmp/analytics.sqlite" {
-		t.Fatalf("expected switch target /tmp/analytics.sqlite, got %q", exitRequest.Database.ConnString)
+	if !closed {
+		t.Fatal("expected final runtime resources to close on normal completion")
 	}
 }
 
@@ -129,13 +142,10 @@ func TestRun_ReturnsNilOnNormalCompletion(t *testing.T) {
 	}
 
 	// Act
-	exitRequest, err := Run(context.Background(), nil, nil, nil, nil, nil, nil, nil, nil)
+	err := Run(context.Background(), RuntimeRunDeps{}, nil)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
-	}
-	if exitRequest.Action != RuntimeExitActionNone {
-		t.Fatalf("expected no runtime exit request, got %+v", exitRequest)
 	}
 }

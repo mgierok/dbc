@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/infrastructure/engine"
 	"github.com/mgierok/dbc/internal/interfaces/tui"
+	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
 
 type startupPath int
@@ -122,23 +122,11 @@ func resolveConfiguredDirectLaunchIdentity(directLaunchConnString string, config
 }
 
 func normalizeSQLiteConnectionIdentity(connString string) string {
-	normalized := strings.TrimSpace(connString)
-	if normalized == "" {
-		return ""
-	}
-
-	normalized = filepath.Clean(normalized)
-	if !filepath.IsAbs(normalized) {
-		absPath, err := filepath.Abs(normalized)
-		if err == nil {
-			normalized = absPath
-		}
-	}
-	return normalized
+	return sqliteidentity.Normalize(connString)
 }
 
 func sqliteConnectionIdentityEqual(left string, right string) bool {
-	return left == right
+	return sqliteidentity.Equivalent(left, right)
 }
 
 func connectSelectedDatabase(selected tui.DatabaseOption) (*sql.DB, error) {

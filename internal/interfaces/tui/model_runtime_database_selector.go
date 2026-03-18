@@ -1,12 +1,13 @@
 package tui
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
+	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
 
 func (m *Model) openRuntimeDatabaseSelectorPopup() {
@@ -71,28 +72,26 @@ func (m *Model) handleRuntimeDatabaseSelection(selected DatabaseOption) (tea.Mod
 		return m, nil
 	}
 
-	validateConnection := m.runtimeDatabaseConnectionValidator()
-	if validateConnection == nil {
+	switcher := m.runtimeDatabaseSwitcher()
+	if switcher == nil {
 		m.ui.statusMessage = "Error: database selector unavailable"
 		return m, nil
 	}
-	if err := validateConnection.Execute(m.ctx, selected.ConnString); err != nil {
-		m.overlay.databaseSelector.controller.SetStatusMessage(formatRuntimeDatabaseSelectionFailure(selected, err.Error()))
-		return m, nil
-	}
 
-	m.ui.exitRequest = RuntimeExitRequest{
-		Action:   RuntimeExitActionSwitchDatabase,
-		Database: selected,
+	m.ui.runtimeSwitchInFlight = true
+	if m.overlay.databaseSelector.controller != nil {
+		m.overlay.databaseSelector.controller.SetStatusMessage(
+			fmt.Sprintf("Switching to %q...", selected.Name),
+		)
 	}
-	return m, tea.Quit
+	return m, switchRuntimeDatabaseCmd(m.ctx, switcher, selected)
 }
 
-func (m *Model) runtimeDatabaseConnectionValidator() DatabaseConnectionValidator {
+func (m *Model) runtimeDatabaseSwitcher() RuntimeDatabaseSwitcher {
 	if m.runtimeDatabaseSelectorDeps == nil {
 		return nil
 	}
-	return m.runtimeDatabaseSelectorDeps.ValidateDatabaseConnection
+	return m.runtimeDatabaseSelectorDeps.SwitchDatabase
 }
 
 func (m *Model) currentRuntimeDatabaseConnString() string {
@@ -103,7 +102,7 @@ func (m *Model) currentRuntimeDatabaseConnString() string {
 }
 
 func sameRuntimeDatabaseSelection(left, right string) bool {
-	return strings.TrimSpace(left) == strings.TrimSpace(right)
+	return sqliteidentity.Equivalent(left, right)
 }
 
 func formatRuntimeDatabaseSelectionFailure(selected DatabaseOption, reason string) string {
@@ -112,4 +111,27 @@ func formatRuntimeDatabaseSelectionFailure(selected DatabaseOption, reason strin
 		selected.Name,
 		reason,
 	)
+}
+
+type runtimeDatabaseSwitchCompletedMsg struct {
+	selected DatabaseOption
+	deps     RuntimeRunDeps
+	err      error
+}
+
+func switchRuntimeDatabaseCmd(ctx context.Context, switcher RuntimeDatabaseSwitcher, selected DatabaseOption) tea.Cmd {
+	return func() tea.Msg {
+		if switcher == nil {
+			return runtimeDatabaseSwitchCompletedMsg{
+				selected: selected,
+				err:      fmt.Errorf("database selector unavailable"),
+			}
+		}
+		deps, err := switcher.Switch(ctx, selected)
+		return runtimeDatabaseSwitchCompletedMsg{
+			selected: selected,
+			deps:     deps,
+			err:      err,
+		}
+	}
 }

@@ -50,7 +50,7 @@
 - Guarantee: selector-first startup is default; `-d`/`--database` enables direct-launch path.
 - Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
-- Guarantee: startup selector flow is separate from runtime database switching; runtime `:config` / `:c` opens a runtime overlay popup instead of restarting the runtime model.
+- Guarantee: startup selector flow is separate from runtime database switching; startup selects only the initial database, while runtime `:config` / `:c` opens a runtime overlay popup and keeps the same runtime program alive across successful database switches.
 - Guarantee: runtime database-selector popup dismissal is in-model only, so popup close automatically restores the prior runtime view without per-popup resume snapshots.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
 
@@ -110,8 +110,8 @@
 
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
-- Runtime startup re-entry reuses `internal/interfaces/tui.RuntimeSessionState` across repeated runtime launches in the same DBC process.
-- Runtime completion contract: `internal/interfaces/tui.Run(...)` returns an explicit `RuntimeExitRequest`; normal runtime exit returns the zero-value request, and database-switch flow returns `RuntimeExitActionSwitchDatabase` with the selected target.
+- Runtime startup opens one initial `RuntimeRunDeps` bundle and passes a runtime database-switch callback implemented in `cmd/dbc`.
+- `internal/interfaces/tui.RuntimeSessionState` survives in-process runtime database switches, while per-database runtime model state is recreated from a fresh dependency bundle.
 
 ### Configuration Contract
 
@@ -154,9 +154,9 @@
 - SQLite open contract requires existing file path (missing files and directory paths fail fast).
 - Startup database open and config add/edit validation share the same open/ping helper.
 - Runtime closes active DB handle on session end; close failures are logged.
-- Runtime session state survives startup database switches within the same DBC process and is not persisted into config.
+- Runtime session state survives in-process runtime database switches within the same DBC process and is not persisted into config.
 - Runtime `:config` / `:c` opens an in-runtime database-selector popup over the current layout; `Esc` closes only that popup and leaves runtime state untouched.
-- Runtime database switching performs a preflight connectivity check inside the popup; failed preflight keeps the popup open with selector status, while successful preflight ends runtime with an explicit switch request for startup orchestration.
+- Runtime database switching is async inside the TUI adapter: failed switch preparation keeps the current session active and leaves the selector popup open with selector status, while successful switch preparation atomically swaps runtime dependencies in-process and closes the previous DB handle only after the replacement bundle is ready.
 - Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
