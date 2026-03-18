@@ -206,6 +206,7 @@ func (o *runtimeStartupOrchestrator) openRuntimeRunDeps(selected tui.DatabaseOpt
 			DeleteConfiguredDatabase: o.deps.deleteConfiguredDB,
 			GetActiveConfigPath:      o.deps.getActiveConfigPath,
 			SwitchDatabase: tui.RuntimeDatabaseSwitchFunc(func(ctx context.Context, nextSelected tui.DatabaseOption) (tui.RuntimeRunDeps, error) {
+				o.sessionScopedOptions = trackSessionScopedCLIOption(o.sessionScopedOptions, nextSelected)
 				return o.openRuntimeRunDeps(nextSelected)
 			}),
 			CurrentDatabase:   selected,

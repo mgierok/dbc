@@ -11,18 +11,21 @@ import (
 )
 
 type tablesMsg struct {
-	tables []dto.Table
+	bundleToken int
+	tables      []dto.Table
 }
 
 type schemaMsg struct {
-	tableName string
-	schema    dto.Schema
+	bundleToken int
+	tableName   string
+	schema      dto.Schema
 }
 
 type recordsMsg struct {
-	tableName string
-	requestID int
-	page      dto.RecordPage
+	bundleToken int
+	tableName   string
+	requestID   int
+	page        dto.RecordPage
 }
 
 type saveChangesMsg struct {
@@ -31,7 +34,8 @@ type saveChangesMsg struct {
 }
 
 type errMsg struct {
-	err error
+	bundleToken int
+	err         error
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -44,6 +48,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case tablesMsg:
+		if msg.bundleToken != m.runtimeBundleToken {
+			return m, nil
+		}
 		m.read.tables = msg.tables
 		if len(m.read.tables) == 0 {
 			m.ui.statusMessage = "No tables found"
@@ -52,6 +59,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.read.selectedTable = 0
 		return m, m.loadSchemaCmd()
 	case schemaMsg:
+		if msg.bundleToken != m.runtimeBundleToken {
+			return m, nil
+		}
 		if msg.tableName != m.currentTableName() {
 			return m, nil
 		}
@@ -70,6 +80,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case recordsMsg:
+		if msg.bundleToken != m.runtimeBundleToken {
+			return m, nil
+		}
 		if msg.tableName != m.currentTableName() {
 			return m, nil
 		}
@@ -115,17 +128,24 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		previousBundleCancel := m.runtimeBundleCancel
 		previousClose := m.runtimeClose
 		replacement := NewModel(m.ctx, msg.deps, m.runtimeSession)
 		replacement.styles = m.styles
 		replacement.ui.width = m.ui.width
 		replacement.ui.height = m.ui.height
 		*m = *replacement
+		if previousBundleCancel != nil {
+			previousBundleCancel()
+		}
 		if previousClose != nil {
 			previousClose()
 		}
 		return m, m.Init()
 	case errMsg:
+		if msg.bundleToken != m.runtimeBundleToken {
+			return m, nil
+		}
 		m.read.recordLoading = false
 		m.ui.statusMessage = "Error: " + msg.err.Error()
 		return m, nil
@@ -190,7 +210,7 @@ func (m *Model) loadSchemaCmd() tea.Cmd {
 	if strings.TrimSpace(tableName) == "" {
 		return nil
 	}
-	return loadSchemaCmd(m.ctx, m.getSchema, tableName)
+	return loadSchemaCmd(m.runtimeReadContext(), m.getSchema, tableName, m.runtimeBundleToken)
 }
 
 func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
@@ -210,13 +230,14 @@ func (m *Model) loadRecordsCmd(reset bool) tea.Cmd {
 	recordLimit := m.effectiveRecordLimit()
 	offset := m.read.recordPageIndex * recordLimit
 	return loadRecordsCmd(
-		m.ctx,
+		m.runtimeReadContext(),
 		m.listRecords,
 		tableName,
 		offset,
 		recordLimit,
 		m.read.currentFilter,
 		m.read.currentSort,
+		m.runtimeBundleToken,
 		m.read.recordRequestID,
 	)
 }
@@ -236,33 +257,33 @@ func (m *Model) computeTotalPages(totalCount int) int {
 	return pages
 }
 
-func loadTablesCmd(ctx context.Context, uc listTablesUseCase) tea.Cmd {
+func loadTablesCmd(ctx context.Context, uc listTablesUseCase, bundleToken int) tea.Cmd {
 	return func() tea.Msg {
 		tables, err := uc.Execute(ctx)
 		if err != nil {
-			return errMsg{err: err}
+			return errMsg{bundleToken: bundleToken, err: err}
 		}
-		return tablesMsg{tables: tables}
+		return tablesMsg{bundleToken: bundleToken, tables: tables}
 	}
 }
 
-func loadSchemaCmd(ctx context.Context, uc getSchemaUseCase, tableName string) tea.Cmd {
+func loadSchemaCmd(ctx context.Context, uc getSchemaUseCase, tableName string, bundleToken int) tea.Cmd {
 	return func() tea.Msg {
 		schema, err := uc.Execute(ctx, tableName)
 		if err != nil {
-			return errMsg{err: err}
+			return errMsg{bundleToken: bundleToken, err: err}
 		}
-		return schemaMsg{tableName: tableName, schema: schema}
+		return schemaMsg{bundleToken: bundleToken, tableName: tableName, schema: schema}
 	}
 }
 
-func loadRecordsCmd(ctx context.Context, uc listRecordsUseCase, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort, requestID int) tea.Cmd {
+func loadRecordsCmd(ctx context.Context, uc listRecordsUseCase, tableName string, offset, limit int, filter *dto.Filter, sort *dto.Sort, bundleToken, requestID int) tea.Cmd {
 	return func() tea.Msg {
 		page, err := uc.Execute(ctx, tableName, offset, limit, filter, sort)
 		if err != nil {
-			return errMsg{err: err}
+			return errMsg{bundleToken: bundleToken, err: err}
 		}
-		return recordsMsg{tableName: tableName, requestID: requestID, page: page}
+		return recordsMsg{bundleToken: bundleToken, tableName: tableName, requestID: requestID, page: page}
 	}
 }
 

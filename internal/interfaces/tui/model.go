@@ -164,6 +164,9 @@ type RuntimeDatabaseSelectorDeps struct {
 
 type Model struct {
 	ctx                         context.Context
+	runtimeBundleCtx            context.Context
+	runtimeBundleCancel         context.CancelFunc
+	runtimeBundleToken          int
 	listTables                  listTablesUseCase
 	getSchema                   getSchemaUseCase
 	listRecords                 listRecordsUseCase
@@ -227,10 +230,11 @@ func NewModel(ctx context.Context, runtimeDeps RuntimeRunDeps, runtimeSession *R
 			pendingTableIndex: -1,
 		},
 	}
+	model.initializeRuntimeBundle()
 	model.applyRuntimeRunDeps(runtimeDeps)
 	return model
 }
 
 func (m *Model) Init() tea.Cmd {
-	return loadTablesCmd(m.ctx, m.listTables)
+	return loadTablesCmd(m.runtimeReadContext(), m.listTables, m.runtimeBundleToken)
 }

@@ -624,6 +624,60 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherBuildsNewBundleWit
 	}
 }
 
+func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherTracksCLISelectionInSessionOptions(t *testing.T) {
+	restore := snapshotStartupRuntimeTestHooks()
+	defer restore()
+
+	// Arrange
+	selectedA := tui.DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     tui.DatabaseOptionSourceConfig,
+	}
+	selectedCLI := tui.DatabaseOption{
+		Name:       "/tmp/runtime-cli.sqlite",
+		ConnString: "/tmp/runtime-cli.sqlite",
+		Source:     tui.DatabaseOptionSourceCLI,
+	}
+	selectedCLIEquivalent := tui.DatabaseOption{
+		Name:       "/tmp/runtime-cli.sqlite/",
+		ConnString: "/tmp/runtime-cli.sqlite/.",
+		Source:     tui.DatabaseOptionSourceCLI,
+	}
+	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{})
+	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
+		return &sql.DB{}, nil
+	}
+
+	// Act
+	runtimeDeps, err := orchestrator.openRuntimeRunDeps(selectedA)
+	if err != nil {
+		t.Fatalf("expected initial runtime deps, got %v", err)
+	}
+	switchedRuntimeDeps, err := runtimeDeps.DatabaseSelector.SwitchDatabase.Switch(context.Background(), selectedCLI)
+	if err != nil {
+		t.Fatalf("expected switched runtime deps for CLI selection, got %v", err)
+	}
+	_, err = switchedRuntimeDeps.DatabaseSelector.SwitchDatabase.Switch(context.Background(), selectedCLIEquivalent)
+	if err != nil {
+		t.Fatalf("expected repeated equivalent CLI switch to succeed, got %v", err)
+	}
+
+	// Assert
+	if len(switchedRuntimeDeps.DatabaseSelector.AdditionalOptions) != 1 {
+		t.Fatalf("expected switched runtime deps to expose one CLI session option, got %d", len(switchedRuntimeDeps.DatabaseSelector.AdditionalOptions))
+	}
+	if switchedRuntimeDeps.DatabaseSelector.AdditionalOptions[0].ConnString != selectedCLI.ConnString {
+		t.Fatalf("expected switched runtime deps to expose CLI option %q, got %q", selectedCLI.ConnString, switchedRuntimeDeps.DatabaseSelector.AdditionalOptions[0].ConnString)
+	}
+	if len(orchestrator.sessionScopedOptions) != 1 {
+		t.Fatalf("expected orchestrator to retain one CLI session option, got %d", len(orchestrator.sessionScopedOptions))
+	}
+	if orchestrator.sessionScopedOptions[0].ConnString != selectedCLI.ConnString {
+		t.Fatalf("expected orchestrator to retain CLI option %q, got %q", selectedCLI.ConnString, orchestrator.sessionScopedOptions[0].ConnString)
+	}
+}
+
 func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_CloseLogsFailure(t *testing.T) {
 	restore := snapshotStartupRuntimeTestHooks()
 	defer restore()

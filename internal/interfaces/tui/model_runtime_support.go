@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -18,6 +19,35 @@ func (m *Model) applyRuntimeRunDeps(runtimeDeps RuntimeRunDeps) {
 	m.translator = runtimeDeps.Translator
 	m.runtimeDatabaseSelectorDeps = runtimeDeps.DatabaseSelector
 	m.runtimeClose = runtimeDeps.Close
+}
+
+func (m *Model) initializeRuntimeBundle() {
+	if m == nil {
+		return
+	}
+	parentCtx := m.ctx
+	if parentCtx == nil {
+		parentCtx = context.Background()
+	}
+	m.runtimeBundleCtx, m.runtimeBundleCancel = context.WithCancel(parentCtx)
+	if m.runtimeSession == nil {
+		m.runtimeBundleToken = 0
+		return
+	}
+	m.runtimeBundleToken = m.runtimeSession.allocateRuntimeBundleToken()
+}
+
+func (m *Model) runtimeReadContext() context.Context {
+	if m == nil {
+		return context.Background()
+	}
+	if m.runtimeBundleCtx != nil {
+		return m.runtimeBundleCtx
+	}
+	if m.ctx != nil {
+		return m.ctx
+	}
+	return context.Background()
 }
 
 func (m *Model) pageSize() int {
@@ -89,7 +119,15 @@ func (m *Model) commandInputValueWithCaret() string {
 }
 
 func (m *Model) closeRuntimeResources() {
-	if m == nil || m.runtimeClose == nil {
+	if m == nil {
+		return
+	}
+	if m.runtimeBundleCancel != nil {
+		cancel := m.runtimeBundleCancel
+		m.runtimeBundleCancel = nil
+		cancel()
+	}
+	if m.runtimeClose == nil {
 		return
 	}
 	closeFn := m.runtimeClose
