@@ -162,6 +162,7 @@
 - Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.
+- Correct runtime layout visibility requires terminal height of at least `10` rows. This preserves the fixed 3-row status box and leaves at least 5 content rows available in both main panels; lower heights are outside the supported rendering contract.
 
 ## Technical Decisions and Tradeoffs
 

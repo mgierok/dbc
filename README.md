@@ -16,6 +16,7 @@ Prerequisites:
 - Go `1.25.0` or newer.
 - Supported operating systems: macOS and Linux.
 - Terminal with UTF-8 Unicode rendering support for box-drawing glyphs and standard ANSI SGR text attributes used by the TUI. Set `NO_COLOR` to force monochrome output.
+- Terminal height of at least `10` rows for correct runtime rendering. This preserves the 3-row status bar and at least 5 visible text lines in both main panels.
 
 Clone repository and install:
 ```bash
