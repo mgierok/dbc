@@ -106,6 +106,7 @@ These rules apply only in Plan mode.
 - If a decision-critical open question remains unresolved, the agent MUST NOT present the plan as execution-ready and MUST call out the gap explicitly.
 - When planning a change to existing behavior or functionality, the agent MUST keep repository planning artifacts focused on the intended resulting state and MUST NOT leave information about the previous state unless the user explicitly requests that historical context.
 - When persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
+- When the user asks to save a generated plan after a `<proposed_plan>` was already presented, the agent MUST treat that as a persistence request rather than a request to regenerate, restyle, summarize, expand, or otherwise rewrite the plan content. The persisted file MUST be textually identical to the most recently presented `<proposed_plan>` content unless the user explicitly requests edits before saving.
 - A generated plan MUST include references to the documentation files that SHOULD be consulted to enrich task context for that specific task, with a short note describing why each file is relevant.
 
 ### Repository Consistency Rules
