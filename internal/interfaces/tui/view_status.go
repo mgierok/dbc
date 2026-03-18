@@ -23,9 +23,6 @@ func (m *Model) renderStatus(width int) string {
 		parts = append(parts, m.recordsSummary(), m.pageSummary())
 	}
 	parts = append(parts, m.filterSummary(), m.sortSummary())
-	if m.overlay.commandInput.active {
-		parts = append(parts, m.statusSegment("Command", m.commandPrompt()))
-	}
 	if strings.TrimSpace(m.ui.statusMessage) != "" {
 		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage))
 	}

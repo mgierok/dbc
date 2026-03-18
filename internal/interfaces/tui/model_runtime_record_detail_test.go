@@ -93,7 +93,7 @@ func TestHandleKey_RecordDetailEscClosesDetailBeforeSwitchingPanels(t *testing.T
 	}
 }
 
-func TestHandleKey_RecordDetailColonOpensCommandInput(t *testing.T) {
+func TestHandleKey_RecordDetailColonOpensCommandInputWithoutClearingStatus(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{
@@ -118,8 +118,8 @@ func TestHandleKey_RecordDetailColonOpensCommandInput(t *testing.T) {
 	if !model.overlay.recordDetail.active {
 		t.Fatal("expected record detail to stay open behind command input")
 	}
-	if model.ui.statusMessage != "" {
-		t.Fatalf("expected stale status to clear when command input opens, got %q", model.ui.statusMessage)
+	if model.ui.statusMessage != "stale status" {
+		t.Fatalf("expected existing status to stay visible when command input opens, got %q", model.ui.statusMessage)
 	}
 }
 

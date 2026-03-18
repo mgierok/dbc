@@ -39,6 +39,14 @@ func (m *Model) View() string {
 		return primitives.CenterBoxLines(m.renderSortPopup(width), width, height)
 	}
 
+	lines := m.renderRuntimeLayout(width, height)
+	if m.overlay.commandInput.active {
+		lines = primitives.OverlayCenteredBoxLines(lines, m.renderCommandSpotlight(width), width, height)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderRuntimeLayout(width, height int) []string {
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
@@ -46,8 +54,7 @@ func (m *Model) View() string {
 	right := primitives.RenderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth, m.styles)
 	lines := primitives.MergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
 	lines = append(lines, m.renderStatusBox(width)...)
-	lines = primitives.FitLinesToHeight(lines, height, width)
-	return strings.Join(lines, "\n")
+	return primitives.FitLinesToHeight(lines, height, width)
 }
 
 func (m *Model) panelWidths() (int, int) {

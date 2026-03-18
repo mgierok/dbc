@@ -27,7 +27,7 @@ Current product value and scope:
 - Informational aliases `-h` / `--help` and `-v` / `--version` short-circuit startup and cannot be combined with direct launch. `--version` prints one stdout token: a short commit hash when revision metadata exists, otherwise `dev`.
 - Direct-launch aliases `-d <db_path>` and `--database <db_path>` validate connectivity before runtime start. Success opens the main view directly; failure prints startup guidance and exits non-zero without falling back to the selector.
 - Invalid usage and argument-validation failures exit with code `2` and guidance (`Error`, `Hint`, `Usage`). Startup runtime failures exit with code `1`.
-- During an active session, `:` opens command entry from non-popup runtime views, including tables, schema, records, and record detail. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:w` / `:write` opens save confirmation for staged changes, `:wq` opens the same save confirmation when staged changes exist and otherwise exits immediately, `:quit` / `:q` exits the application when no staged changes exist, `:quit!` / `:q!` discards any staged changes and exits immediately, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
+- During an active session, `:` opens a centered spotlight-style command overlay from non-popup runtime views, including tables, schema, records, and record detail. The spotlight keeps the current runtime view and current status bar visible behind it, defaults to `50%` of terminal width, and falls back to a minimum visible command field of `10` characters on narrow terminals. It shows a single-line `:`-prefixed input with a visible caret and closes on `Esc` or after `Enter` submission. Popup overlays keep their own local controls and do not open command entry on `:`. `:config` / `:c` returns to selector/management, where browse-mode `Esc` closes the selector and resumes the current runtime database; `:help` / `:h` opens runtime context help, `:w` / `:write` opens save confirmation for staged changes, `:wq` opens the same save confirmation when staged changes exist and otherwise exits immediately, `:quit` / `:q` exits the application when no staged changes exist, `:quit!` / `:q!` discards any staged changes and exits immediately, and `:set limit=<n>` sets the persisted-record page limit for the current app session only.
 - Runtime help is context-sensitive, lists only controls available where it was opened, stays open until `Esc`, and supports scrolling when content exceeds the visible area. Re-running `:help` / `:h` while help is already open leaves it open.
 - Unsupported runtime commands keep the session active and surface an unknown-command status.
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
@@ -111,7 +111,7 @@ Current product value and scope:
 - Visual emphasis uses terminal-native text attributes instead of application-defined colors: selected items use reverse video, titles and status labels use emphasis, secondary hints are visually subdued, and error messages are emphasized with underline.
 - When ANSI styling is available, delete-marked persisted record content uses strikethrough as an additional emphasis treatment; when styling is disabled (`NO_COLOR` or `TERM=dumb`), DBC falls back to the textual delete affordances only.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
-- The status bar always communicates current mode, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`).
+- The status bar always communicates current mode, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`). Live command entry is not rendered in the status bar.
 - Every active editable text field in the product shows a visible caret `|`.
 - If `NO_COLOR` is set or the terminal reports `TERM=dumb`, DBC falls back to unstyled monochrome rendering.
 
@@ -124,6 +124,7 @@ Current user-visible constraints:
 - Only one active filter is supported per table.
 - Only one active sort is supported per table.
 - Runtime page-limit overrides via `:set limit=<n>` are limited to the range `1..1000` and apply only to the current app session.
+- Correct runtime operation requires terminal height of at least `10` rows. This is the minimum that keeps the full 3-row status bar visible and preserves at least 5 visible text lines in both the left and right main panels.
 - There is no shortcut that switches from Records view back to Schema view while keeping right-panel focus.
 - There is no dedicated clear-filter command; filter state is replaced by applying a new filter or cleared by switching tables.
 - There is no dedicated clear-sort command; sort state is replaced by applying a new sort or cleared by switching tables.
@@ -154,7 +155,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | Open context help for current state | `?` |
 | Open selected table in records panel | `Enter` |
 | Return to left panel from neutral right-panel state | `Esc` |
-| Open command entry in non-popup runtime views | `:` |
+| Open command spotlight in non-popup runtime views | `:` |
 
 ### Records and Data Actions
 
@@ -182,7 +183,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 | Filter popup | `j/k` select, `Enter` confirm step, `Esc` close; value-entry step also supports typing, `left/right`, and `Backspace` |
 | Sort popup | `j/k` select, `Enter` confirm step, `Esc` close |
 | Edit popup | `Enter` confirm, `Esc` cancel, `Ctrl+n` set `NULL` when field is nullable; text entry supports typing, `left/right`, and `Backspace`, while select-style fields use `j/k` |
-| Command input | Type command text, `left/right` move caret, `Backspace` delete, `Enter` run, `Esc` cancel |
+| Command spotlight | Type command text, `left/right` move caret, `Backspace` delete, `Enter` run, `Esc` cancel |
 | Confirm and dirty-decision popups | `j/k` choose action, `Enter` select the current action, `Esc` cancel |
 | Help and record-detail popups | `j/k` and `Ctrl+f`/`Ctrl+b` scroll, `Esc` close |
 

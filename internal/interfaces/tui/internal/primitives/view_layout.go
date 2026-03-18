@@ -149,6 +149,49 @@ func CenterBoxLines(lines []string, width, height int) string {
 	return strings.Join(full, "\n")
 }
 
+func OverlayCenteredBoxLines(background, overlay []string, width, height int) []string {
+	if width <= 0 {
+		width = 80
+	}
+	if height <= 0 {
+		height = 24
+	}
+
+	base := FitLinesToHeight(background, height, width)
+	if len(overlay) == 0 {
+		return base
+	}
+
+	boxHeight := MinInt(len(overlay), height)
+	boxWidth := 0
+	for i := 0; i < boxHeight; i++ {
+		boxWidth = MaxInt(boxWidth, TextWidth(overlay[i]))
+	}
+	boxWidth = clamp(boxWidth, 1, width)
+
+	leftPad := 0
+	if width > boxWidth {
+		leftPad = (width - boxWidth) / 2
+	}
+	topPad := 0
+	if height > boxHeight {
+		topPad = (height - boxHeight) / 2
+	}
+
+	for i := 0; i < boxHeight; i++ {
+		rowIndex := topPad + i
+		if rowIndex < 0 || rowIndex >= len(base) {
+			continue
+		}
+		overlayLine := PadRight(overlay[i], boxWidth)
+		prefix := ansi.Cut(base[rowIndex], 0, leftPad)
+		suffix := ansi.Cut(base[rowIndex], leftPad+boxWidth, width)
+		base[rowIndex] = prefix + overlayLine + suffix
+	}
+
+	return base
+}
+
 func RenderFrameEdge(width int, leftCorner, horizontal, rightCorner string) string {
 	switch {
 	case width <= 0:

@@ -66,13 +66,12 @@ func (m *Model) currentTableName() string {
 	return m.read.tables[m.read.selectedTable].Name
 }
 
-func (m *Model) commandPrompt() string {
+func (m *Model) commandInputValueWithCaret() string {
 	if !m.overlay.commandInput.active {
 		return ""
 	}
 	cursor := clamp(m.overlay.commandInput.cursor, 0, len(m.overlay.commandInput.value))
-	value := m.overlay.commandInput.value[:cursor] + "|" + m.overlay.commandInput.value[cursor:]
-	return ":" + value
+	return m.overlay.commandInput.value[:cursor] + "|" + m.overlay.commandInput.value[cursor:]
 }
 
 func (m *Model) ShouldOpenConfigSelector() bool {

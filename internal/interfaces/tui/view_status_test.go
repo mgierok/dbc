@@ -101,9 +101,12 @@ func TestRenderStatus_DoesNotRenderViewLabel(t *testing.T) {
 	}
 }
 
-func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
+func TestRenderStatus_DoesNotRenderInlineCommandPromptWhenSpotlightIsActive(t *testing.T) {
 	// Arrange
 	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+		},
 		overlay: runtimeOverlayState{
 			commandInput: commandInput{
 				active: true,
@@ -117,8 +120,11 @@ func TestRenderStatus_CommandPromptShowsCaretAtCursor(t *testing.T) {
 	status := stripANSI(model.renderStatus(200))
 
 	// Assert
-	if !strings.Contains(status, "Command: :con|fig") {
-		t.Fatalf("expected command prompt caret in status, got %q", status)
+	if strings.Contains(status, "Command:") {
+		t.Fatalf("expected status to omit inline command prompt while spotlight is active, got %q", status)
+	}
+	if !strings.Contains(status, "Records: 0/0") {
+		t.Fatalf("expected status summaries to remain visible while spotlight is active, got %q", status)
 	}
 }
 

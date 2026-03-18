@@ -16,7 +16,6 @@ func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
 		value:  "",
 		cursor: 0,
 	}
-	m.ui.statusMessage = ""
 	return m, nil
 }
 

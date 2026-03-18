@@ -528,7 +528,7 @@ func TestHandleKey_CommandHelpReenterKeepsPopupOpen(t *testing.T) {
 	}
 }
 
-func TestHandleKey_CommandHelpReenterClearsStaleStatusBeforeNewCommand(t *testing.T) {
+func TestHandleKey_CommandHelpReenterPreservesExistingStatusWhileOpeningSpotlight(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{viewMode: ViewRecords},
@@ -544,8 +544,8 @@ func TestHandleKey_CommandHelpReenterClearsStaleStatusBeforeNewCommand(t *testin
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "repeated :help after stale status")
-	if model.ui.statusMessage != "" {
-		t.Fatalf("expected stale status message to clear before new command, got %q", model.ui.statusMessage)
+	if model.ui.statusMessage != "existing status" {
+		t.Fatalf("expected existing status message to remain while opening new command, got %q", model.ui.statusMessage)
 	}
 	if !model.overlay.helpPopup.active {
 		t.Fatal("expected help popup to remain open")

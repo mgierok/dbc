@@ -144,3 +144,133 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 		})
 	}
 }
+
+func TestView_CommandSpotlightOverlaysRuntimePanelsAndStatusBar(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ui: runtimeUIState{
+			width:         140,
+			height:        24,
+			statusMessage: "Affected rows: 1",
+		},
+		read: runtimeReadState{
+			focus:         FocusContent,
+			viewMode:      ViewRecords,
+			selectedTable: 0,
+			tables:        []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+			},
+			records:          []dto.RecordRow{{Values: []string{"1"}}},
+			recordTotalCount: 1,
+			recordTotalPages: 1,
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active: true,
+				value:  "set limit=10",
+				cursor: len("set limit=10"),
+			},
+		},
+	}
+
+	// Act
+	view := stripANSI(model.View())
+	lines := strings.Split(view, "\n")
+
+	// Assert
+	if !strings.Contains(lines[0], primitives.FrameTopLeft+"Tables") || !strings.Contains(lines[0], primitives.FrameTopLeft+"Records") {
+		t.Fatalf("expected runtime panels to remain visible behind spotlight, got %q", lines[0])
+	}
+	if !strings.Contains(view, "Affected rows: 1") {
+		t.Fatalf("expected status bar to remain visible behind spotlight, got %q", view)
+	}
+	if strings.Contains(view, "Command:") {
+		t.Fatalf("expected no inline command segment in status while spotlight is active, got %q", view)
+	}
+	if !strings.Contains(view, "│:set limit=10|") {
+		t.Fatalf("expected spotlight input row with prompt and caret, got %q", view)
+	}
+}
+
+func TestView_CommandSpotlightCentersAndClampsWidthInNarrowWindow(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ui: runtimeUIState{
+			width:  13,
+			height: 9,
+		},
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewRecords,
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active: true,
+			},
+		},
+	}
+
+	// Act
+	view := stripANSI(model.View())
+	lines := strings.Split(view, "\n")
+
+	// Assert
+	if len(lines) != 9 {
+		t.Fatalf("expected runtime view height 9, got %d", len(lines))
+	}
+	if lines[3] != "┌───────────┐" {
+		t.Fatalf("expected centered spotlight top border with terminal-clamped width, got %q", lines[3])
+	}
+	if lines[4] != "│:|         │" {
+		t.Fatalf("expected spotlight input row to preserve 10-character field, got %q", lines[4])
+	}
+	if lines[5] != "└───────────┘" {
+		t.Fatalf("expected centered spotlight bottom border, got %q", lines[5])
+	}
+}
+
+func TestView_CommandSpotlightDefaultsToHalfTerminalWidth(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewRecords,
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active: true,
+			},
+		},
+	}
+
+	// Act
+	view := stripANSI(model.View())
+	lines := strings.Split(view, "\n")
+
+	// Assert
+	topBorder := "┌──────────────────────────────────────┐"
+	contentRow := "│:|                                    │"
+	bottomBorder := "└──────────────────────────────────────┘"
+
+	topIndex := strings.Index(lines[10], topBorder)
+	if topIndex < 0 {
+		t.Fatalf("expected spotlight top border to be rendered, got %q", lines[10])
+	}
+	if primitives.TextWidth(lines[10][:topIndex]) != 20 {
+		t.Fatalf("expected spotlight top border to start at centered column 21, got prefix width %d in %q", primitives.TextWidth(lines[10][:topIndex]), lines[10])
+	}
+	if !strings.Contains(lines[10], topBorder) {
+		t.Fatalf("expected spotlight top border to default to half terminal width, got %q", lines[10])
+	}
+	if !strings.Contains(lines[11], contentRow) {
+		t.Fatalf("expected spotlight content row to use half-width default, got %q", lines[11])
+	}
+	if !strings.Contains(lines[12], bottomBorder) {
+		t.Fatalf("expected spotlight bottom border to use half-width default, got %q", lines[12])
+	}
+}

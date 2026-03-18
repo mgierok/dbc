@@ -1,7 +1,6 @@
 package tui
 
-// runtime command entry is available only in non-blocking runtime contexts that
-// own the active status bar workflow.
+// runtime command entry is available only in non-blocking runtime contexts.
 func (m *Model) commandInputSupportedInCurrentContext() bool {
 	return m.nonBlockingRuntimeCommandContextActive()
 }
