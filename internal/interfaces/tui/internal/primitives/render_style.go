@@ -16,10 +16,18 @@ const (
 
 type RenderStyles struct {
 	enabled bool
+	variant renderVariant
 }
 
+type renderVariant int
+
+const (
+	renderVariantNormal renderVariant = iota
+	renderVariantBackdrop
+)
+
 func NewRenderStyles(enabled bool) RenderStyles {
-	return RenderStyles{enabled: enabled}
+	return RenderStyles{enabled: enabled, variant: renderVariantNormal}
 }
 
 func ResolveRenderStylesFromEnv() RenderStyles {
@@ -36,19 +44,35 @@ func (s RenderStyles) Enabled() bool {
 	return s.enabled
 }
 
+func (s RenderStyles) Backdrop() RenderStyles {
+	return RenderStyles{enabled: s.enabled, variant: renderVariantBackdrop}
+}
+
 func (s RenderStyles) Title(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint)
+	}
 	return s.wrap(text, sgrBold)
 }
 
 func (s RenderStyles) Selected(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint)
+	}
 	return s.wrap(text, sgrReverse)
 }
 
 func (s RenderStyles) Deleted(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint, sgrStrike)
+	}
 	return s.wrap(text, sgrStrike)
 }
 
 func (s RenderStyles) SelectedDeleted(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint, sgrStrike)
+	}
 	return s.wrap(text, sgrReverse, sgrStrike)
 }
 
@@ -57,18 +81,30 @@ func (s RenderStyles) Muted(text string) string {
 }
 
 func (s RenderStyles) Error(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint, sgrUnderline)
+	}
 	return s.wrap(text, sgrBold, sgrUnderline)
 }
 
 func (s RenderStyles) Dirty(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint)
+	}
 	return s.wrap(text, sgrBold)
 }
 
 func (s RenderStyles) Label(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint)
+	}
 	return s.wrap(text, sgrBold)
 }
 
 func (s RenderStyles) Summary(text string) string {
+	if s.variant == renderVariantBackdrop {
+		return s.wrap(text, sgrFaint)
+	}
 	return s.wrap(text, sgrBold)
 }
 

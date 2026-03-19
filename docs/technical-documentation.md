@@ -51,6 +51,7 @@
 - Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
 - Guarantee: startup selector flow is separate from runtime database switching; startup selects only the initial database, while runtime `:config` / `:c` opens a runtime overlay popup and keeps the same runtime program alive across successful database switches.
+- Guarantee: the startup selector host stays outside the runtime overlay presenter and therefore does not render the runtime backdrop treatment used by runtime popups and spotlight overlays.
 - Guarantee: runtime database-selector popup dismissal is in-model only, so popup close automatically restores the prior runtime view without per-popup resume snapshots.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
 
@@ -97,11 +98,20 @@
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
 - Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_command_context.go`, `internal/interfaces/tui/model_staging_save_flow.go`.
 
+### Shared Runtime Overlay Presentation
+
+- Guarantee: runtime help, confirm, edit, filter, sort, runtime `:config` selector, and command spotlight overlays are resolved through one shared runtime presenter instead of per-overlay host logic.
+- Guarantee: when any runtime overlay is active, the runtime layout is still rendered first and then composed behind the overlay through one centered overlay path.
+- Guarantee: runtime overlay priority stays centralized in the runtime view path instead of being redefined inside individual popup renderers.
+- Enforced in: `internal/interfaces/tui/view.go`, `internal/interfaces/tui/view_popups.go`, `internal/interfaces/tui/view_command_spotlight.go`.
+
 ### Terminal-Native TUI Styling
 
 - Guarantee: runtime and selector models resolve their styling profile once at construction time and render deterministically from that profile.
-- Guarantee: TUI emphasis uses only ANSI SGR attributes (`bold`, `faint`, `underline`, `reverse`) on the terminal's current foreground/background theme; the application does not define its own color palette.
-- Guarantee: setting `NO_COLOR` or running with `TERM=dumb` disables ANSI styling and falls back to plain text rendering.
+- Guarantee: TUI emphasis uses only ANSI SGR attributes (`bold`, `faint`, `underline`, `reverse`, `strike`) on the terminal's current foreground/background theme; the application does not define its own color palette.
+- Guarantee: runtime background rendering accepts an explicit render-style profile, so the shared runtime overlay presenter can render the background in a backdrop variant while keeping overlay content in the normal profile.
+- Guarantee: the backdrop variant stays terminal-theme-driven and uses only subdued ANSI attributes; it does not introduce an application-defined palette or colorscheme detection.
+- Guarantee: setting `NO_COLOR` or running with `TERM=dumb` disables ANSI styling and falls back to plain text rendering without changing the shared overlay composition path.
 - Enforced in: `internal/interfaces/tui/internal/primitives/render_style.go`, `internal/interfaces/tui/internal/primitives/view_layout.go`, `internal/interfaces/tui/internal/primitives/popup_component.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/internal/selector/view.go`.
 
 ## Data and Interface Contracts
@@ -156,6 +166,7 @@
 - Runtime closes active DB handle on session end; close failures are logged.
 - Runtime session state survives in-process runtime database switches within the same DBC process and is not persisted into config.
 - Runtime `:config` / `:c` opens an in-runtime database-selector popup over the current layout; `Esc` closes only that popup and leaves runtime state untouched.
+- Active runtime popups and the command spotlight keep the runtime layout visible underneath through the shared runtime backdrop presenter; the startup selector remains the only intentional selector exception to that rule.
 - Runtime database switching is async inside the TUI adapter: failed switch preparation keeps the current session active and leaves the selector popup open with selector status, while successful switch preparation atomically swaps runtime dependencies in-process and closes the previous DB handle only after the replacement bundle is ready.
 - Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
@@ -208,14 +219,14 @@
 
 ### Selector-First Decomposition Inside The TUI Adapter
 
-- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, keep runtime write-side state behind `Model.staging`, keep runtime overlay dispatch in one router, and reuse one selector controller across a startup host and a runtime popup host.
-- Rationale: reduce mixed-context hotspots while preserving the adapter boundary, stable top-level runtime entry points used by `cmd/dbc`, and a predictable change location for each overlay workflow without reintroducing runtime restart/resume logic for selector dismissal.
+- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, keep runtime write-side state behind `Model.staging`, centralize runtime overlay dispatch in one runtime presenter, and reuse one selector controller across a startup host and a runtime popup host.
+- Rationale: reduce mixed-context hotspots while preserving the adapter boundary, stable top-level runtime entry points used by `cmd/dbc`, a predictable change location for overlay composition, and the startup/runtime selector split without reintroducing runtime restart/resume logic for selector dismissal.
 - Where: `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_filter_sort.go`, `internal/interfaces/tui/model_runtime_edit_popup.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_record_detail.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
 
 ### Terminal-Theme-Driven TUI Styling
 
-- Decision: keep TUI styling limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors.
-- Rationale: inherit the user's terminal colorscheme automatically while preserving a predictable monochrome fallback path.
+- Decision: keep TUI styling limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors, including for shared runtime backdrop rendering.
+- Rationale: inherit the user's terminal colorscheme automatically while preserving a predictable monochrome fallback path and one overlay composition architecture for both styled and unstyled terminals.
 - Where: `internal/interfaces/tui/internal/primitives/render_style.go`, `internal/interfaces/tui/internal/primitives/view_layout.go`, `internal/interfaces/tui/internal/primitives/popup_component.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/internal/selector/view.go`.
 
 ### Guarded Dynamic Query Composition

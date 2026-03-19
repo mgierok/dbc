@@ -9,6 +9,10 @@ import (
 )
 
 func (m *Model) renderSchema(width, height int) []string {
+	return m.renderSchemaWithStyles(width, height, m.styles)
+}
+
+func (m *Model) renderSchemaWithStyles(width, height int, styles primitives.RenderStyles) []string {
 	if len(m.read.schema.Columns) == 0 {
 		return primitives.PadLines([]string{primitives.PadRight("No schema loaded.", width)}, height, width)
 	}
@@ -17,11 +21,15 @@ func (m *Model) renderSchema(width, height int) []string {
 	for i, column := range m.read.schema.Columns {
 		items[i] = fmt.Sprintf("%s : %s", column.Name, column.Type)
 	}
-	lines := primitives.RenderList(items, m.read.schemaIndex, height, width, m.read.focus == FocusContent && m.read.viewMode == ViewSchema, m.styles)
+	lines := primitives.RenderList(items, m.read.schemaIndex, height, width, m.read.focus == FocusContent && m.read.viewMode == ViewSchema, styles)
 	return primitives.PadLines(lines, height, width)
 }
 
 func (m *Model) renderRecords(width, height int) []string {
+	return m.renderRecordsWithStyles(width, height, m.styles)
+}
+
+func (m *Model) renderRecordsWithStyles(width, height int, styles primitives.RenderStyles) []string {
 	lines := make([]string, 0, height)
 
 	columns := m.schemaColumnsForRecordsHeader()
@@ -41,7 +49,7 @@ func (m *Model) renderRecords(width, height int) []string {
 	}
 	columnWidths := allocateColumnWidths(rowWidth, len(columns))
 	headerPrefix := strings.Repeat(" ", recordSelectionPrefixWidth+recordMarkerSlotWidth)
-	headerRows := formatRecordsHeaderRows(columns, columnWidths, m.styles)
+	headerRows := formatRecordsHeaderRows(columns, columnWidths, styles)
 	for _, headerRow := range headerRows {
 		lines = append(lines, primitives.PadRight(headerPrefix+headerRow, width))
 	}
@@ -90,15 +98,15 @@ func (m *Model) renderRecords(width, height int) []string {
 		prefixWithMarker := prefix + rowMarker + " "
 		if m.isRowMarkedDelete(i) {
 			if selected {
-				prefixWithMarker = m.styles.Selected(prefixWithMarker)
-				row = m.styles.SelectedDeleted(row)
+				prefixWithMarker = styles.Selected(prefixWithMarker)
+				row = styles.SelectedDeleted(row)
 			} else {
-				row = m.styles.Deleted(row)
+				row = styles.Deleted(row)
 			}
 		}
 		line := primitives.PadRight(prefixWithMarker+row, width)
 		if selected && !m.isRowMarkedDelete(i) {
-			line = m.styles.Selected(line)
+			line = styles.Selected(line)
 		}
 		lines = append(lines, line)
 	}
@@ -119,9 +127,13 @@ func (m *Model) recordRowMarker(rowIndex int) string {
 }
 
 func (m *Model) renderRecordDetail(width, height int) []string {
+	return m.renderRecordDetailWithStyles(width, height, m.styles)
+}
+
+func (m *Model) renderRecordDetailWithStyles(width, height int, styles primitives.RenderStyles) []string {
 	lines := make([]string, 0, height)
 
-	contentLines := m.recordDetailContentLines(width)
+	contentLines := m.recordDetailContentLinesWithStyles(width, styles)
 	if len(contentLines) == 0 {
 		lines = append(lines, primitives.PadRight("No detail available.", width))
 		return primitives.PadLines(lines, height, width)
@@ -142,6 +154,10 @@ func (m *Model) renderRecordDetail(width, height int) []string {
 }
 
 func (m *Model) recordDetailContentLines(width int) []string {
+	return m.recordDetailContentLinesWithStyles(width, m.styles)
+}
+
+func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.RenderStyles) []string {
 	if m.totalRecordRows() == 0 {
 		return []string{"No records."}
 	}
@@ -160,7 +176,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 	} else if m.isRowEdited(rowIndex) {
 		rowLine = primitives.IconInfo + " Edited record"
 	}
-	lines = append(lines, primitives.WrapTextToWidth(m.styles.Summary(rowLine), width)...)
+	lines = append(lines, primitives.WrapTextToWidth(styles.Summary(rowLine), width)...)
 	lines = append(lines, "")
 
 	valueWidth := width - 2
@@ -170,7 +186,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 	for columnIndex, column := range m.read.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
-		header := fmt.Sprintf("%s (%s)", m.styles.Title(column.Name), column.Type)
+		header := fmt.Sprintf("%s (%s)", styles.Title(column.Name), column.Type)
 		if edited {
 			header += " " + primitives.IconEdit
 		}
@@ -178,7 +194,7 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 		for _, wrappedLine := range primitives.WrapTextToWidth(value, valueWidth) {
 			if deleted {
-				wrappedLine = m.styles.Deleted(wrappedLine)
+				wrappedLine = styles.Deleted(wrappedLine)
 			}
 			lines = append(lines, "  "+wrappedLine)
 		}

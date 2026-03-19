@@ -199,3 +199,61 @@ func TestRenderEditPopup_StylesExplicitErrorRowsWhenEnabled(t *testing.T) {
 		t.Fatalf("expected emphasized popup error row, got %q", popup)
 	}
 }
+
+func TestRenderStyles_BackdropSubduesSelectedAndDeleteStates(t *testing.T) {
+	// Arrange
+	backdrop := primitives.NewRenderStyles(true).Backdrop()
+
+	// Act
+	selected := backdrop.Selected("active")
+	deleted := backdrop.Deleted("removed")
+	selectedDeleted := backdrop.SelectedDeleted("removed active")
+
+	// Assert
+	if selected != "\x1b[2mactive\x1b[0m" {
+		t.Fatalf("expected backdrop selected content to use faint styling only, got %q", selected)
+	}
+	if strings.Contains(selected, "[7m") {
+		t.Fatalf("expected backdrop selected content to avoid reverse video, got %q", selected)
+	}
+	if deleted != "\x1b[2;9mremoved\x1b[0m" {
+		t.Fatalf("expected backdrop deleted content to keep strike and add faint, got %q", deleted)
+	}
+	if selectedDeleted != "\x1b[2;9mremoved active\x1b[0m" {
+		t.Fatalf("expected backdrop selected-deleted content to keep strike without reverse video, got %q", selectedDeleted)
+	}
+}
+
+func TestResolveRenderStylesFromEnv_BackdropStaysUnstyledWhenNoColorIsSet(t *testing.T) {
+	// Arrange
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("TERM", "xterm-256color")
+
+	// Act
+	backdrop := primitives.ResolveRenderStylesFromEnv().Backdrop()
+
+	// Assert
+	if got := backdrop.Selected("active"); got != "active" {
+		t.Fatalf("expected NO_COLOR backdrop selected content to stay plain, got %q", got)
+	}
+	if got := backdrop.Error("Error: invalid value"); got != "Error: invalid value" {
+		t.Fatalf("expected NO_COLOR backdrop errors to stay plain, got %q", got)
+	}
+}
+
+func TestResolveRenderStylesFromEnv_BackdropStaysUnstyledWhenTermIsDumb(t *testing.T) {
+	// Arrange
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("TERM", "dumb")
+
+	// Act
+	backdrop := primitives.ResolveRenderStylesFromEnv().Backdrop()
+
+	// Assert
+	if got := backdrop.Title("Tables"); got != "Tables" {
+		t.Fatalf("expected TERM=dumb backdrop title to stay plain, got %q", got)
+	}
+	if got := backdrop.Deleted("removed"); got != "removed" {
+		t.Fatalf("expected TERM=dumb backdrop deleted content to stay plain, got %q", got)
+	}
+}

@@ -23,40 +23,49 @@ func (m *Model) View() string {
 		height = 24
 	}
 
-	if m.overlay.helpPopup.active {
-		return primitives.CenterBoxLines(m.renderHelpPopup(width), width, height)
-	}
-	if m.overlay.confirmPopup.active {
-		return primitives.CenterBoxLines(m.renderConfirmPopup(width), width, height)
-	}
-	if m.overlay.editPopup.active {
-		return primitives.CenterBoxLines(m.renderEditPopup(width), width, height)
-	}
-	if m.overlay.filterPopup.active {
-		return primitives.CenterBoxLines(m.renderFilterPopup(width), width, height)
-	}
-	if m.overlay.sortPopup.active {
-		return primitives.CenterBoxLines(m.renderSortPopup(width), width, height)
+	overlayLines := m.activeRuntimeOverlay(width, height)
+	styles := m.styles
+	if len(overlayLines) > 0 {
+		styles = styles.Backdrop()
 	}
 
-	lines := m.renderRuntimeLayout(width, height)
-	if m.overlay.databaseSelector.active && m.overlay.databaseSelector.controller != nil {
-		lines = primitives.OverlayCenteredBoxLines(lines, m.overlay.databaseSelector.controller.PopupLines(width, height), width, height)
+	lines := m.renderRuntimeLayout(width, height, styles)
+	if len(overlayLines) > 0 {
+		lines = primitives.OverlayCenteredBoxLines(lines, overlayLines, width, height)
 	}
-	if m.overlay.commandInput.active {
-		lines = primitives.OverlayCenteredBoxLines(lines, m.renderCommandSpotlight(width), width, height)
-	}
+
 	return strings.Join(lines, "\n")
 }
 
-func (m *Model) renderRuntimeLayout(width, height int) []string {
+func (m *Model) activeRuntimeOverlay(width, height int) []string {
+	switch {
+	case m.overlay.helpPopup.active:
+		return m.renderHelpPopup(width)
+	case m.overlay.confirmPopup.active:
+		return m.renderConfirmPopup(width)
+	case m.overlay.editPopup.active:
+		return m.renderEditPopup(width)
+	case m.overlay.filterPopup.active:
+		return m.renderFilterPopup(width)
+	case m.overlay.sortPopup.active:
+		return m.renderSortPopup(width)
+	case m.overlay.databaseSelector.active && m.overlay.databaseSelector.controller != nil:
+		return m.overlay.databaseSelector.controller.PopupLines(width, height)
+	case m.overlay.commandInput.active:
+		return m.renderCommandSpotlight(width)
+	default:
+		return nil
+	}
+}
+
+func (m *Model) renderRuntimeLayout(width, height int, styles primitives.RenderStyles) []string {
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
-	left := primitives.RenderPanelBox("Tables", m.renderTables(leftWidth, bodyHeight), leftWidth, m.styles)
-	right := primitives.RenderPanelBox(m.contentPanelTitle(), m.renderContent(rightWidth, bodyHeight), rightWidth, m.styles)
+	left := primitives.RenderPanelBox("Tables", m.renderTablesWithStyles(leftWidth, bodyHeight, styles), leftWidth, styles)
+	right := primitives.RenderPanelBox(m.contentPanelTitle(), m.renderContentWithStyles(rightWidth, bodyHeight, styles), rightWidth, styles)
 	lines := primitives.MergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
-	lines = append(lines, m.renderStatusBox(width)...)
+	lines = append(lines, m.renderStatusBox(width, styles)...)
 	return primitives.FitLinesToHeight(lines, height, width)
 }
 
@@ -136,23 +145,40 @@ func (m *Model) maxTablePanelWidth() int {
 }
 
 func (m *Model) renderTables(width, height int) []string {
+	return m.renderTablesWithStyles(width, height, m.styles)
+}
+
+func (m *Model) renderTablesWithStyles(width, height int, styles primitives.RenderStyles) []string {
 	items := make([]string, len(m.read.tables))
 	for i, table := range m.read.tables {
 		items[i] = table.Name
 	}
 
-	listLines := primitives.RenderList(items, m.read.selectedTable, height, width, true, m.styles)
+	listLines := primitives.RenderList(items, m.read.selectedTable, height, width, true, styles)
 	return primitives.PadLines(listLines, height, width)
 }
 
 func (m *Model) renderContent(width, height int) []string {
+	return m.renderContentWithStyles(width, height, m.styles)
+}
+
+func (m *Model) renderContentWithStyles(width, height int, styles primitives.RenderStyles) []string {
 	switch m.read.viewMode {
 	case ViewRecords:
 		if m.overlay.recordDetail.active {
-			return m.renderRecordDetail(width, height)
+			if styles == m.styles {
+				return m.renderRecordDetail(width, height)
+			}
+			return m.renderRecordDetailWithStyles(width, height, styles)
 		}
-		return m.renderRecords(width, height)
+		if styles == m.styles {
+			return m.renderRecords(width, height)
+		}
+		return m.renderRecordsWithStyles(width, height, styles)
 	default:
-		return m.renderSchema(width, height)
+		if styles == m.styles {
+			return m.renderSchema(width, height)
+		}
+		return m.renderSchemaWithStyles(width, height, styles)
 	}
 }

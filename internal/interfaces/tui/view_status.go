@@ -8,66 +8,70 @@ import (
 )
 
 func (m *Model) renderStatus(width int) string {
+	return m.renderStatusWithStyles(width, m.styles)
+}
+
+func (m *Model) renderStatusWithStyles(width int, styles primitives.RenderStyles) string {
 	if width <= 0 {
 		width = 80
 	}
 	mode := "READ-ONLY"
 	if m.hasDirtyEdits() {
-		mode = m.styles.Dirty(fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
+		mode = styles.Dirty(fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
 	}
 	parts := []string{
 		mode,
-		m.statusSegment("Table", m.currentTableName()),
+		m.statusSegment("Table", m.currentTableName(), styles),
 	}
 	if m.read.viewMode == ViewRecords {
-		parts = append(parts, m.recordsSummary(), m.pageSummary())
+		parts = append(parts, m.recordsSummary(styles), m.pageSummary(styles))
 	}
-	parts = append(parts, m.filterSummary(), m.sortSummary())
+	parts = append(parts, m.filterSummary(styles), m.sortSummary(styles))
 	if strings.TrimSpace(m.ui.statusMessage) != "" {
-		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage))
+		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage, styles))
 	}
 	left := strings.Join(parts, primitives.FrameSegmentSeparator)
-	return primitives.RenderStatusWithRightHint(left, m.styles.Muted(primitives.RuntimeStatusContextHelpHint()), width)
+	return primitives.RenderStatusWithRightHint(left, styles.Muted(primitives.RuntimeStatusContextHelpHint()), width)
 }
 
-func (m *Model) filterSummary() string {
+func (m *Model) filterSummary(styles primitives.RenderStyles) string {
 	if m.read.currentFilter == nil {
-		return m.statusSegment("Filter", "none")
+		return m.statusSegment("Filter", "none", styles)
 	}
 	if m.read.currentFilter.Operator.RequiresValue {
-		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name, m.read.currentFilter.Value))
+		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name, m.read.currentFilter.Value), styles)
 	}
-	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name))
+	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name), styles)
 }
 
-func (m *Model) sortSummary() string {
+func (m *Model) sortSummary(styles primitives.RenderStyles) string {
 	if m.read.currentSort == nil {
-		return m.statusSegment("Sort", "none")
+		return m.statusSegment("Sort", "none", styles)
 	}
-	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.read.currentSort.Column, m.read.currentSort.Direction))
+	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.read.currentSort.Column, m.read.currentSort.Direction), styles)
 }
 
-func (m *Model) recordsSummary() string {
-	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.read.records), m.read.recordTotalCount))
+func (m *Model) recordsSummary(styles primitives.RenderStyles) string {
+	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.read.records), m.read.recordTotalCount), styles)
 }
 
-func (m *Model) pageSummary() string {
+func (m *Model) pageSummary(styles primitives.RenderStyles) string {
 	currentPage := clamp(m.read.recordPageIndex+1, 1, primitives.MaxInt(1, m.read.recordTotalPages))
-	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.read.recordTotalPages)))
+	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.read.recordTotalPages)), styles)
 }
 
-func (m *Model) statusSegment(label, value string) string {
-	return m.styles.Label(label+":") + " " + value
+func (m *Model) statusSegment(label, value string, styles primitives.RenderStyles) string {
+	return styles.Label(label+":") + " " + value
 }
 
-func (m *Model) styleStatusMessage(message string) string {
+func (m *Model) styleStatusMessage(message string, styles primitives.RenderStyles) string {
 	if primitives.IsErrorLikeMessage(message) {
-		return m.styles.Error(message)
+		return styles.Error(message)
 	}
 	return message
 }
 
-func (m *Model) renderStatusBox(width int) []string {
+func (m *Model) renderStatusBox(width int, styles primitives.RenderStyles) []string {
 	if width <= 0 {
 		width = 80
 	}
@@ -86,7 +90,7 @@ func (m *Model) renderStatusBox(width int) []string {
 		statusWidth = 0
 	}
 
-	status := m.renderStatus(statusWidth)
+	status := m.renderStatusWithStyles(statusWidth, styles)
 	content := strings.Repeat(" ", leftPadding) + primitives.PadRight(status, statusWidth) + strings.Repeat(" ", rightPadding)
 	content = primitives.PadRight(content, innerWidth)
 	return []string{

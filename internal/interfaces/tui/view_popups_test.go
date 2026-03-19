@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 
 	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
+	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
 )
 
 func TestRenderFilterPopup_ValueInputShowsCaretAtCursor(t *testing.T) {
@@ -175,12 +177,43 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 	}
 }
 
-func TestView_HelpPopupSuppressesBackgroundPanelsAndShowsHelpContent(t *testing.T) {
+type runtimeSelectorManagerStub struct{}
+
+func (runtimeSelectorManagerStub) List(_ context.Context) ([]dto.ConfigDatabase, error) {
+	return []dto.ConfigDatabase{{Name: "local", Path: "/tmp/local.sqlite"}}, nil
+}
+
+func (runtimeSelectorManagerStub) Create(_ context.Context, _ dto.ConfigDatabase) error {
+	return nil
+}
+
+func (runtimeSelectorManagerStub) Update(_ context.Context, _ int, _ dto.ConfigDatabase) error {
+	return nil
+}
+
+func (runtimeSelectorManagerStub) Delete(_ context.Context, _ int) error {
+	return nil
+}
+
+func (runtimeSelectorManagerStub) ActivePath(_ context.Context) (string, error) {
+	return "/tmp/config.json", nil
+}
+
+func TestView_HelpPopupShowsBackdropRuntimePanelsAndHelpContent(t *testing.T) {
 	// Arrange
 	model := &Model{
+		styles: primitives.NewRenderStyles(true),
 		ui: runtimeUIState{
 			width:  80,
 			height: 24,
+		},
+		read: runtimeReadState{
+			focus:    FocusTables,
+			viewMode: ViewSchema,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+			},
 		},
 		overlay: runtimeOverlayState{
 			helpPopup: helpPopup{active: true, context: helpPopupContextTables},
@@ -188,24 +221,29 @@ func TestView_HelpPopupSuppressesBackgroundPanelsAndShowsHelpContent(t *testing.
 	}
 
 	// Act
-	view := stripANSI(model.View())
+	view := model.View()
+	plainView := stripANSI(view)
 
 	// Assert
-	if strings.Contains(view, primitives.IconSelection+" Tables") || strings.Contains(view, primitives.IconSelection+" Schema") || strings.Contains(view, primitives.IconSelection+" Records") {
-		t.Fatalf("expected help modal view without background panels, got %q", view)
+	if !strings.Contains(plainView, primitives.FrameTopLeft+"Tables") || !strings.Contains(plainView, primitives.FrameTopLeft+"Schema") {
+		t.Fatalf("expected runtime panels to remain visible behind help popup, got %q", plainView)
 	}
-	if !strings.Contains(view, "Context Help: Tables") {
-		t.Fatalf("expected help popup title in view, got %q", view)
+	if !strings.Contains(view, "\x1b[2mTables\x1b[0m") || !strings.Contains(view, "\x1b[2mSchema\x1b[0m") {
+		t.Fatalf("expected help backdrop to subdue panel titles, got %q", view)
 	}
-	if !strings.Contains(view, "Tables: Enter records") {
-		t.Fatalf("expected tables-specific help content in view, got %q", view)
+	if !strings.Contains(plainView, "Context Help: Tables") {
+		t.Fatalf("expected help popup title in view, got %q", plainView)
+	}
+	if !strings.Contains(plainView, "Tables: Enter records") {
+		t.Fatalf("expected tables-specific help content in view, got %q", plainView)
 	}
 }
 
-func TestView_DirtyConfigCommandOpensConfirmPopupAndSuppressesBackgroundPanels(t *testing.T) {
+func TestView_DirtyConfigCommandOpensConfirmPopupWithBackdropRuntimeLayout(t *testing.T) {
 	// Arrange
 	model := &Model{
-		read: runtimeReadState{viewMode: ViewRecords},
+		styles: primitives.NewRenderStyles(true),
+		read:   runtimeReadState{viewMode: ViewRecords},
 		ui: runtimeUIState{
 			width:  80,
 			height: 24,
@@ -219,20 +257,73 @@ func TestView_DirtyConfigCommandOpensConfirmPopupAndSuppressesBackgroundPanels(t
 		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
-	view := stripANSI(model.View())
+	view := model.View()
+	plainView := stripANSI(view)
 
 	// Assert
-	if !strings.Contains(view, "Config") {
-		t.Fatalf("expected dirty :config modal title, got %q", view)
+	if !strings.Contains(plainView, "Config") {
+		t.Fatalf("expected dirty :config modal title, got %q", plainView)
 	}
-	if strings.Contains(view, "Tables") || strings.Contains(view, "Schema") || strings.Contains(view, "Records") {
-		t.Fatalf("expected centered modal without background panels, got %q", view)
+	if !strings.Contains(plainView, primitives.FrameTopLeft+"Tables") || !strings.Contains(plainView, primitives.FrameTopLeft+"Records") {
+		t.Fatalf("expected dirty :config popup to keep runtime panels visible, got %q", plainView)
 	}
-	if !strings.Contains(view, "Unsaved changes detected.") {
-		t.Fatalf("expected dirty :config confirm message, got %q", view)
+	if !strings.Contains(view, "\x1b[2mWRITE (dirty: 1)\x1b[0m") {
+		t.Fatalf("expected dirty backdrop status to use subdued styling, got %q", view)
 	}
-	if !strings.Contains(view, "Save and open config") || !strings.Contains(view, "Discard and open config") {
-		t.Fatalf("expected dirty :config options in popup, got %q", view)
+	if !strings.Contains(plainView, "Unsaved changes detected.") {
+		t.Fatalf("expected dirty :config confirm message, got %q", plainView)
+	}
+	if !strings.Contains(plainView, "Save and open config") || !strings.Contains(plainView, "Discard and open config") {
+		t.Fatalf("expected dirty :config options in popup, got %q", plainView)
+	}
+}
+
+func TestView_RuntimeDatabaseSelectorUsesSharedBackdropPresenter(t *testing.T) {
+	// Arrange
+	controller, err := selectorpkg.NewRuntimeController(context.Background(), runtimeSelectorManagerStub{}, selectorpkg.SelectorLaunchState{})
+	if err != nil {
+		t.Fatalf("expected runtime selector controller, got error %v", err)
+	}
+
+	model := &Model{
+		styles: primitives.NewRenderStyles(true),
+		ui: runtimeUIState{
+			width:  100,
+			height: 24,
+		},
+		read: runtimeReadState{
+			focus:         FocusContent,
+			viewMode:      ViewRecords,
+			selectedTable: 0,
+			tables:        []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+			},
+			records:          []dto.RecordRow{{Values: []string{"1"}}},
+			recordTotalCount: 1,
+			recordTotalPages: 1,
+		},
+		overlay: runtimeOverlayState{
+			databaseSelector: runtimeDatabaseSelectorPopup{
+				active:     true,
+				controller: controller,
+			},
+		},
+	}
+
+	// Act
+	view := model.View()
+	plainView := stripANSI(view)
+
+	// Assert
+	if !strings.Contains(plainView, primitives.FrameTopLeft+"Tables") || !strings.Contains(plainView, primitives.FrameTopLeft+"Records") {
+		t.Fatalf("expected runtime database selector to keep runtime layout visible, got %q", plainView)
+	}
+	if !strings.Contains(view, "\x1b[2mTables\x1b[0m") || !strings.Contains(view, "\x1b[2mRecords\x1b[0m") {
+		t.Fatalf("expected runtime database selector backdrop to subdue panel titles, got %q", view)
+	}
+	if !strings.Contains(plainView, "Select database") {
+		t.Fatalf("expected runtime database selector popup content, got %q", plainView)
 	}
 }
 

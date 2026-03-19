@@ -148,6 +148,7 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 func TestView_CommandSpotlightOverlaysRuntimePanelsAndStatusBar(t *testing.T) {
 	// Arrange
 	model := &Model{
+		styles: primitives.NewRenderStyles(true),
 		ui: runtimeUIState{
 			width:         140,
 			height:        24,
@@ -175,12 +176,19 @@ func TestView_CommandSpotlightOverlaysRuntimePanelsAndStatusBar(t *testing.T) {
 	}
 
 	// Act
-	view := stripANSI(model.View())
+	rawView := model.View()
+	view := stripANSI(rawView)
 	lines := strings.Split(view, "\n")
 
 	// Assert
 	if !strings.Contains(lines[0], primitives.FrameTopLeft+"Tables") || !strings.Contains(lines[0], primitives.FrameTopLeft+"Records") {
 		t.Fatalf("expected runtime panels to remain visible behind spotlight, got %q", lines[0])
+	}
+	if !strings.Contains(rawView, "\x1b[2mTables\x1b[0m") || !strings.Contains(rawView, "\x1b[2mRecords\x1b[0m") {
+		t.Fatalf("expected spotlight backdrop to subdue panel titles, got %q", rawView)
+	}
+	if !strings.Contains(rawView, "\x1b[2mRecords:\x1b[0m 1/1") || !strings.Contains(rawView, "\x1b[2mPage:\x1b[0m 1/1") {
+		t.Fatalf("expected spotlight backdrop to keep subdued status bar summaries, got %q", rawView)
 	}
 	if !strings.Contains(view, "Affected rows: 1") {
 		t.Fatalf("expected status bar to remain visible behind spotlight, got %q", view)
