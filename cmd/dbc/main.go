@@ -176,13 +176,37 @@ func validateSupportedOS(goos string) error {
 	}
 }
 
+type startupArgsParser struct {
+	args  []string
+	index int
+}
+
+func (p *startupArgsParser) current() string {
+	return p.args[p.index]
+}
+
+func (p *startupArgsParser) consumeNextDatabaseValue() (string, error) {
+	p.index++
+	if p.index >= len(p.args) {
+		return "", newStartupUsageError("missing value for -d/--database; usage: dbc -d <sqlite-db-path>")
+	}
+
+	next := strings.TrimSpace(p.args[p.index])
+	if next == "" {
+		return "", newStartupUsageError("empty value for -d/--database; provide a non-empty SQLite database path")
+	}
+
+	return next, nil
+}
+
 func parseStartupOptions(args []string) (startupOptions, error) {
 	options := startupOptions{}
 	var helpFlagCount int
 	var versionFlagCount int
+	parser := startupArgsParser{args: args}
 
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
+	for parser.index < len(parser.args) {
+		switch parser.current() {
 		case "-h", "--help":
 			if options.directLaunchConnString != "" {
 				return startupOptions{}, newStartupUsageError("informational flag cannot be combined with -d/--database in the same startup invocation")
@@ -214,22 +238,20 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 			if options.informationalCommand != startupInformationalNone {
 				return startupOptions{}, newStartupUsageError("informational flag cannot be combined with -d/--database in the same startup invocation")
 			}
-			if i+1 >= len(args) {
-				return startupOptions{}, newStartupUsageError("missing value for -d/--database; usage: dbc -d <sqlite-db-path>")
-			}
-			next := strings.TrimSpace(args[i+1])
-			if next == "" {
-				return startupOptions{}, newStartupUsageError("empty value for -d/--database; provide a non-empty SQLite database path")
+			next, err := parser.consumeNextDatabaseValue()
+			if err != nil {
+				return startupOptions{}, err
 			}
 
 			options.directLaunchConnString = next
-			i++
 		default:
 			return startupOptions{}, newStartupUsageErrorf(
 				"unsupported startup argument %q; supported options: -d <sqlite-db-path>, --database <sqlite-db-path>, -h/--help, -v/--version",
-				args[i],
+				parser.current(),
 			)
 		}
+
+		parser.index++
 	}
 
 	return options, nil

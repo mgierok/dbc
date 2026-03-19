@@ -260,6 +260,45 @@ func TestParseStartupOptions_ReturnsErrorForMissingDirectLaunchValue(t *testing.
 	}
 }
 
+func TestParseStartupOptions_ReturnsErrorForWhitespaceOnlyDirectLaunchValue(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "short alias whitespace value",
+			args: []string{"-d", "   \t"},
+		},
+		{
+			name: "long alias whitespace value",
+			args: []string{"--database", "\n  "},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Act
+			_, err := parseStartupOptions(tc.args)
+
+			// Assert
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), "empty value") {
+				t.Fatalf("expected empty-value guidance, got %q", err.Error())
+			}
+			if !strings.Contains(err.Error(), "-d/--database") {
+				t.Fatalf("expected argument hint in error, got %q", err.Error())
+			}
+		})
+	}
+}
+
 func TestParseStartupOptions_ReturnsErrorForUnsupportedArgument(t *testing.T) {
 	t.Parallel()
 
