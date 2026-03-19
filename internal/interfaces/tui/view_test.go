@@ -187,7 +187,7 @@ func TestView_CommandSpotlightOverlaysRuntimePanelsAndStatusBar(t *testing.T) {
 	if !strings.Contains(rawView, "\x1b[2mTables\x1b[0m") || !strings.Contains(rawView, "\x1b[2mRecords\x1b[0m") {
 		t.Fatalf("expected spotlight backdrop to subdue panel titles, got %q", rawView)
 	}
-	if !strings.Contains(rawView, "\x1b[2mRecords:\x1b[0m 1/1") || !strings.Contains(rawView, "\x1b[2mPage:\x1b[0m 1/1") {
+	if !strings.Contains(rawView, "\x1b[2mRecords:\x1b[0m\x1b[2m 1/1\x1b[0m") || !strings.Contains(rawView, "\x1b[2mPage:\x1b[0m\x1b[2m 1/1\x1b[0m") {
 		t.Fatalf("expected spotlight backdrop to keep subdued status bar summaries, got %q", rawView)
 	}
 	if !strings.Contains(view, "Affected rows: 1") {

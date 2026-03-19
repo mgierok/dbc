@@ -15,11 +15,11 @@ func (m *Model) renderStatusWithStyles(width int, styles primitives.RenderStyles
 	if width <= 0 {
 		width = 80
 	}
-	mode := "READ-ONLY"
+	mode := primitives.SemanticText(primitives.SemanticRoleBody, "READ-ONLY")
 	if m.hasDirtyEdits() {
-		mode = styles.Dirty(fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
+		mode = primitives.SemanticText(primitives.SemanticRoleDirty, fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
 	}
-	parts := []string{
+	parts := []primitives.SemanticLine{
 		mode,
 		m.statusSegment("Table", m.currentTableName(), styles),
 	}
@@ -30,11 +30,11 @@ func (m *Model) renderStatusWithStyles(width int, styles primitives.RenderStyles
 	if strings.TrimSpace(m.ui.statusMessage) != "" {
 		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage, styles))
 	}
-	left := strings.Join(parts, primitives.FrameSegmentSeparator)
-	return primitives.RenderStatusWithRightHint(left, styles.Muted(primitives.RuntimeStatusContextHelpHint()), width)
+	left := primitives.JoinSemanticLines(parts, primitives.FrameSegmentSeparator, primitives.SemanticRoleBody)
+	return primitives.RenderSemanticStatusWithRightHint(left, primitives.SemanticText(primitives.SemanticRoleMuted, primitives.RuntimeStatusContextHelpHint()), styles, width)
 }
 
-func (m *Model) filterSummary(styles primitives.RenderStyles) string {
+func (m *Model) filterSummary(styles primitives.RenderStyles) primitives.SemanticLine {
 	if m.read.currentFilter == nil {
 		return m.statusSegment("Filter", "none", styles)
 	}
@@ -44,31 +44,34 @@ func (m *Model) filterSummary(styles primitives.RenderStyles) string {
 	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name), styles)
 }
 
-func (m *Model) sortSummary(styles primitives.RenderStyles) string {
+func (m *Model) sortSummary(styles primitives.RenderStyles) primitives.SemanticLine {
 	if m.read.currentSort == nil {
 		return m.statusSegment("Sort", "none", styles)
 	}
 	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.read.currentSort.Column, m.read.currentSort.Direction), styles)
 }
 
-func (m *Model) recordsSummary(styles primitives.RenderStyles) string {
+func (m *Model) recordsSummary(styles primitives.RenderStyles) primitives.SemanticLine {
 	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.read.records), m.read.recordTotalCount), styles)
 }
 
-func (m *Model) pageSummary(styles primitives.RenderStyles) string {
+func (m *Model) pageSummary(styles primitives.RenderStyles) primitives.SemanticLine {
 	currentPage := clamp(m.read.recordPageIndex+1, 1, primitives.MaxInt(1, m.read.recordTotalPages))
 	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.read.recordTotalPages)), styles)
 }
 
-func (m *Model) statusSegment(label, value string, styles primitives.RenderStyles) string {
-	return styles.Label(label+":") + " " + value
+func (m *Model) statusSegment(label, value string, styles primitives.RenderStyles) primitives.SemanticLine {
+	return primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleLabel, label+":"),
+		primitives.Span(primitives.SemanticRoleBody, " "+value),
+	}
 }
 
-func (m *Model) styleStatusMessage(message string, styles primitives.RenderStyles) string {
+func (m *Model) styleStatusMessage(message string, styles primitives.RenderStyles) primitives.SemanticLine {
 	if primitives.IsErrorLikeMessage(message) {
-		return styles.Error(message)
+		return primitives.SemanticText(primitives.SemanticRoleError, message)
 	}
-	return message
+	return primitives.SemanticText(primitives.SemanticRoleBody, message)
 }
 
 func (m *Model) renderStatusBox(width int, styles primitives.RenderStyles) []string {

@@ -298,3 +298,30 @@ func TestDatabaseSelector_ContextHelpPopupUsesRuntimeResumeBrowseEscLabel(t *tes
 		t.Fatalf("expected runtime-resume help to omit startup quit label, got %q", view)
 	}
 }
+
+func TestDatabaseSelector_ViewUsesSemanticRolesForFormLabelsAndErrors(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.styles = primitives.NewRenderStyles(true)
+	model.openAddForm()
+	model.form.errorMessage = "invalid path"
+
+	// Act
+	view := strings.Join(model.boxLines(model.listHeight(24), 80), "\n")
+
+	// Assert
+	if !strings.Contains(view, "\x1b[1mPath:\x1b[0m") {
+		t.Fatalf("expected semantic label styling for form field, got %q", view)
+	}
+	if !strings.Contains(view, "\x1b[1;4mError: invalid path\x1b[0m") {
+		t.Fatalf("expected semantic error styling for form error, got %q", view)
+	}
+}

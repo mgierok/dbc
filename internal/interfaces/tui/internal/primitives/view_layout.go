@@ -6,12 +6,12 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-func RenderList(items []string, selected, height, width int, focused bool, styles RenderStyles) []string {
+func RenderList(items []SemanticLine, selected, height, width int, focused bool, styles RenderStyles) []string {
 	if height < 1 {
 		return nil
 	}
 	if len(items) == 0 {
-		return []string{PadRight("No items.", width)}
+		return []string{PadRight(styles.Render(SemanticRoleBody, "No items."), width)}
 	}
 
 	start := ScrollStart(selected, height, len(items))
@@ -22,10 +22,11 @@ func RenderList(items []string, selected, height, width int, focused bool, style
 		if focused && i == selected {
 			prefix = SelectionSelectedPrefix()
 		}
-		line := PadRight(prefix+items[i], width)
 		if focused && i == selected {
-			line = styles.Selected(line)
+			lines = append(lines, styles.Render(SemanticRoleSelected, PadRight(prefix+items[i].PlainText(), width)))
+			continue
 		}
+		line := PadRight(styles.RenderLine(PrefixSemanticLine(prefix, items[i])), width)
 		lines = append(lines, line)
 	}
 	return PadLines(lines, height, width)
@@ -39,11 +40,11 @@ func SelectionUnselectedPrefix() string {
 	return strings.Repeat(" ", TextWidth(SelectionSelectedPrefix()))
 }
 
-func RenderPanelBox(title string, content []string, contentWidth int, styles RenderStyles) []string {
+func RenderPanelBox(title SemanticLine, content []string, contentWidth int, styles RenderStyles) []string {
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
-	top := renderTitledTopBorder(styles.Title(title), contentWidth)
+	top := renderTitledTopBorder(styles.RenderLine(title), contentWidth)
 	bottom := FrameBottomLeft + strings.Repeat(FrameHorizontal, contentWidth) + FrameBottomRight
 
 	lines := make([]string, 0, len(content)+2)

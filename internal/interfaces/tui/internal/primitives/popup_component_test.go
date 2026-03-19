@@ -8,8 +8,8 @@ import (
 func TestRenderStandardizedPopup_RendersSelectableRows(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:        "Config",
-		Summary:      "Choose action.",
+		Title:        SemanticText(SemanticRoleTitle, "Config"),
+		Summary:      SemanticText(SemanticRoleSummary, "Choose action."),
 		Rows:         PopupSelectableRows([]string{"Save", "Discard", "Cancel"}, 1),
 		DefaultWidth: 50,
 		MinWidth:     20,
@@ -38,8 +38,8 @@ func TestRenderStandardizedPopup_RendersSelectableRows(t *testing.T) {
 func TestRenderStandardizedPopup_RendersSummaryDividerRow(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:        "Confirm",
-		Summary:      "Save staged changes?",
+		Title:        SemanticText(SemanticRoleTitle, "Confirm"),
+		Summary:      SemanticText(SemanticRoleSummary, "Save staged changes?"),
 		Rows:         PopupSelectableRows([]string{"Save", "Discard"}, 0),
 		DefaultWidth: 50,
 		MinWidth:     20,
@@ -63,8 +63,8 @@ func TestRenderStandardizedPopup_RendersSummaryDividerRow(t *testing.T) {
 func TestRenderStandardizedPopup_ShowsScrollIndicatorForOverflow(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:               "Help",
-		Summary:             "Summary",
+		Title:               SemanticText(SemanticRoleTitle, "Help"),
+		Summary:             SemanticText(SemanticRoleSummary, "Summary"),
 		Rows:                PopupTextRows([]string{"one", "two", "three", "four"}),
 		ScrollOffset:        1,
 		VisibleRows:         2,
@@ -92,8 +92,8 @@ func TestRenderStandardizedPopup_ShowsScrollIndicatorForOverflow(t *testing.T) {
 func TestRenderStandardizedPopup_EnforcesMinimumHeight40Percent(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:        "Confirm",
-		Summary:      "Save changes?",
+		Title:        SemanticText(SemanticRoleTitle, "Confirm"),
+		Summary:      SemanticText(SemanticRoleSummary, "Save changes?"),
 		Rows:         PopupSelectableRows([]string{"Yes", "No"}, 0),
 		DefaultWidth: 50,
 		MinWidth:     20,
@@ -113,8 +113,8 @@ func TestRenderStandardizedPopup_EnforcesMinimumHeight40Percent(t *testing.T) {
 func TestRenderStandardizedPopup_DoesNotEmphasizeOrdinaryRowsThatContainErrorLikeWords(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:        "Filter",
-		Summary:      "Select column",
+		Title:        SemanticText(SemanticRoleTitle, "Filter"),
+		Summary:      SemanticText(SemanticRoleSummary, "Select column"),
 		Rows:         PopupSelectableRows([]string{"failed_login (TEXT)", "invalid status (TEXT)"}, 0),
 		DefaultWidth: 60,
 		MinWidth:     20,
@@ -137,8 +137,8 @@ func TestRenderStandardizedPopup_DoesNotEmphasizeOrdinaryRowsThatContainErrorLik
 func TestRenderStandardizedPopup_SelectedRowDoesNotStyleBorders(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:        "Sort",
-		Summary:      "Select column",
+		Title:        SemanticText(SemanticRoleTitle, "Sort"),
+		Summary:      SemanticText(SemanticRoleSummary, "Select column"),
 		Rows:         PopupSelectableRows([]string{"id (TEXT)", "kind (TEXT)"}, 1),
 		DefaultWidth: 60,
 		MinWidth:     20,
@@ -165,10 +165,10 @@ func TestRenderStandardizedPopup_SelectedRowDoesNotStyleBorders(t *testing.T) {
 func TestRenderStandardizedPopup_ContentWidthModeUsesSelectableRowsAndFooterWidth(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:     "DB",
-		Summary:   "Cfg",
+		Title:     SemanticText(SemanticRoleTitle, "DB"),
+		Summary:   SemanticText(SemanticRoleSummary, "Cfg"),
 		Rows:      PopupSelectableRows([]string{"local"}, 0),
-		Footer:    StandardizedPopupFooter{Right: "Context help: ?"},
+		Footer:    StandardizedPopupFooter{Right: SemanticText(SemanticRoleMuted, "Context help: ?")},
 		WidthMode: PopupWidthContent,
 	}
 
@@ -189,13 +189,13 @@ func TestRenderStandardizedPopup_ContentWidthModeUsesSelectableRowsAndFooterWidt
 func TestRenderStandardizedPopup_KeepsFrameWidthAndRightBorderAlignedWithUnicodeSourceMarkers(t *testing.T) {
 	// Arrange
 	spec := StandardizedPopupSpec{
-		Title:   "Select database",
-		Summary: "Config: /tmp/config.json",
+		Title:   SemanticText(SemanticRoleTitle, "Select database"),
+		Summary: SemanticText(SemanticRoleSummary, "Config: /tmp/config.json"),
 		Rows: PopupSelectableRows([]string{
 			IconConfigSource + " local" + FrameSegmentSeparator + "/tmp/local.sqlite",
 			IconCLISource + " /tmp/direct.sqlite" + FrameSegmentSeparator + "/tmp/direct.sqlite",
 		}, 0),
-		Footer:    StandardizedPopupFooter{Right: "Context help: ?"},
+		Footer:    StandardizedPopupFooter{Right: SemanticText(SemanticRoleMuted, "Context help: ?")},
 		WidthMode: PopupWidthContent,
 		Styles:    NewRenderStyles(true),
 	}

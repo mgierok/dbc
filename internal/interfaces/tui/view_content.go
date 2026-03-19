@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -14,12 +13,15 @@ func (m *Model) renderSchema(width, height int) []string {
 
 func (m *Model) renderSchemaWithStyles(width, height int, styles primitives.RenderStyles) []string {
 	if len(m.read.schema.Columns) == 0 {
-		return primitives.PadLines([]string{primitives.PadRight("No schema loaded.", width)}, height, width)
+		return primitives.PadLines([]string{primitives.PadRight(styles.Render(primitives.SemanticRoleBody, "No schema loaded."), width)}, height, width)
 	}
 
-	items := make([]string, len(m.read.schema.Columns))
+	items := make([]primitives.SemanticLine, len(m.read.schema.Columns))
 	for i, column := range m.read.schema.Columns {
-		items[i] = fmt.Sprintf("%s : %s", column.Name, column.Type)
+		items[i] = primitives.SemanticLine{
+			primitives.Span(primitives.SemanticRoleHeader, column.Name),
+			primitives.Span(primitives.SemanticRoleBody, " : "+column.Type),
+		}
 	}
 	lines := primitives.RenderList(items, m.read.schemaIndex, height, width, m.read.focus == FocusContent && m.read.viewMode == ViewSchema, styles)
 	return primitives.PadLines(lines, height, width)
@@ -34,7 +36,7 @@ func (m *Model) renderRecordsWithStyles(width, height int, styles primitives.Ren
 
 	columns := m.schemaColumnsForRecordsHeader()
 	if len(columns) == 0 {
-		lines = append(lines, primitives.PadRight("No columns loaded.", width))
+		lines = append(lines, primitives.PadRight(styles.Render(primitives.SemanticRoleBody, "No columns loaded."), width))
 		return primitives.PadLines(lines, height, width)
 	}
 
@@ -60,7 +62,7 @@ func (m *Model) renderRecordsWithStyles(width, height int, styles primitives.Ren
 	}
 
 	if m.totalRecordRows() == 0 {
-		lines = append(lines, primitives.PadRight("No records.", width))
+		lines = append(lines, primitives.PadRight(styles.Render(primitives.SemanticRoleBody, "No records."), width))
 		return primitives.PadLines(lines, height, width)
 	}
 
@@ -95,19 +97,16 @@ func (m *Model) renderRecordsWithStyles(width, height int, styles primitives.Ren
 		}
 		row := formatRecordRow(displayValues, columnWidths, focusColumn)
 		rowMarker := m.recordRowMarker(i)
-		prefixWithMarker := prefix + rowMarker + " "
+		lineRole := primitives.SemanticRoleBody
 		if m.isRowMarkedDelete(i) {
+			lineRole = primitives.SemanticRoleDeleted
 			if selected {
-				prefixWithMarker = styles.Selected(prefixWithMarker)
-				row = styles.SelectedDeleted(row)
-			} else {
-				row = styles.Deleted(row)
+				lineRole = primitives.SemanticRoleSelectedDeleted
 			}
+		} else if selected {
+			lineRole = primitives.SemanticRoleSelected
 		}
-		line := primitives.PadRight(prefixWithMarker+row, width)
-		if selected && !m.isRowMarkedDelete(i) {
-			line = styles.Selected(line)
-		}
+		line := styles.Render(lineRole, primitives.PadRight(prefix+rowMarker+" "+row, width))
 		lines = append(lines, line)
 	}
 	return primitives.PadLines(lines, height, width)
@@ -135,7 +134,7 @@ func (m *Model) renderRecordDetailWithStyles(width, height int, styles primitive
 
 	contentLines := m.recordDetailContentLinesWithStyles(width, styles)
 	if len(contentLines) == 0 {
-		lines = append(lines, primitives.PadRight("No detail available.", width))
+		lines = append(lines, primitives.PadRight(styles.Render(primitives.SemanticRoleBody, "No detail available."), width))
 		return primitives.PadLines(lines, height, width)
 	}
 
@@ -159,10 +158,10 @@ func (m *Model) recordDetailContentLines(width int) []string {
 
 func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.RenderStyles) []string {
 	if m.totalRecordRows() == 0 {
-		return []string{"No records."}
+		return []string{styles.Render(primitives.SemanticRoleBody, "No records.")}
 	}
 	if len(m.read.schema.Columns) == 0 {
-		return []string{"No columns loaded."}
+		return []string{styles.Render(primitives.SemanticRoleBody, "No columns loaded.")}
 	}
 
 	rowIndex := clamp(m.read.recordSelection, 0, m.totalRecordRows()-1)
@@ -176,7 +175,7 @@ func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.
 	} else if m.isRowEdited(rowIndex) {
 		rowLine = primitives.IconInfo + " Edited record"
 	}
-	lines = append(lines, primitives.WrapTextToWidth(styles.Summary(rowLine), width)...)
+	lines = append(lines, primitives.WrapTextToWidth(styles.Render(primitives.SemanticRoleSummary, rowLine), width)...)
 	lines = append(lines, "")
 
 	valueWidth := width - 2
@@ -186,16 +185,20 @@ func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.
 
 	for columnIndex, column := range m.read.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
-		header := fmt.Sprintf("%s (%s)", styles.Title(column.Name), column.Type)
+		header := styles.RenderLine(primitives.SemanticLine{
+			primitives.Span(primitives.SemanticRoleHeader, column.Name),
+			primitives.Span(primitives.SemanticRoleBody, " ("+column.Type+")"),
+		})
 		if edited {
-			header += " " + primitives.IconEdit
+			header += " " + styles.Render(primitives.SemanticRoleBody, primitives.IconEdit)
 		}
 		lines = append(lines, primitives.WrapTextToWidth(header, width)...)
 
-		for _, wrappedLine := range primitives.WrapTextToWidth(value, valueWidth) {
-			if deleted {
-				wrappedLine = styles.Deleted(wrappedLine)
-			}
+		valueRole := primitives.SemanticRoleBody
+		if deleted {
+			valueRole = primitives.SemanticRoleDeleted
+		}
+		for _, wrappedLine := range primitives.WrapTextToWidth(styles.Render(valueRole, value), valueWidth) {
 			lines = append(lines, "  "+wrappedLine)
 		}
 		if columnIndex < len(m.read.schema.Columns)-1 {
@@ -288,7 +291,7 @@ func formatRecordsHeaderRows(values []string, widths []int, styles primitives.Re
 		if i < len(values) {
 			value = values[i]
 		}
-		value = styles.Title(value)
+		value = styles.Render(primitives.SemanticRoleHeader, value)
 		top, middle, bottom := formatRecordsHeaderCell(value, width)
 		topParts[i] = top
 		middleParts[i] = middle

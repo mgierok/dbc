@@ -13,19 +13,19 @@ const (
 )
 
 type StandardizedPopupRow struct {
-	Text       string
+	Line       SemanticLine
 	Selectable bool
 	Selected   bool
 }
 
 type StandardizedPopupFooter struct {
-	Left  string
-	Right string
+	Left  SemanticLine
+	Right SemanticLine
 }
 
 type StandardizedPopupSpec struct {
-	Title               string
-	Summary             string
+	Title               SemanticLine
+	Summary             SemanticLine
 	Rows                []StandardizedPopupRow
 	Footer              StandardizedPopupFooter
 	ScrollOffset        int
@@ -53,9 +53,9 @@ type popupFrameRenderer struct {
 
 func RenderStandardizedPopup(totalWidth, totalHeight int, spec StandardizedPopupSpec) []string {
 	width := resolvePopupWidth(totalWidth, spec)
-	title := strings.TrimSpace(spec.Title)
-	if title == "" {
-		title = "Popup"
+	title := spec.Title
+	if strings.TrimSpace(title.PlainText()) == "" {
+		title = SemanticText(SemanticRoleTitle, "Popup")
 	}
 
 	contentInnerWidth := width - 2
@@ -65,8 +65,8 @@ func RenderStandardizedPopup(totalWidth, totalHeight int, spec StandardizedPopup
 	frame := newPopupFrameRenderer(contentInnerWidth, spec.Styles)
 
 	lines := []string{frame.topBorder(title)}
-	if strings.TrimSpace(spec.Summary) != "" {
-		lines = append(lines, frame.contentLine(spec.Styles.Summary(spec.Summary)))
+	if strings.TrimSpace(spec.Summary.PlainText()) != "" {
+		lines = append(lines, frame.contentLine(spec.Summary))
 	}
 	lines = append(lines, frame.sectionDivider())
 
@@ -82,7 +82,7 @@ func RenderStandardizedPopup(totalWidth, totalHeight int, spec StandardizedPopup
 	}
 
 	if spec.ShowScrollIndicator && maxOffset > 0 {
-		indicator := spec.Styles.Muted(fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1))
+		indicator := SemanticText(SemanticRoleMuted, fmt.Sprintf("Scroll: %d/%d", offset+1, maxOffset+1))
 		lines = append(lines, frame.contentLine(indicator))
 	}
 
@@ -105,16 +105,28 @@ func RenderStandardizedPopup(totalWidth, totalHeight int, spec StandardizedPopup
 func PopupTextRows(rows []string) []StandardizedPopupRow {
 	result := make([]StandardizedPopupRow, len(rows))
 	for i, row := range rows {
-		result[i] = StandardizedPopupRow{Text: row}
+		result[i] = StandardizedPopupRow{Line: SemanticText(SemanticRoleBody, row)}
+	}
+	return result
+}
+
+func PopupSemanticTextRows(rows []SemanticLine) []StandardizedPopupRow {
+	result := make([]StandardizedPopupRow, len(rows))
+	for i, row := range rows {
+		result[i] = StandardizedPopupRow{Line: row}
 	}
 	return result
 }
 
 func PopupSelectableRows(rows []string, selected int) []StandardizedPopupRow {
+	return PopupSemanticSelectableRows(SemanticTexts(SemanticRoleBody, rows), selected)
+}
+
+func PopupSemanticSelectableRows(rows []SemanticLine, selected int) []StandardizedPopupRow {
 	result := make([]StandardizedPopupRow, len(rows))
 	for i, row := range rows {
 		result[i] = StandardizedPopupRow{
-			Text:       row,
+			Line:       row,
 			Selectable: true,
 			Selected:   i == selected,
 		}
@@ -143,8 +155,8 @@ func newPopupFrameRenderer(innerWidth int, styles RenderStyles) popupFrameRender
 	}
 }
 
-func (r popupFrameRenderer) topBorder(title string) string {
-	return renderTitledTopBorder(r.styles.Title(title), r.innerWidth)
+func (r popupFrameRenderer) topBorder(title SemanticLine) string {
+	return renderTitledTopBorder(r.styles.RenderLine(title), r.innerWidth)
 }
 
 func (r popupFrameRenderer) sectionDivider() string {
@@ -156,38 +168,42 @@ func (r popupFrameRenderer) bottomBorder() string {
 }
 
 func (r popupFrameRenderer) blankLine() string {
-	return r.contentLine("")
+	return r.renderedContentLine("")
 }
 
-func (r popupFrameRenderer) contentLine(text string) string {
+func (r popupFrameRenderer) contentLine(line SemanticLine) string {
+	return r.renderedContentLine(r.styles.RenderLine(line))
+}
+
+func (r popupFrameRenderer) renderedContentLine(text string) string {
 	content := strings.Repeat(" ", r.leftPadding) + PadRight(text, r.contentWidth) + strings.Repeat(" ", r.rightPadding)
 	content = PadRight(content, r.innerWidth)
 	return FrameVertical + content + FrameVertical
 }
 
-func (r popupFrameRenderer) selectedContentLine(text string) string {
-	content := strings.Repeat(" ", r.leftPadding) + PadRight(text, r.contentWidth) + strings.Repeat(" ", r.rightPadding)
+func (r popupFrameRenderer) selectedContentLine(line SemanticLine) string {
+	content := strings.Repeat(" ", r.leftPadding) + PadRight(line.PlainText(), r.contentWidth) + strings.Repeat(" ", r.rightPadding)
 	content = PadRight(content, r.innerWidth)
-	return FrameVertical + r.styles.Selected(content) + FrameVertical
+	return FrameVertical + r.styles.Render(SemanticRoleSelected, content) + FrameVertical
 }
 
 func (r popupFrameRenderer) rowLine(row StandardizedPopupRow) string {
-	text := row.Text
+	line := row.Line
 	if row.Selectable {
 		prefix := SelectionUnselectedPrefix()
 		if row.Selected {
 			prefix = SelectionSelectedPrefix()
 		}
-		text = prefix + text
+		line = PrefixSemanticLine(prefix, line)
 	}
 	if row.Selected {
-		return r.selectedContentLine(text)
+		return r.selectedContentLine(line)
 	}
-	return r.contentLine(text)
+	return r.contentLine(line)
 }
 
 func (r popupFrameRenderer) footerLine(footer StandardizedPopupFooter) string {
-	return r.contentLine(RenderStatusWithRightHint(footer.Left, footer.Right, r.contentWidth))
+	return r.renderedContentLine(RenderSemanticStatusWithRightHint(footer.Left, footer.Right, r.styles, r.contentWidth))
 }
 
 func popupVisibleRows(totalRows, scrollOffset, visibleRows int) (int, int, int) {
@@ -207,7 +223,7 @@ func popupVisibleRows(totalRows, scrollOffset, visibleRows int) (int, int, int) 
 }
 
 func hasPopupFooter(footer StandardizedPopupFooter) bool {
-	return strings.TrimSpace(footer.Left) != "" || strings.TrimSpace(footer.Right) != ""
+	return strings.TrimSpace(footer.Left.PlainText()) != "" || strings.TrimSpace(footer.Right.PlainText()) != ""
 }
 
 func resolvePopupWidth(totalWidth int, spec StandardizedPopupSpec) int {
@@ -235,12 +251,12 @@ func resolveContentPopupWidth(totalWidth int, spec StandardizedPopupSpec) int {
 }
 
 func popupContentWidth(spec StandardizedPopupSpec) int {
-	maxWidth := TextWidth(strings.TrimSpace(spec.Title))
-	if TextWidth(spec.Summary) > maxWidth {
-		maxWidth = TextWidth(spec.Summary)
+	maxWidth := TextWidth(strings.TrimSpace(spec.Title.PlainText()))
+	if TextWidth(spec.Summary.PlainText()) > maxWidth {
+		maxWidth = TextWidth(spec.Summary.PlainText())
 	}
 	for _, row := range spec.Rows {
-		rowWidth := TextWidth(row.Text)
+		rowWidth := TextWidth(row.Line.PlainText())
 		if row.Selectable {
 			rowWidth += TextWidth(SelectionSelectedPrefix())
 		}
@@ -261,8 +277,8 @@ func popupContentWidth(spec StandardizedPopupSpec) int {
 }
 
 func popupFooterWidth(footer StandardizedPopupFooter) int {
-	left := strings.TrimSpace(footer.Left)
-	right := strings.TrimSpace(footer.Right)
+	left := strings.TrimSpace(footer.Left.PlainText())
+	right := strings.TrimSpace(footer.Right.PlainText())
 	switch {
 	case left == "" && right == "":
 		return 0

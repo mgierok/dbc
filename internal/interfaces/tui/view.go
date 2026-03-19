@@ -62,8 +62,8 @@ func (m *Model) renderRuntimeLayout(width, height int, styles primitives.RenderS
 	bodyHeight := m.contentHeight()
 	leftWidth, rightWidth := m.panelWidths()
 
-	left := primitives.RenderPanelBox("Tables", m.renderTablesWithStyles(leftWidth, bodyHeight, styles), leftWidth, styles)
-	right := primitives.RenderPanelBox(m.contentPanelTitle(), m.renderContentWithStyles(rightWidth, bodyHeight, styles), rightWidth, styles)
+	left := primitives.RenderPanelBox(primitives.SemanticText(primitives.SemanticRoleTitle, "Tables"), m.renderTablesWithStyles(leftWidth, bodyHeight, styles), leftWidth, styles)
+	right := primitives.RenderPanelBox(primitives.SemanticText(primitives.SemanticRoleTitle, m.contentPanelTitle()), m.renderContentWithStyles(rightWidth, bodyHeight, styles), rightWidth, styles)
 	lines := primitives.MergePanelBoxes(left, right, leftWidth+panelBoxBorderWidth, rightWidth+panelBoxBorderWidth, panelBoxGapWidth)
 	lines = append(lines, m.renderStatusBox(width, styles)...)
 	return primitives.FitLinesToHeight(lines, height, width)
@@ -149,12 +149,12 @@ func (m *Model) renderTables(width, height int) []string {
 }
 
 func (m *Model) renderTablesWithStyles(width, height int, styles primitives.RenderStyles) []string {
-	items := make([]string, len(m.read.tables))
+	semanticItems := make([]primitives.SemanticLine, len(m.read.tables))
 	for i, table := range m.read.tables {
-		items[i] = table.Name
+		semanticItems[i] = primitives.SemanticText(primitives.SemanticRoleBody, table.Name)
 	}
 
-	listLines := primitives.RenderList(items, m.read.selectedTable, height, width, true, styles)
+	listLines := primitives.RenderList(semanticItems, m.read.selectedTable, height, width, true, styles)
 	return primitives.PadLines(listLines, height, width)
 }
 

@@ -10,9 +10,9 @@ import (
 
 func (m *Model) renderHelpPopup(totalWidth int) []string {
 	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
-		Title:               m.helpPopupContextTitle(),
-		Summary:             primitives.RuntimeHelpPopupSummaryLine(),
-		Rows:                primitives.PopupTextRows(m.helpPopupContentLines()),
+		Title:               primitives.SemanticText(primitives.SemanticRoleTitle, m.helpPopupContextTitle()),
+		Summary:             primitives.SemanticText(primitives.SemanticRoleSummary, primitives.RuntimeHelpPopupSummaryLine()),
+		Rows:                primitives.PopupSemanticTextRows(primitives.SemanticTexts(primitives.SemanticRoleBody, m.helpPopupContentLines())),
 		ScrollOffset:        m.overlay.helpPopup.scrollOffset,
 		VisibleRows:         m.helpPopupVisibleLines(),
 		ShowScrollIndicator: true,
@@ -28,37 +28,37 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 	rows := []primitives.StandardizedPopupRow{}
 	switch m.overlay.filterPopup.step {
 	case filterSelectColumn:
-		columnRows := make([]string, len(m.read.schema.Columns))
+		columnRows := make([]primitives.SemanticLine, len(m.read.schema.Columns))
 		for i, column := range m.read.schema.Columns {
-			columnRows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+			columnRows[i] = primitives.SemanticText(primitives.SemanticRoleBody, fmt.Sprintf("%s (%s)", column.Name, column.Type))
 		}
 		selected := -1
 		if len(columnRows) > 0 {
 			selected = clamp(m.overlay.filterPopup.columnIndex, 0, len(columnRows)-1)
 		}
-		rows = primitives.PopupSelectableRows(columnRows, selected)
+		rows = primitives.PopupSemanticSelectableRows(columnRows, selected)
 	case filterSelectOperator:
 		stepLabel = "Select operator"
-		operatorRows := make([]string, len(m.overlay.filterPopup.operators))
+		operatorRows := make([]primitives.SemanticLine, len(m.overlay.filterPopup.operators))
 		for i, operator := range m.overlay.filterPopup.operators {
-			operatorRows[i] = operator.Name
+			operatorRows[i] = primitives.SemanticText(primitives.SemanticRoleBody, operator.Name)
 		}
 		selected := -1
 		if len(operatorRows) > 0 {
 			selected = clamp(m.overlay.filterPopup.operatorIndex, 0, len(operatorRows)-1)
 		}
-		rows = primitives.PopupSelectableRows(operatorRows, selected)
+		rows = primitives.PopupSemanticSelectableRows(operatorRows, selected)
 	case filterInputValue:
 		stepLabel = "Enter value"
 		input := m.overlay.filterPopup.input
 		cursor := clamp(m.overlay.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
-		rows = primitives.PopupTextRows([]string{"Value: " + value})
+		rows = primitives.PopupSemanticTextRows([]primitives.SemanticLine{labelValueLine("Value", value)})
 	}
 
 	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
-		Title:        "Filter",
-		Summary:      stepLabel,
+		Title:        primitives.SemanticText(primitives.SemanticRoleTitle, "Filter"),
+		Summary:      primitives.SemanticText(primitives.SemanticRoleSummary, stepLabel),
 		Rows:         rows,
 		DefaultWidth: 60,
 		MinWidth:     20,
@@ -73,32 +73,32 @@ func (m *Model) renderSortPopup(totalWidth int) []string {
 
 	switch m.overlay.sortPopup.step {
 	case sortSelectColumn:
-		columnRows := make([]string, len(m.read.schema.Columns))
+		columnRows := make([]primitives.SemanticLine, len(m.read.schema.Columns))
 		for i, column := range m.read.schema.Columns {
-			columnRows[i] = fmt.Sprintf("%s (%s)", column.Name, column.Type)
+			columnRows[i] = primitives.SemanticText(primitives.SemanticRoleBody, fmt.Sprintf("%s (%s)", column.Name, column.Type))
 		}
 		selected := -1
 		if len(columnRows) > 0 {
 			selected = clamp(m.overlay.sortPopup.columnIndex, 0, len(columnRows)-1)
 		}
-		rows = primitives.PopupSelectableRows(columnRows, selected)
+		rows = primitives.PopupSemanticSelectableRows(columnRows, selected)
 	case sortSelectDirection:
 		stepLabel = "Select direction"
 		directions := sortDirections()
-		directionRows := make([]string, len(directions))
+		directionRows := make([]primitives.SemanticLine, len(directions))
 		for i, direction := range directions {
-			directionRows[i] = string(direction)
+			directionRows[i] = primitives.SemanticText(primitives.SemanticRoleBody, string(direction))
 		}
 		selected := -1
 		if len(directionRows) > 0 {
 			selected = clamp(m.overlay.sortPopup.directionIndex, 0, len(directionRows)-1)
 		}
-		rows = primitives.PopupSelectableRows(directionRows, selected)
+		rows = primitives.PopupSemanticSelectableRows(directionRows, selected)
 	}
 
 	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
-		Title:        "Sort",
-		Summary:      stepLabel,
+		Title:        primitives.SemanticText(primitives.SemanticRoleTitle, "Sort"),
+		Summary:      primitives.SemanticText(primitives.SemanticRoleSummary, stepLabel),
 		Rows:         rows,
 		DefaultWidth: 60,
 		MinWidth:     20,
@@ -132,29 +132,29 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 				current = m.overlay.editPopup.input
 			}
 		}
-		rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: " + current})
+		rows = append(rows, primitives.StandardizedPopupRow{Line: labelValueLine("Value", current)})
 		if len(options) > 0 {
 			selected := clamp(m.overlay.editPopup.optionIndex, 0, len(options)-1)
-			rows = append(rows, primitives.PopupSelectableRows(options, selected)...)
+			rows = append(rows, primitives.PopupSemanticSelectableRows(primitives.SemanticTexts(primitives.SemanticRoleBody, options), selected)...)
 		}
 	} else {
 		if m.overlay.editPopup.isNull {
-			rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: NULL"})
+			rows = append(rows, primitives.StandardizedPopupRow{Line: labelValueLine("Value", "NULL")})
 		} else {
 			input := m.overlay.editPopup.input
 			cursor := clamp(m.overlay.editPopup.cursor, 0, len(input))
 			value := input[:cursor] + "|" + input[cursor:]
-			rows = append(rows, primitives.StandardizedPopupRow{Text: "Value: " + value})
+			rows = append(rows, primitives.StandardizedPopupRow{Line: labelValueLine("Value", value)})
 		}
 	}
 
 	if strings.TrimSpace(m.overlay.editPopup.errorMessage) != "" {
-		rows = append(rows, primitives.StandardizedPopupRow{Text: m.styles.Error("Error: " + m.overlay.editPopup.errorMessage)})
+		rows = append(rows, primitives.StandardizedPopupRow{Line: primitives.SemanticText(primitives.SemanticRoleError, "Error: "+m.overlay.editPopup.errorMessage)})
 	}
 
 	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
-		Title:        "Edit Cell",
-		Summary:      columnLabel + primitives.FrameSegmentSeparator + nullableLabel,
+		Title:        primitives.SemanticText(primitives.SemanticRoleTitle, "Edit Cell"),
+		Summary:      primitives.SemanticText(primitives.SemanticRoleSummary, columnLabel+primitives.FrameSegmentSeparator+nullableLabel),
 		Rows:         rows,
 		DefaultWidth: 60,
 		MinWidth:     30,
@@ -183,12 +183,19 @@ func (m *Model) renderConfirmPopup(totalWidth int) []string {
 	}
 
 	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
-		Title:        title,
-		Summary:      message,
-		Rows:         primitives.PopupSelectableRows(options, selected),
+		Title:        primitives.SemanticText(primitives.SemanticRoleTitle, title),
+		Summary:      primitives.SemanticText(primitives.SemanticRoleSummary, message),
+		Rows:         primitives.PopupSemanticSelectableRows(primitives.SemanticTexts(primitives.SemanticRoleBody, options), selected),
 		DefaultWidth: 50,
 		MinWidth:     20,
 		MaxWidth:     60,
 		Styles:       m.styles,
 	})
+}
+
+func labelValueLine(label, value string) primitives.SemanticLine {
+	return primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleLabel, label+":"),
+		primitives.Span(primitives.SemanticRoleBody, " "+value),
+	}
 }

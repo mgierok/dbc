@@ -29,9 +29,9 @@ func (m *databaseSelectorModel) popupLines(totalWidth, totalHeight int) []string
 
 func (m *databaseSelectorModel) renderHelpPopup(totalWidth, totalHeight int) []string {
 	return primitives.RenderStandardizedPopup(totalWidth, totalHeight, primitives.StandardizedPopupSpec{
-		Title:               "Context Help: Config",
-		Summary:             primitives.RuntimeHelpPopupSummaryLine(),
-		Rows:                primitives.PopupTextRows(m.helpPopupContentLines()),
+		Title:               primitives.SemanticText(primitives.SemanticRoleTitle, "Context Help: Config"),
+		Summary:             primitives.SemanticText(primitives.SemanticRoleSummary, primitives.RuntimeHelpPopupSummaryLine()),
+		Rows:                primitives.PopupSemanticTextRows(primitives.SemanticTexts(primitives.SemanticRoleBody, m.helpPopupContentLines())),
 		ScrollOffset:        m.helpPopup.scrollOffset,
 		VisibleRows:         m.helpPopupVisibleLines(),
 		ShowScrollIndicator: true,
@@ -90,10 +90,10 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int, totalHeight
 		resolvedHeight = totalHeight[0]
 	}
 	return primitives.RenderStandardizedPopup(totalWidth, resolvedHeight, primitives.StandardizedPopupSpec{
-		Title:     title,
-		Summary:   "Config: " + configPath,
+		Title:     primitives.SemanticText(primitives.SemanticRoleTitle, title),
+		Summary:   primitives.SemanticLine{primitives.Span(primitives.SemanticRoleLabel, "Config:"), primitives.Span(primitives.SemanticRoleSummary, " "+configPath)},
 		Rows:      m.mainContentRows(listHeight),
-		Footer:    primitives.StandardizedPopupFooter{Right: m.styles.Muted(primitives.RuntimeStatusContextHelpHint())},
+		Footer:    primitives.StandardizedPopupFooter{Right: primitives.SemanticText(primitives.SemanticRoleMuted, primitives.RuntimeStatusContextHelpHint())},
 		WidthMode: primitives.PopupWidthContent,
 		Styles:    m.styles,
 	})
@@ -119,23 +119,23 @@ func (m *databaseSelectorModel) mainContentRows(listHeight int) []primitives.Sta
 }
 
 func (m *databaseSelectorModel) browseContentRows(listHeight int) []primitives.StandardizedPopupRow {
-	items := m.optionLines()
+	items := primitives.SemanticTexts(primitives.SemanticRoleBody, m.optionLines())
 	rows := make([]primitives.StandardizedPopupRow, 0, primitives.MaxInt(1, len(items)))
 	if len(items) == 0 {
-		rows = append(rows, primitives.StandardizedPopupRow{Text: "No databases configured."})
+		rows = append(rows, primitives.StandardizedPopupRow{Line: primitives.SemanticText(primitives.SemanticRoleBody, "No databases configured.")})
 	} else {
 		start := primitives.ScrollStart(m.browse.selected, listHeight, len(items))
 		end := primitives.MinInt(len(items), start+listHeight)
 		for i := start; i < end; i++ {
 			rows = append(rows, primitives.StandardizedPopupRow{
-				Text:       items[i],
+				Line:       items[i],
 				Selectable: true,
 				Selected:   i == m.browse.selected,
 			})
 		}
 	}
 	if strings.TrimSpace(m.browse.statusMessage) != "" {
-		rows = append(rows, primitives.StandardizedPopupRow{Text: "Status: " + m.styleStatusMessage()})
+		rows = append(rows, primitives.StandardizedPopupRow{Line: selectorStatusLine(m.styleStatusMessage())})
 	}
 	return rows
 }
@@ -157,15 +157,15 @@ func (m *databaseSelectorModel) formContentRows() []primitives.StandardizedPopup
 	}
 
 	rows := []primitives.StandardizedPopupRow{
-		{Text: title},
-		{Text: ""},
-		{Text: selectorFormFieldLine("Name", nameValue), Selectable: true, Selected: m.form.activeField == selectorInputName},
-		{Text: selectorFormFieldLine("Path", pathValue), Selectable: true, Selected: m.form.activeField == selectorInputPath},
+		{Line: primitives.SemanticText(primitives.SemanticRoleSummary, title)},
+		{Line: nil},
+		{Line: selectorFormFieldLine("Name", nameValue), Selectable: true, Selected: m.form.activeField == selectorInputName},
+		{Line: selectorFormFieldLine("Path", pathValue), Selectable: true, Selected: m.form.activeField == selectorInputPath},
 	}
 	if strings.TrimSpace(m.form.errorMessage) != "" {
 		rows = append(rows,
-			primitives.StandardizedPopupRow{Text: ""},
-			primitives.StandardizedPopupRow{Text: m.styles.Error("Error: " + m.form.errorMessage)},
+			primitives.StandardizedPopupRow{Line: nil},
+			primitives.StandardizedPopupRow{Line: primitives.SemanticText(primitives.SemanticRoleError, "Error: "+m.form.errorMessage)},
 		)
 	}
 	return rows
@@ -176,26 +176,37 @@ func (m *databaseSelectorModel) deleteConfirmationContentRows() []primitives.Sta
 		return nil
 	}
 	if m.confirmDelete.optionIndex < 0 || m.confirmDelete.optionIndex >= len(m.options) {
-		return primitives.PopupTextRows([]string{
-			"Cannot delete: invalid selection.",
-			"Press Esc to return.",
+		return primitives.PopupSemanticTextRows([]primitives.SemanticLine{
+			primitives.SemanticText(primitives.SemanticRoleError, "Cannot delete: invalid selection."),
+			primitives.SemanticText(primitives.SemanticRoleBody, "Press Esc to return."),
 		})
 	}
 	selected := m.options[m.confirmDelete.optionIndex]
-	return primitives.PopupTextRows([]string{
-		"Delete database entry?",
-		"",
-		selected.Name + primitives.FrameSegmentSeparator + selected.ConnString,
+	return primitives.PopupSemanticTextRows([]primitives.SemanticLine{
+		primitives.SemanticText(primitives.SemanticRoleSummary, "Delete database entry?"),
+		nil,
+		primitives.SemanticText(primitives.SemanticRoleBody, selected.Name+primitives.FrameSegmentSeparator+selected.ConnString),
 	})
 }
 
-func selectorFormFieldLine(label, value string) string {
-	return label + ": " + value
+func selectorFormFieldLine(label, value string) primitives.SemanticLine {
+	return primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleLabel, label+":"),
+		primitives.Span(primitives.SemanticRoleBody, " "+value),
+	}
 }
 
-func (m *databaseSelectorModel) styleStatusMessage() string {
+func (m *databaseSelectorModel) styleStatusMessage() primitives.SemanticLine {
 	if primitives.IsErrorLikeMessage(m.browse.statusMessage) {
-		return m.styles.Error(m.browse.statusMessage)
+		return primitives.SemanticText(primitives.SemanticRoleError, m.browse.statusMessage)
 	}
-	return m.browse.statusMessage
+	return primitives.SemanticText(primitives.SemanticRoleBody, m.browse.statusMessage)
+}
+
+func selectorStatusLine(message primitives.SemanticLine) primitives.SemanticLine {
+	line := primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleLabel, "Status:"),
+		primitives.Span(primitives.SemanticRoleBody, " "),
+	}
+	return append(line, message...)
 }

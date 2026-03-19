@@ -109,6 +109,16 @@
 
 - Guarantee: runtime and selector models resolve their styling profile once at construction time and render deterministically from that profile.
 - Guarantee: TUI emphasis uses only ANSI SGR attributes (`bold`, `faint`, `underline`, `reverse`, `strike`) on the terminal's current foreground/background theme; the application does not define its own color palette.
+- Guarantee: every user-visible TUI text MUST be assigned a semantic role before final ANSI rendering; plain text MAY remain only for structural layout elements without standalone semantic meaning.
+- Guarantee: semantic roles are the single source of truth for TUI visual meaning across normal and backdrop rendering profiles.
+- Guarantee: the active semantic-role catalog is `Body`, `Muted`, `Title`, `Header`, `Summary`, `Label`, `Dirty`, `Error`, `Selected`, `Deleted`, and `SelectedDeleted`.
+- Guarantee: `Body` is the default user-content role for regular values, rows, selector content, popup rows, and command input content.
+- Guarantee: `Muted` is reserved for secondary helper text such as contextual hints and scroll indicators.
+- Guarantee: `Title` is reserved for panel and popup titles; `Header` is reserved for structural headers inside content such as column and field names.
+- Guarantee: `Summary` is reserved for short contextual state summaries; `Label` is reserved for label-value prefixes such as `Table:` or `Path:`.
+- Guarantee: `Dirty` is reserved for explicit unsaved-change tokens; `Error` is reserved for validation and runtime error content.
+- Guarantee: `Selected`, `Deleted`, and `SelectedDeleted` are reserved for interactive stateful content and MUST be preferred over local ANSI overrides for selected or delete-marked rows.
+- Guarantee: role selection MUST prefer an existing semantic role first; a new role MAY be added only when a text category has a stable distinct meaning and requires a different style mapping in at least one active render profile.
 - Guarantee: runtime background rendering accepts an explicit render-style profile, so the shared runtime overlay presenter can render the background in a backdrop variant while keeping overlay content in the normal profile.
 - Guarantee: the backdrop variant stays terminal-theme-driven and uses only subdued ANSI attributes; it does not introduce an application-defined palette or colorscheme detection.
 - Guarantee: setting `NO_COLOR` or running with `TERM=dumb` disables ANSI styling and falls back to plain text rendering without changing the shared overlay composition path.
@@ -225,8 +235,8 @@
 
 ### Terminal-Theme-Driven TUI Styling
 
-- Decision: keep TUI styling limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors, including for shared runtime backdrop rendering.
-- Rationale: inherit the user's terminal colorscheme automatically while preserving a predictable monochrome fallback path and one overlay composition architecture for both styled and unstyled terminals.
+- Decision: keep TUI styling limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors, including for shared runtime backdrop rendering, with semantic text roles as the only style-selection input.
+- Rationale: inherit the user's terminal colorscheme automatically while preserving a predictable monochrome fallback path, one overlay composition architecture for both styled and unstyled terminals, and one central mapping from text meaning to presentation.
 - Where: `internal/interfaces/tui/internal/primitives/render_style.go`, `internal/interfaces/tui/internal/primitives/view_layout.go`, `internal/interfaces/tui/internal/primitives/popup_component.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/internal/selector/view.go`.
 
 ### Guarded Dynamic Query Composition

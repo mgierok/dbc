@@ -115,11 +115,40 @@ func TestRenderRecords_StylesSelectedRowAndHeaderWhenEnabled(t *testing.T) {
 	}
 }
 
+func TestRenderRecordsWithStyles_BackdropSubduesOrdinaryBodyRows(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusTables,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1"}},
+			},
+		},
+	}
+
+	// Act
+	lines := model.renderRecordsWithStyles(40, 8, primitives.NewRenderStyles(true).Backdrop())
+
+	// Assert
+	if !strings.Contains(lines[3], "\x1b[2m") {
+		t.Fatalf("expected backdrop body row to be subdued, got %q", lines[3])
+	}
+	if strings.Contains(lines[3], "[7m") {
+		t.Fatalf("expected backdrop body row to avoid selected reverse-video styling, got %q", lines[3])
+	}
+}
+
 func TestRenderStandardizedPopup_StylesTitleSelectionAndScrollIndicatorWhenEnabled(t *testing.T) {
 	// Arrange
 	spec := primitives.StandardizedPopupSpec{
-		Title:               "Config",
-		Summary:             "Choose action.",
+		Title:               primitives.SemanticText(primitives.SemanticRoleTitle, "Config"),
+		Summary:             primitives.SemanticText(primitives.SemanticRoleSummary, "Choose action."),
 		Rows:                primitives.PopupSelectableRows([]string{"Save", "Discard", "Cancel"}, 1),
 		ScrollOffset:        1,
 		VisibleRows:         2,
@@ -149,8 +178,8 @@ func TestRenderStandardizedPopup_StylesTitleSelectionAndScrollIndicatorWhenEnabl
 func TestRenderStandardizedPopup_StylesSummaryWhenEnabled(t *testing.T) {
 	// Arrange
 	spec := primitives.StandardizedPopupSpec{
-		Title:        "Filter",
-		Summary:      "Select column",
+		Title:        primitives.SemanticText(primitives.SemanticRoleTitle, "Filter"),
+		Summary:      primitives.SemanticText(primitives.SemanticRoleSummary, "Select column"),
 		Rows:         primitives.PopupSelectableRows([]string{"id (INTEGER)"}, 0),
 		DefaultWidth: 50,
 		MinWidth:     20,

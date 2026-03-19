@@ -21,7 +21,7 @@ func (m *Model) renderCommandSpotlight(totalWidth int) []string {
 
 	return []string{
 		primitives.FrameTopLeft + strings.Repeat(primitives.FrameHorizontal, innerWidth) + primitives.FrameTopRight,
-		primitives.FrameVertical + primitives.PadRight(m.visibleCommandPrompt(innerWidth), innerWidth) + primitives.FrameVertical,
+		primitives.FrameVertical + primitives.PadRight(m.styles.Render(primitives.SemanticRoleBody, m.visibleCommandPrompt(innerWidth)), innerWidth) + primitives.FrameVertical,
 		primitives.FrameBottomLeft + strings.Repeat(primitives.FrameHorizontal, innerWidth) + primitives.FrameBottomRight,
 	}
 }

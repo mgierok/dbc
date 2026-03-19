@@ -2,7 +2,15 @@ package primitives
 
 import "strings"
 
+func RenderSemanticStatusWithRightHint(left, right SemanticLine, styles RenderStyles, width int) string {
+	return renderStatusWithRightHint(styles.RenderLine(left), styles.RenderLine(right), width)
+}
+
 func RenderStatusWithRightHint(left, right string, width int) string {
+	return renderStatusWithRightHint(left, right, width)
+}
+
+func renderStatusWithRightHint(left, right string, width int) string {
 	if width <= 0 {
 		width = 80
 	}
