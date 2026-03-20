@@ -61,7 +61,23 @@ func TestRenderStatus_RightHintPriorityOnNarrowWidth(t *testing.T) {
 	}
 }
 
-func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
+func TestRenderStatus_ShowsCleanIconInsteadOfReadOnlyLabel(t *testing.T) {
+	// Arrange
+	model := &Model{}
+
+	// Act
+	status := stripANSI(model.renderStatus(80))
+
+	// Assert
+	if !strings.Contains(status, "○") {
+		t.Fatalf("expected clean status icon, got %q", status)
+	}
+	if strings.Contains(status, "READ-ONLY") {
+		t.Fatalf("expected clean status to omit read-only label, got %q", status)
+	}
+}
+
+func TestRenderStatus_ShowsDirtyIconInsteadOfDirtyCountText(t *testing.T) {
 	// Arrange
 	model := &Model{
 		staging: stagingState{
@@ -81,7 +97,13 @@ func TestRenderStatus_ShowsDirtyCount(t *testing.T) {
 	status := stripANSI(model.renderStatus(80))
 
 	// Assert
-	if !strings.Contains(status, "WRITE (dirty: 3)") {
+	if !strings.Contains(status, "✱") {
+		t.Fatalf("expected dirty status icon, got %q", status)
+	}
+	if strings.Contains(status, "WRITE (dirty: 3)") {
+		t.Fatalf("expected dirty status to omit dirty-count label, got %q", status)
+	}
+	if strings.Contains(status, "dirty: 3") {
 		t.Fatalf("expected dirty status, got %q", status)
 	}
 }

@@ -110,6 +110,33 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 			expected: primitives.FrameTopLeft + "Records",
 		},
 		{
+			name: "dirty records view",
+			model: Model{
+				ui: runtimeUIState{
+					width:  80,
+					height: 24,
+				},
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					tables:   []dto.Table{{Name: "users"}},
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+					},
+					records: []dto.RecordRow{{Values: []string{"1"}}},
+				},
+				staging: stagingState{
+					pendingUpdates: map[string]recordEdits{
+						"id=1": {
+							changes: map[int]stagedEdit{
+								0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
+							},
+						},
+					},
+				},
+			},
+			expected: primitives.FrameTopLeft + "Records [staged rows: 1]",
+		},
+		{
 			name: "record detail view",
 			model: Model{
 				ui: runtimeUIState{
@@ -198,6 +225,43 @@ func TestView_CommandSpotlightOverlaysRuntimePanelsAndStatusBar(t *testing.T) {
 	}
 	if !strings.Contains(view, "│:set limit=10|") {
 		t.Fatalf("expected spotlight input row with prompt and caret, got %q", view)
+	}
+}
+
+func TestView_CommandSpotlightBackdropSubduesDirtyRecordsTitle(t *testing.T) {
+	// Arrange
+	model := &Model{
+		styles: primitives.NewRenderStyles(true),
+		ui: runtimeUIState{
+			width:  140,
+			height: 24,
+		},
+		read: runtimeReadState{
+			focus:         FocusContent,
+			viewMode:      ViewRecords,
+			selectedTable: 0,
+			tables:        []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{{Name: "id", Type: "INTEGER"}},
+			},
+			records: []dto.RecordRow{{Values: []string{"1"}}},
+		},
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{{}},
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active: true,
+			},
+		},
+	}
+
+	// Act
+	view := model.View()
+
+	// Assert
+	if !strings.Contains(view, "\x1b[2mRecords [staged rows: 1]\x1b[0m") {
+		t.Fatalf("expected spotlight backdrop to subdue dirty records title, got %q", view)
 	}
 }
 

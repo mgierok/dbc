@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
@@ -119,6 +120,9 @@ func (m *Model) contentPanelTitle() string {
 	if m.read.viewMode == ViewRecords {
 		if m.overlay.recordDetail.active {
 			return "Record Detail"
+		}
+		if m.hasDirtyEdits() {
+			return fmt.Sprintf("Records [staged rows: %d]", m.dirtyEditCount())
 		}
 		return "Records"
 	}

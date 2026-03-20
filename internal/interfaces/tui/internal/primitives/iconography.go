@@ -1,6 +1,7 @@
 package primitives
 
 const (
+	IconClean        = "○"
 	IconInsert       = "✚"
 	IconEdit         = "✱"
 	IconDelete       = "✖"

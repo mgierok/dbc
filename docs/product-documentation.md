@@ -107,13 +107,14 @@ Current product value and scope:
 
 ### Visual State Communication
 
-- The product mode indicator shows `READ-ONLY` when no staged changes exist and `WRITE (dirty: N)` when staged changes are present, where `N` is the number of unique affected rows in the current table.
+- The product mode indicator in the status bar shows `○` when no staged changes exist and `✱` when staged changes are present.
+- In Records view, the right-panel title stays `Records` in clean state and changes to `Records [staged rows: N]` in dirty state, where `N` is the number of unique affected rows in the current table. Record Detail keeps the title `Record Detail` regardless of dirty state.
 - Records use visual row markers: `✚` for pending insert, `✖` for pending delete, and `✱` for edited rows. Row-state summaries in record detail use `ℹ`.
 - Visual emphasis uses terminal-native text attributes instead of application-defined colors: selected items use reverse video, titles and status labels use emphasis, secondary hints are visually subdued, and error messages are emphasized with underline.
 - When any runtime popup or the command spotlight is open, the runtime layout remains visible behind it in a shared subdued backdrop treatment. The startup selector does not use that runtime backdrop.
 - When ANSI styling is available, delete-marked persisted record content uses strikethrough as an additional emphasis treatment; when styling is disabled (`NO_COLOR` or `TERM=dumb`), DBC falls back to the textual delete affordances only.
 - The status bar is rendered in its own 3-row framed box. Runtime and selector popups use titled framed windows with padded content rows and a minimum height of `40%` of terminal height.
-- The status bar always communicates current mode, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`). Live command entry is not rendered in the status bar.
+- The status bar always communicates current mode icon, current table, active filter summary, active sort summary, right-aligned `Context help: ?`, and runtime status or error messages. In Records view it additionally shows persisted-record summary (`Records: current/total`) and pagination summary (`Page: current/total`). Live command entry is not rendered in the status bar, and staged-row count is not rendered there.
 - Every active editable text field in the product shows a visible caret `|`.
 - If `NO_COLOR` is set or the terminal reports `TERM=dumb`, DBC falls back to unstyled monochrome rendering.
 
@@ -198,4 +199,4 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 - Filter: The single active condition applied to the selected table's records.
 - Sort: The single active column ordering (`ASC` or `DESC`) applied to the selected table's records.
 - Staged Change: Pending insert, edit, or delete that has not yet been saved to the database.
-- Dirty State: Session state in which staged changes exist and the mode indicator shows an unsaved affected-row count.
+- Dirty State: Session state in which staged changes exist and the product surfaces unsaved affected-row state through the status-bar icon and the Records title staged-row count.

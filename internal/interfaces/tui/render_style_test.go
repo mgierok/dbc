@@ -75,8 +75,8 @@ func TestRenderStatus_StylesDirtyModeAndContextHelpWhenEnabled(t *testing.T) {
 	status := model.renderStatus(120)
 
 	// Assert
-	if !strings.Contains(status, "\x1b[1mWRITE (dirty: 1)\x1b[0m") {
-		t.Fatalf("expected bold dirty-mode token, got %q", status)
+	if !strings.Contains(status, "\x1b[1m✱\x1b[0m") {
+		t.Fatalf("expected bold dirty-mode icon, got %q", status)
 	}
 	if !strings.Contains(status, "\x1b[2mContext help: ?\x1b[0m") {
 		t.Fatalf("expected faint context-help hint, got %q", status)

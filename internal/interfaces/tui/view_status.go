@@ -15,9 +15,9 @@ func (m *Model) renderStatusWithStyles(width int, styles primitives.RenderStyles
 	if width <= 0 {
 		width = 80
 	}
-	mode := primitives.SemanticText(primitives.SemanticRoleBody, "READ-ONLY")
+	mode := primitives.SemanticText(primitives.SemanticRoleBody, primitives.IconClean)
 	if m.hasDirtyEdits() {
-		mode = primitives.SemanticText(primitives.SemanticRoleDirty, fmt.Sprintf("WRITE (dirty: %d)", m.dirtyEditCount()))
+		mode = primitives.SemanticText(primitives.SemanticRoleDirty, primitives.IconEdit)
 	}
 	parts := []primitives.SemanticLine{
 		mode,
