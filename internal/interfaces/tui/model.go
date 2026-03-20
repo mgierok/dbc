@@ -109,7 +109,7 @@ type dirtyConfirmFlow int
 
 const (
 	dirtyConfirmFlowTableSwitch dirtyConfirmFlow = iota + 1
-	dirtyConfirmFlowConfig
+	dirtyConfirmFlowDatabaseTransition
 	dirtyConfirmFlowQuit
 )
 
@@ -120,9 +120,9 @@ const (
 	confirmSaveAndQuit
 	confirmDiscardTable
 	confirmCancelTableSwitch
-	confirmConfigSaveAndOpen
-	confirmConfigDiscardAndOpen
-	confirmConfigCancel
+	confirmDatabaseTransitionSave
+	confirmDatabaseTransitionDiscard
+	confirmDatabaseTransitionCancel
 	confirmDiscardQuit
 	confirmCancelQuit
 )

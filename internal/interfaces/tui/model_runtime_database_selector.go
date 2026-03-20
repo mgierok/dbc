@@ -7,7 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
-	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
 
 func (m *Model) openRuntimeDatabaseSelectorPopup() {
@@ -67,24 +66,15 @@ func (m *Model) handleRuntimeDatabaseSelectorKey(msg tea.KeyMsg) (tea.Model, tea
 }
 
 func (m *Model) handleRuntimeDatabaseSelection(selected DatabaseOption) (tea.Model, tea.Cmd) {
-	if sameRuntimeDatabaseSelection(selected.ConnString, m.currentRuntimeDatabaseConnString()) {
-		m.closeRuntimeDatabaseSelectorPopup()
+	target, err := m.resolveRuntimeDatabaseTransitionTargetFromOption(selected)
+	if err != nil {
+		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
-
-	switcher := m.runtimeDatabaseSwitcher()
-	if switcher == nil {
-		m.ui.statusMessage = "Error: database selector unavailable"
-		return m, nil
-	}
-
-	m.ui.runtimeSwitchInFlight = true
-	if m.overlay.databaseSelector.controller != nil {
-		m.overlay.databaseSelector.controller.SetStatusMessage(
-			fmt.Sprintf("Switching to %q...", selected.Name),
-		)
-	}
-	return m, switchRuntimeDatabaseCmd(m.ctx, switcher, selected)
+	return m.requestRuntimeDatabaseTransition(runtimeDatabaseTransitionRequest{
+		Target: target,
+		Origin: runtimeDatabaseTransitionOriginConfigSelector,
+	})
 }
 
 func (m *Model) runtimeDatabaseSwitcher() RuntimeDatabaseSwitcher {
@@ -101,8 +91,11 @@ func (m *Model) currentRuntimeDatabaseConnString() string {
 	return m.runtimeDatabaseSelectorDeps.CurrentDatabase.ConnString
 }
 
-func sameRuntimeDatabaseSelection(left, right string) bool {
-	return sqliteidentity.Equivalent(left, right)
+func (m *Model) currentRuntimeDatabaseOption() DatabaseOption {
+	if m.runtimeDatabaseSelectorDeps == nil {
+		return DatabaseOption{}
+	}
+	return m.runtimeDatabaseSelectorDeps.CurrentDatabase
 }
 
 func formatRuntimeDatabaseSelectionFailure(selected DatabaseOption, reason string) string {
@@ -114,22 +107,30 @@ func formatRuntimeDatabaseSelectionFailure(selected DatabaseOption, reason strin
 }
 
 type runtimeDatabaseSwitchCompletedMsg struct {
-	selected DatabaseOption
+	request  runtimeDatabaseTransitionRequest
+	snapshot runtimeDatabaseTransitionSnapshot
 	deps     RuntimeRunDeps
 	err      error
 }
 
-func switchRuntimeDatabaseCmd(ctx context.Context, switcher RuntimeDatabaseSwitcher, selected DatabaseOption) tea.Cmd {
+func switchRuntimeDatabaseCmd(
+	ctx context.Context,
+	switcher RuntimeDatabaseSwitcher,
+	request runtimeDatabaseTransitionRequest,
+	snapshot runtimeDatabaseTransitionSnapshot,
+) tea.Cmd {
 	return func() tea.Msg {
 		if switcher == nil {
 			return runtimeDatabaseSwitchCompletedMsg{
-				selected: selected,
+				request:  request,
+				snapshot: snapshot,
 				err:      fmt.Errorf("database selector unavailable"),
 			}
 		}
-		deps, err := switcher.Switch(ctx, selected)
+		deps, err := switcher.Switch(ctx, request.Target.Option)
 		return runtimeDatabaseSwitchCompletedMsg{
-			selected: selected,
+			request:  request,
+			snapshot: snapshot,
 			deps:     deps,
 			err:      err,
 		}

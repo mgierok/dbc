@@ -7,7 +7,7 @@ import (
 func saveConfirmOptions(primaryLabel string, primaryAction confirmAction) []confirmOption {
 	return []confirmOption{
 		{label: primaryLabel, action: primaryAction},
-		{label: "Cancel", action: confirmConfigCancel},
+		{label: "Cancel", action: confirmDatabaseTransitionCancel},
 	}
 }
 
@@ -63,35 +63,13 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) confirmSaveAndQuit() (tea.Model, tea.Cmd) {
-	m.ui.pendingConfigOpen = false
-	m.ui.pendingDatabaseSelectorOpen = false
+	m.ui.pendingDatabaseTransition = nil
 	m.ui.pendingQuitAfterSave = true
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
 		m.ui.pendingQuitAfterSave = false
 	}
 	return updatedModel, cmd
-}
-
-func (m *Model) confirmConfigSaveAndOpen() (tea.Model, tea.Cmd) {
-	m.ui.pendingQuitAfterSave = false
-	m.ui.pendingConfigOpen = true
-	m.ui.pendingDatabaseSelectorOpen = true
-	updatedModel, cmd := m.confirmSaveChanges()
-	if cmd == nil {
-		m.ui.pendingConfigOpen = false
-		m.ui.pendingDatabaseSelectorOpen = false
-	}
-	return updatedModel, cmd
-}
-
-func (m *Model) confirmConfigDiscardAndOpen() (tea.Model, tea.Cmd) {
-	m.ui.pendingQuitAfterSave = false
-	m.ui.pendingConfigOpen = false
-	m.ui.pendingDatabaseSelectorOpen = false
-	m.clearStagedState()
-	m.openRuntimeDatabaseSelectorPopup()
-	return m, nil
 }
 
 func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
@@ -109,6 +87,7 @@ func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
 
 func (m *Model) confirmDiscardQuit() (tea.Model, tea.Cmd) {
 	m.ui.pendingQuitAfterSave = false
+	m.ui.pendingDatabaseTransition = nil
 	m.clearStagedState()
 	return m, tea.Quit
 }

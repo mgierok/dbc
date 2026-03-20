@@ -57,6 +57,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.read.selectedTable = 0
+		if m.ui.pendingDatabaseReloadRestore != nil {
+			return m, m.applyPendingDatabaseReloadRestoreAfterTables()
+		}
 		return m, m.loadSchemaCmd()
 	case schemaMsg:
 		if msg.bundleToken != m.runtimeBundleToken {
@@ -89,19 +92,29 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.requestID != m.read.recordRequestID {
 			return m, nil
 		}
+		requestedRestorePageIndex := -1
+		if m.ui.pendingDatabaseReloadRestore != nil {
+			requestedRestorePageIndex = m.ui.pendingDatabaseReloadRestore.requestedPageIndex
+		}
 		m.read.recordLoading = false
 		m.read.records = msg.page.Rows
 		m.read.recordTotalCount = msg.page.TotalCount
 		m.read.recordTotalPages = m.computeTotalPages(msg.page.TotalCount)
 		m.read.recordPageIndex = clamp(m.read.recordPageIndex, 0, m.read.recordTotalPages-1)
+		if requestedRestorePageIndex >= 0 {
+			if m.read.recordPageIndex != requestedRestorePageIndex {
+				m.ui.pendingDatabaseReloadRestore.requestedPageIndex = -1
+				return m, m.loadRecordsCmd(false)
+			}
+			m.ui.pendingDatabaseReloadRestore = nil
+		}
 		m.normalizeRecordSelection()
 		return m, nil
 	case saveChangesMsg:
 		m.ui.saveInFlight = false
 		if msg.err != nil {
-			m.ui.pendingConfigOpen = false
-			m.ui.pendingDatabaseSelectorOpen = false
 			m.ui.pendingQuitAfterSave = false
+			m.ui.pendingDatabaseTransition = nil
 			m.ui.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
 		}
@@ -110,11 +123,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ui.pendingQuitAfterSave = false
 			return m, tea.Quit
 		}
-		if m.ui.pendingDatabaseSelectorOpen {
-			m.ui.pendingConfigOpen = false
-			m.ui.pendingDatabaseSelectorOpen = false
-			m.openRuntimeDatabaseSelectorPopup()
-			return m, nil
+		if m.ui.pendingDatabaseTransition != nil {
+			request := cloneRuntimeDatabaseTransitionRequest(*m.ui.pendingDatabaseTransition)
+			return m.executeRuntimeDatabaseTransition(request)
 		}
 		m.ui.statusMessage = formatSavedRowsMessage(msg.count)
 		return m, m.loadRecordsCmd(true)
@@ -123,8 +134,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			if m.overlay.databaseSelector.controller != nil {
 				m.overlay.databaseSelector.controller.SetStatusMessage(
-					formatRuntimeDatabaseSelectionFailure(msg.selected, msg.err.Error()),
+					formatRuntimeDatabaseSelectionFailure(msg.request.Target.Option, msg.err.Error()),
 				)
+			} else {
+				m.ui.statusMessage = "Error: " + msg.err.Error()
 			}
 			return m, nil
 		}
@@ -135,6 +148,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		replacement.ui.width = m.ui.width
 		replacement.ui.height = m.ui.height
 		*m = *replacement
+		if msg.request.Target.Kind == reloadCurrentDatabase {
+			m.ui.pendingDatabaseReloadRestore = cloneRuntimeDatabaseReloadRestoreState(msg.snapshot)
+			m.ui.statusMessage = "Database reloaded."
+		}
 		if previousBundleCancel != nil {
 			previousBundleCancel()
 		}

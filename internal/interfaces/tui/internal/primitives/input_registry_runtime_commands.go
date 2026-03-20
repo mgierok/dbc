@@ -17,6 +17,7 @@ const (
 	RuntimeCommandActionQuit
 	RuntimeCommandActionForcedQuit
 	RuntimeCommandActionOpenConfig
+	RuntimeCommandActionEdit
 	RuntimeCommandActionSave
 	RuntimeCommandActionSaveAndQuit
 	RuntimeCommandActionSetRecordLimit
@@ -29,6 +30,8 @@ type RuntimeCommandSpec struct {
 	Usage       string
 	Description string
 	Action      RuntimeCommandAction
+	Force       bool
+	ConnString  string
 	RecordLimit int
 	matcher     runtimeCommandMatcher
 }
@@ -48,6 +51,12 @@ var runtimeCommandSpecs = []RuntimeCommandSpec{
 		Aliases:     []string{"help", "h"},
 		Description: "Open runtime help popup reference.",
 		Action:      RuntimeCommandActionOpenHelp,
+	},
+	{
+		Usage:       ":edit[!] / :e[!] [<connection-string>]",
+		Description: "Reload current database or open another database.",
+		Action:      RuntimeCommandActionEdit,
+		matcher:     matchEditCommand,
 	},
 	{
 		Aliases:     []string{"w", "write"},
@@ -139,6 +148,28 @@ func matchSetRecordLimitCommand(input string, spec RuntimeCommandSpec) (RuntimeC
 
 	matchedSpec := spec
 	matchedSpec.RecordLimit = recordLimit
+	return matchedSpec, true, nil
+}
+
+func matchEditCommand(input string, spec RuntimeCommandSpec) (RuntimeCommandSpec, bool, error) {
+	editKeyword, remainder, matched := splitRuntimeCommandKeyword(input)
+	if !matched {
+		return RuntimeCommandSpec{}, false, nil
+	}
+
+	force := false
+	switch {
+	case strings.EqualFold(editKeyword, "edit"), strings.EqualFold(editKeyword, "e"):
+	case strings.EqualFold(editKeyword, "edit!"), strings.EqualFold(editKeyword, "e!"):
+		force = true
+	default:
+		return RuntimeCommandSpec{}, false, nil
+	}
+
+	connString := strings.TrimSpace(remainder)
+	matchedSpec := spec
+	matchedSpec.Force = force
+	matchedSpec.ConnString = connString
 	return matchedSpec, true, nil
 }
 

@@ -182,8 +182,9 @@ func TestHandleKey_RuntimeDatabaseSelectorEscClosesPopupAndPreservesRuntimeState
 	}
 }
 
-func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseIsNoOp(t *testing.T) {
+func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseStartsReload(t *testing.T) {
 	// Arrange
+	switcher := &stubRuntimeDatabaseSwitcher{}
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
@@ -195,7 +196,7 @@ func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseIsNoOp(t *te
 			viewMode: ViewRecords,
 			focus:    FocusContent,
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
 	}
 	model.openRuntimeDatabaseSelectorPopup()
 
@@ -205,12 +206,18 @@ func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseIsNoOp(t *te
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "Enter on current runtime database")
 	runtimeModel := updated.(*Model)
-	if runtimeModel.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to close after selecting current database")
+	if !runtimeModel.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector popup to stay open while reload is in flight")
+	}
+	if !runtimeModel.ui.runtimeSwitchInFlight {
+		t.Fatal("expected current database selection to start reload transition")
+	}
+	if switcher.calls != 1 {
+		t.Fatalf("expected one reload transition for current database selection, got %d", switcher.calls)
 	}
 }
 
-func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseIsNoOp(t *testing.T) {
+func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseStartsReload(t *testing.T) {
 	// Arrange
 	switcher := &stubRuntimeDatabaseSwitcher{}
 	basePath := filepath.Join(t.TempDir(), "primary.sqlite")
@@ -241,11 +248,11 @@ func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseIsNoOp(t *testi
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "equivalent current runtime database")
 	runtimeModel := updated.(*Model)
-	if runtimeModel.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to close after equivalent current database selection")
+	if !runtimeModel.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector popup to stay open while equivalent reload is in flight")
 	}
-	if switcher.calls != 0 {
-		t.Fatalf("expected no runtime switch for equivalent current database, got %d calls", switcher.calls)
+	if switcher.calls != 1 {
+		t.Fatalf("expected one runtime reload for equivalent current database, got %d calls", switcher.calls)
 	}
 }
 

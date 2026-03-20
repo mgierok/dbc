@@ -54,6 +54,42 @@ func (p *DirtyNavigationPolicy) BuildConfigPrompt() DirtyDecisionPrompt {
 	}
 }
 
+func (p *DirtyNavigationPolicy) BuildDatabaseReloadPrompt(changeCount int) DirtyDecisionPrompt {
+	if changeCount < 0 {
+		changeCount = 0
+	}
+	return DirtyDecisionPrompt{
+		Title: "Reload Database",
+		Message: fmt.Sprintf(
+			"Reloading the current database will cause loss of unsaved data (%d rows) unless you save first. Choose save, discard, or cancel.",
+			changeCount,
+		),
+		Options: []DirtyDecisionOption{
+			{ID: DirtyDecisionSave, Label: "Save and reload database"},
+			{ID: DirtyDecisionDiscard, Label: "Discard changes and reload database"},
+			{ID: DirtyDecisionCancel, Label: "Cancel"},
+		},
+	}
+}
+
+func (p *DirtyNavigationPolicy) BuildDatabaseOpenPrompt(changeCount int) DirtyDecisionPrompt {
+	if changeCount < 0 {
+		changeCount = 0
+	}
+	return DirtyDecisionPrompt{
+		Title: "Open Database",
+		Message: fmt.Sprintf(
+			"Opening another database will cause loss of unsaved data (%d rows) unless you save first. Choose save, discard, or cancel.",
+			changeCount,
+		),
+		Options: []DirtyDecisionOption{
+			{ID: DirtyDecisionSave, Label: "Save and open database"},
+			{ID: DirtyDecisionDiscard, Label: "Discard changes and open database"},
+			{ID: DirtyDecisionCancel, Label: "Cancel"},
+		},
+	}
+}
+
 func (p *DirtyNavigationPolicy) BuildQuitPrompt(changeCount int) DirtyDecisionPrompt {
 	if changeCount < 0 {
 		changeCount = 0

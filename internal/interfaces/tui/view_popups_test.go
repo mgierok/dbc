@@ -239,7 +239,7 @@ func TestView_HelpPopupShowsBackdropRuntimePanelsAndHelpContent(t *testing.T) {
 	}
 }
 
-func TestView_DirtyConfigCommandOpensConfirmPopupWithBackdropRuntimeLayout(t *testing.T) {
+func TestView_DirtyConfigCommandOpensRuntimeSelectorWithBackdropRuntimeLayout(t *testing.T) {
 	// Arrange
 	model := &Model{
 		styles: primitives.NewRenderStyles(true),
@@ -249,6 +249,11 @@ func TestView_DirtyConfigCommandOpensConfirmPopupWithBackdropRuntimeLayout(t *te
 			height: 24,
 		},
 		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(DatabaseOption{
+			Name:       "primary",
+			ConnString: "/tmp/primary.sqlite",
+			Source:     DatabaseOptionSourceConfig,
+		}, nil),
 	}
 
 	// Act
@@ -261,20 +266,20 @@ func TestView_DirtyConfigCommandOpensConfirmPopupWithBackdropRuntimeLayout(t *te
 	plainView := stripANSI(view)
 
 	// Assert
-	if !strings.Contains(plainView, "Config") {
-		t.Fatalf("expected dirty :config modal title, got %q", plainView)
+	if !strings.Contains(plainView, "Select database") {
+		t.Fatalf("expected dirty :config selector popup, got %q", plainView)
 	}
 	if !strings.Contains(plainView, primitives.FrameTopLeft+"Tables") || !strings.Contains(plainView, primitives.FrameTopLeft+"Records") {
-		t.Fatalf("expected dirty :config popup to keep runtime panels visible, got %q", plainView)
+		t.Fatalf("expected dirty :config selector to keep runtime panels visible, got %q", plainView)
 	}
-	if !strings.Contains(view, "\x1b[2mWRITE (dirty: 1)\x1b[0m") {
+	if !strings.Contains(view, "\x1b[2m✱\x1b[0m") {
 		t.Fatalf("expected dirty backdrop status to use subdued styling, got %q", view)
 	}
-	if !strings.Contains(plainView, "Unsaved changes detected.") {
-		t.Fatalf("expected dirty :config confirm message, got %q", plainView)
+	if !strings.Contains(view, "\x1b[2mRecords [staged rows: 1]\x1b[0m") {
+		t.Fatalf("expected dirty backdrop to subdue staged-record title, got %q", view)
 	}
-	if !strings.Contains(plainView, "Save and open config") || !strings.Contains(plainView, "Discard and open config") {
-		t.Fatalf("expected dirty :config options in popup, got %q", plainView)
+	if !strings.Contains(plainView, "primary") {
+		t.Fatalf("expected selector content in popup, got %q", plainView)
 	}
 }
 
@@ -327,18 +332,18 @@ func TestView_RuntimeDatabaseSelectorUsesSharedBackdropPresenter(t *testing.T) {
 	}
 }
 
-func TestRenderConfirmPopup_DirtyConfigShowsMessageAndOptionLabels(t *testing.T) {
+func TestRenderConfirmPopup_DirtyDatabaseReloadShowsMessageAndOptionLabels(t *testing.T) {
 	// Arrange
 	model := &Model{
 		overlay: runtimeOverlayState{
 			confirmPopup: confirmPopup{
 				active:  true,
-				title:   "Config",
-				message: "Unsaved changes detected. Choose save, discard, or cancel.",
+				title:   "Reload Database",
+				message: "Reloading the current database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel.",
 				options: []confirmOption{
-					{label: "Save and open config", action: confirmConfigSaveAndOpen},
-					{label: "Discard and open config", action: confirmConfigDiscardAndOpen},
-					{label: "Cancel", action: confirmConfigCancel},
+					{label: "Save and reload database", action: confirmDatabaseTransitionSave},
+					{label: "Discard changes and reload database", action: confirmDatabaseTransitionDiscard},
+					{label: "Cancel", action: confirmDatabaseTransitionCancel},
 				},
 				selected: 0,
 				modal:    true,
@@ -351,19 +356,19 @@ func TestRenderConfirmPopup_DirtyConfigShowsMessageAndOptionLabels(t *testing.T)
 	popup := stripANSI(strings.Join(lines, "\n"))
 
 	// Assert
-	if !strings.Contains(popup, "Unsaved changes detected.") {
+	if !strings.Contains(popup, "Reloading the current database") {
 		t.Fatalf("expected decision summary in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "Save and open config") {
+	if !strings.Contains(popup, "Save and reload database") {
 		t.Fatalf("expected save option label in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, "Discard and open config") {
+	if !strings.Contains(popup, "Discard changes and reload database") {
 		t.Fatalf("expected discard option label in popup, got %q", popup)
 	}
 	if !strings.Contains(popup, "Cancel") {
 		t.Fatalf("expected cancel option label in popup, got %q", popup)
 	}
-	if !strings.Contains(popup, primitives.IconSelection+" Save and open config") {
+	if !strings.Contains(popup, primitives.IconSelection+" Save and reload database") {
 		t.Fatalf("expected selected config option in popup, got %q", popup)
 	}
 }
@@ -378,7 +383,7 @@ func TestRenderConfirmPopup_SaveShowsMessageAndOptionLabels(t *testing.T) {
 				message: "Choose whether to save staged changes.",
 				options: []confirmOption{
 					{label: "Save changes", action: confirmSave},
-					{label: "Cancel", action: confirmConfigCancel},
+					{label: "Cancel", action: confirmDatabaseTransitionCancel},
 				},
 				selected: 0,
 				modal:    true,

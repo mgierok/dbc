@@ -43,6 +43,17 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	case primitives.RuntimeCommandActionOpenHelp:
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
+	case primitives.RuntimeCommandActionEdit:
+		target, resolveErr := m.resolveRuntimeDatabaseTransitionTargetFromConnString(commandSpec.ConnString)
+		if resolveErr != nil {
+			m.ui.statusMessage = "Error: " + resolveErr.Error()
+			return m, nil
+		}
+		return m.requestRuntimeDatabaseTransition(runtimeDatabaseTransitionRequest{
+			Target: target,
+			Force:  commandSpec.Force,
+			Origin: runtimeDatabaseTransitionOriginEditCommand,
+		})
 	case primitives.RuntimeCommandActionSave:
 		return m.requestSaveChanges()
 	case primitives.RuntimeCommandActionSaveAndQuit:
@@ -62,16 +73,6 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 	case primitives.RuntimeCommandActionForcedQuit:
 		return m.confirmDiscardQuit()
 	case primitives.RuntimeCommandActionOpenConfig:
-		if m.hasDirtyEdits() {
-			prompt := m.dirtyNavigationPolicyUseCase().BuildConfigPrompt()
-			m.openModalConfirmPopupWithOptions(
-				prompt.Title,
-				prompt.Message,
-				m.confirmOptionsFromDirtyPrompt(prompt, dirtyConfirmFlowConfig),
-				0,
-			)
-			return m, nil
-		}
 		m.openRuntimeDatabaseSelectorPopup()
 		return m, nil
 	}

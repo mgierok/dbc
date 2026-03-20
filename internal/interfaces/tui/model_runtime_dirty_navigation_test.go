@@ -11,7 +11,7 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
-func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
+func TestHandleKey_DirtyConfigCommandOpensRuntimeDatabaseSelectorPopup(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		command string
@@ -42,26 +42,17 @@ func TestHandleKey_DirtyConfigCommandOpensDecisionPrompt(t *testing.T) {
 			// Assert
 			if cmd != nil {
 				if _, ok := cmd().(tea.QuitMsg); ok {
-					t.Fatalf("expected dirty :%s to wait for explicit decision", tc.command)
+					t.Fatalf("expected dirty :%s to keep runtime active", tc.command)
 				}
 			}
-			if !model.overlay.confirmPopup.active {
-				t.Fatalf("expected dirty :%s decision popup to open", tc.command)
-			}
-			if !model.overlay.confirmPopup.modal {
-				t.Fatalf("expected dirty :%s decision popup to be modal", tc.command)
-			}
-			if model.overlay.confirmPopup.title != "Config" {
-				t.Fatalf("expected dirty :%s popup title Config, got %q", tc.command, model.overlay.confirmPopup.title)
-			}
-			if model.ui.openConfigSelector {
-				t.Fatalf("expected :%s navigation to remain blocked until explicit decision", tc.command)
+			if !model.overlay.databaseSelector.active {
+				t.Fatalf("expected dirty :%s to open runtime database selector popup", tc.command)
 			}
 		})
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
+func TestHandleKey_DirtyRuntimeDatabaseSelectionOpensReloadDecisionPrompt(t *testing.T) {
 	// Arrange
 	current := DatabaseOption{
 		Name:       "primary",
@@ -73,10 +64,37 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
-	for _, r := range "config" {
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	submitTypedRuntimeCommand(model, "config")
+
+	// Act
+	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	assertRuntimeSessionActive(t, cmd, "dirty config selection")
+	if !model.overlay.confirmPopup.active {
+		t.Fatal("expected dirty selection to open decision popup")
 	}
+	if model.overlay.confirmPopup.title != "Reload Database" {
+		t.Fatalf("expected reload database prompt title, got %q", model.overlay.confirmPopup.title)
+	}
+	if !strings.Contains(model.overlay.confirmPopup.message, "Reloading the current database") {
+		t.Fatalf("expected reload decision message, got %q", model.overlay.confirmPopup.message)
+	}
+}
+
+func TestHandleConfirmPopupKey_DirtyDatabaseTransitionCancelKeepsSelectorOpenAndStagedState(t *testing.T) {
+	// Arrange
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
+	model := &Model{
+		read:                        runtimeReadState{viewMode: ViewRecords},
+		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+	}
+	submitTypedRuntimeCommand(model, "config")
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Act
@@ -86,30 +104,28 @@ func TestHandleConfirmPopupKey_DirtyConfigCancelKeepsStagedState(t *testing.T) {
 	if model.overlay.confirmPopup.active {
 		t.Fatal("expected decision popup to close on cancel")
 	}
+	if !model.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector popup to remain open on cancel")
+	}
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to stay untouched on cancel")
 	}
-	if model.ui.openConfigSelector {
-		t.Fatal("expected no navigation on cancel")
-	}
 }
 
-func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *testing.T) {
+func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStartsTransition(t *testing.T) {
 	// Arrange
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
+	switcher := &stubRuntimeDatabaseSwitcher{}
 	model := &Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
 	}
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
-	for _, r := range "config" {
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-	}
+	submitTypedRuntimeCommand(model, "config")
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
@@ -117,18 +133,22 @@ func TestHandleConfirmPopupKey_DirtyConfigDiscardClearsStateAndNavigates(t *test
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	assertRuntimeSessionActive(t, cmd, "discard config decision")
+	assertRuntimeSessionActive(t, cmd, "discard database transition decision")
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared on discard")
 	}
-	if !model.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup after discard")
+	if switcher.calls != 1 {
+		t.Fatalf("expected discard to continue pending database transition, got %d calls", switcher.calls)
+	}
+	if !model.ui.runtimeSwitchInFlight {
+		t.Fatal("expected runtime switch to start after discard")
 	}
 }
 
-func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
+func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
+	switcher := &stubRuntimeDatabaseSwitcher{}
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
@@ -158,13 +178,9 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 				},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
 	}
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
-	for _, r := range "config" {
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-	}
-	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	submitTypedRuntimeCommand(model, "edit")
 
 	// Act
 	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -172,19 +188,19 @@ func TestUpdate_DirtyConfigSaveSuccessNavigatesAfterSave(t *testing.T) {
 		t.Fatal("expected save command after selecting save decision")
 	}
 	msg := saveCmd()
-	_, quitCmd := model.Update(msg)
+	_, followupCmd := model.Update(msg)
 
 	// Assert
-	assertRuntimeSessionActive(t, quitCmd, "save config decision")
+	assertRuntimeSessionActive(t, followupCmd, "save database transition decision")
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared after successful save")
 	}
-	if !model.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup after successful save")
+	if !model.ui.runtimeSwitchInFlight {
+		t.Fatal("expected successful save to continue pending database transition")
 	}
 }
 
-func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T) {
+func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{err: errors.New("boom")}
 	current := DatabaseOption{
@@ -218,11 +234,7 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 		},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
 	}
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
-	for _, r := range "config" {
-		model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-	}
-	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	submitTypedRuntimeCommand(model, "edit")
 
 	// Act
 	_, saveCmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -241,8 +253,8 @@ func TestUpdate_DirtyConfigSaveFailureKeepsStateAndBlocksNavigation(t *testing.T
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be preserved on save error")
 	}
-	if model.overlay.databaseSelector.active {
-		t.Fatal("expected selector navigation to remain blocked on save error")
+	if model.ui.runtimeSwitchInFlight {
+		t.Fatal("expected transition to stay blocked on save error")
 	}
 	if !strings.Contains(model.ui.statusMessage, "boom") {
 		t.Fatalf("expected save error status to be surfaced, got %q", model.ui.statusMessage)

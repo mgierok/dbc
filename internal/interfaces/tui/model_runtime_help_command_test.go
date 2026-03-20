@@ -41,6 +41,66 @@ func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) 
 	}
 }
 
+func TestHandleKey_CommandEditReloadsCurrentDatabaseWithoutQuitting(t *testing.T) {
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
+	switcher := &stubRuntimeDatabaseSwitcher{}
+	model := &Model{
+		read: runtimeReadState{viewMode: ViewRecords},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(
+			current,
+			switcher,
+		),
+	}
+
+	updated, cmd := submitTypedRuntimeCommand(model, "edit")
+
+	assertRuntimeSessionActive(t, cmd, ":edit")
+	runtimeModel := updated.(*Model)
+	if !runtimeModel.ui.runtimeSwitchInFlight {
+		t.Fatal("expected :edit to start a database transition")
+	}
+	if switcher.calls != 1 {
+		t.Fatalf("expected one database transition for :edit, got %d", switcher.calls)
+	}
+	if switcher.lastSelected.ConnString != current.ConnString {
+		t.Fatalf("expected :edit to reload current database %q, got %q", current.ConnString, switcher.lastSelected.ConnString)
+	}
+}
+
+func TestHandleKey_CommandEditWithConnectionStringStartsDatabaseTransition(t *testing.T) {
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
+	switcher := &stubRuntimeDatabaseSwitcher{}
+	model := &Model{
+		read: runtimeReadState{viewMode: ViewRecords},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(
+			current,
+			switcher,
+		),
+	}
+
+	updated, cmd := submitTypedRuntimeCommand(model, "edit /tmp/analytics.sqlite")
+
+	assertRuntimeSessionActive(t, cmd, ":edit /tmp/analytics.sqlite")
+	runtimeModel := updated.(*Model)
+	if !runtimeModel.ui.runtimeSwitchInFlight {
+		t.Fatal("expected :edit <conn> to start a database transition")
+	}
+	if switcher.calls != 1 {
+		t.Fatalf("expected one database transition for :edit <conn>, got %d", switcher.calls)
+	}
+	if switcher.lastSelected.ConnString != "/tmp/analytics.sqlite" {
+		t.Fatalf("expected :edit <conn> to target /tmp/analytics.sqlite, got %q", switcher.lastSelected.ConnString)
+	}
+}
+
 func TestHandleKey_CommandQuitQuitsRuntime(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

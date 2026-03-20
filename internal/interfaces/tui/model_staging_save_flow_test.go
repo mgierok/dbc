@@ -313,7 +313,7 @@ func TestSetTableSelection_ClearsSortOnTableSwitch(t *testing.T) {
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
+func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
 	model := &Model{
@@ -344,7 +344,20 @@ func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
 		overlay: runtimeOverlayState{
 			confirmPopup: confirmPopup{
 				active: true,
-				action: confirmConfigSaveAndOpen,
+				action: confirmDatabaseTransitionSave,
+			},
+		},
+		ui: runtimeUIState{
+			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
+				Target: runtimeDatabaseTransitionTarget{
+					Option: DatabaseOption{
+						Name:       "primary",
+						ConnString: "/tmp/primary.sqlite",
+						Source:     DatabaseOptionSourceConfig,
+					},
+					Kind: reloadCurrentDatabase,
+				},
+				Origin: runtimeDatabaseTransitionOriginEditCommand,
 			},
 		},
 	}
@@ -356,8 +369,8 @@ func TestHandleConfirmPopupKey_DirtyConfigSaveStartsSaveFlow(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("expected save command to be returned")
 	}
-	if !model.ui.pendingConfigOpen {
-		t.Fatal("expected pending config open flag to be set for save-and-open flow")
+	if model.ui.pendingDatabaseTransition == nil {
+		t.Fatal("expected pending database transition to stay set for save-and-transition flow")
 	}
 }
 
@@ -407,8 +420,8 @@ func TestHandleConfirmPopupKey_SaveAndQuitStartsSaveFlowAndSetsPendingQuitFlag(t
 	if !model.ui.pendingQuitAfterSave {
 		t.Fatal("expected pending quit flag to be set for save-and-quit flow")
 	}
-	if model.ui.pendingConfigOpen {
-		t.Fatal("expected pending config flag to stay cleared for save-and-quit flow")
+	if model.ui.pendingDatabaseTransition != nil {
+		t.Fatal("expected pending database transition to stay cleared for save-and-quit flow")
 	}
 }
 
@@ -535,7 +548,7 @@ func TestRequestSaveChanges_OpensConfirmPopupFromSchemaWithDirtyStateStartedInRe
 	if model.overlay.confirmPopup.options[1].label != "Cancel" {
 		t.Fatalf("expected cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
 	}
-	if model.overlay.confirmPopup.options[1].action != confirmConfigCancel {
+	if model.overlay.confirmPopup.options[1].action != confirmDatabaseTransitionCancel {
 		t.Fatalf("expected cancel option action, got %v", model.overlay.confirmPopup.options[1].action)
 	}
 	if model.overlay.confirmPopup.selected != 0 {
@@ -578,7 +591,7 @@ func TestRequestSaveChanges_OpensConfirmPopupFromTablesWithDirtyStateStartedInRe
 	if model.overlay.confirmPopup.options[1].label != "Cancel" {
 		t.Fatalf("expected cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
 	}
-	if model.overlay.confirmPopup.options[1].action != confirmConfigCancel {
+	if model.overlay.confirmPopup.options[1].action != confirmDatabaseTransitionCancel {
 		t.Fatalf("expected cancel option action, got %v", model.overlay.confirmPopup.options[1].action)
 	}
 	if model.overlay.confirmPopup.selected != 0 {
@@ -621,7 +634,7 @@ func TestRequestSaveAndQuit_OpensConfirmPopupWithSaveAndQuitAndCancelOptions(t *
 	if model.overlay.confirmPopup.options[1].label != "Cancel" {
 		t.Fatalf("expected cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
 	}
-	if model.overlay.confirmPopup.options[1].action != confirmConfigCancel {
+	if model.overlay.confirmPopup.options[1].action != confirmDatabaseTransitionCancel {
 		t.Fatalf("expected cancel option action, got %v", model.overlay.confirmPopup.options[1].action)
 	}
 	if model.overlay.confirmPopup.selected != 0 {

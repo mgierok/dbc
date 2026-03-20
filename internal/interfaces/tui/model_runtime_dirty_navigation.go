@@ -35,16 +35,16 @@ func mapDirtyDecisionToConfirmAction(decisionID string, flow dirtyConfirmFlow) c
 		}
 	default:
 		switch flow {
-		case dirtyConfirmFlowConfig:
+		case dirtyConfirmFlowDatabaseTransition:
 			switch decisionID {
 			case usecase.DirtyDecisionSave:
-				return confirmConfigSaveAndOpen
+				return confirmDatabaseTransitionSave
 			case usecase.DirtyDecisionDiscard:
-				return confirmConfigDiscardAndOpen
+				return confirmDatabaseTransitionDiscard
 			case usecase.DirtyDecisionCancel:
-				return confirmConfigCancel
+				return confirmDatabaseTransitionCancel
 			default:
-				return confirmConfigCancel
+				return confirmDatabaseTransitionCancel
 			}
 		case dirtyConfirmFlowQuit:
 			switch decisionID {
@@ -56,7 +56,7 @@ func mapDirtyDecisionToConfirmAction(decisionID string, flow dirtyConfirmFlow) c
 				return confirmCancelQuit
 			}
 		default:
-			return confirmConfigCancel
+			return confirmDatabaseTransitionCancel
 		}
 	}
 }

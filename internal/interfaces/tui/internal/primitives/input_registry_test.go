@@ -13,6 +13,8 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		name        string
 		input       string
 		action      RuntimeCommandAction
+		force       bool
+		connString  string
 		recordLimit int
 	}{
 		{name: "help full", input: ":help", action: RuntimeCommandActionOpenHelp},
@@ -28,6 +30,12 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "save full alias", input: ":write", action: RuntimeCommandActionSave},
 		{name: "save and quit", input: ":wq", action: RuntimeCommandActionSaveAndQuit},
 		{name: "save and quit uppercase", input: ":WQ", action: RuntimeCommandActionSaveAndQuit},
+		{name: "edit current database", input: ":edit", action: RuntimeCommandActionEdit},
+		{name: "edit alias", input: ":e", action: RuntimeCommandActionEdit},
+		{name: "forced edit current database", input: ":edit!", action: RuntimeCommandActionEdit, force: true},
+		{name: "forced edit alias", input: ":E!", action: RuntimeCommandActionEdit, force: true},
+		{name: "edit connection string", input: ":edit /tmp/analytics.sqlite", action: RuntimeCommandActionEdit, connString: "/tmp/analytics.sqlite"},
+		{name: "forced edit connection string with spaces", input: ":e!  /tmp/analytics copy.sqlite  ", action: RuntimeCommandActionEdit, force: true, connString: "/tmp/analytics copy.sqlite"},
 		{name: "set limit", input: ":set limit=10", action: RuntimeCommandActionSetRecordLimit, recordLimit: 10},
 		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: RuntimeCommandActionSetRecordLimit, recordLimit: 25},
 		{name: "set limit max boundary", input: ":set limit=1000", action: RuntimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
@@ -46,6 +54,12 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 			}
 			if command.Action != tc.action {
 				t.Fatalf("expected action %v for %q, got %v", tc.action, tc.input, command.Action)
+			}
+			if command.Force != tc.force {
+				t.Fatalf("expected force=%t for %q, got %t", tc.force, tc.input, command.Force)
+			}
+			if command.ConnString != tc.connString {
+				t.Fatalf("expected connection string %q for %q, got %q", tc.connString, tc.input, command.ConnString)
 			}
 			if command.RecordLimit != tc.recordLimit {
 				t.Fatalf("expected record limit %d for %q, got %d", tc.recordLimit, tc.input, command.RecordLimit)
@@ -154,6 +168,9 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	}
 	if !strings.Contains(joined, ":w / :write - Save staged changes.") {
 		t.Fatalf("expected save command line in help content, got %q", joined)
+	}
+	if !strings.Contains(joined, ":edit[!] / :e[!] [<connection-string>] - Reload current database or open another database.") {
+		t.Fatalf("expected edit command line in help content, got %q", joined)
 	}
 	if !strings.Contains(joined, ":wq - Save staged changes and quit the application.") {
 		t.Fatalf("expected save-and-quit command line in help content, got %q", joined)

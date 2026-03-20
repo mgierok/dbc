@@ -178,7 +178,7 @@ func TestUpdate_RecordsMsgIgnoresStaleRequestIDAndPreservesCurrentRecords(t *tes
 	}
 }
 
-func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateAndOpensRuntimeDatabaseSelector(t *testing.T) {
+func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTransition(t *testing.T) {
 	// Arrange
 	current := DatabaseOption{
 		Name:       "primary",
@@ -197,11 +197,16 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateAndOpensRuntimeDatabas
 			},
 		},
 		ui: runtimeUIState{
-			pendingConfigOpen:           true,
-			pendingDatabaseSelectorOpen: true,
-			saveInFlight:                true,
+			saveInFlight: true,
+			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
+				Target: runtimeDatabaseTransitionTarget{
+					Option: current,
+					Kind:   reloadCurrentDatabase,
+				},
+				Origin: runtimeDatabaseTransitionOriginEditCommand,
+			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, &stubRuntimeDatabaseSwitcher{}),
 	}
 
 	// Act
@@ -211,21 +216,18 @@ func TestUpdate_SaveChangesMsgPendingConfigOpenClearsStateAndOpensRuntimeDatabas
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged state to be cleared after successful save")
 	}
-	if model.ui.pendingConfigOpen {
-		t.Fatal("expected pending config-open flag to be cleared after successful save")
+	if model.ui.pendingDatabaseTransition != nil {
+		t.Fatal("expected pending database transition to be cleared after successful save")
 	}
 	if model.ui.saveInFlight {
 		t.Fatal("expected save-in-flight flag to be cleared after successful save")
 	}
-	if !model.ui.openConfigSelector {
-		t.Fatal("expected config-selector handoff to be enabled after successful save")
-	}
-	if !model.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to open after successful save-and-open flow")
+	if !model.ui.runtimeSwitchInFlight {
+		t.Fatal("expected successful save to continue pending database transition")
 	}
 	if cmd != nil {
 		if _, ok := cmd().(tea.QuitMsg); ok {
-			t.Fatalf("expected runtime to stay active after successful save-and-open flow, got %T", cmd())
+			t.Fatalf("expected runtime to stay active after successful save-and-transition flow, got %T", cmd())
 		}
 	}
 }

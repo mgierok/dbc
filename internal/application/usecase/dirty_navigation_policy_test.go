@@ -74,6 +74,58 @@ func TestDirtyNavigationPolicy_BuildConfigPrompt_UsesExpectedCopyAndOptions(t *t
 	}
 }
 
+func TestDirtyNavigationPolicy_BuildDatabaseReloadPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	prompt := policy.BuildDatabaseReloadPrompt(3)
+
+	if prompt.Title != "Reload Database" {
+		t.Fatalf("expected title Reload Database, got %q", prompt.Title)
+	}
+	expectedMessage := "Reloading the current database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel."
+	if prompt.Message != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	}
+	if len(prompt.Options) != 3 {
+		t.Fatalf("expected 3 options, got %d", len(prompt.Options))
+	}
+	if prompt.Options[0].ID != usecase.DirtyDecisionSave || prompt.Options[0].Label != "Save and reload database" {
+		t.Fatalf("unexpected save option: %#v", prompt.Options[0])
+	}
+	if prompt.Options[1].ID != usecase.DirtyDecisionDiscard || prompt.Options[1].Label != "Discard changes and reload database" {
+		t.Fatalf("unexpected discard option: %#v", prompt.Options[1])
+	}
+	if prompt.Options[2].ID != usecase.DirtyDecisionCancel || prompt.Options[2].Label != "Cancel" {
+		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
+	}
+}
+
+func TestDirtyNavigationPolicy_BuildDatabaseOpenPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
+	policy := usecase.NewDirtyNavigationPolicy()
+
+	prompt := policy.BuildDatabaseOpenPrompt(3)
+
+	if prompt.Title != "Open Database" {
+		t.Fatalf("expected title Open Database, got %q", prompt.Title)
+	}
+	expectedMessage := "Opening another database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel."
+	if prompt.Message != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	}
+	if len(prompt.Options) != 3 {
+		t.Fatalf("expected 3 options, got %d", len(prompt.Options))
+	}
+	if prompt.Options[0].ID != usecase.DirtyDecisionSave || prompt.Options[0].Label != "Save and open database" {
+		t.Fatalf("unexpected save option: %#v", prompt.Options[0])
+	}
+	if prompt.Options[1].ID != usecase.DirtyDecisionDiscard || prompt.Options[1].Label != "Discard changes and open database" {
+		t.Fatalf("unexpected discard option: %#v", prompt.Options[1])
+	}
+	if prompt.Options[2].ID != usecase.DirtyDecisionCancel || prompt.Options[2].Label != "Cancel" {
+		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
+	}
+}
+
 func TestDirtyNavigationPolicy_BuildQuitPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
 	// Arrange
 	policy := usecase.NewDirtyNavigationPolicy()
