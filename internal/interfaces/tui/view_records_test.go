@@ -693,6 +693,121 @@ func TestRecordDetailContentLines_StrikesDeleteMarkedFieldValuesOnly(t *testing.
 	}
 }
 
+func TestRecordDetailContentLines_StrikesEveryWrappedDeleteMarkedValueLine(t *testing.T) {
+	// Arrange
+	model := &Model{
+		styles: primitives.NewRenderStyles(true),
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "notes", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "abcdefghijklmnopqrstuvwx"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	lines := model.recordDetailContentLines(14)
+	content := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(content, "  \x1b[9mabcdefghijkl\x1b[0m") {
+		t.Fatalf("expected first wrapped delete-marked value line to use strikethrough, got %q", content)
+	}
+	if !strings.Contains(content, "  \x1b[9mmnopqrstuvwx\x1b[0m") {
+		t.Fatalf("expected continuation delete-marked value line to keep strikethrough, got %q", content)
+	}
+	if !strings.Contains(stripANSI(content), "  abcdefghijkl\n  mnopqrstuvwx") {
+		t.Fatalf("expected wrapped delete-marked value lines in plain text, got %q", stripANSI(content))
+	}
+}
+
+func TestRecordDetailContentLinesWithStyles_BackdropKeepsDeletedStyleAcrossWrappedLines(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "notes", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "abcdefghijklmnopqrstuvwx"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	lines := model.recordDetailContentLinesWithStyles(14, primitives.NewRenderStyles(true).Backdrop())
+	content := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(content, "  \x1b[2;9mabcdefghijkl\x1b[0m") {
+		t.Fatalf("expected first backdrop delete-marked value line to use faint strikethrough, got %q", content)
+	}
+	if !strings.Contains(content, "  \x1b[2;9mmnopqrstuvwx\x1b[0m") {
+		t.Fatalf("expected backdrop continuation line to keep faint strikethrough, got %q", content)
+	}
+	if !strings.Contains(stripANSI(content), "  abcdefghijkl\n  mnopqrstuvwx") {
+		t.Fatalf("expected wrapped backdrop delete-marked value lines in plain text, got %q", stripANSI(content))
+	}
+}
+
+func TestRecordDetailContentLinesWithStyles_BackdropKeepsDeletedStyleAcrossExplicitLineBreaks(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "notes", Type: "TEXT"},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alpha\nbeta"}},
+			},
+		},
+	}
+	key, ok := model.recordKeyForPersistedRow(0)
+	if !ok {
+		t.Fatal("expected persisted row key")
+	}
+	model.staging.pendingDeletes = map[string]recordDelete{
+		key: {},
+	}
+
+	// Act
+	lines := model.recordDetailContentLinesWithStyles(20, primitives.NewRenderStyles(true).Backdrop())
+	content := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(content, "  \x1b[2;9malpha\x1b[0m") {
+		t.Fatalf("expected first delete-marked line to use faint strikethrough, got %q", content)
+	}
+	if !strings.Contains(content, "  \x1b[2;9mbeta\x1b[0m") {
+		t.Fatalf("expected line after explicit break to keep faint strikethrough, got %q", content)
+	}
+}
+
 func TestDeleteMarkedViews_FallBackToPlainTextWhenStylesAreDisabled(t *testing.T) {
 	// Arrange
 	t.Setenv("NO_COLOR", "1")

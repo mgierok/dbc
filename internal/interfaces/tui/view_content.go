@@ -198,8 +198,8 @@ func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.
 		if deleted {
 			valueRole = primitives.SemanticRoleDeleted
 		}
-		for _, wrappedLine := range primitives.WrapTextToWidth(styles.Render(valueRole, value), valueWidth) {
-			lines = append(lines, "  "+wrappedLine)
+		for _, wrappedLine := range primitives.WrapTextToWidth(value, valueWidth) {
+			lines = append(lines, "  "+styles.Render(valueRole, wrappedLine))
 		}
 		if columnIndex < len(m.read.schema.Columns)-1 {
 			lines = append(lines, "")
