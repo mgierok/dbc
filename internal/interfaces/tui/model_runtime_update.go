@@ -73,6 +73,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.read.recordColumn >= len(m.read.schema.Columns) {
 			m.read.recordColumn = 0
 		}
+		cmd := m.finalizePendingDatabaseReloadRestoreAfterSchema()
 		if m.overlay.pendingFilterOpen {
 			m.overlay.pendingFilterOpen = false
 			m.openFilterPopup()
@@ -81,7 +82,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.overlay.pendingSortOpen = false
 			m.openSortPopup()
 		}
-		return m, nil
+		return m, cmd
 	case recordsMsg:
 		if msg.bundleToken != m.runtimeBundleToken {
 			return m, nil
@@ -92,20 +93,27 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.requestID != m.read.recordRequestID {
 			return m, nil
 		}
+		restore := m.ui.pendingDatabaseReloadRestore
 		requestedRestorePageIndex := -1
-		if m.ui.pendingDatabaseReloadRestore != nil {
-			requestedRestorePageIndex = m.ui.pendingDatabaseReloadRestore.requestedPageIndex
+		if restore.awaitingRecordsCompletion() {
+			requestedRestorePageIndex = restore.requestedPageIndex
 		}
 		m.read.recordLoading = false
 		m.read.records = msg.page.Rows
 		m.read.recordTotalCount = msg.page.TotalCount
 		m.read.recordTotalPages = m.computeTotalPages(msg.page.TotalCount)
 		m.read.recordPageIndex = clamp(m.read.recordPageIndex, 0, m.read.recordTotalPages-1)
+		if restore.awaitingSchemaFinalize() {
+			m.normalizeRecordSelection()
+			return m, nil
+		}
 		if requestedRestorePageIndex >= 0 {
 			if m.read.recordPageIndex != requestedRestorePageIndex {
-				m.ui.pendingDatabaseReloadRestore.requestedPageIndex = -1
+				restore.requestedPageIndex = -1
 				return m, m.loadRecordsCmd(false)
 			}
+		}
+		if restore.awaitingRecordsCompletion() {
 			m.ui.pendingDatabaseReloadRestore = nil
 		}
 		m.normalizeRecordSelection()

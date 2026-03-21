@@ -45,9 +45,17 @@ type runtimeDatabaseTransitionSnapshot struct {
 	PageIndex         int
 }
 
+type runtimeDatabaseReloadRestoreStage int
+
+const (
+	runtimeDatabaseReloadRestoreAwaitingSchemaFinalize runtimeDatabaseReloadRestoreStage = iota + 1
+	runtimeDatabaseReloadRestoreAwaitingRecordsCompletion
+)
+
 type runtimeDatabaseReloadRestoreState struct {
 	snapshot           runtimeDatabaseTransitionSnapshot
 	requestedPageIndex int
+	stage              runtimeDatabaseReloadRestoreStage
 }
 
 func (m *Model) requestRuntimeDatabaseTransition(request runtimeDatabaseTransitionRequest) (tea.Model, tea.Cmd) {
@@ -256,6 +264,7 @@ func cloneRuntimeDatabaseReloadRestoreState(snapshot runtimeDatabaseTransitionSn
 			PageIndex:         snapshot.PageIndex,
 		},
 		requestedPageIndex: snapshot.PageIndex,
+		stage:              runtimeDatabaseReloadRestoreAwaitingSchemaFinalize,
 	}
 }
 
@@ -274,16 +283,8 @@ func (m *Model) applyPendingDatabaseReloadRestoreAfterTables() tea.Cmd {
 	m.read.selectedTable = selectedTableIndex
 	m.read.focus = restore.snapshot.Focus
 	m.read.viewMode = restore.snapshot.ViewMode
-	m.read.currentFilter = cloneFilter(restore.snapshot.Filter)
-	m.read.currentSort = cloneSort(restore.snapshot.Sort)
-
-	if restore.snapshot.ViewMode != ViewRecords {
-		m.ui.pendingDatabaseReloadRestore = nil
-		return m.loadSchemaCmd()
-	}
-
 	m.read.recordPageIndex = maxInt(restore.snapshot.PageIndex, 0)
-	return tea.Batch(m.loadSchemaCmd(), m.loadRecordsCmd(false))
+	return m.loadSchemaCmd()
 }
 
 func indexTableByName(tables []dto.Table, name string) int {
@@ -300,4 +301,75 @@ func maxInt(left, right int) int {
 		return left
 	}
 	return right
+}
+
+func (m *Model) finalizePendingDatabaseReloadRestoreAfterSchema() tea.Cmd {
+	restore := m.ui.pendingDatabaseReloadRestore
+	if restore == nil {
+		return nil
+	}
+
+	filterCleared, sortCleared := m.applyPendingDatabaseReloadRestoreFilterAndSort()
+	m.updateDatabaseReloadRestoreStatus(filterCleared, sortCleared)
+	if m.read.viewMode != ViewRecords {
+		m.ui.pendingDatabaseReloadRestore = nil
+		return nil
+	}
+
+	restore.stage = runtimeDatabaseReloadRestoreAwaitingRecordsCompletion
+	m.read.recordLoading = false
+	return m.loadRecordsCmd(false)
+}
+
+func (m *Model) applyPendingDatabaseReloadRestoreFilterAndSort() (bool, bool) {
+	restore := m.ui.pendingDatabaseReloadRestore
+	if restore == nil {
+		m.read.currentFilter = nil
+		m.read.currentSort = nil
+		return false, false
+	}
+
+	filterCleared := restore.snapshot.Filter != nil && !m.schemaHasColumn(restore.snapshot.Filter.Column)
+	sortCleared := restore.snapshot.Sort != nil && !m.schemaHasColumn(restore.snapshot.Sort.Column)
+
+	if filterCleared {
+		m.read.currentFilter = nil
+	} else {
+		m.read.currentFilter = cloneFilter(restore.snapshot.Filter)
+	}
+	if sortCleared {
+		m.read.currentSort = nil
+	} else {
+		m.read.currentSort = cloneSort(restore.snapshot.Sort)
+	}
+
+	return filterCleared, sortCleared
+}
+
+func (m *Model) schemaHasColumn(name string) bool {
+	for _, column := range m.read.schema.Columns {
+		if column.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Model) updateDatabaseReloadRestoreStatus(filterCleared, sortCleared bool) {
+	switch {
+	case filterCleared && sortCleared:
+		m.ui.statusMessage = "Database reloaded; filter and sort cleared after schema change."
+	case filterCleared:
+		m.ui.statusMessage = "Database reloaded; filter cleared after schema change."
+	case sortCleared:
+		m.ui.statusMessage = "Database reloaded; sort cleared after schema change."
+	}
+}
+
+func (s *runtimeDatabaseReloadRestoreState) awaitingSchemaFinalize() bool {
+	return s != nil && s.stage == runtimeDatabaseReloadRestoreAwaitingSchemaFinalize
+}
+
+func (s *runtimeDatabaseReloadRestoreState) awaitingRecordsCompletion() bool {
+	return s != nil && s.stage == runtimeDatabaseReloadRestoreAwaitingRecordsCompletion
 }
