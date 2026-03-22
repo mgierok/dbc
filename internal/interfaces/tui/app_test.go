@@ -47,11 +47,11 @@ func TestRun_ReturnsProgramError(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), RuntimeRunDeps{
+	_, err := Run(context.Background(), RuntimeRunDeps{
 		Close: func() {
 			closed = true
 		},
-	}, nil)
+	})
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -78,11 +78,11 @@ func TestRun_ReturnsErrorWhenFinalModelTypeIsUnexpected(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), RuntimeRunDeps{
+	_, err := Run(context.Background(), RuntimeRunDeps{
 		Close: func() {
 			closed = true
 		},
-	}, nil)
+	})
 
 	// Assert
 	if err == nil {
@@ -116,11 +116,14 @@ func TestRun_ClosesFinalRuntimeResourcesOnNormalCompletion(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), RuntimeRunDeps{}, nil)
+	result, err := Run(context.Background(), RuntimeRunDeps{})
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no run error, got %v", err)
+	}
+	if result.Action != RuntimeExitActionQuit {
+		t.Fatalf("expected normal completion to return quit action, got %v", result.Action)
 	}
 	if !closed {
 		t.Fatal("expected final runtime resources to close on normal completion")
@@ -142,10 +145,13 @@ func TestRun_ReturnsNilOnNormalCompletion(t *testing.T) {
 	}
 
 	// Act
-	err := Run(context.Background(), RuntimeRunDeps{}, nil)
+	result, err := Run(context.Background(), RuntimeRunDeps{})
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+	if result.Action != RuntimeExitActionQuit {
+		t.Fatalf("expected normal completion to return quit action, got %v", result.Action)
 	}
 }

@@ -29,7 +29,7 @@ func TestHandleKey_DirtyConfigCommandOpensRuntimeDatabaseSelectorPopup(t *testin
 			model := &Model{
 				read:                        runtimeReadState{viewMode: ViewRecords},
 				staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 			}
 
 			// Act
@@ -62,7 +62,7 @@ func TestHandleKey_DirtyRuntimeDatabaseSelectionOpensReloadDecisionPrompt(t *tes
 	model := &Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	submitTypedRuntimeCommand(model, "config")
 
@@ -92,7 +92,7 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionCancelKeepsSelectorOpenAnd
 	model := &Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	submitTypedRuntimeCommand(model, "config")
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -119,11 +119,10 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStart
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	switcher := &stubRuntimeDatabaseSwitcher{}
 	model := &Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	submitTypedRuntimeCommand(model, "config")
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -133,25 +132,23 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStart
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	assertRuntimeSessionActive(t, cmd, "discard database transition decision")
+	if cmd == nil {
+		t.Fatal("expected discard decision to quit runtime")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after discard decision, got %T", cmd())
+	}
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared on discard")
 	}
-	if switcher.calls != 1 {
-		t.Fatalf("expected discard to continue pending database transition, got %d calls", switcher.calls)
-	}
-	if !model.ui.runtimeSwitchInFlight {
-		t.Fatal("expected runtime switch to start after discard")
-	}
-	if !model.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector to remain the active blocking surface for :config")
+	if model.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected discard decision to request runtime reopen, got %v", model.exitResult.Action)
 	}
 }
 
 func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
-	switcher := &stubRuntimeDatabaseSwitcher{}
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
@@ -181,7 +178,7 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 				},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	submitTypedRuntimeCommand(model, "edit")
 
@@ -194,18 +191,17 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 	_, followupCmd := model.Update(msg)
 
 	// Assert
-	assertRuntimeSessionActive(t, followupCmd, "save database transition decision")
+	if followupCmd == nil {
+		t.Fatal("expected save-then-reopen flow to quit runtime")
+	}
+	if _, ok := followupCmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after save-then-reopen flow, got %T", followupCmd())
+	}
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared after successful save")
 	}
-	if !model.ui.runtimeSwitchInFlight {
-		t.Fatal("expected successful save to continue pending database transition")
-	}
-	if !model.overlay.commandInput.active {
-		t.Fatal("expected :edit spotlight to reopen in pending mode after save succeeds")
-	}
-	if model.overlay.commandInput.mode != commandInputModePending {
-		t.Fatalf("expected pending spotlight after save, got %v", model.overlay.commandInput.mode)
+	if model.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected successful save to request runtime reopen, got %v", model.exitResult.Action)
 	}
 }
 
@@ -241,7 +237,7 @@ func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(
 				},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	submitTypedRuntimeCommand(model, "edit")
 
@@ -262,17 +258,11 @@ func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be preserved on save error")
 	}
-	if model.ui.runtimeSwitchInFlight {
-		t.Fatal("expected transition to stay blocked on save error")
-	}
 	if !strings.Contains(model.ui.statusMessage, "boom") {
 		t.Fatalf("expected save error status to be surfaced, got %q", model.ui.statusMessage)
 	}
 	if !model.overlay.commandInput.active {
 		t.Fatal("expected :edit spotlight to reopen after save failure")
-	}
-	if model.overlay.commandInput.mode != commandInputModeEditing {
-		t.Fatalf("expected :edit spotlight editing mode after save failure, got %v", model.overlay.commandInput.mode)
 	}
 	if model.overlay.commandInput.value != "edit" {
 		t.Fatalf("expected :edit spotlight to preserve submitted command after save failure, got %q", model.overlay.commandInput.value)

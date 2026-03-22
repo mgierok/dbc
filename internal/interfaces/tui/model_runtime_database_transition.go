@@ -54,26 +54,12 @@ func (m *Model) requestRuntimeDatabaseTransition(request runtimeDatabaseTransiti
 }
 
 func (m *Model) executeRuntimeDatabaseTransition(request runtimeDatabaseTransitionRequest) (tea.Model, tea.Cmd) {
-	switcher := m.runtimeDatabaseSwitcher()
-	if switcher == nil {
-		m.ui.statusMessage = "Error: database selector unavailable"
-		if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
-			m.restoreEditingCommandInput(request.Command)
-		}
-		return m, nil
-	}
-
 	m.ui.pendingDatabaseTransition = nil
-	m.ui.runtimeSwitchInFlight = true
-	switch request.Origin {
-	case runtimeDatabaseTransitionOriginConfigSelector:
-		if m.overlay.databaseSelector.controller != nil {
-			m.overlay.databaseSelector.controller.SetStatusMessage(runtimeDatabaseTransitionInFlightStatus(request))
-		}
-	case runtimeDatabaseTransitionOriginEditCommand:
-		m.showPendingEditCommandInput(request)
+	if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
+		m.overlay.commandInput = commandInput{}
 	}
-	return m, switchRuntimeDatabaseCmd(m.ctx, switcher, request)
+	m.exitResult = runtimeExitResultOpenDatabaseNext(request.Target.Option)
+	return m, tea.Quit
 }
 
 func (m *Model) confirmDatabaseTransitionSave() (tea.Model, tea.Cmd) {
@@ -191,15 +177,6 @@ func (m *Model) databaseTransitionDirtyPrompt(kind runtimeDatabaseTransitionKind
 		return m.dirtyNavigationPolicyUseCase().BuildDatabaseReloadPrompt(m.dirtyEditCount())
 	default:
 		return m.dirtyNavigationPolicyUseCase().BuildDatabaseOpenPrompt(m.dirtyEditCount())
-	}
-}
-
-func runtimeDatabaseTransitionInFlightStatus(request runtimeDatabaseTransitionRequest) string {
-	switch request.Target.Kind {
-	case reloadCurrentDatabase:
-		return fmt.Sprintf("Reloading %q...", request.Target.Option.Name)
-	default:
-		return fmt.Sprintf("Opening %q...", request.Target.Option.Name)
 	}
 }
 

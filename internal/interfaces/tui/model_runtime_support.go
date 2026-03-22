@@ -127,16 +127,6 @@ func (m *Model) restoreEditingCommandInput(value string) {
 	}
 }
 
-func (m *Model) showPendingEditCommandInput(request runtimeDatabaseTransitionRequest) {
-	m.overlay.commandInput = commandInput{
-		active:        true,
-		mode:          commandInputModePending,
-		value:         request.Command,
-		cursor:        len(request.Command),
-		pendingStatus: runtimeDatabaseTransitionInFlightStatus(request),
-	}
-}
-
 func (m *Model) closeRuntimeResources() {
 	if m == nil {
 		return

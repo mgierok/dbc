@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,19 +13,6 @@ import (
 	"github.com/mgierok/dbc/internal/application/port"
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
-
-type stubRuntimeDatabaseSwitcher struct {
-	calls        int
-	lastSelected DatabaseOption
-	deps         RuntimeRunDeps
-	err          error
-}
-
-func (s *stubRuntimeDatabaseSwitcher) Switch(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error) {
-	s.calls++
-	s.lastSelected = selected
-	return s.deps, s.err
-}
 
 type fakeRuntimeSelectorConfigStore struct {
 	entries []port.ConfigEntry
@@ -69,7 +55,7 @@ func (fakeRuntimeSelectorConnectionChecker) CanConnect(ctx context.Context, dbPa
 	return nil
 }
 
-func runtimeDatabaseSelectorDepsForTest(current DatabaseOption, switcher RuntimeDatabaseSwitcher, additionalOptions ...DatabaseOption) *RuntimeDatabaseSelectorDeps {
+func runtimeDatabaseSelectorDepsForTest(current DatabaseOption, additionalOptions ...DatabaseOption) *RuntimeDatabaseSelectorDeps {
 	store := &fakeRuntimeSelectorConfigStore{
 		entries: []port.ConfigEntry{
 			{Name: current.Name, DBPath: current.ConnString},
@@ -82,7 +68,6 @@ func runtimeDatabaseSelectorDepsForTest(current DatabaseOption, switcher Runtime
 		UpdateConfiguredDatabase: usecase.NewUpdateConfiguredDatabase(store, checker),
 		DeleteConfiguredDatabase: usecase.NewDeleteConfiguredDatabase(store),
 		GetActiveConfigPath:      usecase.NewGetActiveConfigPath(store),
-		SwitchDatabase:           switcher,
 		CurrentDatabase:          current,
 		AdditionalOptions:        additionalOptions,
 	}
@@ -101,7 +86,7 @@ func TestHandleKey_ConfigCommandOpensRuntimeDatabaseSelectorPopupWithoutQuitting
 			viewMode: ViewRecords,
 			focus:    FocusContent,
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 
 	// Act
@@ -142,7 +127,7 @@ func TestHandleKey_RuntimeDatabaseSelectorEscClosesPopupAndPreservesRuntimeState
 				Direction: dto.SortDirectionDesc,
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.overlay.recordDetail = recordDetailState{
 		active:       true,
@@ -182,9 +167,8 @@ func TestHandleKey_RuntimeDatabaseSelectorEscClosesPopupAndPreservesRuntimeState
 	}
 }
 
-func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseStartsReload(t *testing.T) {
+func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseRequestsReopenAndQuits(t *testing.T) {
 	// Arrange
-	switcher := &stubRuntimeDatabaseSwitcher{}
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
@@ -196,7 +180,7 @@ func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseStartsReload
 			viewMode: ViewRecords,
 			focus:    FocusContent,
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.openRuntimeDatabaseSelectorPopup()
 
@@ -204,22 +188,23 @@ func TestHandleKey_RuntimeDatabaseSelectorSelectionOfCurrentDatabaseStartsReload
 	updated, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	assertRuntimeSessionActive(t, cmd, "Enter on current runtime database")
+	if cmd == nil {
+		t.Fatal("expected quit command after selecting current runtime database")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after selecting current runtime database, got %T", cmd())
+	}
 	runtimeModel := updated.(*Model)
-	if !runtimeModel.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to stay open while reload is in flight")
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected runtime reopen exit action, got %v", runtimeModel.exitResult.Action)
 	}
-	if !runtimeModel.ui.runtimeSwitchInFlight {
-		t.Fatal("expected current database selection to start reload transition")
-	}
-	if switcher.calls != 1 {
-		t.Fatalf("expected one reload transition for current database selection, got %d", switcher.calls)
+	if runtimeModel.exitResult.NextDatabase.ConnString != current.ConnString {
+		t.Fatalf("expected reopen target %q, got %q", current.ConnString, runtimeModel.exitResult.NextDatabase.ConnString)
 	}
 }
 
-func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseStartsReload(t *testing.T) {
+func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseRequestsReopen(t *testing.T) {
 	// Arrange
-	switcher := &stubRuntimeDatabaseSwitcher{}
 	basePath := filepath.Join(t.TempDir(), "primary.sqlite")
 	current := DatabaseOption{
 		Name:       "primary",
@@ -232,7 +217,7 @@ func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseStartsReload(t 
 			viewMode: ViewRecords,
 			focus:    FocusContent,
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 	model.openRuntimeDatabaseSelectorPopup()
 
@@ -246,19 +231,23 @@ func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseStartsReload(t 
 	updated, cmd := model.handleRuntimeDatabaseSelection(selected)
 
 	// Assert
-	assertRuntimeSessionActive(t, cmd, "equivalent current runtime database")
-	runtimeModel := updated.(*Model)
-	if !runtimeModel.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to stay open while equivalent reload is in flight")
+	if cmd == nil {
+		t.Fatal("expected quit command for equivalent current runtime database")
 	}
-	if switcher.calls != 1 {
-		t.Fatalf("expected one runtime reload for equivalent current database, got %d calls", switcher.calls)
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg for equivalent current runtime database, got %T", cmd())
+	}
+	runtimeModel := updated.(*Model)
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected runtime reopen exit action, got %v", runtimeModel.exitResult.Action)
+	}
+	if runtimeModel.exitResult.NextDatabase.ConnString != current.ConnString {
+		t.Fatalf("expected reopen target %q, got %q", current.ConnString, runtimeModel.exitResult.NextDatabase.ConnString)
 	}
 }
 
-func TestHandleKey_RuntimeDatabaseSelectorFailedSwitchKeepsPopupOpen(t *testing.T) {
+func TestHandleKey_RuntimeDatabaseSelectorSelectionRequestsChosenTarget(t *testing.T) {
 	// Arrange
-	switcher := &stubRuntimeDatabaseSwitcher{err: errors.New("ping failed")}
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
@@ -266,53 +255,35 @@ func TestHandleKey_RuntimeDatabaseSelectorFailedSwitchKeepsPopupOpen(t *testing.
 	}
 	model := &Model{
 		ctx: context.Background(),
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher, DatabaseOption{
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, DatabaseOption{
 			Name:       "analytics",
 			ConnString: "/tmp/analytics.sqlite",
 			Source:     DatabaseOptionSourceCLI,
 		}),
-		runtimeClose: func() {
-			t.Fatal("expected current runtime close to stay unused after failed switch")
-		},
 	}
 	model.openRuntimeDatabaseSelectorPopup()
 	model.overlay.databaseSelector.controller.SetSelectedIndex(1)
 
 	// Act
 	updated, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
-	if cmd == nil {
-		t.Fatal("expected async runtime switch command")
-	}
-	msg := cmd()
-	runtimeModel := updated.(*Model)
-	updated, followup := runtimeModel.Update(msg)
 
 	// Assert
-	if followup != nil {
-		if _, ok := followup().(tea.QuitMsg); ok {
-			t.Fatal("expected failed runtime switch to keep session active")
-		}
+	if cmd == nil {
+		t.Fatal("expected quit command after selecting runtime database")
 	}
-	runtimeModel = updated.(*Model)
-	if !runtimeModel.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to stay open after failed switch")
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after selecting runtime database, got %T", cmd())
 	}
-	if runtimeModel.ui.runtimeSwitchInFlight {
-		t.Fatal("expected runtime switch to leave in-flight state after failure")
+	runtimeModel := updated.(*Model)
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected runtime reopen exit action, got %v", runtimeModel.exitResult.Action)
 	}
-	if switcher.lastSelected.ConnString != "/tmp/analytics.sqlite" {
-		t.Fatalf("expected switch attempt for /tmp/analytics.sqlite, got %q", switcher.lastSelected.ConnString)
-	}
-	view := runtimeModel.overlay.databaseSelector.controller.View()
-	if !strings.Contains(view, "ping failed") {
-		t.Fatalf("expected failed switch message in selector status, got %q", view)
-	}
-	if runtimeModel.currentRuntimeDatabaseConnString() != current.ConnString {
-		t.Fatalf("expected current runtime database to stay %q, got %q", current.ConnString, runtimeModel.currentRuntimeDatabaseConnString())
+	if runtimeModel.exitResult.NextDatabase.ConnString != "/tmp/analytics.sqlite" {
+		t.Fatalf("expected selected reopen target /tmp/analytics.sqlite, got %q", runtimeModel.exitResult.NextDatabase.ConnString)
 	}
 }
 
-func TestHandleKey_RuntimeDatabaseSelectorSuccessfulSwitchReplacesRuntimeDeps(t *testing.T) {
+func TestHandleKey_RuntimeDatabaseSelectorSelectionDoesNotResetCurrentRuntimeStateBeforeExit(t *testing.T) {
 	// Arrange
 	current := DatabaseOption{
 		Name:       "primary",
@@ -323,16 +294,6 @@ func TestHandleKey_RuntimeDatabaseSelectorSuccessfulSwitchReplacesRuntimeDeps(t 
 		Name:       "analytics",
 		ConnString: "/tmp/analytics.sqlite",
 		Source:     DatabaseOptionSourceCLI,
-	}
-	previousClosed := false
-	nextClosed := false
-	switcher := &stubRuntimeDatabaseSwitcher{
-		deps: RuntimeRunDeps{
-			DatabaseSelector: runtimeDatabaseSelectorDepsForTest(switched, nil),
-			Close: func() {
-				nextClosed = true
-			},
-		},
 	}
 	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 55}
 	model := &Model{
@@ -356,10 +317,7 @@ func TestHandleKey_RuntimeDatabaseSelectorSuccessfulSwitchReplacesRuntimeDeps(t 
 				Direction: dto.SortDirectionDesc,
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switcher, switched),
-		runtimeClose: func() {
-			previousClosed = true
-		},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, switched),
 	}
 	model.overlay.recordDetail = recordDetailState{active: true, scrollOffset: 4}
 	model.openRuntimeDatabaseSelectorPopup()
@@ -368,60 +326,27 @@ func TestHandleKey_RuntimeDatabaseSelectorSuccessfulSwitchReplacesRuntimeDeps(t 
 	// Act
 	updated, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil {
-		t.Fatal("expected async runtime switch command")
+		t.Fatal("expected quit command after selecting runtime database")
 	}
-	msg := cmd()
-	if _, ok := msg.(tea.QuitMsg); ok {
-		t.Fatal("expected successful runtime switch to stay in the same process")
-	}
-	runtimeModel := updated.(*Model)
-	updated, followup := runtimeModel.Update(msg)
 
 	// Assert
-	if followup == nil {
-		t.Fatal("expected successful runtime switch to reinitialize runtime data")
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after selecting runtime database, got %T", cmd())
 	}
-	runtimeModel = updated.(*Model)
-	if !previousClosed {
-		t.Fatal("expected previous runtime resources to close after successful switch")
+	runtimeModel := updated.(*Model)
+	if runtimeModel.read.focus != FocusContent {
+		t.Fatalf("expected focus to stay unchanged before runtime exit, got %v", runtimeModel.read.focus)
 	}
-	if nextClosed {
-		t.Fatal("expected replacement runtime resources to remain active after switch")
-	}
-	if runtimeModel.currentRuntimeDatabaseConnString() != switched.ConnString {
-		t.Fatalf("expected switched runtime database %q, got %q", switched.ConnString, runtimeModel.currentRuntimeDatabaseConnString())
-	}
-	if runtimeModel.overlay.databaseSelector.active {
-		t.Fatal("expected runtime database selector popup to close after successful switch")
-	}
-	if runtimeModel.read.focus != FocusTables {
-		t.Fatalf("expected focus reset to tables after switch, got %v", runtimeModel.read.focus)
-	}
-	if runtimeModel.read.viewMode != ViewSchema {
-		t.Fatalf("expected view mode reset to schema after switch, got %v", runtimeModel.read.viewMode)
-	}
-	if runtimeModel.read.currentFilter != nil {
-		t.Fatalf("expected filter reset after switch, got %+v", runtimeModel.read.currentFilter)
-	}
-	if runtimeModel.read.currentSort != nil {
-		t.Fatalf("expected sort reset after switch, got %+v", runtimeModel.read.currentSort)
-	}
-	if runtimeModel.read.recordSelection != 0 {
-		t.Fatalf("expected record selection reset after switch, got %d", runtimeModel.read.recordSelection)
-	}
-	if runtimeModel.read.recordColumn != 0 {
-		t.Fatalf("expected record column reset after switch, got %d", runtimeModel.read.recordColumn)
-	}
-	if runtimeModel.read.recordFieldFocus {
-		t.Fatal("expected record field focus reset after switch")
-	}
-	if runtimeModel.overlay.recordDetail.active {
-		t.Fatal("expected record detail popup to reset after switch")
+	if runtimeModel.read.viewMode != ViewRecords {
+		t.Fatalf("expected view mode to stay unchanged before runtime exit, got %v", runtimeModel.read.viewMode)
 	}
 	if runtimeModel.runtimeSession != runtimeSession {
 		t.Fatal("expected runtime session pointer to survive switch")
 	}
 	if runtimeModel.runtimeSession.RecordsPageLimit != 55 {
 		t.Fatalf("expected runtime session state to survive switch, got %d", runtimeModel.runtimeSession.RecordsPageLimit)
+	}
+	if runtimeModel.exitResult.NextDatabase.ConnString != switched.ConnString {
+		t.Fatalf("expected selected reopen target %q, got %q", switched.ConnString, runtimeModel.exitResult.NextDatabase.ConnString)
 	}
 }

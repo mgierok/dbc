@@ -8,8 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
-	"github.com/mgierok/dbc/internal/application/usecase"
-	domainmodel "github.com/mgierok/dbc/internal/domain/model"
 )
 
 type stubGetSchemaUseCase struct {
@@ -18,52 +16,10 @@ type stubGetSchemaUseCase struct {
 	err           error
 }
 
-type fakeRuntimeSwitchEngine struct {
-	tables               []domainmodel.Table
-	schema               domainmodel.Schema
-	page                 domainmodel.RecordPage
-	lastSchemaTableName  string
-	lastRecordsTableName string
-	listTablesErr        error
-	getSchemaErr         error
-	listRecordsErr       error
-}
-
 type stubListRecordsUseCase struct {
 	lastTableName string
 	page          dto.RecordPage
 	err           error
-}
-
-func (f *fakeRuntimeSwitchEngine) ListTables(ctx context.Context) ([]domainmodel.Table, error) {
-	if f.listTablesErr != nil {
-		return nil, f.listTablesErr
-	}
-	return append([]domainmodel.Table(nil), f.tables...), nil
-}
-
-func (f *fakeRuntimeSwitchEngine) GetSchema(ctx context.Context, tableName string) (domainmodel.Schema, error) {
-	f.lastSchemaTableName = tableName
-	if f.getSchemaErr != nil {
-		return domainmodel.Schema{}, f.getSchemaErr
-	}
-	return f.schema, nil
-}
-
-func (f *fakeRuntimeSwitchEngine) ListRecords(ctx context.Context, tableName string, offset, limit int, filter *domainmodel.Filter, sort *domainmodel.Sort) (domainmodel.RecordPage, error) {
-	f.lastRecordsTableName = tableName
-	if f.listRecordsErr != nil {
-		return domainmodel.RecordPage{}, f.listRecordsErr
-	}
-	return f.page, nil
-}
-
-func (f *fakeRuntimeSwitchEngine) ListOperators(ctx context.Context, columnType string) ([]domainmodel.Operator, error) {
-	return nil, nil
-}
-
-func (f *fakeRuntimeSwitchEngine) ApplyRecordChanges(ctx context.Context, tableName string, changes domainmodel.TableChanges) (int, error) {
-	return 0, nil
 }
 
 func (s *stubGetSchemaUseCase) Execute(ctx context.Context, tableName string) (dto.Schema, error) {
@@ -206,7 +162,7 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 				Origin: runtimeDatabaseTransitionOriginEditCommand,
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, &stubRuntimeDatabaseSwitcher{}),
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 
 	// Act
@@ -222,13 +178,14 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 	if model.ui.saveInFlight {
 		t.Fatal("expected save-in-flight flag to be cleared after successful save")
 	}
-	if !model.ui.runtimeSwitchInFlight {
-		t.Fatal("expected successful save to continue pending database transition")
+	if model.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected successful save to request runtime reopen, got %v", model.exitResult.Action)
 	}
-	if cmd != nil {
-		if _, ok := cmd().(tea.QuitMsg); ok {
-			t.Fatalf("expected runtime to stay active after successful save-and-transition flow, got %T", cmd())
-		}
+	if cmd == nil {
+		t.Fatal("expected save-and-transition flow to quit runtime")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg for save-and-transition flow, got %T", cmd())
 	}
 }
 
@@ -549,25 +506,25 @@ func TestUpdate_SchemaMsgKeepsCurrentBrowseStateWithoutReloadRestoreLogic(t *tes
 	}
 }
 
-func TestUpdate_RuntimeSwitchReloadResetsBrowseStateWithoutRestore(t *testing.T) {
+func TestUpdate_SaveChangesMsgPendingDatabaseTransitionPreservesCurrentBrowseStateUntilExit(t *testing.T) {
 	// Arrange
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	replacement := DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     DatabaseOptionSourceConfig,
-	}
-	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 42}
 	model := &Model{
-		ctx:            context.Background(),
-		runtimeSession: runtimeSession,
+		staging: stagingState{
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
+		},
 		read: runtimeReadState{
-			tables:           []dto.Table{{Name: "users"}},
-			selectedTable:    0,
 			focus:            FocusContent,
 			viewMode:         ViewRecords,
 			recordPageIndex:  2,
@@ -584,210 +541,69 @@ func TestUpdate_RuntimeSwitchReloadResetsBrowseStateWithoutRestore(t *testing.T)
 				Direction: dto.SortDirectionDesc,
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil, replacement),
+		ui: runtimeUIState{
+			saveInFlight: true,
+			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
+				Target: runtimeDatabaseTransitionTarget{
+					Option: current,
+					Kind:   reloadCurrentDatabase,
+				},
+				Origin: runtimeDatabaseTransitionOriginConfigSelector,
+			},
+		},
 	}
-	model.overlay.recordDetail = recordDetailState{active: true}
 
 	// Act
-	updated, initCmd := model.Update(runtimeDatabaseSwitchCompletedMsg{
-		request: runtimeDatabaseTransitionRequest{
-			Target: runtimeDatabaseTransitionTarget{
-				Option: replacement,
-				Kind:   reloadCurrentDatabase,
-			},
-			Origin: runtimeDatabaseTransitionOriginConfigSelector,
-		},
-		deps: RuntimeRunDeps{
-			DatabaseSelector: runtimeDatabaseSelectorDepsForTest(replacement, nil),
-		},
-	})
+	_, cmd := model.Update(saveChangesMsg{count: 1})
 
 	// Assert
-	if initCmd == nil {
-		t.Fatal("expected replacement runtime init after successful reload")
+	if cmd == nil {
+		t.Fatal("expected save-and-reopen flow to quit runtime")
 	}
-	model = updated.(*Model)
-	if model.ui.statusMessage != "Database reloaded." {
-		t.Fatalf("expected reload success status, got %q", model.ui.statusMessage)
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg for save-and-reopen flow, got %T", cmd())
 	}
-	if model.read.focus != FocusTables {
-		t.Fatalf("expected focus reset to tables after reload, got %v", model.read.focus)
+	if model.read.focus != FocusContent {
+		t.Fatalf("expected focus to stay unchanged until runtime exits, got %v", model.read.focus)
 	}
-	if model.read.viewMode != ViewSchema {
-		t.Fatalf("expected schema view after reload, got %v", model.read.viewMode)
+	if model.read.viewMode != ViewRecords {
+		t.Fatalf("expected view mode to stay unchanged until runtime exits, got %v", model.read.viewMode)
 	}
-	if model.read.currentFilter != nil {
-		t.Fatalf("expected filter reset after reload, got %+v", model.read.currentFilter)
-	}
-	if model.read.currentSort != nil {
-		t.Fatalf("expected sort reset after reload, got %+v", model.read.currentSort)
-	}
-	if model.read.recordPageIndex != 0 {
-		t.Fatalf("expected record page reset after reload, got %d", model.read.recordPageIndex)
-	}
-	if model.read.recordSelection != 0 {
-		t.Fatalf("expected record selection reset after reload, got %d", model.read.recordSelection)
-	}
-	if model.read.recordColumn != 0 {
-		t.Fatalf("expected record column reset after reload, got %d", model.read.recordColumn)
-	}
-	if model.read.recordFieldFocus {
-		t.Fatal("expected record field focus reset after reload")
-	}
-	if model.overlay.recordDetail.active {
-		t.Fatal("expected record detail popup reset after reload")
-	}
-	if model.runtimeSession != runtimeSession {
-		t.Fatal("expected runtime session pointer to survive reload")
-	}
-	if model.runtimeSession.RecordsPageLimit != 42 {
-		t.Fatalf("expected runtime session state to survive reload, got %d", model.runtimeSession.RecordsPageLimit)
-	}
+	assertFilterEqual(t, model.read.currentFilter, &dto.Filter{
+		Column:   "name",
+		Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+		Value:    "alice",
+	})
+	assertSortEqual(t, model.read.currentSort, &dto.Sort{
+		Column:    "id",
+		Direction: dto.SortDirectionDesc,
+	})
 }
 
-func TestUpdate_RuntimeSwitchFailureFromEditRestoresEditingSpotlightAndStatus(t *testing.T) {
+func TestUpdate_ErrMsgIgnoresStaleBundleToken(t *testing.T) {
 	// Arrange
 	model := &Model{
-		ui: runtimeUIState{
-			runtimeSwitchInFlight: true,
+		runtimeBundleToken: 2,
+		read: runtimeReadState{
+			recordLoading: true,
 		},
-		overlay: runtimeOverlayState{
-			commandInput: commandInput{
-				active:        true,
-				mode:          commandInputModePending,
-				value:         "edit /tmp/analytics.sqlite",
-				pendingStatus: "Opening \"/tmp/analytics.sqlite\"...",
-			},
+		ui: runtimeUIState{
+			statusMessage: "fresh status",
 		},
 	}
 
 	// Act
-	_, cmd := model.Update(runtimeDatabaseSwitchCompletedMsg{
-		request: runtimeDatabaseTransitionRequest{
-			Target: runtimeDatabaseTransitionTarget{
-				Option: DatabaseOption{
-					Name:       "/tmp/analytics.sqlite",
-					ConnString: "/tmp/analytics.sqlite",
-					Source:     DatabaseOptionSourceCLI,
-				},
-				Kind: switchDifferentDatabase,
-			},
-			Origin:  runtimeDatabaseTransitionOriginEditCommand,
-			Command: "edit /tmp/analytics.sqlite",
-		},
-		err: errors.New("ping failed"),
-	})
+	_, cmd := model.Update(errMsg{bundleToken: 1, err: errors.New("stale boom")})
 
 	// Assert
 	if cmd != nil {
-		t.Fatal("expected failed runtime switch from :edit not to start follow-up work")
+		t.Fatal("expected no follow-up command for stale bundle error")
 	}
-	if model.ui.runtimeSwitchInFlight {
-		t.Fatal("expected in-flight flag cleared after :edit failure")
+	if !model.read.recordLoading {
+		t.Fatal("expected stale bundle error to leave record loading state unchanged")
 	}
-	if model.ui.statusMessage != "Error: ping failed" {
-		t.Fatalf("expected surfaced :edit error in status line, got %q", model.ui.statusMessage)
-	}
-	if !model.overlay.commandInput.active {
-		t.Fatal("expected :edit spotlight to remain open after failure")
-	}
-	if model.overlay.commandInput.mode != commandInputModeEditing {
-		t.Fatalf("expected :edit spotlight editing mode after failure, got %v", model.overlay.commandInput.mode)
-	}
-	if model.overlay.commandInput.value != "edit /tmp/analytics.sqlite" {
-		t.Fatalf("expected :edit spotlight to preserve submitted command, got %q", model.overlay.commandInput.value)
-	}
-	if model.overlay.commandInput.cursor != len("edit /tmp/analytics.sqlite") {
-		t.Fatalf("expected cursor at end of restored command, got %d", model.overlay.commandInput.cursor)
-	}
-}
-
-func TestUpdate_RuntimeSwitchIgnoresLateMessagesFromPreviousBundle(t *testing.T) {
-	// Arrange
-	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 55, nextRuntimeBundleToken: 1}
-	previousBundleCanceled := false
-	previousCloseCalled := false
-	replacementEngine := &fakeRuntimeSwitchEngine{
-		tables: []domainmodel.Table{{Name: "fresh_users"}},
-	}
-	model := &Model{
-		ctx:                context.Background(),
-		runtimeSession:     runtimeSession,
-		runtimeBundleToken: 1,
-		runtimeBundleCancel: func() {
-			previousBundleCanceled = true
-		},
-		runtimeClose: func() {
-			previousCloseCalled = true
-		},
-	}
-	updated, initCmd := model.Update(runtimeDatabaseSwitchCompletedMsg{
-		deps: RuntimeRunDeps{
-			ListTables: usecase.NewListTables(replacementEngine),
-		},
-	})
-	if initCmd == nil {
-		t.Fatal("expected replacement runtime initialization command after successful switch")
-	}
-	runtimeModel := updated.(*Model)
-	runtimeModel.read.tables = []dto.Table{{Name: "fresh_users"}}
-	runtimeModel.read.selectedTable = 0
-	runtimeModel.read.schema = dto.Schema{
-		Columns: []dto.SchemaColumn{{Name: "fresh_id", Type: "INTEGER"}},
-	}
-	runtimeModel.read.records = []dto.RecordRow{{Values: []string{"fresh"}}}
-	runtimeModel.read.recordRequestID = 4
-	runtimeModel.read.recordLoading = true
-	runtimeModel.ui.statusMessage = "fresh status"
-	staleBundleToken := 1
-
-	// Act
-	runtimeModel.Update(tablesMsg{
-		bundleToken: staleBundleToken,
-		tables:      []dto.Table{{Name: "stale_users"}},
-	})
-	runtimeModel.Update(schemaMsg{
-		bundleToken: staleBundleToken,
-		tableName:   "fresh_users",
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{{Name: "stale_id", Type: "TEXT"}},
-		},
-	})
-	runtimeModel.Update(recordsMsg{
-		bundleToken: staleBundleToken,
-		tableName:   "fresh_users",
-		requestID:   4,
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"stale"}}},
-			TotalCount: 99,
-		},
-	})
-	runtimeModel.Update(errMsg{bundleToken: staleBundleToken, err: errors.New("stale boom")})
-
-	// Assert
-	if !previousBundleCanceled {
-		t.Fatal("expected previous runtime bundle context to be canceled after switch")
-	}
-	if !previousCloseCalled {
-		t.Fatal("expected previous runtime resources to close after switch")
-	}
-	if runtimeModel.runtimeBundleToken == staleBundleToken {
-		t.Fatalf("expected replacement runtime bundle token to differ from previous token %d", staleBundleToken)
-	}
-	if len(runtimeModel.read.tables) != 1 || runtimeModel.read.tables[0].Name != "fresh_users" {
-		t.Fatalf("expected stale tables message to be ignored, got %+v", runtimeModel.read.tables)
-	}
-	if len(runtimeModel.read.schema.Columns) != 1 || runtimeModel.read.schema.Columns[0].Name != "fresh_id" {
-		t.Fatalf("expected stale schema message to be ignored, got %+v", runtimeModel.read.schema.Columns)
-	}
-	if len(runtimeModel.read.records) != 1 || runtimeModel.read.records[0].Values[0] != "fresh" {
-		t.Fatalf("expected stale records message to be ignored, got %+v", runtimeModel.read.records)
-	}
-	if !runtimeModel.read.recordLoading {
-		t.Fatal("expected stale bundle error to leave active record-loading state unchanged")
-	}
-	if runtimeModel.ui.statusMessage != "fresh status" {
-		t.Fatalf("expected stale bundle error to be ignored, got status %q", runtimeModel.ui.statusMessage)
+	if model.ui.statusMessage != "fresh status" {
+		t.Fatalf("expected stale bundle error to be ignored, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -826,104 +642,5 @@ func assertSortEqual(t *testing.T, actual, expected *dto.Sort) {
 	}
 	if actual.Column != expected.Column || actual.Direction != expected.Direction {
 		t.Fatalf("expected sort %+v, got %+v", expected, actual)
-	}
-}
-
-func TestUpdate_RuntimeSwitchInitializesReplacementBundleAndPreservesActiveRecordRequestGuard(t *testing.T) {
-	// Arrange
-	runtimeSession := &RuntimeSessionState{nextRuntimeBundleToken: 7}
-	replacementEngine := &fakeRuntimeSwitchEngine{
-		tables: []domainmodel.Table{{Name: "users"}},
-		schema: domainmodel.Schema{
-			Table: domainmodel.Table{Name: "users"},
-			Columns: []domainmodel.Column{
-				{Name: "id", Type: "INTEGER"},
-			},
-		},
-		page: domainmodel.RecordPage{
-			Records: []domainmodel.Record{
-				{Values: []domainmodel.Value{{Text: "fresh"}}},
-			},
-			TotalCount: 1,
-		},
-	}
-	model := &Model{
-		ctx:                 context.Background(),
-		runtimeSession:      runtimeSession,
-		runtimeBundleToken:  7,
-		runtimeBundleCancel: func() {},
-	}
-
-	// Act
-	updated, initCmd := model.Update(runtimeDatabaseSwitchCompletedMsg{
-		deps: RuntimeRunDeps{
-			ListTables:  usecase.NewListTables(replacementEngine),
-			GetSchema:   usecase.NewGetSchema(replacementEngine),
-			ListRecords: usecase.NewListRecords(replacementEngine),
-		},
-	})
-	if initCmd == nil {
-		t.Fatal("expected replacement runtime initialization command after successful switch")
-	}
-	runtimeModel := updated.(*Model)
-	initMsg := initCmd()
-	tablesMessage, ok := initMsg.(tablesMsg)
-	if !ok {
-		t.Fatalf("expected replacement init to load tables, got %T", initMsg)
-	}
-	if tablesMessage.bundleToken != runtimeModel.runtimeBundleToken {
-		t.Fatalf("expected tables load to use active bundle token %d, got %d", runtimeModel.runtimeBundleToken, tablesMessage.bundleToken)
-	}
-	updated, schemaCmd := runtimeModel.Update(initMsg)
-	if schemaCmd == nil {
-		t.Fatal("expected schema load after replacement tables init")
-	}
-	runtimeModel = updated.(*Model)
-	schemaMsgFromCmd, ok := schemaCmd().(schemaMsg)
-	if !ok {
-		t.Fatalf("expected schemaMsg from schema load, got %T", schemaCmd())
-	}
-	if schemaMsgFromCmd.bundleToken != runtimeModel.runtimeBundleToken {
-		t.Fatalf("expected schema load to use active bundle token %d, got %d", runtimeModel.runtimeBundleToken, schemaMsgFromCmd.bundleToken)
-	}
-	updated, _ = runtimeModel.Update(schemaMsgFromCmd)
-	runtimeModel = updated.(*Model)
-	runtimeModel.read.viewMode = ViewRecords
-	runtimeModel.read.focus = FocusContent
-	recordReloadCmd := runtimeModel.loadRecordsCmd(true)
-	if recordReloadCmd == nil {
-		t.Fatal("expected active replacement bundle to load records")
-	}
-	staleActiveBundleMsg := recordsMsg{
-		bundleToken: runtimeModel.runtimeBundleToken,
-		tableName:   "users",
-		requestID:   runtimeModel.read.recordRequestID - 1,
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"stale"}}},
-			TotalCount: 99,
-		},
-	}
-	runtimeModel.Update(staleActiveBundleMsg)
-	updated, _ = runtimeModel.Update(recordReloadCmd())
-	runtimeModel = updated.(*Model)
-
-	// Assert
-	if runtimeModel.runtimeBundleToken == 7 {
-		t.Fatalf("expected replacement runtime bundle token to differ from previous token %d", 7)
-	}
-	if len(runtimeModel.read.tables) != 1 || runtimeModel.read.tables[0].Name != "users" {
-		t.Fatalf("expected replacement tables init to succeed, got %+v", runtimeModel.read.tables)
-	}
-	if len(runtimeModel.read.schema.Columns) != 1 || runtimeModel.read.schema.Columns[0].Name != "id" {
-		t.Fatalf("expected replacement schema init to succeed, got %+v", runtimeModel.read.schema.Columns)
-	}
-	if len(runtimeModel.read.records) != 1 || runtimeModel.read.records[0].Values[0] != "fresh" {
-		t.Fatalf("expected active records reload to apply fresh page, got %+v", runtimeModel.read.records)
-	}
-	if replacementEngine.lastSchemaTableName != "users" {
-		t.Fatalf("expected schema reload for users table, got %q", replacementEngine.lastSchemaTableName)
-	}
-	if replacementEngine.lastRecordsTableName != "users" {
-		t.Fatalf("expected records reload for users table, got %q", replacementEngine.lastRecordsTableName)
 	}
 }

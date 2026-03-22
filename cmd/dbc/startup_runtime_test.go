@@ -195,7 +195,7 @@ func TestRuntimeStartupOrchestratorRun_WrapsSelectionFailure(t *testing.T) {
 	}
 }
 
-func TestRuntimeStartupOrchestratorRun_UsesSingleStartupSelectionAndProvidesRuntimeSwitcher(t *testing.T) {
+func TestRuntimeStartupOrchestratorRun_ReopensRequestedDatabaseWithoutSelectorRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -210,16 +210,19 @@ func TestRuntimeStartupOrchestratorRun_UsesSingleStartupSelectionAndProvidesRunt
 		Source:     tui.DatabaseOptionSourceConfig,
 	}
 	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{})
-	selectCalls := 0
+	selectionCalls := 0
 	orchestrator.selectDatabaseFn = func() (tui.DatabaseOption, startupPath, error) {
-		selectCalls++
-		switch selectCalls {
-		case 1:
-			return selectedA, startupPathSelector, nil
-		default:
-			t.Fatalf("unexpected selection call %d", selectCalls)
-			return tui.DatabaseOption{}, startupPathSelector, nil
+		if orchestrator.pendingRuntimeTarget != nil {
+			selected := *orchestrator.pendingRuntimeTarget
+			orchestrator.pendingRuntimeTarget = nil
+			return selected, startupPathRuntimeSwitch, nil
 		}
+		selectionCalls++
+		if selectionCalls == 1 {
+			return selectedA, startupPathSelector, nil
+		}
+		t.Fatalf("unexpected selector call %d", selectionCalls)
+		return tui.DatabaseOption{}, startupPathSelector, nil
 	}
 	connectCalls := 0
 	orchestrator.connectDatabaseFn = func(got tui.DatabaseOption) (*sql.DB, error) {
@@ -239,28 +242,29 @@ func TestRuntimeStartupOrchestratorRun_UsesSingleStartupSelectionAndProvidesRunt
 		return &sql.DB{}, nil
 	}
 	runCalls := 0
-	var switchedRuntimeDeps tui.RuntimeRunDeps
-	orchestrator.runRuntimeSessionFn = func(runtimeDeps tui.RuntimeRunDeps, runtimeSession *tui.RuntimeSessionState) error {
+	orchestrator.runRuntimeSessionFn = func(runtimeDeps tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
 		runCalls++
-		if runtimeSession == nil {
-			t.Fatal("expected shared runtime session state")
-		}
 		if runtimeDeps.DatabaseSelector == nil {
 			t.Fatal("expected runtime database selector deps")
 		}
-		if runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString != selectedA.ConnString {
-			t.Fatalf("expected current runtime database %q, got %q", selectedA.ConnString, runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString)
+		switch runCalls {
+		case 1:
+			if runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString != selectedA.ConnString {
+				t.Fatalf("expected first runtime database %q, got %q", selectedA.ConnString, runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString)
+			}
+			return tui.RuntimeExitResult{
+				Action:       tui.RuntimeExitActionOpenDatabaseNext,
+				NextDatabase: selectedB,
+			}, nil
+		case 2:
+			if runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString != selectedB.ConnString {
+				t.Fatalf("expected reopened runtime database %q, got %q", selectedB.ConnString, runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString)
+			}
+			return tui.RuntimeExitResult{Action: tui.RuntimeExitActionQuit}, nil
+		default:
+			t.Fatalf("unexpected runtime session call %d", runCalls)
+			return tui.RuntimeExitResult{}, nil
 		}
-		if runtimeDeps.DatabaseSelector.SwitchDatabase == nil {
-			t.Fatal("expected runtime switcher in runtime deps")
-		}
-		runtimeSession.RecordsPageLimit = 55
-		var err error
-		switchedRuntimeDeps, err = runtimeDeps.DatabaseSelector.SwitchDatabase.Switch(context.Background(), selectedB)
-		if err != nil {
-			t.Fatalf("expected runtime switcher to build new runtime deps, got %v", err)
-		}
-		return nil
 	}
 
 	// Act
@@ -270,23 +274,14 @@ func TestRuntimeStartupOrchestratorRun_UsesSingleStartupSelectionAndProvidesRunt
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if selectCalls != 1 {
-		t.Fatalf("expected one startup selector call, got %d", selectCalls)
-	}
 	if connectCalls != 2 {
 		t.Fatalf("expected two connection attempts, got %d", connectCalls)
 	}
-	if runCalls != 1 {
-		t.Fatalf("expected one runtime session run, got %d", runCalls)
+	if selectionCalls != 1 {
+		t.Fatalf("expected one selector-origin selection, got %d", selectionCalls)
 	}
-	if switchedRuntimeDeps.DatabaseSelector == nil {
-		t.Fatal("expected switched runtime deps to include selector dependencies")
-	}
-	if switchedRuntimeDeps.DatabaseSelector.CurrentDatabase.ConnString != selectedB.ConnString {
-		t.Fatalf("expected switched runtime database %q, got %q", selectedB.ConnString, switchedRuntimeDeps.DatabaseSelector.CurrentDatabase.ConnString)
-	}
-	if orchestrator.runtimeSessionState.RecordsPageLimit != 55 {
-		t.Fatalf("expected runtime session state to survive inside orchestrator, got %d", orchestrator.runtimeSessionState.RecordsPageLimit)
+	if runCalls != 2 {
+		t.Fatalf("expected two runtime session runs, got %d", runCalls)
 	}
 }
 
@@ -426,10 +421,7 @@ func TestRuntimeStartupOrchestratorRunSelectedDatabase_ResetsSelectorStateBefore
 	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
 		return &sql.DB{}, nil
 	}
-	orchestrator.runRuntimeSessionFn = func(runtimeDeps tui.RuntimeRunDeps, runtimeSession *tui.RuntimeSessionState) error {
-		if runtimeSession == nil {
-			t.Fatal("expected runtime session state to be provided")
-		}
+	orchestrator.runRuntimeSessionFn = func(runtimeDeps tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
 		if runtimeDeps.DatabaseSelector == nil {
 			t.Fatal("expected runtime run deps to include database selector deps")
 		}
@@ -445,7 +437,7 @@ func TestRuntimeStartupOrchestratorRunSelectedDatabase_ResetsSelectorStateBefore
 		if len(orchestrator.selectorState.AdditionalOptions) != 0 {
 			t.Fatalf("expected selector state to reset before session run, got %+v", orchestrator.selectorState)
 		}
-		return nil
+		return tui.RuntimeExitResult{Action: tui.RuntimeExitActionQuit}, nil
 	}
 
 	// Act
@@ -471,8 +463,8 @@ func TestRuntimeStartupOrchestratorRunSelectedDatabase_ReturnsPresentedFailureFo
 	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
 		return &sql.DB{}, nil
 	}
-	orchestrator.runRuntimeSessionFn = func(tui.RuntimeRunDeps, *tui.RuntimeSessionState) error {
-		return errors.New("runtime exploded")
+	orchestrator.runRuntimeSessionFn = func(tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
+		return tui.RuntimeExitResult{}, errors.New("runtime exploded")
 	}
 
 	// Act
@@ -499,12 +491,12 @@ func TestRunRuntimeSession_PropagatesRunError(t *testing.T) {
 
 	// Arrange
 	expectedErr := errors.New("tui failed")
-	tuiRunFn = func(_ context.Context, _ tui.RuntimeRunDeps, _ *tui.RuntimeSessionState) error {
-		return expectedErr
+	tuiRunFn = func(_ context.Context, _ tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
+		return tui.RuntimeExitResult{}, expectedErr
 	}
 
 	// Act
-	err := runRuntimeSession(tui.RuntimeRunDeps{}, nil)
+	_, err := runRuntimeSession(tui.RuntimeRunDeps{})
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -512,32 +504,36 @@ func TestRunRuntimeSession_PropagatesRunError(t *testing.T) {
 	}
 }
 
-func TestRunRuntimeSession_PassesRuntimeSessionStateToTUI(t *testing.T) {
+func TestRunRuntimeSession_ReturnsExitResultFromTUI(t *testing.T) {
 	restore := snapshotStartupRuntimeTestHooks()
 	defer restore()
 
 	// Arrange
-	runtimeSession := &tui.RuntimeSessionState{RecordsPageLimit: 33}
-	tuiRunFn = func(_ context.Context, _ tui.RuntimeRunDeps, gotRuntimeSession *tui.RuntimeSessionState) error {
-		if gotRuntimeSession != runtimeSession {
-			t.Fatalf("expected runtime session pointer %p, got %p", runtimeSession, gotRuntimeSession)
-		}
-		if gotRuntimeSession.RecordsPageLimit != 33 {
-			t.Fatalf("expected runtime session limit 33, got %d", gotRuntimeSession.RecordsPageLimit)
-		}
-		return nil
+	expected := tui.RuntimeExitResult{
+		Action: tui.RuntimeExitActionOpenDatabaseNext,
+		NextDatabase: tui.DatabaseOption{
+			Name:       "analytics",
+			ConnString: "/tmp/analytics.sqlite",
+			Source:     tui.DatabaseOptionSourceCLI,
+		},
+	}
+	tuiRunFn = func(_ context.Context, _ tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
+		return expected, nil
 	}
 
 	// Act
-	err := runRuntimeSession(tui.RuntimeRunDeps{}, runtimeSession)
+	result, err := runRuntimeSession(tui.RuntimeRunDeps{})
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no runtime error, got %v", err)
 	}
+	if result != expected {
+		t.Fatalf("expected runtime exit result %+v, got %+v", expected, result)
+	}
 }
 
-func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherBuildsNewBundleWithoutClosingCurrentDB(t *testing.T) {
+func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_ExposesCurrentDatabaseAndAdditionalOptions(t *testing.T) {
 	restore := snapshotStartupRuntimeTestHooks()
 	defer restore()
 
@@ -547,15 +543,9 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherBuildsNewBundleWit
 		ConnString: "/tmp/primary.sqlite",
 		Source:     tui.DatabaseOptionSourceConfig,
 	}
-	selectedB := tui.DatabaseOption{
-		Name:       "analytics",
-		ConnString: "/tmp/analytics.sqlite",
-		Source:     tui.DatabaseOptionSourceConfig,
-	}
 	currentClosed := false
 	nextClosed := false
 	dbA := &sql.DB{}
-	dbB := &sql.DB{}
 	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{})
 	orchestrator.sessionScopedOptions = []tui.DatabaseOption{
 		{
@@ -567,22 +557,15 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherBuildsNewBundleWit
 	connectCalls := 0
 	orchestrator.connectDatabaseFn = func(got tui.DatabaseOption) (*sql.DB, error) {
 		connectCalls++
-		switch got.ConnString {
-		case selectedA.ConnString:
-			return dbA, nil
-		case selectedB.ConnString:
-			return dbB, nil
-		default:
-			t.Fatalf("unexpected connection target %q", got.ConnString)
-			return nil, nil
+		if got.ConnString != selectedA.ConnString {
+			t.Fatalf("expected connection target %q, got %q", selectedA.ConnString, got.ConnString)
 		}
+		return dbA, nil
 	}
 	closeDatabaseFn = func(db *sql.DB) error {
 		switch db {
 		case dbA:
 			currentClosed = true
-		case dbB:
-			nextClosed = true
 		default:
 			t.Fatalf("unexpected close target %p", db)
 		}
@@ -594,87 +577,83 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherBuildsNewBundleWit
 	if err != nil {
 		t.Fatalf("expected initial runtime deps, got %v", err)
 	}
-	switchedRuntimeDeps, err := runtimeDeps.DatabaseSelector.SwitchDatabase.Switch(context.Background(), selectedB)
-	if err != nil {
-		t.Fatalf("expected switched runtime deps, got %v", err)
-	}
 
 	// Assert
-	if connectCalls != 2 {
-		t.Fatalf("expected two runtime bundle connection attempts, got %d", connectCalls)
+	if connectCalls != 1 {
+		t.Fatalf("expected one runtime connection attempt, got %d", connectCalls)
 	}
 	if currentClosed {
-		t.Fatal("expected current database to stay open while building replacement runtime deps")
+		t.Fatal("expected current database to stay open until explicit cleanup")
 	}
-	if switchedRuntimeDeps.DatabaseSelector == nil {
-		t.Fatal("expected switched runtime deps to include selector deps")
+	if runtimeDeps.DatabaseSelector == nil {
+		t.Fatal("expected runtime deps to include selector dependencies")
 	}
-	if switchedRuntimeDeps.DatabaseSelector.CurrentDatabase.ConnString != selectedB.ConnString {
-		t.Fatalf("expected switched runtime database %q, got %q", selectedB.ConnString, switchedRuntimeDeps.DatabaseSelector.CurrentDatabase.ConnString)
+	if runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString != selectedA.ConnString {
+		t.Fatalf("expected runtime database %q, got %q", selectedA.ConnString, runtimeDeps.DatabaseSelector.CurrentDatabase.ConnString)
 	}
-	if len(switchedRuntimeDeps.DatabaseSelector.AdditionalOptions) != 1 {
-		t.Fatalf("expected session-scoped options to carry into switched runtime deps, got %d", len(switchedRuntimeDeps.DatabaseSelector.AdditionalOptions))
+	if len(runtimeDeps.DatabaseSelector.AdditionalOptions) != 1 {
+		t.Fatalf("expected one additional option, got %d", len(runtimeDeps.DatabaseSelector.AdditionalOptions))
+	}
+	if runtimeDeps.DatabaseSelector.AdditionalOptions[0].ConnString != "/tmp/direct.sqlite" {
+		t.Fatalf("expected CLI additional option /tmp/direct.sqlite, got %q", runtimeDeps.DatabaseSelector.AdditionalOptions[0].ConnString)
 	}
 	runtimeDeps.Close()
 	if !currentClosed {
 		t.Fatal("expected current database close after explicit runtime deps cleanup")
 	}
 	if nextClosed {
-		t.Fatal("expected switched runtime database to remain open until its own cleanup")
+		t.Fatal("expected no secondary database to be closed")
 	}
 }
 
-func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_SwitcherTracksCLISelectionInSessionOptions(t *testing.T) {
+func TestRuntimeStartupOrchestratorRun_RuntimeInitiatedCLIReopenFailureReturnsToSelectorWithTrackedOption(t *testing.T) {
 	restore := snapshotStartupRuntimeTestHooks()
 	defer restore()
 
 	// Arrange
-	selectedA := tui.DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     tui.DatabaseOptionSourceConfig,
-	}
 	selectedCLI := tui.DatabaseOption{
 		Name:       "/tmp/runtime-cli.sqlite",
 		ConnString: "/tmp/runtime-cli.sqlite",
 		Source:     tui.DatabaseOptionSourceCLI,
 	}
-	selectedCLIEquivalent := tui.DatabaseOption{
-		Name:       "/tmp/runtime-cli.sqlite/",
-		ConnString: "/tmp/runtime-cli.sqlite/.",
-		Source:     tui.DatabaseOptionSourceCLI,
-	}
 	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{})
-	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
-		return &sql.DB{}, nil
+	orchestrator.selectDatabaseFn = orchestrator.selectDatabase
+	orchestrator.connectDatabaseFn = func(got tui.DatabaseOption) (*sql.DB, error) {
+		if got.ConnString != selectedCLI.ConnString {
+			t.Fatalf("expected runtime reopen target %q, got %q", selectedCLI.ConnString, got.ConnString)
+		}
+		return nil, errors.New("ping failed")
 	}
+	orchestrator.runRuntimeSessionFn = func(tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
+		return tui.RuntimeExitResult{
+			Action:       tui.RuntimeExitActionOpenDatabaseNext,
+			NextDatabase: selectedCLI,
+		}, nil
+	}
+	orchestrator.pendingRuntimeTarget = &selectedCLI
 
 	// Act
-	runtimeDeps, err := orchestrator.openRuntimeRunDeps(selectedA)
-	if err != nil {
-		t.Fatalf("expected initial runtime deps, got %v", err)
-	}
-	switchedRuntimeDeps, err := runtimeDeps.DatabaseSelector.SwitchDatabase.Switch(context.Background(), selectedCLI)
-	if err != nil {
-		t.Fatalf("expected switched runtime deps for CLI selection, got %v", err)
-	}
-	_, err = switchedRuntimeDeps.DatabaseSelector.SwitchDatabase.Switch(context.Background(), selectedCLIEquivalent)
-	if err != nil {
-		t.Fatalf("expected repeated equivalent CLI switch to succeed, got %v", err)
-	}
+	shouldContinue, err := orchestrator.runSelectedDatabase(selectedCLI, startupPathRuntimeSwitch)
 
 	// Assert
-	if len(switchedRuntimeDeps.DatabaseSelector.AdditionalOptions) != 1 {
-		t.Fatalf("expected switched runtime deps to expose one CLI session option, got %d", len(switchedRuntimeDeps.DatabaseSelector.AdditionalOptions))
+	if err != nil {
+		t.Fatalf("expected selector retry after failed runtime reopen, got %v", err)
 	}
-	if switchedRuntimeDeps.DatabaseSelector.AdditionalOptions[0].ConnString != selectedCLI.ConnString {
-		t.Fatalf("expected switched runtime deps to expose CLI option %q, got %q", selectedCLI.ConnString, switchedRuntimeDeps.DatabaseSelector.AdditionalOptions[0].ConnString)
+	if !shouldContinue {
+		t.Fatal("expected runtime reopen failure to return to selector")
 	}
+	if len(orchestrator.selectorState.AdditionalOptions) != 0 {
+		t.Fatalf("expected selector state to be populated by outer loop tracking, got %+v", orchestrator.selectorState.AdditionalOptions)
+	}
+	orchestrator.sessionScopedOptions = trackSessionScopedCLIOption(orchestrator.sessionScopedOptions, selectedCLI)
 	if len(orchestrator.sessionScopedOptions) != 1 {
 		t.Fatalf("expected orchestrator to retain one CLI session option, got %d", len(orchestrator.sessionScopedOptions))
 	}
 	if orchestrator.sessionScopedOptions[0].ConnString != selectedCLI.ConnString {
 		t.Fatalf("expected orchestrator to retain CLI option %q, got %q", selectedCLI.ConnString, orchestrator.sessionScopedOptions[0].ConnString)
+	}
+	if orchestrator.selectorState.PreferConnString != selectedCLI.ConnString {
+		t.Fatalf("expected selector preferred conn string %q, got %q", selectedCLI.ConnString, orchestrator.selectorState.PreferConnString)
 	}
 }
 

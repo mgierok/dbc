@@ -166,7 +166,6 @@ type RuntimeDatabaseSelectorDeps struct {
 	UpdateConfiguredDatabase *usecase.UpdateConfiguredDatabase
 	DeleteConfiguredDatabase *usecase.DeleteConfiguredDatabase
 	GetActiveConfigPath      *usecase.GetActiveConfigPath
-	SwitchDatabase           RuntimeDatabaseSwitcher
 	CurrentDatabase          DatabaseOption
 	AdditionalOptions        []DatabaseOption
 }
@@ -188,6 +187,7 @@ type Model struct {
 	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps
 	runtimeClose                func()
 	styles                      primitives.RenderStyles
+	exitResult                  RuntimeExitResult
 
 	staging stagingState
 	read    runtimeReadState
@@ -230,6 +230,7 @@ func NewModel(ctx context.Context, runtimeDeps RuntimeRunDeps, runtimeSession *R
 		ctx:            ctx,
 		runtimeSession: runtimeSession,
 		styles:         detectRenderStyles(),
+		exitResult:     runtimeExitResultQuit(),
 		read: runtimeReadState{
 			focus:            FocusTables,
 			viewMode:         ViewSchema,

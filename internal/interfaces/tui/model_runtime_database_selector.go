@@ -1,9 +1,6 @@
 package tui
 
 import (
-	"context"
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
@@ -77,13 +74,6 @@ func (m *Model) handleRuntimeDatabaseSelection(selected DatabaseOption) (tea.Mod
 	})
 }
 
-func (m *Model) runtimeDatabaseSwitcher() RuntimeDatabaseSwitcher {
-	if m.runtimeDatabaseSelectorDeps == nil {
-		return nil
-	}
-	return m.runtimeDatabaseSelectorDeps.SwitchDatabase
-}
-
 func (m *Model) currentRuntimeDatabaseConnString() string {
 	if m.runtimeDatabaseSelectorDeps == nil {
 		return ""
@@ -96,39 +86,4 @@ func (m *Model) currentRuntimeDatabaseOption() DatabaseOption {
 		return DatabaseOption{}
 	}
 	return m.runtimeDatabaseSelectorDeps.CurrentDatabase
-}
-
-func formatRuntimeDatabaseSelectionFailure(selected DatabaseOption, reason string) string {
-	return fmt.Sprintf(
-		"Connection failed for %q: %s. Choose another database or edit selected entry.",
-		selected.Name,
-		reason,
-	)
-}
-
-type runtimeDatabaseSwitchCompletedMsg struct {
-	request runtimeDatabaseTransitionRequest
-	deps    RuntimeRunDeps
-	err     error
-}
-
-func switchRuntimeDatabaseCmd(
-	ctx context.Context,
-	switcher RuntimeDatabaseSwitcher,
-	request runtimeDatabaseTransitionRequest,
-) tea.Cmd {
-	return func() tea.Msg {
-		if switcher == nil {
-			return runtimeDatabaseSwitchCompletedMsg{
-				request: request,
-				err:     fmt.Errorf("database selector unavailable"),
-			}
-		}
-		deps, err := switcher.Switch(ctx, request.Target.Option)
-		return runtimeDatabaseSwitchCompletedMsg{
-			request: request,
-			deps:    deps,
-			err:     err,
-		}
-	}
 }

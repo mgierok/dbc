@@ -253,7 +253,7 @@ func TestView_DirtyConfigCommandOpensRuntimeSelectorWithBackdropRuntimeLayout(t 
 			Name:       "primary",
 			ConnString: "/tmp/primary.sqlite",
 			Source:     DatabaseOptionSourceConfig,
-		}, nil),
+		}),
 	}
 
 	// Act

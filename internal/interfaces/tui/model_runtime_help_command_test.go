@@ -25,7 +25,7 @@ func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) 
 			}
 			model := &Model{
 				read:                        runtimeReadState{viewMode: ViewRecords},
-				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil),
+				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 			}
 
 			// Act
@@ -41,87 +41,65 @@ func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) 
 	}
 }
 
-func TestHandleKey_CommandEditReloadsCurrentDatabaseWithoutQuitting(t *testing.T) {
+func TestHandleKey_CommandEditReloadsCurrentDatabaseAndQuits(t *testing.T) {
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	switcher := &stubRuntimeDatabaseSwitcher{}
 	model := &Model{
-		read: runtimeReadState{viewMode: ViewRecords},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(
-			current,
-			switcher,
-		),
+		read:                        runtimeReadState{viewMode: ViewRecords},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 
 	updated, cmd := submitTypedRuntimeCommand(model, "edit")
 
-	assertRuntimeSessionActive(t, cmd, ":edit")
+	if cmd == nil {
+		t.Fatal("expected :edit to quit runtime")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg for :edit, got %T", cmd())
+	}
 	runtimeModel := updated.(*Model)
-	if !runtimeModel.ui.runtimeSwitchInFlight {
-		t.Fatal("expected :edit to start a database transition")
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected :edit to request runtime reopen, got %v", runtimeModel.exitResult.Action)
 	}
-	if switcher.calls != 1 {
-		t.Fatalf("expected one database transition for :edit, got %d", switcher.calls)
+	if runtimeModel.exitResult.NextDatabase.ConnString != current.ConnString {
+		t.Fatalf("expected :edit to reload current database %q, got %q", current.ConnString, runtimeModel.exitResult.NextDatabase.ConnString)
 	}
-	if switcher.lastSelected.ConnString != current.ConnString {
-		t.Fatalf("expected :edit to reload current database %q, got %q", current.ConnString, switcher.lastSelected.ConnString)
-	}
-	if !runtimeModel.overlay.commandInput.active {
-		t.Fatal("expected :edit spotlight to stay open during transition")
-	}
-	if runtimeModel.overlay.commandInput.mode != commandInputModePending {
-		t.Fatalf("expected :edit spotlight pending mode, got %v", runtimeModel.overlay.commandInput.mode)
-	}
-	if runtimeModel.overlay.commandInput.value != "edit" {
-		t.Fatalf("expected :edit spotlight to preserve submitted command, got %q", runtimeModel.overlay.commandInput.value)
-	}
-	if runtimeModel.overlay.commandInput.pendingStatus != "Reloading \"primary\"..." {
-		t.Fatalf("expected reload pending status, got %q", runtimeModel.overlay.commandInput.pendingStatus)
+	if runtimeModel.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to close before runtime exit")
 	}
 }
 
-func TestHandleKey_CommandEditWithConnectionStringStartsDatabaseTransition(t *testing.T) {
+func TestHandleKey_CommandEditWithConnectionStringRequestsReopenAndQuits(t *testing.T) {
 	current := DatabaseOption{
 		Name:       "primary",
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	switcher := &stubRuntimeDatabaseSwitcher{}
 	model := &Model{
-		read: runtimeReadState{viewMode: ViewRecords},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(
-			current,
-			switcher,
-		),
+		read:                        runtimeReadState{viewMode: ViewRecords},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
 	}
 
 	updated, cmd := submitTypedRuntimeCommand(model, "edit /tmp/analytics.sqlite")
 
-	assertRuntimeSessionActive(t, cmd, ":edit /tmp/analytics.sqlite")
+	if cmd == nil {
+		t.Fatal("expected :edit <conn> to quit runtime")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg for :edit <conn>, got %T", cmd())
+	}
 	runtimeModel := updated.(*Model)
-	if !runtimeModel.ui.runtimeSwitchInFlight {
-		t.Fatal("expected :edit <conn> to start a database transition")
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected :edit <conn> to request runtime reopen, got %v", runtimeModel.exitResult.Action)
 	}
-	if switcher.calls != 1 {
-		t.Fatalf("expected one database transition for :edit <conn>, got %d", switcher.calls)
+	if runtimeModel.exitResult.NextDatabase.ConnString != "/tmp/analytics.sqlite" {
+		t.Fatalf("expected :edit <conn> to target /tmp/analytics.sqlite, got %q", runtimeModel.exitResult.NextDatabase.ConnString)
 	}
-	if switcher.lastSelected.ConnString != "/tmp/analytics.sqlite" {
-		t.Fatalf("expected :edit <conn> to target /tmp/analytics.sqlite, got %q", switcher.lastSelected.ConnString)
-	}
-	if !runtimeModel.overlay.commandInput.active {
-		t.Fatal("expected :edit <conn> spotlight to stay open during transition")
-	}
-	if runtimeModel.overlay.commandInput.mode != commandInputModePending {
-		t.Fatalf("expected :edit <conn> spotlight pending mode, got %v", runtimeModel.overlay.commandInput.mode)
-	}
-	if runtimeModel.overlay.commandInput.value != "edit /tmp/analytics.sqlite" {
-		t.Fatalf("expected :edit <conn> spotlight to preserve submitted command, got %q", runtimeModel.overlay.commandInput.value)
-	}
-	if runtimeModel.overlay.commandInput.pendingStatus != "Opening \"/tmp/analytics.sqlite\"..." {
-		t.Fatalf("expected open pending status, got %q", runtimeModel.overlay.commandInput.pendingStatus)
+	if runtimeModel.overlay.commandInput.active {
+		t.Fatal("expected :edit <conn> spotlight to close before runtime exit")
 	}
 }
 

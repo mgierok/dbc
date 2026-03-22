@@ -20,14 +20,27 @@ type RuntimeRunDeps struct {
 	Close            func()
 }
 
-type RuntimeDatabaseSwitcher interface {
-	Switch(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error)
+type RuntimeExitAction int
+
+const (
+	RuntimeExitActionQuit RuntimeExitAction = iota + 1
+	RuntimeExitActionOpenDatabaseNext
+)
+
+type RuntimeExitResult struct {
+	Action       RuntimeExitAction
+	NextDatabase DatabaseOption
 }
 
-type RuntimeDatabaseSwitchFunc func(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error)
+func runtimeExitResultQuit() RuntimeExitResult {
+	return RuntimeExitResult{Action: RuntimeExitActionQuit}
+}
 
-func (f RuntimeDatabaseSwitchFunc) Switch(ctx context.Context, selected DatabaseOption) (RuntimeRunDeps, error) {
-	return f(ctx, selected)
+func runtimeExitResultOpenDatabaseNext(selected DatabaseOption) RuntimeExitResult {
+	return RuntimeExitResult{
+		Action:       RuntimeExitActionOpenDatabaseNext,
+		NextDatabase: selected,
+	}
 }
 
 type runtimeProgram interface {
@@ -41,20 +54,19 @@ var newRuntimeProgram = func(model tea.Model, options ...tea.ProgramOption) runt
 func Run(
 	ctx context.Context,
 	runtimeDeps RuntimeRunDeps,
-	runtimeSession *RuntimeSessionState,
-) error {
-	model := NewModel(ctx, runtimeDeps, runtimeSession)
+) (RuntimeExitResult, error) {
+	model := NewModel(ctx, runtimeDeps, nil)
 	program := newRuntimeProgram(model, tea.WithAltScreen())
 	final, err := program.Run()
 	if err != nil {
 		model.closeRuntimeResources()
-		return err
+		return RuntimeExitResult{}, err
 	}
 	runtimeModel, ok := final.(*Model)
 	if !ok {
 		model.closeRuntimeResources()
-		return errors.New("unexpected runtime model type")
+		return RuntimeExitResult{}, errors.New("unexpected runtime model type")
 	}
 	runtimeModel.closeRuntimeResources()
-	return nil
+	return runtimeModel.exitResultOrDefault(), nil
 }

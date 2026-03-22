@@ -51,14 +51,14 @@ type runtimeStartupOrchestrator struct {
 	options               startupOptions
 	deps                  runtimeStartupDependencies
 	selectorState         tui.SelectorLaunchState
-	runtimeSessionState   tui.RuntimeSessionState
 	sessionScopedOptions  []tui.DatabaseOption
 	directLaunchPending   bool
+	pendingRuntimeTarget  *tui.DatabaseOption
 	selectDatabaseFn      func() (tui.DatabaseOption, startupPath, error)
 	runSelectedDatabaseFn func(tui.DatabaseOption, startupPath) (bool, error)
 	connectDatabaseFn     func(tui.DatabaseOption) (*sql.DB, error)
 	openRuntimeRunDepsFn  func(tui.DatabaseOption) (tui.RuntimeRunDeps, error)
-	runRuntimeSessionFn   func(tui.RuntimeRunDeps, *tui.RuntimeSessionState) error
+	runRuntimeSessionFn   func(tui.RuntimeRunDeps) (tui.RuntimeExitResult, error)
 }
 
 func newRuntimeStartupOrchestrator(options startupOptions, deps runtimeStartupDependencies) *runtimeStartupOrchestrator {
@@ -122,6 +122,12 @@ func (o *runtimeStartupOrchestrator) run() error {
 }
 
 func (o *runtimeStartupOrchestrator) selectDatabase() (tui.DatabaseOption, startupPath, error) {
+	if o.pendingRuntimeTarget != nil {
+		selected := *o.pendingRuntimeTarget
+		o.pendingRuntimeTarget = nil
+		return selected, startupPathRuntimeSwitch, nil
+	}
+
 	strategy := newStartupSelectionStrategy(o.options, o.directLaunchPending)
 	return strategy.resolve(
 		func() ([]tui.DatabaseOption, error) {
@@ -171,11 +177,18 @@ func (o *runtimeStartupOrchestrator) runSelectedDatabase(selected tui.DatabaseOp
 		runRuntimeSessionFn = runRuntimeSession
 	}
 
-	if runErr := runRuntimeSessionFn(runtimeDeps, &o.runtimeSessionState); runErr != nil {
+	runtimeExitResult, runErr := runRuntimeSessionFn(runtimeDeps)
+	if runErr != nil {
 		return false, newPresentedStartupFailure(
 			startupExitCodeRuntimeFailure,
 			fmt.Sprintf("application error: %v", runErr),
 		)
+	}
+
+	if runtimeExitResult.Action == tui.RuntimeExitActionOpenDatabaseNext {
+		nextTarget := runtimeExitResult.NextDatabase
+		o.pendingRuntimeTarget = &nextTarget
+		return true, nil
 	}
 	return false, nil
 }
@@ -205,12 +218,8 @@ func (o *runtimeStartupOrchestrator) openRuntimeRunDeps(selected tui.DatabaseOpt
 			UpdateConfiguredDatabase: o.deps.updateConfiguredDB,
 			DeleteConfiguredDatabase: o.deps.deleteConfiguredDB,
 			GetActiveConfigPath:      o.deps.getActiveConfigPath,
-			SwitchDatabase: tui.RuntimeDatabaseSwitchFunc(func(ctx context.Context, nextSelected tui.DatabaseOption) (tui.RuntimeRunDeps, error) {
-				o.sessionScopedOptions = trackSessionScopedCLIOption(o.sessionScopedOptions, nextSelected)
-				return o.openRuntimeRunDeps(nextSelected)
-			}),
-			CurrentDatabase:   selected,
-			AdditionalOptions: cloneDatabaseOptions(o.sessionScopedOptions),
+			CurrentDatabase:          selected,
+			AdditionalOptions:        cloneDatabaseOptions(o.sessionScopedOptions),
 		},
 		Close: func() {
 			if closeErr := closeDatabaseFn(db); closeErr != nil {
@@ -220,9 +229,6 @@ func (o *runtimeStartupOrchestrator) openRuntimeRunDeps(selected tui.DatabaseOpt
 	}, nil
 }
 
-func runRuntimeSession(runtimeDeps tui.RuntimeRunDeps, runtimeSession *tui.RuntimeSessionState) error {
-	if err := tuiRunFn(context.Background(), runtimeDeps, runtimeSession); err != nil {
-		return err
-	}
-	return nil
+func runRuntimeSession(runtimeDeps tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
+	return tuiRunFn(context.Background(), runtimeDeps)
 }
