@@ -185,6 +185,7 @@ func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.
 
 	for columnIndex, column := range m.read.schema.Columns {
 		value, edited := m.effectiveRecordDetailValue(rowIndex, columnIndex)
+		value = primitives.SanitizeDisplayText(value, primitives.DisplaySanitizeMultiline)
 		header := styles.RenderLine(primitives.SemanticLine{
 			primitives.Span(primitives.SemanticRoleHeader, column.Name),
 			primitives.Span(primitives.SemanticRoleBody, " ("+column.Type+")"),
@@ -243,7 +244,7 @@ func (m *Model) schemaColumnsForRecordsHeader() []string {
 	}
 	columns := make([]string, len(m.read.schema.Columns))
 	for i, column := range m.read.schema.Columns {
-		label := column.Name
+		label := primitives.SanitizeDisplayText(column.Name, primitives.DisplaySanitizeSingleLine)
 		if m.read.currentSort != nil && column.Name == m.read.currentSort.Column {
 			switch m.read.currentSort.Direction {
 			case dto.SortDirectionAsc:
@@ -291,6 +292,7 @@ func formatRecordsHeaderRows(values []string, widths []int, styles primitives.Re
 		if i < len(values) {
 			value = values[i]
 		}
+		value = primitives.SanitizeDisplayText(value, primitives.DisplaySanitizeSingleLine)
 		value = styles.Render(primitives.SemanticRoleHeader, value)
 		top, middle, bottom := formatRecordsHeaderCell(value, width)
 		topParts[i] = top
@@ -348,6 +350,7 @@ func formatRecordRow(values []string, widths []int, focusColumn int) string {
 }
 
 func formatRecordCell(value string, width int, focused bool) string {
+	value = primitives.SanitizeDisplayText(value, primitives.DisplaySanitizeSingleLine)
 	if focused {
 		if width <= 1 {
 			return primitives.PadRight(">", width)

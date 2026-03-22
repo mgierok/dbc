@@ -196,3 +196,45 @@ func TestRenderStatus_RecordsViewShowsSinglePageSummaryForEmptyResult(t *testing
 		t.Fatalf("expected single-page summary in status, got %q", status)
 	}
 }
+
+func TestRenderStatus_SanitizesFilterSortAndErrorSegments(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			currentFilter: &dto.Filter{
+				Column:   "na\x1b[31mme",
+				Operator: dto.Operator{Name: "Eq\r\nuals", RequiresValue: true},
+				Value:    "ali\tce\x1b]2;ignored\a",
+			},
+			currentSort: &dto.Sort{
+				Column:    "id\x1b[32m",
+				Direction: dto.SortDirection("DES\x1b[0mC"),
+			},
+		},
+		ui: runtimeUIState{
+			statusMessage: "Error: boom\x1b[31m\r\nnext",
+		},
+	}
+
+	// Act
+	status := model.renderStatus(220)
+	plainStatus := stripANSI(status)
+
+	// Assert
+	if strings.Contains(status, "\x1b]") || strings.Contains(plainStatus, "\x1b") {
+		t.Fatalf("expected status output without injected terminal escape sequences, got %q", status)
+	}
+	if strings.Contains(plainStatus, "\n") || strings.Contains(plainStatus, "\r") || strings.Contains(plainStatus, "\t") {
+		t.Fatalf("expected status output to flatten control characters, got %q", plainStatus)
+	}
+	if !strings.Contains(plainStatus, "Filter: name Eq uals ali ce") {
+		t.Fatalf("expected sanitized filter summary, got %q", plainStatus)
+	}
+	if !strings.Contains(plainStatus, "Sort: id DESC") {
+		t.Fatalf("expected sanitized sort summary, got %q", plainStatus)
+	}
+	if !strings.Contains(plainStatus, "Error: boom next") {
+		t.Fatalf("expected sanitized error status message, got %q", plainStatus)
+	}
+}

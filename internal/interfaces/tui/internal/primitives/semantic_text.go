@@ -26,7 +26,7 @@ type SemanticSpan struct {
 type SemanticLine []SemanticSpan
 
 func Span(role SemanticRole, text string) SemanticSpan {
-	return SemanticSpan{Text: text, Role: role}
+	return SemanticSpan{Text: SanitizeDisplayText(text, DisplaySanitizeSingleLine), Role: role}
 }
 
 func SemanticText(role SemanticRole, text string) SemanticLine {

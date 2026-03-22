@@ -449,3 +449,41 @@ func TestRenderConfirmPopup_DirtyQuitShowsMessageAndExplicitActions(t *testing.T
 		t.Fatalf("expected selected quit discard action in popup, got %q", popup)
 	}
 }
+
+func TestRenderConfirmPopup_SanitizesMessageAndOptionLabels(t *testing.T) {
+	// Arrange
+	model := &Model{
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active:  true,
+				title:   "Delete\x1b[31m",
+				message: "Delete selected value?\r\n\x1b]2;ignored\ayep",
+				options: []confirmOption{
+					{label: "Delete\tentry\x1b[0m"},
+					{label: "Cancel\r\nlater"},
+				},
+				selected: 0,
+			},
+		},
+	}
+
+	// Act
+	popup := stripANSI(strings.Join(model.renderConfirmPopup(80), "\n"))
+
+	// Assert
+	if strings.Contains(popup, "\x1b") || strings.Contains(popup, "\r") || strings.Contains(popup, "\t") {
+		t.Fatalf("expected confirm popup without injected escape/control characters, got %q", popup)
+	}
+	if !strings.Contains(popup, "Delete") {
+		t.Fatalf("expected sanitized popup title, got %q", popup)
+	}
+	if !strings.Contains(popup, "Delete selected value? yep") {
+		t.Fatalf("expected sanitized popup message, got %q", popup)
+	}
+	if !strings.Contains(popup, "Delete entry") {
+		t.Fatalf("expected sanitized selected option label, got %q", popup)
+	}
+	if !strings.Contains(popup, "Cancel later") {
+		t.Fatalf("expected sanitized secondary option label, got %q", popup)
+	}
+}

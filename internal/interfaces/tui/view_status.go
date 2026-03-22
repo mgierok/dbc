@@ -68,10 +68,11 @@ func (m *Model) statusSegment(label, value string, styles primitives.RenderStyle
 }
 
 func (m *Model) styleStatusMessage(message string, styles primitives.RenderStyles) primitives.SemanticLine {
-	if primitives.IsErrorLikeMessage(message) {
-		return primitives.SemanticText(primitives.SemanticRoleError, message)
+	sanitizedMessage := primitives.SanitizeDisplayText(message, primitives.DisplaySanitizeSingleLine)
+	if primitives.IsErrorLikeMessage(sanitizedMessage) {
+		return primitives.SemanticText(primitives.SemanticRoleError, sanitizedMessage)
 	}
-	return primitives.SemanticText(primitives.SemanticRoleBody, message)
+	return primitives.SemanticText(primitives.SemanticRoleBody, sanitizedMessage)
 }
 
 func (m *Model) renderStatusBox(width int, styles primitives.RenderStyles) []string {

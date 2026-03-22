@@ -138,7 +138,8 @@ func (m *Model) maxTablePanelWidth() int {
 	maxWidth := primitives.MaxInt(primitives.TextWidth("Tables"), primitives.TextWidth("No items."))
 	longestNameWidth := 0
 	for _, table := range m.read.tables {
-		longestNameWidth = primitives.MaxInt(longestNameWidth, primitives.TextWidth(table.Name))
+		sanitizedName := primitives.SanitizeDisplayText(table.Name, primitives.DisplaySanitizeSingleLine)
+		longestNameWidth = primitives.MaxInt(longestNameWidth, primitives.TextWidth(sanitizedName))
 	}
 	if longestNameWidth == 0 {
 		return maxWidth

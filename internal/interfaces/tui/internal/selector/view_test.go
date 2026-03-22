@@ -325,3 +325,58 @@ func TestDatabaseSelector_ViewUsesSemanticRolesForFormLabelsAndErrors(t *testing
 		t.Fatalf("expected semantic error styling for form error, got %q", view)
 	}
 }
+
+func TestDatabaseSelector_ViewSanitizesBrowseStatusAndDeleteConfirmationContent(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "local", Path: "/tmp/local.sqlite"},
+		},
+		activePath: "/tmp/config.json\x1b[31m",
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+		AdditionalOptions: []DatabaseOption{
+			{
+				Name:       "ana\x1b[31mlytics",
+				ConnString: "/tmp/db\r\n.sqlite",
+				Source:     DatabaseOptionSourceCLI,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	model.width = 100
+	model.height = 24
+	model.browse.selected = 1
+	model.browse.statusMessage = "Delete failed: boom\x1b]2;ignored\awhy"
+
+	// Act
+	browseView := stripANSI(model.View())
+
+	// Assert
+	if strings.Contains(browseView, "\x1b") || strings.Contains(browseView, "\r") {
+		t.Fatalf("expected sanitized selector browse output, got %q", browseView)
+	}
+	if !strings.Contains(browseView, "/tmp/config.json") {
+		t.Fatalf("expected sanitized config path, got %q", browseView)
+	}
+	if !strings.Contains(browseView, "analytics") {
+		t.Fatalf("expected sanitized option name, got %q", browseView)
+	}
+	if !strings.Contains(browseView, "/tmp/db .sqlite") {
+		t.Fatalf("expected sanitized option path, got %q", browseView)
+	}
+	if !strings.Contains(browseView, "Delete failed: boomwhy") {
+		t.Fatalf("expected sanitized browse status, got %q", browseView)
+	}
+
+	// Act
+	model.openDeleteConfirmation()
+	deleteView := stripANSI(model.View())
+
+	// Assert
+	if !strings.Contains(deleteView, "analytics"+primitives.FrameSegmentSeparator+"/tmp/db .sqlite") {
+		t.Fatalf("expected sanitized delete confirmation content, got %q", deleteView)
+	}
+}

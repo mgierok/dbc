@@ -192,15 +192,16 @@ func (m *databaseSelectorModel) deleteConfirmationContentRows() []primitives.Sta
 func selectorFormFieldLine(label, value string) primitives.SemanticLine {
 	return primitives.SemanticLine{
 		primitives.Span(primitives.SemanticRoleLabel, label+":"),
-		primitives.Span(primitives.SemanticRoleBody, " "+value),
+		{Role: primitives.SemanticRoleBody, Text: " " + value},
 	}
 }
 
 func (m *databaseSelectorModel) styleStatusMessage() primitives.SemanticLine {
-	if primitives.IsErrorLikeMessage(m.browse.statusMessage) {
-		return primitives.SemanticText(primitives.SemanticRoleError, m.browse.statusMessage)
+	sanitizedMessage := primitives.SanitizeDisplayText(m.browse.statusMessage, primitives.DisplaySanitizeSingleLine)
+	if primitives.IsErrorLikeMessage(sanitizedMessage) {
+		return primitives.SemanticText(primitives.SemanticRoleError, sanitizedMessage)
 	}
-	return primitives.SemanticText(primitives.SemanticRoleBody, m.browse.statusMessage)
+	return primitives.SemanticText(primitives.SemanticRoleBody, sanitizedMessage)
 }
 
 func selectorStatusLine(message primitives.SemanticLine) primitives.SemanticLine {

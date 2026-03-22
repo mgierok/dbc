@@ -53,7 +53,7 @@ func (m *Model) renderFilterPopup(totalWidth int) []string {
 		input := m.overlay.filterPopup.input
 		cursor := clamp(m.overlay.filterPopup.cursor, 0, len(input))
 		value := input[:cursor] + "|" + input[cursor:]
-		rows = primitives.PopupSemanticTextRows([]primitives.SemanticLine{labelValueLine("Value", value)})
+		rows = primitives.PopupSemanticTextRows([]primitives.SemanticLine{rawLabelValueLine("Value", value)})
 	}
 
 	return primitives.RenderStandardizedPopup(totalWidth, m.ui.height, primitives.StandardizedPopupSpec{
@@ -144,7 +144,7 @@ func (m *Model) renderEditPopup(totalWidth int) []string {
 			input := m.overlay.editPopup.input
 			cursor := clamp(m.overlay.editPopup.cursor, 0, len(input))
 			value := input[:cursor] + "|" + input[cursor:]
-			rows = append(rows, primitives.StandardizedPopupRow{Line: labelValueLine("Value", value)})
+			rows = append(rows, primitives.StandardizedPopupRow{Line: rawLabelValueLine("Value", value)})
 		}
 	}
 
@@ -197,5 +197,12 @@ func labelValueLine(label, value string) primitives.SemanticLine {
 	return primitives.SemanticLine{
 		primitives.Span(primitives.SemanticRoleLabel, label+":"),
 		primitives.Span(primitives.SemanticRoleBody, " "+value),
+	}
+}
+
+func rawLabelValueLine(label, value string) primitives.SemanticLine {
+	return primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleLabel, label+":"),
+		{Role: primitives.SemanticRoleBody, Text: " " + value},
 	}
 }
