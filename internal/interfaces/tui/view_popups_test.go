@@ -67,6 +67,42 @@ func TestRenderEditPopup_TextInputShowsCaretAtCursor(t *testing.T) {
 	}
 }
 
+func TestRenderEditPopup_TextInputSanitizesControlBytesAndPreservesCaret(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{
+						Name:  "name",
+						Type:  "TEXT",
+						Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+					},
+				},
+			},
+		},
+		overlay: runtimeOverlayState{
+			editPopup: editPopup{
+				active:      true,
+				columnIndex: 0,
+				input:       "jo\x1b[31m\r\n\thn",
+				cursor:      len("jo\x1b[31m\r\n"),
+			},
+		},
+	}
+
+	// Act
+	popup := stripANSI(strings.Join(model.renderEditPopup(60), "\n"))
+
+	// Assert
+	if strings.Contains(popup, "\x1b") || strings.Contains(popup, "\r") || strings.Contains(popup, "\n\t") || strings.Contains(popup, "\t") {
+		t.Fatalf("expected sanitized edit popup output, got %q", popup)
+	}
+	if !strings.Contains(popup, "Value: jo | hn") {
+		t.Fatalf("expected sanitized edit value with preserved caret, got %q", popup)
+	}
+}
+
 func TestRenderEditPopup_UsesCombinedSummaryRow(t *testing.T) {
 	// Arrange
 	model := &Model{

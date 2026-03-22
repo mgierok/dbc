@@ -85,6 +85,34 @@ func TestDatabaseSelector_EditFormShowsCaretInActiveField(t *testing.T) {
 	}
 }
 
+func TestDatabaseSelector_EditFormSanitizesPreloadedValuesAndPreservesCaret(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "lo\x1b[31m\r\ncal", Path: "/tmp/db\t.sqlite"},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	view := stripANSI(strings.Join(model.boxLines(model.listHeight(24), 80), "\n"))
+
+	// Assert
+	if strings.Contains(view, "\x1b") || strings.Contains(view, "\r") || strings.Contains(view, "\n\t") || strings.Contains(view, "\t") {
+		t.Fatalf("expected sanitized selector edit form output, got %q", view)
+	}
+	if !strings.Contains(view, primitives.SelectionSelectedPrefix()+"Name: lo cal|") {
+		t.Fatalf("expected sanitized name with preserved caret, got %q", view)
+	}
+	if !strings.Contains(view, "Path: /tmp/db .sqlite") {
+		t.Fatalf("expected sanitized path value, got %q", view)
+	}
+}
+
 func TestDatabaseSelector_ViewShowsActiveConfigPath(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{

@@ -192,7 +192,7 @@ func (m *databaseSelectorModel) deleteConfirmationContentRows() []primitives.Sta
 func selectorFormFieldLine(label, value string) primitives.SemanticLine {
 	return primitives.SemanticLine{
 		primitives.Span(primitives.SemanticRoleLabel, label+":"),
-		{Role: primitives.SemanticRoleBody, Text: " " + value},
+		primitives.Span(primitives.SemanticRoleBody, " "+value),
 	}
 }
 
