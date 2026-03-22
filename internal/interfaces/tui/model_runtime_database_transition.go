@@ -6,7 +6,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
@@ -31,31 +30,10 @@ type runtimeDatabaseTransitionTarget struct {
 }
 
 type runtimeDatabaseTransitionRequest struct {
-	Target runtimeDatabaseTransitionTarget
-	Force  bool
-	Origin runtimeDatabaseTransitionOrigin
-}
-
-type runtimeDatabaseTransitionSnapshot struct {
-	SelectedTableName string
-	Focus             PanelFocus
-	ViewMode          ViewMode
-	Filter            *dto.Filter
-	Sort              *dto.Sort
-	PageIndex         int
-}
-
-type runtimeDatabaseReloadRestoreStage int
-
-const (
-	runtimeDatabaseReloadRestoreAwaitingSchemaFinalize runtimeDatabaseReloadRestoreStage = iota + 1
-	runtimeDatabaseReloadRestoreAwaitingRecordsCompletion
-)
-
-type runtimeDatabaseReloadRestoreState struct {
-	snapshot           runtimeDatabaseTransitionSnapshot
-	requestedPageIndex int
-	stage              runtimeDatabaseReloadRestoreStage
+	Target  runtimeDatabaseTransitionTarget
+	Force   bool
+	Origin  runtimeDatabaseTransitionOrigin
+	Command string
 }
 
 func (m *Model) requestRuntimeDatabaseTransition(request runtimeDatabaseTransitionRequest) (tea.Model, tea.Cmd) {
@@ -79,30 +57,40 @@ func (m *Model) executeRuntimeDatabaseTransition(request runtimeDatabaseTransiti
 	switcher := m.runtimeDatabaseSwitcher()
 	if switcher == nil {
 		m.ui.statusMessage = "Error: database selector unavailable"
+		if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
+			m.restoreEditingCommandInput(request.Command)
+		}
 		return m, nil
-	}
-
-	snapshot := runtimeDatabaseTransitionSnapshot{}
-	if request.Target.Kind == reloadCurrentDatabase {
-		snapshot = m.captureRuntimeDatabaseTransitionSnapshot()
 	}
 
 	m.ui.pendingDatabaseTransition = nil
 	m.ui.runtimeSwitchInFlight = true
-	if request.Origin == runtimeDatabaseTransitionOriginConfigSelector && m.overlay.databaseSelector.controller != nil {
-		m.overlay.databaseSelector.controller.SetStatusMessage(runtimeDatabaseTransitionInFlightStatus(request))
+	switch request.Origin {
+	case runtimeDatabaseTransitionOriginConfigSelector:
+		if m.overlay.databaseSelector.controller != nil {
+			m.overlay.databaseSelector.controller.SetStatusMessage(runtimeDatabaseTransitionInFlightStatus(request))
+		}
+	case runtimeDatabaseTransitionOriginEditCommand:
+		m.showPendingEditCommandInput(request)
 	}
-	return m, switchRuntimeDatabaseCmd(m.ctx, switcher, request, snapshot)
+	return m, switchRuntimeDatabaseCmd(m.ctx, switcher, request)
 }
 
 func (m *Model) confirmDatabaseTransitionSave() (tea.Model, tea.Cmd) {
-	if m.ui.pendingDatabaseTransition == nil {
+	request := m.ui.pendingDatabaseTransition
+	if request == nil {
 		return m, nil
 	}
 
+	if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
+		m.overlay.commandInput = commandInput{}
+	}
 	updatedModel, cmd := m.confirmSaveChanges()
 	if cmd == nil {
 		m.ui.pendingDatabaseTransition = nil
+		if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
+			m.restoreEditingCommandInput(request.Command)
+		}
 	}
 	return updatedModel, cmd
 }
@@ -215,161 +203,14 @@ func runtimeDatabaseTransitionInFlightStatus(request runtimeDatabaseTransitionRe
 	}
 }
 
-func (m *Model) captureRuntimeDatabaseTransitionSnapshot() runtimeDatabaseTransitionSnapshot {
-	return runtimeDatabaseTransitionSnapshot{
-		SelectedTableName: m.currentTableName(),
-		Focus:             m.read.focus,
-		ViewMode:          m.read.viewMode,
-		Filter:            cloneFilter(m.read.currentFilter),
-		Sort:              cloneSort(m.read.currentSort),
-		PageIndex:         m.read.recordPageIndex,
-	}
-}
-
-func cloneFilter(filter *dto.Filter) *dto.Filter {
-	if filter == nil {
-		return nil
-	}
-	cloned := *filter
-	return &cloned
-}
-
-func cloneSort(sort *dto.Sort) *dto.Sort {
-	if sort == nil {
-		return nil
-	}
-	cloned := *sort
-	return &cloned
-}
-
 func cloneRuntimeDatabaseTransitionRequest(request runtimeDatabaseTransitionRequest) runtimeDatabaseTransitionRequest {
 	return runtimeDatabaseTransitionRequest{
 		Target: runtimeDatabaseTransitionTarget{
 			Option: request.Target.Option,
 			Kind:   request.Target.Kind,
 		},
-		Force:  request.Force,
-		Origin: request.Origin,
+		Force:   request.Force,
+		Origin:  request.Origin,
+		Command: request.Command,
 	}
-}
-
-func cloneRuntimeDatabaseReloadRestoreState(snapshot runtimeDatabaseTransitionSnapshot) *runtimeDatabaseReloadRestoreState {
-	return &runtimeDatabaseReloadRestoreState{
-		snapshot: runtimeDatabaseTransitionSnapshot{
-			SelectedTableName: snapshot.SelectedTableName,
-			Focus:             snapshot.Focus,
-			ViewMode:          snapshot.ViewMode,
-			Filter:            cloneFilter(snapshot.Filter),
-			Sort:              cloneSort(snapshot.Sort),
-			PageIndex:         snapshot.PageIndex,
-		},
-		requestedPageIndex: snapshot.PageIndex,
-		stage:              runtimeDatabaseReloadRestoreAwaitingSchemaFinalize,
-	}
-}
-
-func (m *Model) applyPendingDatabaseReloadRestoreAfterTables() tea.Cmd {
-	restore := m.ui.pendingDatabaseReloadRestore
-	if restore == nil {
-		return m.loadSchemaCmd()
-	}
-
-	selectedTableIndex := indexTableByName(m.read.tables, restore.snapshot.SelectedTableName)
-	if selectedTableIndex < 0 {
-		m.ui.pendingDatabaseReloadRestore = nil
-		return m.loadSchemaCmd()
-	}
-
-	m.read.selectedTable = selectedTableIndex
-	m.read.focus = restore.snapshot.Focus
-	m.read.viewMode = restore.snapshot.ViewMode
-	m.read.recordPageIndex = maxInt(restore.snapshot.PageIndex, 0)
-	return m.loadSchemaCmd()
-}
-
-func indexTableByName(tables []dto.Table, name string) int {
-	for i, table := range tables {
-		if table.Name == name {
-			return i
-		}
-	}
-	return -1
-}
-
-func maxInt(left, right int) int {
-	if left > right {
-		return left
-	}
-	return right
-}
-
-func (m *Model) finalizePendingDatabaseReloadRestoreAfterSchema() tea.Cmd {
-	restore := m.ui.pendingDatabaseReloadRestore
-	if restore == nil {
-		return nil
-	}
-
-	filterCleared, sortCleared := m.applyPendingDatabaseReloadRestoreFilterAndSort()
-	m.updateDatabaseReloadRestoreStatus(filterCleared, sortCleared)
-	if m.read.viewMode != ViewRecords {
-		m.ui.pendingDatabaseReloadRestore = nil
-		return nil
-	}
-
-	restore.stage = runtimeDatabaseReloadRestoreAwaitingRecordsCompletion
-	m.read.recordLoading = false
-	return m.loadRecordsCmd(false)
-}
-
-func (m *Model) applyPendingDatabaseReloadRestoreFilterAndSort() (bool, bool) {
-	restore := m.ui.pendingDatabaseReloadRestore
-	if restore == nil {
-		m.read.currentFilter = nil
-		m.read.currentSort = nil
-		return false, false
-	}
-
-	filterCleared := restore.snapshot.Filter != nil && !m.schemaHasColumn(restore.snapshot.Filter.Column)
-	sortCleared := restore.snapshot.Sort != nil && !m.schemaHasColumn(restore.snapshot.Sort.Column)
-
-	if filterCleared {
-		m.read.currentFilter = nil
-	} else {
-		m.read.currentFilter = cloneFilter(restore.snapshot.Filter)
-	}
-	if sortCleared {
-		m.read.currentSort = nil
-	} else {
-		m.read.currentSort = cloneSort(restore.snapshot.Sort)
-	}
-
-	return filterCleared, sortCleared
-}
-
-func (m *Model) schemaHasColumn(name string) bool {
-	for _, column := range m.read.schema.Columns {
-		if column.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *Model) updateDatabaseReloadRestoreStatus(filterCleared, sortCleared bool) {
-	switch {
-	case filterCleared && sortCleared:
-		m.ui.statusMessage = "Database reloaded; filter and sort cleared after schema change."
-	case filterCleared:
-		m.ui.statusMessage = "Database reloaded; filter cleared after schema change."
-	case sortCleared:
-		m.ui.statusMessage = "Database reloaded; sort cleared after schema change."
-	}
-}
-
-func (s *runtimeDatabaseReloadRestoreState) awaitingSchemaFinalize() bool {
-	return s != nil && s.stage == runtimeDatabaseReloadRestoreAwaitingSchemaFinalize
-}
-
-func (s *runtimeDatabaseReloadRestoreState) awaitingRecordsCompletion() bool {
-	return s != nil && s.stage == runtimeDatabaseReloadRestoreAwaitingRecordsCompletion
 }

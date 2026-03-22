@@ -346,3 +346,36 @@ func TestView_CommandSpotlightDefaultsToHalfTerminalWidth(t *testing.T) {
 		t.Fatalf("expected spotlight bottom border to use half-width default, got %q", lines[12])
 	}
 }
+
+func TestView_PendingCommandSpotlightShowsStatusInsteadOfEditablePrompt(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ui: runtimeUIState{
+			width:  80,
+			height: 24,
+		},
+		read: runtimeReadState{
+			focus:    FocusContent,
+			viewMode: ViewRecords,
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active:        true,
+				mode:          commandInputModePending,
+				value:         "edit /tmp/analytics.sqlite",
+				pendingStatus: "Opening \"/tmp/analytics.sqlite\"...",
+			},
+		},
+	}
+
+	// Act
+	view := stripANSI(model.View())
+
+	// Assert
+	if !strings.Contains(view, "Opening \"/tmp/analytics.sqlite\"...") {
+		t.Fatalf("expected pending spotlight status, got %q", view)
+	}
+	if strings.Contains(view, ":|") {
+		t.Fatalf("expected pending spotlight to hide editable prompt, got %q", view)
+	}
+}

@@ -13,6 +13,7 @@ func (m *Model) startCommandInput() (tea.Model, tea.Cmd) {
 	m.clearPendingRuntimeKeyState()
 	m.overlay.commandInput = commandInput{
 		active: true,
+		mode:   commandInputModeEditing,
 		value:  "",
 		cursor: 0,
 	}
@@ -24,11 +25,12 @@ func (m *Model) clearPendingRuntimeKeyState() {
 }
 
 func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
-	command := ":" + strings.TrimSpace(m.overlay.commandInput.value)
-	m.overlay.commandInput = commandInput{}
+	submittedValue := m.overlay.commandInput.value
+	command := ":" + strings.TrimSpace(submittedValue)
 
 	commandSpec, err := primitives.ParseRuntimeCommand(command)
 	if err != nil {
+		m.overlay.commandInput = commandInput{}
 		if primitives.IsUnknownRuntimeCommand(err) {
 			m.ui.statusMessage = fmt.Sprintf("Unknown command: %s", command)
 			return m, nil
@@ -39,26 +41,33 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 
 	switch commandSpec.Action {
 	case primitives.RuntimeCommandActionSetRecordLimit:
+		m.overlay.commandInput = commandInput{}
 		return m.applyRecordLimit(commandSpec.RecordLimit)
 	case primitives.RuntimeCommandActionOpenHelp:
+		m.overlay.commandInput = commandInput{}
 		m.openHelpPopup(m.currentHelpPopupContext())
 		return m, nil
 	case primitives.RuntimeCommandActionEdit:
 		target, resolveErr := m.resolveRuntimeDatabaseTransitionTargetFromConnString(commandSpec.ConnString)
 		if resolveErr != nil {
 			m.ui.statusMessage = "Error: " + resolveErr.Error()
+			m.restoreEditingCommandInput(submittedValue)
 			return m, nil
 		}
 		return m.requestRuntimeDatabaseTransition(runtimeDatabaseTransitionRequest{
-			Target: target,
-			Force:  commandSpec.Force,
-			Origin: runtimeDatabaseTransitionOriginEditCommand,
+			Target:  target,
+			Force:   commandSpec.Force,
+			Origin:  runtimeDatabaseTransitionOriginEditCommand,
+			Command: submittedValue,
 		})
 	case primitives.RuntimeCommandActionSave:
+		m.overlay.commandInput = commandInput{}
 		return m.requestSaveChanges()
 	case primitives.RuntimeCommandActionSaveAndQuit:
+		m.overlay.commandInput = commandInput{}
 		return m.requestSaveAndQuit()
 	case primitives.RuntimeCommandActionQuit:
+		m.overlay.commandInput = commandInput{}
 		if m.hasDirtyEdits() {
 			prompt := m.dirtyNavigationPolicyUseCase().BuildQuitPrompt(m.dirtyEditCount())
 			m.openModalConfirmPopupWithOptions(
@@ -71,8 +80,10 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 	case primitives.RuntimeCommandActionForcedQuit:
+		m.overlay.commandInput = commandInput{}
 		return m.confirmDiscardQuit()
 	case primitives.RuntimeCommandActionOpenConfig:
+		m.overlay.commandInput = commandInput{}
 		m.openRuntimeDatabaseSelectorPopup()
 		return m, nil
 	}

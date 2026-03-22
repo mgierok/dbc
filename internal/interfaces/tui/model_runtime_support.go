@@ -111,11 +111,30 @@ func (m *Model) currentTableName() string {
 }
 
 func (m *Model) commandInputValueWithCaret() string {
-	if !m.overlay.commandInput.active {
+	if !m.overlay.commandInput.active || m.overlay.commandInput.mode == commandInputModePending {
 		return ""
 	}
 	cursor := clamp(m.overlay.commandInput.cursor, 0, len(m.overlay.commandInput.value))
 	return m.overlay.commandInput.value[:cursor] + "|" + m.overlay.commandInput.value[cursor:]
+}
+
+func (m *Model) restoreEditingCommandInput(value string) {
+	m.overlay.commandInput = commandInput{
+		active: true,
+		mode:   commandInputModeEditing,
+		value:  value,
+		cursor: len(value),
+	}
+}
+
+func (m *Model) showPendingEditCommandInput(request runtimeDatabaseTransitionRequest) {
+	m.overlay.commandInput = commandInput{
+		active:        true,
+		mode:          commandInputModePending,
+		value:         request.Command,
+		cursor:        len(request.Command),
+		pendingStatus: runtimeDatabaseTransitionInFlightStatus(request),
+	}
 }
 
 func (m *Model) closeRuntimeResources() {

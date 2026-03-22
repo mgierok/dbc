@@ -18,10 +18,14 @@ func (m *Model) renderCommandSpotlight(totalWidth int) []string {
 	if innerWidth < 1 {
 		innerWidth = 1
 	}
+	role := primitives.SemanticRoleBody
+	if m.overlay.commandInput.mode == commandInputModePending {
+		role = primitives.SemanticRoleSummary
+	}
 
 	return []string{
 		primitives.FrameTopLeft + strings.Repeat(primitives.FrameHorizontal, innerWidth) + primitives.FrameTopRight,
-		primitives.FrameVertical + primitives.PadRight(m.styles.Render(primitives.SemanticRoleBody, m.visibleCommandPrompt(innerWidth)), innerWidth) + primitives.FrameVertical,
+		primitives.FrameVertical + primitives.PadRight(m.styles.Render(role, m.visibleCommandPrompt(innerWidth)), innerWidth) + primitives.FrameVertical,
 		primitives.FrameBottomLeft + strings.Repeat(primitives.FrameHorizontal, innerWidth) + primitives.FrameBottomRight,
 	}
 }
@@ -47,6 +51,9 @@ func (m *Model) commandSpotlightWidth(totalWidth int) int {
 func (m *Model) visibleCommandPrompt(width int) string {
 	if !m.overlay.commandInput.active || width <= 0 {
 		return ""
+	}
+	if m.overlay.commandInput.mode == commandInputModePending {
+		return truncateToWidth(m.overlay.commandInput.pendingStatus, width)
 	}
 	if width == 1 {
 		return ":"
@@ -78,4 +85,15 @@ func (m *Model) visibleCommandPrompt(width int) string {
 	}
 
 	return ":" + string(valueWithCaret[start:end])
+}
+
+func truncateToWidth(value string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) <= width {
+		return value
+	}
+	return string(runes[:width])
 }

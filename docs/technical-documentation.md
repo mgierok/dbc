@@ -50,7 +50,7 @@
 - Guarantee: selector-first startup is default; `-d`/`--database` enables direct-launch path.
 - Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
-- Guarantee: startup selector flow is separate from runtime database switching; startup selects only the initial database, while runtime `:config` / `:c` opens a runtime overlay popup and keeps the same runtime program alive across successful database switches.
+- Guarantee: startup selector flow is separate from runtime database switching; startup selects only the initial database, while runtime `:config` / `:c` uses a selector popup surface, runtime `:edit` / `:e` uses the command spotlight surface, and both keep the same runtime program alive across successful database switches.
 - Guarantee: the startup selector host stays outside the runtime overlay presenter and therefore does not render the runtime backdrop treatment used by runtime popups and spotlight overlays.
 - Guarantee: runtime database-selector popup dismissal is in-model only, so popup close automatically restores the prior runtime view without per-popup resume snapshots.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
@@ -93,7 +93,7 @@
 ### Centralized Runtime and Selector Command Registry
 
 - Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
-- Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts, and all of them are disabled while `saveInFlight` is active.
+- Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts, all of them are disabled while `saveInFlight` is active, and `runtimeSwitchInFlight` blocks runtime key handling even when the `:edit` spotlight remains visible in render-only pending mode.
 - Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, but remains the single source of truth for runtime/selector input semantics.
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
 - Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_command_context.go`, `internal/interfaces/tui/model_staging_save_flow.go`.
@@ -101,6 +101,7 @@
 ### Shared Runtime Overlay Presentation
 
 - Guarantee: runtime help, confirm, edit, filter, sort, runtime `:config` selector, and command spotlight overlays are resolved through one shared runtime presenter instead of per-overlay host logic.
+- Guarantee: the command spotlight supports both editable command-entry mode and render-only pending mode for `:edit`-driven runtime database transitions.
 - Guarantee: when any runtime overlay is active, the runtime layout is still rendered first and then composed behind the overlay through one centered overlay path.
 - Guarantee: runtime overlay priority stays centralized in the runtime view path instead of being redefined inside individual popup renderers.
 - Enforced in: `internal/interfaces/tui/view.go`, `internal/interfaces/tui/view_popups.go`, `internal/interfaces/tui/view_command_spotlight.go`.
@@ -177,7 +178,8 @@
 - Runtime session state survives in-process runtime database switches within the same DBC process and is not persisted into config.
 - Runtime `:config` / `:c` opens an in-runtime database-selector popup over the current layout; `Esc` closes only that popup and leaves runtime state untouched.
 - Active runtime popups and the command spotlight keep the runtime layout visible underneath through the shared runtime backdrop presenter; the startup selector remains the only intentional selector exception to that rule.
-- Runtime database switching is async inside the TUI adapter: failed switch preparation keeps the current session active and leaves the selector popup open with selector status, while successful switch preparation atomically swaps runtime dependencies in-process and closes the previous DB handle only after the replacement bundle is ready.
+- Runtime database switching is async and modal inside the TUI adapter: `runtimeSwitchInFlight` blocks runtime key input until completion, `:config` keeps the selector popup open as the blocking surface, `:edit` keeps the spotlight visible in pending mode as the blocking surface, failed `:config` switches keep the selector popup open with selector status, failed `:edit` switches restore editable spotlight state with the submitted command preserved and mirror the error to the status line, and successful switch preparation atomically swaps runtime dependencies in-process and closes the previous DB handle only after the replacement bundle is ready.
+- Successful runtime database switch completion always recreates the per-database runtime model in a safe base state (`FocusTables` + `ViewSchema`) and does not restore prior browse-state snapshots, including same-database reloads.
 - Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
 - Runtime record reload path ignores stale async responses using request ID checks, including after record-limit changes.
 - Runtime/selector rendering assumes terminal support for UTF-8 box and marker glyphs plus standard ANSI SGR text attributes; `NO_COLOR` or `TERM=dumb` forces unstyled rendering.

@@ -69,6 +69,18 @@ func TestHandleKey_CommandEditReloadsCurrentDatabaseWithoutQuitting(t *testing.T
 	if switcher.lastSelected.ConnString != current.ConnString {
 		t.Fatalf("expected :edit to reload current database %q, got %q", current.ConnString, switcher.lastSelected.ConnString)
 	}
+	if !runtimeModel.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to stay open during transition")
+	}
+	if runtimeModel.overlay.commandInput.mode != commandInputModePending {
+		t.Fatalf("expected :edit spotlight pending mode, got %v", runtimeModel.overlay.commandInput.mode)
+	}
+	if runtimeModel.overlay.commandInput.value != "edit" {
+		t.Fatalf("expected :edit spotlight to preserve submitted command, got %q", runtimeModel.overlay.commandInput.value)
+	}
+	if runtimeModel.overlay.commandInput.pendingStatus != "Reloading \"primary\"..." {
+		t.Fatalf("expected reload pending status, got %q", runtimeModel.overlay.commandInput.pendingStatus)
+	}
 }
 
 func TestHandleKey_CommandEditWithConnectionStringStartsDatabaseTransition(t *testing.T) {
@@ -98,6 +110,18 @@ func TestHandleKey_CommandEditWithConnectionStringStartsDatabaseTransition(t *te
 	}
 	if switcher.lastSelected.ConnString != "/tmp/analytics.sqlite" {
 		t.Fatalf("expected :edit <conn> to target /tmp/analytics.sqlite, got %q", switcher.lastSelected.ConnString)
+	}
+	if !runtimeModel.overlay.commandInput.active {
+		t.Fatal("expected :edit <conn> spotlight to stay open during transition")
+	}
+	if runtimeModel.overlay.commandInput.mode != commandInputModePending {
+		t.Fatalf("expected :edit <conn> spotlight pending mode, got %v", runtimeModel.overlay.commandInput.mode)
+	}
+	if runtimeModel.overlay.commandInput.value != "edit /tmp/analytics.sqlite" {
+		t.Fatalf("expected :edit <conn> spotlight to preserve submitted command, got %q", runtimeModel.overlay.commandInput.value)
+	}
+	if runtimeModel.overlay.commandInput.pendingStatus != "Opening \"/tmp/analytics.sqlite\"..." {
+		t.Fatalf("expected open pending status, got %q", runtimeModel.overlay.commandInput.pendingStatus)
 	}
 }
 

@@ -407,7 +407,7 @@ func TestUpdate_ErrMsgClearsRecordLoadingAndSurfacesErrorStatus(t *testing.T) {
 	}
 }
 
-func TestUpdate_TablesMsgPendingReloadRestoreDefersRecordLoadUntilSchema(t *testing.T) {
+func TestUpdate_TablesMsgStartsSchemaLoadWithoutAnyReloadRestoreState(t *testing.T) {
 	// Arrange
 	getSchema := &stubGetSchemaUseCase{
 		schema: dto.Schema{
@@ -422,22 +422,19 @@ func TestUpdate_TablesMsgPendingReloadRestoreDefersRecordLoadUntilSchema(t *test
 		ctx:         context.Background(),
 		getSchema:   getSchema,
 		listRecords: recordsSpy,
-		ui: runtimeUIState{
-			pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-				SelectedTableName: "users",
-				Focus:             FocusContent,
-				ViewMode:          ViewRecords,
-				Filter: &dto.Filter{
-					Column:   "name",
-					Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-					Value:    "alice",
-				},
-				Sort: &dto.Sort{
-					Column:    "id",
-					Direction: dto.SortDirectionDesc,
-				},
-				PageIndex: 2,
-			}),
+		read: runtimeReadState{
+			focus:           FocusContent,
+			viewMode:        ViewRecords,
+			recordPageIndex: 2,
+			currentFilter: &dto.Filter{
+				Column:   "name",
+				Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+				Value:    "alice",
+			},
+			currentSort: &dto.Sort{
+				Column:    "id",
+				Direction: dto.SortDirectionDesc,
+			},
 		},
 	}
 
@@ -454,22 +451,25 @@ func TestUpdate_TablesMsgPendingReloadRestoreDefersRecordLoadUntilSchema(t *test
 		t.Fatalf("expected restored table selection index 0, got %d", model.read.selectedTable)
 	}
 	if model.read.focus != FocusContent {
-		t.Fatalf("expected restored focus %v, got %v", FocusContent, model.read.focus)
+		t.Fatalf("expected focus to stay unchanged, got %v", model.read.focus)
 	}
 	if model.read.viewMode != ViewRecords {
-		t.Fatalf("expected restored view mode %v, got %v", ViewRecords, model.read.viewMode)
+		t.Fatalf("expected view mode to stay unchanged, got %v", model.read.viewMode)
 	}
 	if model.read.recordPageIndex != 2 {
-		t.Fatalf("expected restored page index 2, got %d", model.read.recordPageIndex)
+		t.Fatalf("expected page index to stay unchanged before any records reset, got %d", model.read.recordPageIndex)
 	}
-	if model.read.currentFilter != nil {
-		t.Fatalf("expected filter restore to wait for schema validation, got %+v", model.read.currentFilter)
-	}
-	if model.read.currentSort != nil {
-		t.Fatalf("expected sort restore to wait for schema validation, got %+v", model.read.currentSort)
-	}
+	assertFilterEqual(t, model.read.currentFilter, &dto.Filter{
+		Column:   "name",
+		Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+		Value:    "alice",
+	})
+	assertSortEqual(t, model.read.currentSort, &dto.Sort{
+		Column:    "id",
+		Direction: dto.SortDirectionDesc,
+	})
 	if model.read.recordLoading {
-		t.Fatal("expected records load to stay idle until schema arrives")
+		t.Fatal("expected records load to stay idle until explicitly requested")
 	}
 	if model.read.recordRequestID != 0 {
 		t.Fatalf("expected record request id to stay unchanged, got %d", model.read.recordRequestID)
@@ -490,214 +490,13 @@ func TestUpdate_TablesMsgPendingReloadRestoreDefersRecordLoadUntilSchema(t *test
 		t.Fatalf("expected schema message for users table, got %q", schemaMessage.tableName)
 	}
 	if recordsSpy.lastFilter != nil || recordsSpy.lastSort != nil {
-		t.Fatal("expected records use case not to run before schema validation")
+		t.Fatal("expected records use case not to run while handling tables only")
 	}
 }
 
-func TestUpdate_SchemaMsgSanitizesPendingReloadRestoreInRecordsView(t *testing.T) {
-	tests := []struct {
-		name           string
-		schemaColumns  []dto.SchemaColumn
-		expectedFilter *dto.Filter
-		expectedSort   *dto.Sort
-		expectedStatus string
-	}{
-		{
-			name: "invalid filter preserves sort",
-			schemaColumns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "email", Type: "TEXT"},
-			},
-			expectedFilter: nil,
-			expectedSort: &dto.Sort{
-				Column:    "id",
-				Direction: dto.SortDirectionDesc,
-			},
-			expectedStatus: "Database reloaded; filter cleared after schema change.",
-		},
-		{
-			name: "invalid sort preserves filter",
-			schemaColumns: []dto.SchemaColumn{
-				{Name: "name", Type: "TEXT"},
-				{Name: "email", Type: "TEXT"},
-			},
-			expectedFilter: &dto.Filter{
-				Column:   "name",
-				Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-				Value:    "alice",
-			},
-			expectedSort:   nil,
-			expectedStatus: "Database reloaded; sort cleared after schema change.",
-		},
-		{
-			name: "invalid filter and sort clear both",
-			schemaColumns: []dto.SchemaColumn{
-				{Name: "email", Type: "TEXT"},
-			},
-			expectedFilter: nil,
-			expectedSort:   nil,
-			expectedStatus: "Database reloaded; filter and sort cleared after schema change.",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
-			recordsSpy := &spyListRecordsUseCase{
-				page: dto.RecordPage{
-					Rows:       []dto.RecordRow{{Values: []string{"1", "alice@example.com"}}},
-					TotalCount: 41,
-				},
-			}
-			model := &Model{
-				ctx:         context.Background(),
-				listRecords: recordsSpy,
-				read: runtimeReadState{
-					tables:          []dto.Table{{Name: "users"}},
-					focus:           FocusContent,
-					viewMode:        ViewRecords,
-					recordPageIndex: 2,
-				},
-				ui: runtimeUIState{
-					statusMessage: "Database reloaded.",
-					pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-						SelectedTableName: "users",
-						Focus:             FocusContent,
-						ViewMode:          ViewRecords,
-						Filter: &dto.Filter{
-							Column:   "name",
-							Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-							Value:    "alice",
-						},
-						Sort: &dto.Sort{
-							Column:    "id",
-							Direction: dto.SortDirectionDesc,
-						},
-						PageIndex: 2,
-					}),
-				},
-			}
-
-			// Act
-			_, cmd := model.Update(schemaMsg{
-				tableName: "users",
-				schema: dto.Schema{
-					Columns: tc.schemaColumns,
-				},
-			})
-
-			// Assert
-			assertFilterEqual(t, model.read.currentFilter, tc.expectedFilter)
-			assertSortEqual(t, model.read.currentSort, tc.expectedSort)
-			if model.ui.statusMessage != tc.expectedStatus {
-				t.Fatalf("expected reload status %q, got %q", tc.expectedStatus, model.ui.statusMessage)
-			}
-			if model.ui.pendingDatabaseReloadRestore == nil {
-				t.Fatal("expected reload restore state to stay active until records response")
-			}
-			if model.ui.pendingDatabaseReloadRestore.requestedPageIndex != 2 {
-				t.Fatalf("expected requested page index 2 to survive until records response, got %d", model.ui.pendingDatabaseReloadRestore.requestedPageIndex)
-			}
-			if cmd == nil {
-				t.Fatal("expected records-load command after schema sanitization in records view")
-			}
-
-			msg := cmd()
-			recordsMessage, ok := msg.(recordsMsg)
-			if !ok {
-				t.Fatalf("expected recordsMsg after schema sanitization, got %T", msg)
-			}
-			if recordsMessage.tableName != "users" {
-				t.Fatalf("expected records reload for users table, got %q", recordsMessage.tableName)
-			}
-			assertFilterEqual(t, recordsSpy.lastFilter, tc.expectedFilter)
-			assertSortEqual(t, recordsSpy.lastSort, tc.expectedSort)
-			if recordsSpy.lastRecordsOffset != 40 {
-				t.Fatalf("expected records reload offset 40 for restored page 3, got %d", recordsSpy.lastRecordsOffset)
-			}
-			if recordsSpy.lastRecordsLimit != defaultRecordPageLimit {
-				t.Fatalf("expected default records limit %d, got %d", defaultRecordPageLimit, recordsSpy.lastRecordsLimit)
-			}
-		})
-	}
-}
-
-func TestUpdate_SchemaMsgSanitizesPendingReloadRestoreOutsideRecordsViewWithoutLoadingRecords(t *testing.T) {
+func TestUpdate_SchemaMsgKeepsCurrentBrowseStateWithoutReloadRestoreLogic(t *testing.T) {
 	// Arrange
 	recordsSpy := &spyListRecordsUseCase{}
-	model := &Model{
-		ctx:         context.Background(),
-		listRecords: recordsSpy,
-		read: runtimeReadState{
-			tables:   []dto.Table{{Name: "users"}},
-			focus:    FocusContent,
-			viewMode: ViewSchema,
-		},
-		ui: runtimeUIState{
-			statusMessage: "Database reloaded.",
-			pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-				SelectedTableName: "users",
-				Focus:             FocusContent,
-				ViewMode:          ViewSchema,
-				Filter: &dto.Filter{
-					Column:   "name",
-					Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-					Value:    "alice",
-				},
-				Sort: &dto.Sort{
-					Column:    "id",
-					Direction: dto.SortDirectionDesc,
-				},
-			}),
-		},
-	}
-
-	// Act
-	_, cmd := model.Update(schemaMsg{
-		tableName: "users",
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "email", Type: "TEXT"},
-			},
-		},
-	})
-
-	// Assert
-	if cmd != nil {
-		t.Fatal("expected no records-load command outside records view")
-	}
-	if model.read.viewMode != ViewSchema {
-		t.Fatalf("expected schema view to stay active, got %v", model.read.viewMode)
-	}
-	if model.read.currentFilter != nil {
-		t.Fatalf("expected invalid filter to be cleared outside records view, got %+v", model.read.currentFilter)
-	}
-	if model.read.currentSort == nil {
-		t.Fatal("expected valid sort to be preserved outside records view")
-	}
-	if model.read.currentSort.Column != "id" || model.read.currentSort.Direction != dto.SortDirectionDesc {
-		t.Fatalf("expected preserved sort id DESC, got %+v", model.read.currentSort)
-	}
-	if model.ui.pendingDatabaseReloadRestore != nil {
-		t.Fatal("expected reload restore state to finish after schema sanitization outside records view")
-	}
-	if model.ui.statusMessage != "Database reloaded; filter cleared after schema change." {
-		t.Fatalf("expected sanitized reload status, got %q", model.ui.statusMessage)
-	}
-	if recordsSpy.lastFilter != nil || recordsSpy.lastSort != nil {
-		t.Fatal("expected records use case not to run outside records view")
-	}
-}
-
-func TestUpdate_RecordsMsgKeepsReloadPageCorrectionAfterSchemaSanitization(t *testing.T) {
-	// Arrange
-	recordsSpy := &spyListRecordsUseCase{
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"1", "alice"}}},
-			TotalCount: 1,
-		},
-	}
 	model := &Model{
 		ctx:         context.Background(),
 		listRecords: recordsSpy,
@@ -706,171 +505,16 @@ func TestUpdate_RecordsMsgKeepsReloadPageCorrectionAfterSchemaSanitization(t *te
 			focus:           FocusContent,
 			viewMode:        ViewRecords,
 			recordPageIndex: 2,
-		},
-		ui: runtimeUIState{
-			statusMessage: "Database reloaded.",
-			pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-				SelectedTableName: "users",
-				Focus:             FocusContent,
-				ViewMode:          ViewRecords,
-				PageIndex:         2,
-			}),
-		},
-	}
-
-	// Act
-	_, schemaFollowUpCmd := model.Update(schemaMsg{
-		tableName: "users",
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
+			currentFilter: &dto.Filter{
+				Column:   "name",
+				Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+				Value:    "alice",
+			},
+			currentSort: &dto.Sort{
+				Column:    "id",
+				Direction: dto.SortDirectionDesc,
 			},
 		},
-	})
-	if schemaFollowUpCmd == nil {
-		t.Fatal("expected initial records load after schema restore")
-	}
-	firstRecordsMsg, ok := schemaFollowUpCmd().(recordsMsg)
-	if !ok {
-		t.Fatalf("expected recordsMsg after schema restore, got %T", schemaFollowUpCmd())
-	}
-
-	updated, correctionCmd := model.Update(firstRecordsMsg)
-	model = updated.(*Model)
-
-	// Assert
-	if correctionCmd == nil {
-		t.Fatal("expected corrective records reload when restored page is now out of range")
-	}
-	if model.read.recordPageIndex != 0 {
-		t.Fatalf("expected page index to clamp to 0 after first records load, got %d", model.read.recordPageIndex)
-	}
-	if model.ui.pendingDatabaseReloadRestore == nil {
-		t.Fatal("expected reload restore state to stay active for corrective reload")
-	}
-	if model.ui.pendingDatabaseReloadRestore.requestedPageIndex != -1 {
-		t.Fatalf("expected requested page index to switch to corrective mode, got %d", model.ui.pendingDatabaseReloadRestore.requestedPageIndex)
-	}
-
-	secondRecordsMsg, ok := correctionCmd().(recordsMsg)
-	if !ok {
-		t.Fatalf("expected recordsMsg from corrective reload, got %T", correctionCmd())
-	}
-	updated, _ = model.Update(secondRecordsMsg)
-	model = updated.(*Model)
-
-	if model.ui.pendingDatabaseReloadRestore != nil {
-		t.Fatal("expected reload restore state to clear after corrective records reload")
-	}
-	if model.read.recordPageIndex != 0 {
-		t.Fatalf("expected corrected page index 0 after reload completion, got %d", model.read.recordPageIndex)
-	}
-}
-
-func TestUpdate_RecordsMsgBeforeSchemaFinalizeKeepsPendingReloadRestore(t *testing.T) {
-	// Arrange
-	model := &Model{
-		ctx: context.Background(),
-		read: runtimeReadState{
-			tables:   []dto.Table{{Name: "users"}},
-			focus:    FocusContent,
-			viewMode: ViewSchema,
-		},
-		ui: runtimeUIState{
-			pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-				SelectedTableName: "users",
-				Focus:             FocusContent,
-				ViewMode:          ViewSchema,
-				Filter: &dto.Filter{
-					Column:   "name",
-					Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-					Value:    "alice",
-				},
-				Sort: &dto.Sort{
-					Column:    "id",
-					Direction: dto.SortDirectionDesc,
-				},
-			}),
-		},
-	}
-	if _, cmd := model.switchToRecords(); cmd == nil {
-		t.Fatal("expected switch to records to start async loads")
-	}
-
-	// Act
-	_, cmd := model.Update(recordsMsg{
-		tableName: "users",
-		requestID: model.read.recordRequestID,
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"1", "alice"}}},
-			TotalCount: 1,
-		},
-	})
-
-	// Assert
-	if cmd != nil {
-		t.Fatal("expected no corrective reload before schema finalization")
-	}
-	if model.ui.pendingDatabaseReloadRestore == nil {
-		t.Fatal("expected reload restore to survive early records response")
-	}
-	if model.read.currentFilter != nil {
-		t.Fatalf("expected filter restore to wait for schema finalization, got %+v", model.read.currentFilter)
-	}
-	if model.read.currentSort != nil {
-		t.Fatalf("expected sort restore to wait for schema finalization, got %+v", model.read.currentSort)
-	}
-	if model.read.recordLoading {
-		t.Fatal("expected early records response to clear loading state")
-	}
-}
-
-func TestUpdate_SchemaMsgAfterSchemaToRecordsTransitionStartsReloadUsingCurrentViewMode(t *testing.T) {
-	// Arrange
-	recordsSpy := &spyListRecordsUseCase{
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"1", "alice"}}},
-			TotalCount: 1,
-		},
-	}
-	model := &Model{
-		ctx:         context.Background(),
-		listRecords: recordsSpy,
-		read: runtimeReadState{
-			tables:   []dto.Table{{Name: "users"}},
-			focus:    FocusContent,
-			viewMode: ViewSchema,
-		},
-		ui: runtimeUIState{
-			statusMessage: "Database reloaded.",
-			pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-				SelectedTableName: "users",
-				Focus:             FocusContent,
-				ViewMode:          ViewSchema,
-				Filter: &dto.Filter{
-					Column:   "name",
-					Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-					Value:    "alice",
-				},
-				Sort: &dto.Sort{
-					Column:    "id",
-					Direction: dto.SortDirectionDesc,
-				},
-			}),
-		},
-	}
-	if _, cmd := model.switchToRecords(); cmd == nil {
-		t.Fatal("expected switch to records to start async loads")
-	}
-	if _, cmd := model.Update(recordsMsg{
-		tableName: "users",
-		requestID: model.read.recordRequestID,
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"stale"}}},
-			TotalCount: 1,
-		},
-	}); cmd != nil {
-		t.Fatal("expected early records response not to trigger corrective reload")
 	}
 
 	// Act
@@ -879,14 +523,17 @@ func TestUpdate_SchemaMsgAfterSchemaToRecordsTransitionStartsReloadUsingCurrentV
 		schema: dto.Schema{
 			Columns: []dto.SchemaColumn{
 				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+				{Name: "email", Type: "TEXT"},
 			},
 		},
 	})
 
 	// Assert
-	if cmd == nil {
-		t.Fatal("expected schema finalization to start records reload in current records view")
+	if cmd != nil {
+		t.Fatal("expected schema update not to trigger implicit reload")
+	}
+	if model.read.viewMode != ViewRecords {
+		t.Fatalf("expected records view to stay active, got %v", model.read.viewMode)
 	}
 	assertFilterEqual(t, model.read.currentFilter, &dto.Filter{
 		Column:   "name",
@@ -897,103 +544,162 @@ func TestUpdate_SchemaMsgAfterSchemaToRecordsTransitionStartsReloadUsingCurrentV
 		Column:    "id",
 		Direction: dto.SortDirectionDesc,
 	})
-	if model.ui.pendingDatabaseReloadRestore == nil {
-		t.Fatal("expected restore state to stay active until the follow-up records reload completes")
-	}
-
-	msg := cmd()
-	recordsMessage, ok := msg.(recordsMsg)
-	if !ok {
-		t.Fatalf("expected recordsMsg after schema finalization, got %T", msg)
-	}
-	if recordsMessage.requestID != 2 {
-		t.Fatalf("expected follow-up records reload request id 2, got %d", recordsMessage.requestID)
-	}
-	assertFilterEqual(t, recordsSpy.lastFilter, model.read.currentFilter)
-	assertSortEqual(t, recordsSpy.lastSort, model.read.currentSort)
-	if recordsSpy.lastRecordsOffset != 0 {
-		t.Fatalf("expected follow-up reload offset 0, got %d", recordsSpy.lastRecordsOffset)
+	if recordsSpy.lastFilter != nil || recordsSpy.lastSort != nil {
+		t.Fatal("expected records use case not to run while handling schema only")
 	}
 }
 
-func TestUpdate_SchemaMsgStartsSanitizedReloadWhileEarlierRecordsLoadIsStillInFlight(t *testing.T) {
+func TestUpdate_RuntimeSwitchReloadResetsBrowseStateWithoutRestore(t *testing.T) {
 	// Arrange
-	recordsSpy := &spyListRecordsUseCase{
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"1", "alice"}}},
-			TotalCount: 1,
-		},
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
 	}
+	replacement := DatabaseOption{
+		Name:       "primary",
+		ConnString: "/tmp/primary.sqlite",
+		Source:     DatabaseOptionSourceConfig,
+	}
+	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 42}
 	model := &Model{
-		ctx:         context.Background(),
-		listRecords: recordsSpy,
+		ctx:            context.Background(),
+		runtimeSession: runtimeSession,
 		read: runtimeReadState{
-			tables:   []dto.Table{{Name: "users"}},
-			focus:    FocusContent,
-			viewMode: ViewSchema,
+			tables:           []dto.Table{{Name: "users"}},
+			selectedTable:    0,
+			focus:            FocusContent,
+			viewMode:         ViewRecords,
+			recordPageIndex:  2,
+			recordSelection:  3,
+			recordColumn:     1,
+			recordFieldFocus: true,
+			currentFilter: &dto.Filter{
+				Column:   "name",
+				Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+				Value:    "alice",
+			},
+			currentSort: &dto.Sort{
+				Column:    "id",
+				Direction: dto.SortDirectionDesc,
+			},
 		},
-		ui: runtimeUIState{
-			statusMessage: "Database reloaded.",
-			pendingDatabaseReloadRestore: cloneRuntimeDatabaseReloadRestoreState(runtimeDatabaseTransitionSnapshot{
-				SelectedTableName: "users",
-				Focus:             FocusContent,
-				ViewMode:          ViewSchema,
-				Filter: &dto.Filter{
-					Column:   "name",
-					Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
-					Value:    "alice",
-				},
-			}),
-		},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current, nil, replacement),
 	}
-	if _, cmd := model.switchToRecords(); cmd == nil {
-		t.Fatal("expected switch to records to start async loads")
-	}
-	earlierRequestID := model.read.recordRequestID
+	model.overlay.recordDetail = recordDetailState{active: true}
 
 	// Act
-	_, cmd := model.Update(schemaMsg{
-		tableName: "users",
-		schema: dto.Schema{
-			Columns: []dto.SchemaColumn{
-				{Name: "id", Type: "INTEGER"},
-				{Name: "name", Type: "TEXT"},
+	updated, initCmd := model.Update(runtimeDatabaseSwitchCompletedMsg{
+		request: runtimeDatabaseTransitionRequest{
+			Target: runtimeDatabaseTransitionTarget{
+				Option: replacement,
+				Kind:   reloadCurrentDatabase,
 			},
+			Origin: runtimeDatabaseTransitionOriginConfigSelector,
+		},
+		deps: RuntimeRunDeps{
+			DatabaseSelector: runtimeDatabaseSelectorDepsForTest(replacement, nil),
 		},
 	})
 
 	// Assert
-	if cmd == nil {
-		t.Fatal("expected schema finalization to force a sanitized follow-up records reload")
+	if initCmd == nil {
+		t.Fatal("expected replacement runtime init after successful reload")
 	}
-	if model.read.recordRequestID != earlierRequestID+1 {
-		t.Fatalf("expected sanitized reload to bump request id from %d to %d, got %d", earlierRequestID, earlierRequestID+1, model.read.recordRequestID)
+	model = updated.(*Model)
+	if model.ui.statusMessage != "Database reloaded." {
+		t.Fatalf("expected reload success status, got %q", model.ui.statusMessage)
 	}
+	if model.read.focus != FocusTables {
+		t.Fatalf("expected focus reset to tables after reload, got %v", model.read.focus)
+	}
+	if model.read.viewMode != ViewSchema {
+		t.Fatalf("expected schema view after reload, got %v", model.read.viewMode)
+	}
+	if model.read.currentFilter != nil {
+		t.Fatalf("expected filter reset after reload, got %+v", model.read.currentFilter)
+	}
+	if model.read.currentSort != nil {
+		t.Fatalf("expected sort reset after reload, got %+v", model.read.currentSort)
+	}
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected record page reset after reload, got %d", model.read.recordPageIndex)
+	}
+	if model.read.recordSelection != 0 {
+		t.Fatalf("expected record selection reset after reload, got %d", model.read.recordSelection)
+	}
+	if model.read.recordColumn != 0 {
+		t.Fatalf("expected record column reset after reload, got %d", model.read.recordColumn)
+	}
+	if model.read.recordFieldFocus {
+		t.Fatal("expected record field focus reset after reload")
+	}
+	if model.overlay.recordDetail.active {
+		t.Fatal("expected record detail popup reset after reload")
+	}
+	if model.runtimeSession != runtimeSession {
+		t.Fatal("expected runtime session pointer to survive reload")
+	}
+	if model.runtimeSession.RecordsPageLimit != 42 {
+		t.Fatalf("expected runtime session state to survive reload, got %d", model.runtimeSession.RecordsPageLimit)
+	}
+}
 
-	staleRecordsMsg := recordsMsg{
-		tableName: "users",
-		requestID: earlierRequestID,
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"stale"}}},
-			TotalCount: 1,
+func TestUpdate_RuntimeSwitchFailureFromEditRestoresEditingSpotlightAndStatus(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ui: runtimeUIState{
+			runtimeSwitchInFlight: true,
+		},
+		overlay: runtimeOverlayState{
+			commandInput: commandInput{
+				active:        true,
+				mode:          commandInputModePending,
+				value:         "edit /tmp/analytics.sqlite",
+				pendingStatus: "Opening \"/tmp/analytics.sqlite\"...",
+			},
 		},
 	}
-	if _, staleCmd := model.Update(staleRecordsMsg); staleCmd != nil {
-		t.Fatal("expected stale earlier records response to be ignored")
-	}
-	if model.ui.pendingDatabaseReloadRestore == nil {
-		t.Fatal("expected restore state to survive until sanitized reload completes")
-	}
 
-	msg := cmd()
-	recordsMessage, ok := msg.(recordsMsg)
-	if !ok {
-		t.Fatalf("expected recordsMsg after sanitized reload, got %T", msg)
+	// Act
+	_, cmd := model.Update(runtimeDatabaseSwitchCompletedMsg{
+		request: runtimeDatabaseTransitionRequest{
+			Target: runtimeDatabaseTransitionTarget{
+				Option: DatabaseOption{
+					Name:       "/tmp/analytics.sqlite",
+					ConnString: "/tmp/analytics.sqlite",
+					Source:     DatabaseOptionSourceCLI,
+				},
+				Kind: switchDifferentDatabase,
+			},
+			Origin:  runtimeDatabaseTransitionOriginEditCommand,
+			Command: "edit /tmp/analytics.sqlite",
+		},
+		err: errors.New("ping failed"),
+	})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected failed runtime switch from :edit not to start follow-up work")
 	}
-	if recordsMessage.requestID != model.read.recordRequestID {
-		t.Fatalf("expected sanitized reload response to use active request id %d, got %d", model.read.recordRequestID, recordsMessage.requestID)
+	if model.ui.runtimeSwitchInFlight {
+		t.Fatal("expected in-flight flag cleared after :edit failure")
 	}
-	assertFilterEqual(t, recordsSpy.lastFilter, model.read.currentFilter)
+	if model.ui.statusMessage != "Error: ping failed" {
+		t.Fatalf("expected surfaced :edit error in status line, got %q", model.ui.statusMessage)
+	}
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to remain open after failure")
+	}
+	if model.overlay.commandInput.mode != commandInputModeEditing {
+		t.Fatalf("expected :edit spotlight editing mode after failure, got %v", model.overlay.commandInput.mode)
+	}
+	if model.overlay.commandInput.value != "edit /tmp/analytics.sqlite" {
+		t.Fatalf("expected :edit spotlight to preserve submitted command, got %q", model.overlay.commandInput.value)
+	}
+	if model.overlay.commandInput.cursor != len("edit /tmp/analytics.sqlite") {
+		t.Fatalf("expected cursor at end of restored command, got %d", model.overlay.commandInput.cursor)
+	}
 }
 
 func TestUpdate_RuntimeSwitchIgnoresLateMessagesFromPreviousBundle(t *testing.T) {

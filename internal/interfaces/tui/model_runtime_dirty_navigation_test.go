@@ -143,6 +143,9 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStart
 	if !model.ui.runtimeSwitchInFlight {
 		t.Fatal("expected runtime switch to start after discard")
 	}
+	if !model.overlay.databaseSelector.active {
+		t.Fatal("expected runtime database selector to remain the active blocking surface for :config")
+	}
 }
 
 func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing.T) {
@@ -197,6 +200,12 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 	}
 	if !model.ui.runtimeSwitchInFlight {
 		t.Fatal("expected successful save to continue pending database transition")
+	}
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to reopen in pending mode after save succeeds")
+	}
+	if model.overlay.commandInput.mode != commandInputModePending {
+		t.Fatalf("expected pending spotlight after save, got %v", model.overlay.commandInput.mode)
 	}
 }
 
@@ -258,6 +267,15 @@ func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(
 	}
 	if !strings.Contains(model.ui.statusMessage, "boom") {
 		t.Fatalf("expected save error status to be surfaced, got %q", model.ui.statusMessage)
+	}
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to reopen after save failure")
+	}
+	if model.overlay.commandInput.mode != commandInputModeEditing {
+		t.Fatalf("expected :edit spotlight editing mode after save failure, got %v", model.overlay.commandInput.mode)
+	}
+	if model.overlay.commandInput.value != "edit" {
+		t.Fatalf("expected :edit spotlight to preserve submitted command after save failure, got %q", model.overlay.commandInput.value)
 	}
 }
 

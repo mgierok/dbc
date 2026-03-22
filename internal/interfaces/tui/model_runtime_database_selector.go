@@ -107,32 +107,28 @@ func formatRuntimeDatabaseSelectionFailure(selected DatabaseOption, reason strin
 }
 
 type runtimeDatabaseSwitchCompletedMsg struct {
-	request  runtimeDatabaseTransitionRequest
-	snapshot runtimeDatabaseTransitionSnapshot
-	deps     RuntimeRunDeps
-	err      error
+	request runtimeDatabaseTransitionRequest
+	deps    RuntimeRunDeps
+	err     error
 }
 
 func switchRuntimeDatabaseCmd(
 	ctx context.Context,
 	switcher RuntimeDatabaseSwitcher,
 	request runtimeDatabaseTransitionRequest,
-	snapshot runtimeDatabaseTransitionSnapshot,
 ) tea.Cmd {
 	return func() tea.Msg {
 		if switcher == nil {
 			return runtimeDatabaseSwitchCompletedMsg{
-				request:  request,
-				snapshot: snapshot,
-				err:      fmt.Errorf("database selector unavailable"),
+				request: request,
+				err:     fmt.Errorf("database selector unavailable"),
 			}
 		}
 		deps, err := switcher.Switch(ctx, request.Target.Option)
 		return runtimeDatabaseSwitchCompletedMsg{
-			request:  request,
-			snapshot: snapshot,
-			deps:     deps,
-			err:      err,
+			request: request,
+			deps:    deps,
+			err:     err,
 		}
 	}
 }

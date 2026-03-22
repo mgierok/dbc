@@ -62,10 +62,19 @@ type sortPopup struct {
 }
 
 type commandInput struct {
-	active bool
-	value  string
-	cursor int
+	active        bool
+	mode          commandInputMode
+	value         string
+	cursor        int
+	pendingStatus string
 }
+
+type commandInputMode int
+
+const (
+	commandInputModeEditing commandInputMode = iota
+	commandInputModePending
+)
 
 type helpPopup struct {
 	active       bool

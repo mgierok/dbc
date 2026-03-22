@@ -57,9 +57,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.read.selectedTable = 0
-		if m.ui.pendingDatabaseReloadRestore != nil {
-			return m, m.applyPendingDatabaseReloadRestoreAfterTables()
-		}
 		return m, m.loadSchemaCmd()
 	case schemaMsg:
 		if msg.bundleToken != m.runtimeBundleToken {
@@ -73,7 +70,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.read.recordColumn >= len(m.read.schema.Columns) {
 			m.read.recordColumn = 0
 		}
-		cmd := m.finalizePendingDatabaseReloadRestoreAfterSchema()
 		if m.overlay.pendingFilterOpen {
 			m.overlay.pendingFilterOpen = false
 			m.openFilterPopup()
@@ -82,7 +78,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.overlay.pendingSortOpen = false
 			m.openSortPopup()
 		}
-		return m, cmd
+		return m, nil
 	case recordsMsg:
 		if msg.bundleToken != m.runtimeBundleToken {
 			return m, nil
@@ -93,36 +89,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.requestID != m.read.recordRequestID {
 			return m, nil
 		}
-		restore := m.ui.pendingDatabaseReloadRestore
-		requestedRestorePageIndex := -1
-		if restore.awaitingRecordsCompletion() {
-			requestedRestorePageIndex = restore.requestedPageIndex
-		}
 		m.read.recordLoading = false
 		m.read.records = msg.page.Rows
 		m.read.recordTotalCount = msg.page.TotalCount
 		m.read.recordTotalPages = m.computeTotalPages(msg.page.TotalCount)
 		m.read.recordPageIndex = clamp(m.read.recordPageIndex, 0, m.read.recordTotalPages-1)
-		if restore.awaitingSchemaFinalize() {
-			m.normalizeRecordSelection()
-			return m, nil
-		}
-		if requestedRestorePageIndex >= 0 {
-			if m.read.recordPageIndex != requestedRestorePageIndex {
-				restore.requestedPageIndex = -1
-				return m, m.loadRecordsCmd(false)
-			}
-		}
-		if restore.awaitingRecordsCompletion() {
-			m.ui.pendingDatabaseReloadRestore = nil
-		}
 		m.normalizeRecordSelection()
 		return m, nil
 	case saveChangesMsg:
 		m.ui.saveInFlight = false
 		if msg.err != nil {
+			pendingTransition := m.ui.pendingDatabaseTransition
 			m.ui.pendingQuitAfterSave = false
 			m.ui.pendingDatabaseTransition = nil
+			if pendingTransition != nil && pendingTransition.Origin == runtimeDatabaseTransitionOriginEditCommand {
+				m.restoreEditingCommandInput(pendingTransition.Command)
+			}
 			m.ui.statusMessage = "Error: " + msg.err.Error()
 			return m, nil
 		}
@@ -140,12 +122,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case runtimeDatabaseSwitchCompletedMsg:
 		m.ui.runtimeSwitchInFlight = false
 		if msg.err != nil {
-			if m.overlay.databaseSelector.controller != nil {
-				m.overlay.databaseSelector.controller.SetStatusMessage(
-					formatRuntimeDatabaseSelectionFailure(msg.request.Target.Option, msg.err.Error()),
-				)
-			} else {
+			switch msg.request.Origin {
+			case runtimeDatabaseTransitionOriginEditCommand:
+				m.restoreEditingCommandInput(msg.request.Command)
 				m.ui.statusMessage = "Error: " + msg.err.Error()
+			default:
+				if m.overlay.databaseSelector.controller != nil {
+					m.overlay.databaseSelector.controller.SetStatusMessage(
+						formatRuntimeDatabaseSelectionFailure(msg.request.Target.Option, msg.err.Error()),
+					)
+				} else {
+					m.ui.statusMessage = "Error: " + msg.err.Error()
+				}
 			}
 			return m, nil
 		}
@@ -157,7 +145,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		replacement.ui.height = m.ui.height
 		*m = *replacement
 		if msg.request.Target.Kind == reloadCurrentDatabase {
-			m.ui.pendingDatabaseReloadRestore = cloneRuntimeDatabaseReloadRestoreState(msg.snapshot)
 			m.ui.statusMessage = "Database reloaded."
 		}
 		if previousBundleCancel != nil {
