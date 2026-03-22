@@ -56,10 +56,6 @@ func (m *Model) handleConfirmPopupKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.closeConfirmPopup()
 		switch action {
-		case confirmSave:
-			return m.confirmSaveChanges()
-		case confirmSaveAndQuit:
-			return m.confirmSaveAndQuit()
 		case confirmDiscardTable:
 			return m.confirmDiscardTableSwitch()
 		case confirmCancelTableSwitch:

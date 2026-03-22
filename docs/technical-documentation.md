@@ -64,7 +64,7 @@
 
 ### Staged Write Model
 
-- Guarantee: insert/edit/delete actions are staged in memory and persisted only after explicit save confirmation.
+- Guarantee: insert/edit/delete actions are staged in memory and persisted only after an explicit save command (`:w`, `:write`, or dirty-flow save choice).
 - Guarantee: runtime write-side session state and undo/redo history stay behind `Model.staging` so staging mutations remain local to the TUI write workflow.
 - Guarantee: dirty-row counting and initial insert defaults are delegated to application staging policy.
 - Guarantee: the dirty count represents unique affected rows in the current table: each pending insert counts once, each persisted row with staged edits counts once regardless of edited columns, and pending deletes are deduplicated against the same persisted row already staged for update.
@@ -177,6 +177,7 @@
 - Runtime closes active DB handle on session end; close failures are logged.
 - Runtime `:config` / `:c` opens an in-runtime database-selector popup over the current layout; `Esc` closes only that popup and leaves runtime state untouched.
 - Active runtime popups and the command spotlight keep the runtime layout visible underneath through the shared runtime backdrop presenter; the startup selector remains the only intentional selector exception to that rule.
+- Runtime `:w` / `:write` starts save immediately when dirty and surfaces a non-error no-op status when no staged changes exist; runtime `:wq` starts save immediately when dirty and quits only after a successful save.
 - Runtime `:config` / `:c` and `:edit` / `:e` resolve the requested target inside the TUI adapter, then exit the current runtime with a structured reopen result; if dirty state exists, save/discard/cancel is resolved before exit.
 - `cmd/dbc` consumes runtime reopen results, tracks CLI-scoped targets, attempts the requested reopen through the normal startup/runtime loop, and falls back to the fullscreen selector with status + preferred connection string when that reopen fails.
 - Successful runtime-initiated reopen always starts a fresh per-database runtime model in a safe base state (`FocusTables` + `ViewSchema`), does not restore prior browse-state snapshots, and resets runtime-local record-limit overrides to the default `20`.

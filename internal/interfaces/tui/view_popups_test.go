@@ -373,43 +373,6 @@ func TestRenderConfirmPopup_DirtyDatabaseReloadShowsMessageAndOptionLabels(t *te
 	}
 }
 
-func TestRenderConfirmPopup_SaveShowsMessageAndOptionLabels(t *testing.T) {
-	// Arrange
-	model := &Model{
-		overlay: runtimeOverlayState{
-			confirmPopup: confirmPopup{
-				active:  true,
-				title:   "Save",
-				message: "Choose whether to save staged changes.",
-				options: []confirmOption{
-					{label: "Save changes", action: confirmSave},
-					{label: "Cancel", action: confirmDatabaseTransitionCancel},
-				},
-				selected: 0,
-				modal:    true,
-			},
-		},
-	}
-
-	// Act
-	lines := model.renderConfirmPopup(60)
-	popup := stripANSI(strings.Join(lines, "\n"))
-
-	// Assert
-	if !strings.Contains(popup, "Choose whether to save staged changes.") {
-		t.Fatalf("expected save summary in popup, got %q", popup)
-	}
-	if !strings.Contains(popup, "Save changes") {
-		t.Fatalf("expected save option label in popup, got %q", popup)
-	}
-	if !strings.Contains(popup, "Cancel") {
-		t.Fatalf("expected cancel option label in popup, got %q", popup)
-	}
-	if !strings.Contains(popup, primitives.IconSelection+" Save changes") {
-		t.Fatalf("expected selected save option in popup, got %q", popup)
-	}
-}
-
 func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *testing.T) {
 	// Arrange
 	model := &Model{

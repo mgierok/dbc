@@ -166,13 +166,13 @@ func TestRuntimeHelpPopupContentLines_UsesRegistryDefinitions(t *testing.T) {
 	if !strings.Contains(joined, ":help / :h - Open runtime help popup reference.") {
 		t.Fatalf("expected help command line in help content, got %q", joined)
 	}
-	if !strings.Contains(joined, ":w / :write - Save staged changes.") {
+	if !strings.Contains(joined, ":w / :write - Save staged changes immediately.") {
 		t.Fatalf("expected save command line in help content, got %q", joined)
 	}
 	if !strings.Contains(joined, ":edit[!] / :e[!] [<connection-string>] - Reload current database or open another database.") {
 		t.Fatalf("expected edit command line in help content, got %q", joined)
 	}
-	if !strings.Contains(joined, ":wq - Save staged changes and quit the application.") {
+	if !strings.Contains(joined, ":wq - Save staged changes immediately and quit on success.") {
 		t.Fatalf("expected save-and-quit command line in help content, got %q", joined)
 	}
 	if !strings.Contains(joined, ":set limit=<n> - Set records page limit for the current app session.") {

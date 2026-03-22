@@ -125,9 +125,7 @@ const (
 type confirmAction int
 
 const (
-	confirmSave confirmAction = iota + 1
-	confirmSaveAndQuit
-	confirmDiscardTable
+	confirmDiscardTable confirmAction = iota + 1
 	confirmCancelTableSwitch
 	confirmDatabaseTransitionSave
 	confirmDatabaseTransitionDiscard

@@ -4,28 +4,19 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func saveConfirmOptions(primaryLabel string, primaryAction confirmAction) []confirmOption {
-	return []confirmOption{
-		{label: primaryLabel, action: primaryAction},
-		{label: "Cancel", action: confirmDatabaseTransitionCancel},
-	}
-}
-
 func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
-	if !m.saveSupportedInCurrentContext() {
+	if !m.nonBlockingRuntimeCommandContextActive() {
+		return m, nil
+	}
+	if !m.hasDirtyEdits() {
+		m.ui.statusMessage = "No changes to save"
 		return m, nil
 	}
 	if m.saveChanges == nil {
 		m.ui.statusMessage = "Error: save use case unavailable"
 		return m, nil
 	}
-	m.openModalConfirmPopupWithOptions(
-		"Save",
-		"Choose whether to save staged changes.",
-		saveConfirmOptions("Save changes", confirmSave),
-		0,
-	)
-	return m, nil
+	return m.confirmSaveChanges()
 }
 
 func (m *Model) requestSaveAndQuit() (tea.Model, tea.Cmd) {
@@ -39,13 +30,13 @@ func (m *Model) requestSaveAndQuit() (tea.Model, tea.Cmd) {
 		m.ui.statusMessage = "Error: save use case unavailable"
 		return m, nil
 	}
-	m.openModalConfirmPopupWithOptions(
-		"Save",
-		"Choose whether to save staged changes before quitting.",
-		saveConfirmOptions("Save changes and quit", confirmSaveAndQuit),
-		0,
-	)
-	return m, nil
+	m.ui.pendingDatabaseTransition = nil
+	m.ui.pendingQuitAfterSave = true
+	updatedModel, cmd := m.confirmSaveChanges()
+	if cmd == nil {
+		m.ui.pendingQuitAfterSave = false
+	}
+	return updatedModel, cmd
 }
 
 func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
@@ -60,16 +51,6 @@ func (m *Model) confirmSaveChanges() (tea.Model, tea.Cmd) {
 	m.ui.saveInFlight = true
 	m.ui.statusMessage = "Saving changes..."
 	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes)
-}
-
-func (m *Model) confirmSaveAndQuit() (tea.Model, tea.Cmd) {
-	m.ui.pendingDatabaseTransition = nil
-	m.ui.pendingQuitAfterSave = true
-	updatedModel, cmd := m.confirmSaveChanges()
-	if cmd == nil {
-		m.ui.pendingQuitAfterSave = false
-	}
-	return updatedModel, cmd
 }
 
 func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {

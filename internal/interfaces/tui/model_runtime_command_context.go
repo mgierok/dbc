@@ -5,10 +5,6 @@ func (m *Model) commandInputSupportedInCurrentContext() bool {
 	return m.nonBlockingRuntimeCommandContextActive()
 }
 
-func (m *Model) saveSupportedInCurrentContext() bool {
-	return m.nonBlockingRuntimeCommandContextActive() && m.hasDirtyEdits()
-}
-
 func (m *Model) nonBlockingRuntimeCommandContextActive() bool {
 	switch {
 	case m.ui.saveInFlight:

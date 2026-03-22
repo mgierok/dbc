@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/mgierok/dbc/internal/application/dto"
 )
 
 func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) {
@@ -180,7 +182,7 @@ func TestHandleKey_CommandSaveAndQuitQuitsRuntimeWhenClean(t *testing.T) {
 	}
 }
 
-func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
+func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		command string
@@ -193,11 +195,27 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				ctx:         context.Background(),
 				saveChanges: &spySaveChangesUseCase{},
 				read: runtimeReadState{
-					viewMode: ViewRecords,
-					focus:    FocusContent,
+					viewMode:      ViewRecords,
+					focus:         FocusContent,
+					tables:        []dto.Table{{Name: "users"}},
+					selectedTable: 0,
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER", PrimaryKey: true},
+							{Name: "name", Type: "TEXT", Nullable: false},
+						},
+					},
 				},
 				staging: stagingState{
-					pendingInserts: []pendingInsertRow{{}},
+					pendingInserts: []pendingInsertRow{
+						{
+							values: map[int]stagedEdit{
+								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+							},
+							explicitAuto: map[int]bool{},
+						},
+					},
 				},
 			},
 		},
@@ -208,11 +226,27 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				ctx:         context.Background(),
 				saveChanges: &spySaveChangesUseCase{},
 				read: runtimeReadState{
-					viewMode: ViewRecords,
-					focus:    FocusContent,
+					viewMode:      ViewRecords,
+					focus:         FocusContent,
+					tables:        []dto.Table{{Name: "users"}},
+					selectedTable: 0,
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER", PrimaryKey: true},
+							{Name: "name", Type: "TEXT", Nullable: false},
+						},
+					},
 				},
 				staging: stagingState{
-					pendingInserts: []pendingInsertRow{{}},
+					pendingInserts: []pendingInsertRow{
+						{
+							values: map[int]stagedEdit{
+								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+							},
+							explicitAuto: map[int]bool{},
+						},
+					},
 				},
 			},
 		},
@@ -223,11 +257,27 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				ctx:         context.Background(),
 				saveChanges: &spySaveChangesUseCase{},
 				read: runtimeReadState{
-					viewMode: ViewSchema,
-					focus:    FocusContent,
+					viewMode:      ViewSchema,
+					focus:         FocusContent,
+					tables:        []dto.Table{{Name: "users"}},
+					selectedTable: 0,
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER", PrimaryKey: true},
+							{Name: "name", Type: "TEXT", Nullable: false},
+						},
+					},
 				},
 				staging: stagingState{
-					pendingInserts: []pendingInsertRow{{}},
+					pendingInserts: []pendingInsertRow{
+						{
+							values: map[int]stagedEdit{
+								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+							},
+							explicitAuto: map[int]bool{},
+						},
+					},
 				},
 			},
 		},
@@ -238,11 +288,27 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				ctx:         context.Background(),
 				saveChanges: &spySaveChangesUseCase{},
 				read: runtimeReadState{
-					viewMode: ViewSchema,
-					focus:    FocusTables,
+					viewMode:      ViewSchema,
+					focus:         FocusTables,
+					tables:        []dto.Table{{Name: "users"}},
+					selectedTable: 0,
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER", PrimaryKey: true},
+							{Name: "name", Type: "TEXT", Nullable: false},
+						},
+					},
 				},
 				staging: stagingState{
-					pendingInserts: []pendingInsertRow{{}},
+					pendingInserts: []pendingInsertRow{
+						{
+							values: map[int]stagedEdit{
+								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+							},
+							explicitAuto: map[int]bool{},
+						},
+					},
 				},
 			},
 		},
@@ -253,11 +319,27 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 				ctx:         context.Background(),
 				saveChanges: &spySaveChangesUseCase{},
 				read: runtimeReadState{
-					viewMode: ViewRecords,
-					focus:    FocusContent,
+					viewMode:      ViewRecords,
+					focus:         FocusContent,
+					tables:        []dto.Table{{Name: "users"}},
+					selectedTable: 0,
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER", PrimaryKey: true},
+							{Name: "name", Type: "TEXT", Nullable: false},
+						},
+					},
 				},
 				staging: stagingState{
-					pendingInserts: []pendingInsertRow{{}},
+					pendingInserts: []pendingInsertRow{
+						{
+							values: map[int]stagedEdit{
+								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+							},
+							explicitAuto: map[int]bool{},
+						},
+					},
 				},
 				overlay: runtimeOverlayState{
 					recordDetail: recordDetailState{active: true},
@@ -274,42 +356,46 @@ func TestHandleKey_CommandSaveAliasesOpenSaveConfirmation(t *testing.T) {
 
 			// Assert
 			assertRuntimeSessionActive(t, cmd, ":"+tc.command)
-			if !model.overlay.confirmPopup.active {
-				t.Fatalf("expected :%s to open save confirmation", tc.command)
+			if model.overlay.confirmPopup.active {
+				t.Fatalf("expected :%s not to open a save popup", tc.command)
 			}
-			if !model.overlay.confirmPopup.modal {
-				t.Fatalf("expected :%s to open modal save confirmation", tc.command)
+			if !model.ui.saveInFlight {
+				t.Fatalf("expected :%s to start save immediately", tc.command)
 			}
-			if len(model.overlay.confirmPopup.options) != 2 {
-				t.Fatalf("expected :%s to show two explicit save options, got %d", tc.command, len(model.overlay.confirmPopup.options))
-			}
-			if model.overlay.confirmPopup.options[0].action != confirmSave {
-				t.Fatalf("expected :%s primary option to trigger save, got %v", tc.command, model.overlay.confirmPopup.options[0].action)
-			}
-			if model.overlay.confirmPopup.options[0].label != "Save changes" {
-				t.Fatalf("expected :%s primary option label, got %q", tc.command, model.overlay.confirmPopup.options[0].label)
-			}
-			if model.overlay.confirmPopup.options[1].label != "Cancel" {
-				t.Fatalf("expected :%s cancel option label, got %q", tc.command, model.overlay.confirmPopup.options[1].label)
-			}
-			if model.overlay.confirmPopup.selected != 0 {
-				t.Fatalf("expected :%s to default to primary save option, got %d", tc.command, model.overlay.confirmPopup.selected)
+			if model.ui.statusMessage != "Saving changes..." {
+				t.Fatalf("expected :%s to show saving status, got %q", tc.command, model.ui.statusMessage)
 			}
 		})
 	}
 }
 
-func TestHandleKey_CommandSaveAndQuitOpensSaveConfirmationWhenDirty(t *testing.T) {
+func TestHandleKey_CommandSaveAndQuitStartsSaveImmediatelyWhenDirty(t *testing.T) {
 	// Arrange
 	model := &Model{
 		ctx:         context.Background(),
 		saveChanges: &spySaveChangesUseCase{},
 		read: runtimeReadState{
-			viewMode: ViewRecords,
-			focus:    FocusContent,
+			viewMode:      ViewRecords,
+			focus:         FocusContent,
+			tables:        []dto.Table{{Name: "users"}},
+			selectedTable: 0,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
 		},
 		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
+			pendingInserts: []pendingInsertRow{
+				{
+					values: map[int]stagedEdit{
+						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+					},
+					explicitAuto: map[int]bool{},
+				},
+			},
 		},
 	}
 
@@ -318,26 +404,17 @@ func TestHandleKey_CommandSaveAndQuitOpensSaveConfirmationWhenDirty(t *testing.T
 
 	// Assert
 	assertRuntimeSessionActive(t, cmd, ":wq")
-	if !model.overlay.confirmPopup.active {
-		t.Fatal("expected :wq to open save confirmation")
+	if model.overlay.confirmPopup.active {
+		t.Fatal("expected :wq not to open a save popup")
 	}
-	if !model.overlay.confirmPopup.modal {
-		t.Fatal("expected :wq to open modal save confirmation")
+	if !model.ui.saveInFlight {
+		t.Fatal("expected :wq to start save immediately")
 	}
-	if len(model.overlay.confirmPopup.options) != 2 {
-		t.Fatalf("expected :wq to show two explicit save options, got %d", len(model.overlay.confirmPopup.options))
+	if !model.ui.pendingQuitAfterSave {
+		t.Fatal("expected :wq to set pending quit flag")
 	}
-	if model.overlay.confirmPopup.options[0].action != confirmSaveAndQuit {
-		t.Fatalf("expected :wq primary option to trigger save-and-quit, got %v", model.overlay.confirmPopup.options[0].action)
-	}
-	if model.overlay.confirmPopup.options[0].label != "Save changes and quit" {
-		t.Fatalf("expected :wq primary option label, got %q", model.overlay.confirmPopup.options[0].label)
-	}
-	if model.overlay.confirmPopup.options[1].label != "Cancel" {
-		t.Fatalf("expected :wq cancel option label, got %q", model.overlay.confirmPopup.options[1].label)
-	}
-	if model.overlay.confirmPopup.selected != 0 {
-		t.Fatalf("expected :wq to default to primary save option, got %d", model.overlay.confirmPopup.selected)
+	if model.ui.statusMessage != "Saving changes..." {
+		t.Fatalf("expected :wq to show saving status, got %q", model.ui.statusMessage)
 	}
 }
 
@@ -543,7 +620,7 @@ func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 	assertRuntimeSessionActive(t, cmd, "q without prefix")
 }
 
-func TestHandleKey_WKeyWithoutCommandPrefixDoesNotOpenSaveConfirmation(t *testing.T) {
+func TestHandleKey_WKeyWithoutCommandPrefixDoesNotOpenSavePopup(t *testing.T) {
 	// Arrange
 	model := &Model{
 		read: runtimeReadState{
@@ -561,7 +638,7 @@ func TestHandleKey_WKeyWithoutCommandPrefixDoesNotOpenSaveConfirmation(t *testin
 	// Assert
 	assertRuntimeSessionActive(t, cmd, "w without prefix")
 	if model.overlay.confirmPopup.active {
-		t.Fatal("expected raw w to leave save confirmation closed")
+		t.Fatal("expected raw w to leave save popup closed")
 	}
 }
 
