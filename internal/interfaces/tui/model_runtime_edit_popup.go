@@ -33,6 +33,11 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 		return m, nil
 	} else if isInsert && (insertIndex < 0 || insertIndex >= len(m.staging.pendingInserts)) {
 		return m, nil
+	} else if !isInsert {
+		if _, _, err := m.recordIdentityForVisibleRow(m.read.recordSelection); err != nil {
+			m.ui.statusMessage = "Error: " + err.Error()
+			return m, nil
+		}
 	}
 	visibleColumns := m.visibleColumnIndicesForSelection()
 	if len(visibleColumns) == 0 {
@@ -52,6 +57,11 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 		}
 	} else if staged, ok := m.stagedEditForRow(m.read.recordSelection, m.read.recordColumn); ok {
 		currentValue = displayValue(staged.Value)
+	} else if persistedIndex := m.persistedRowIndex(m.read.recordSelection); persistedIndex >= 0 {
+		if !m.recordCellEditableFromBrowse(persistedIndex, m.read.recordColumn) {
+			m.ui.statusMessage = "Error: selected cell has no safe editable source"
+			return m, nil
+		}
 	}
 
 	popup := editPopup{

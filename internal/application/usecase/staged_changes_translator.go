@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,8 @@ import (
 )
 
 type StagedChangesTranslator struct{}
+
+var ErrSelectedRecordIdentityExceedsSafeBrowseLimit = errors.New("selected record identity exceeds safe browse limit")
 
 func NewStagedChangesTranslator() *StagedChangesTranslator {
 	return &StagedChangesTranslator{}
@@ -28,6 +31,16 @@ func (uc *StagedChangesTranslator) ParseStagedValue(column dto.SchemaColumn, inp
 }
 
 func (uc *StagedChangesTranslator) BuildRecordIdentity(schema dto.Schema, row dto.RecordRow) (string, dto.RecordIdentity, error) {
+	if row.IdentityUnavailable {
+		return "", dto.RecordIdentity{}, ErrSelectedRecordIdentityExceedsSafeBrowseLimit
+	}
+	if row.RowKey != "" || len(row.Identity.Keys) > 0 {
+		if row.RowKey == "" || len(row.Identity.Keys) == 0 {
+			return "", dto.RecordIdentity{}, fmt.Errorf("record identity missing")
+		}
+		return row.RowKey, row.Identity, nil
+	}
+
 	pkColumns := primaryKeyColumns(schema.Columns)
 	if len(pkColumns) == 0 {
 		return "", dto.RecordIdentity{}, fmt.Errorf("table has no primary key")

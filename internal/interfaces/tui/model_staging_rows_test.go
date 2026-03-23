@@ -84,6 +84,39 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 	}
 }
 
+func TestHandleKey_DeleteBlocksRowsWithUnavailableIdentity(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			records: []dto.RecordRow{
+				{
+					Values:              []string{"<truncated 262145 bytes>", "alice"},
+					IdentityUnavailable: true,
+				},
+			},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "TEXT", PrimaryKey: true},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+	// Assert
+	if len(model.staging.pendingDeletes) != 0 {
+		t.Fatalf("expected no pending deletes, got %d", len(model.staging.pendingDeletes))
+	}
+	if model.ui.statusMessage != "Error: selected record identity exceeds safe browse limit" {
+		t.Fatalf("expected explicit oversized-identity status, got %q", model.ui.statusMessage)
+	}
+}
+
 func TestHandleKey_DeleteRemovesPendingInsert(t *testing.T) {
 	// Arrange
 	model := &Model{

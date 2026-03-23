@@ -52,54 +52,14 @@ func (e *SQLiteEngine) ListTables(ctx context.Context) (tables []model.Table, er
 }
 
 func (e *SQLiteEngine) GetSchema(ctx context.Context, tableName string) (schema model.Schema, err error) {
-	tableSQL, err := e.tableDefinitionSQL(ctx, tableName)
+	columnInfos, err := e.tableColumnInfos(ctx, tableName)
 	if err != nil {
 		return model.Schema{}, err
 	}
 
-	query := fmt.Sprintf("PRAGMA table_info(%s)", quoteIdentifier(tableName))
-	rows, err := e.db.QueryContext(ctx, query)
-	if err != nil {
-		return model.Schema{}, err
-	}
-	defer func() {
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
-
-	var columns []model.Column
-	for rows.Next() {
-		var (
-			cid     int
-			name    string
-			typ     string
-			notnull int
-			dflt    sql.NullString
-			pk      int
-		)
-		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
-			return model.Schema{}, err
-		}
-		var defaultValue *string
-		if dflt.Valid {
-			defaultValue = &dflt.String
-		}
-		autoIncrement := false
-		if pk > 0 {
-			autoIncrement = columnHasAutoIncrement(tableSQL, name)
-		}
-		columns = append(columns, model.Column{
-			Name:          name,
-			Type:          typ,
-			Nullable:      notnull == 0,
-			PrimaryKey:    pk > 0,
-			DefaultValue:  defaultValue,
-			AutoIncrement: autoIncrement,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return model.Schema{}, err
+	columns := make([]model.Column, len(columnInfos))
+	for i, column := range columnInfos {
+		columns[i] = column.toModelColumn()
 	}
 
 	return model.Schema{
@@ -116,8 +76,24 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		offset = 0
 	}
 
-	// #nosec G202 -- table name is treated as an SQL identifier and escaped via quoteIdentifier.
-	query := "SELECT * FROM " + quoteIdentifier(tableName)
+	columnInfos, err := e.tableColumnInfos(ctx, tableName)
+	if err != nil {
+		return model.RecordPage{}, err
+	}
+	pkColumns := primaryKeyColumnsInOrder(columnInfos)
+	selectParts := make([]string, 0, len(columnInfos)*2+len(pkColumns)+1)
+	for index, column := range columnInfos {
+		selectParts = append(selectParts, displayProjectionForColumn(column, index))
+	}
+	selectParts = appendEditableProjection(selectParts, columnInfos)
+	selectParts = appendIdentityProjection(selectParts, pkColumns)
+
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString("SELECT ")
+	queryBuilder.WriteString(strings.Join(selectParts, ", "))
+	queryBuilder.WriteString(" FROM ")
+	queryBuilder.WriteString(quoteIdentifier(tableName))
+	query := queryBuilder.String()
 	clause, args, err := buildFilterClause(filter)
 	if err != nil {
 		return model.RecordPage{}, err
@@ -127,7 +103,10 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		return model.RecordPage{}, err
 	}
 
-	countQuery := strings.Replace(query, "SELECT *", "SELECT COUNT(*)", 1)
+	var countQueryBuilder strings.Builder
+	countQueryBuilder.WriteString("SELECT COUNT(*) FROM ")
+	countQueryBuilder.WriteString(quoteIdentifier(tableName))
+	countQuery := countQueryBuilder.String()
 	if clause != "" {
 		query = query + " " + clause
 		countQuery = countQuery + " " + clause
@@ -153,32 +132,49 @@ func (e *SQLiteEngine) ListRecords(ctx context.Context, tableName string, offset
 		}
 	}()
 
-	columns, err := rows.Columns()
-	if err != nil {
-		return model.RecordPage{}, err
-	}
 	records := make([]model.Record, 0, limit)
-	values := make([]any, len(columns))
-	destinations := make([]any, len(columns))
-	for i := range values {
-		destinations[i] = &values[i]
+	displayColumnCount := len(columnInfos)
+	editableColumnCount := len(columnInfos)
+	identityColumnOffset := displayColumnCount + editableColumnCount
+	scanValues := make([]any, identityColumnOffset+len(pkColumns))
+	if len(pkColumns) > 0 {
+		scanValues = append(scanValues, nil)
+	}
+	destinations := make([]any, len(scanValues))
+	for i := range scanValues {
+		destinations[i] = &scanValues[i]
 	}
 
 	for rows.Next() {
 		if err := rows.Scan(destinations...); err != nil {
 			return model.RecordPage{}, err
 		}
-		record := model.Record{Values: make([]model.Value, len(values))}
-		for i, value := range values {
-			if value == nil {
-				record.Values[i] = model.Value{IsNull: true}
-				continue
-			}
-			switch typed := value.(type) {
-			case []byte:
-				record.Values[i] = model.Value{Text: string(typed)}
-			default:
-				record.Values[i] = model.Value{Text: fmt.Sprint(typed)}
+		record := model.Record{
+			Values:             make([]model.Value, len(columnInfos)),
+			EditableFromBrowse: make([]bool, len(columnInfos)),
+		}
+		for i := range columnInfos {
+			record.Values[i] = materializeDisplayValue(scanValues[i])
+			record.EditableFromBrowse[i] = projectedFlagEnabled(scanValues[displayColumnCount+i])
+		}
+		if len(pkColumns) > 0 {
+			identityFlagIndex := identityColumnOffset + len(pkColumns)
+			if identityAvailable(scanValues[identityFlagIndex]) {
+				keys := make([]model.RecordIdentityKey, 0, len(pkColumns))
+				for i, column := range pkColumns {
+					value, err := materializeIdentityValue(column.typ, scanValues[identityColumnOffset+i])
+					if err != nil {
+						return model.RecordPage{}, err
+					}
+					keys = append(keys, model.RecordIdentityKey{
+						Column: column.name,
+						Value:  value,
+					})
+				}
+				record.Identity = model.RecordIdentity{Keys: keys}
+				record.RowKey = recordRowKey(record.Identity)
+			} else {
+				record.IdentityUnavailable = true
 			}
 		}
 		records = append(records, record)

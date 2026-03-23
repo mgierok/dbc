@@ -179,6 +179,98 @@ func TestListRecords_MapsValues(t *testing.T) {
 	}
 }
 
+func TestListRecords_MapsPrecomputedIdentity(t *testing.T) {
+	// Arrange
+	engine := &fakeEngine{
+		records: model.RecordPage{
+			Records: []model.Record{
+				{
+					Values: []model.Value{{Text: "visible"}, {IsNull: true}},
+					RowKey: "id=0x0102",
+					Identity: model.RecordIdentity{
+						Keys: []model.RecordIdentityKey{
+							{
+								Column: "id",
+								Value:  model.Value{Text: "0x0102", Raw: []byte{0x01, 0x02}},
+							},
+						},
+					},
+				},
+				{
+					Values:              []model.Value{{Text: "<truncated 262145 bytes>"}},
+					IdentityUnavailable: true,
+				},
+			},
+		},
+	}
+	uc := usecase.NewListRecords(engine)
+
+	// Act
+	result, err := uc.Execute(context.Background(), "records", 0, 10, nil, nil)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	expected := dto.RecordPage{
+		Rows: []dto.RecordRow{
+			{
+				Values: []string{"visible", "NULL"},
+				RowKey: "id=0x0102",
+				Identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{
+						{
+							Column: "id",
+							Value:  dto.StagedValue{Text: "0x0102", Raw: []byte{0x01, 0x02}},
+						},
+					},
+				},
+			},
+			{
+				Values:              []string{"<truncated 262145 bytes>"},
+				IdentityUnavailable: true,
+			},
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Fatalf("expected %v, got %v", expected, result)
+	}
+}
+
+func TestListRecords_MapsEditableFromBrowseMetadata(t *testing.T) {
+	// Arrange
+	engine := &fakeEngine{
+		records: model.RecordPage{
+			Records: []model.Record{
+				{
+					Values:             []model.Value{{Text: "alice"}, {Text: "<truncated 262145 bytes>"}},
+					EditableFromBrowse: []bool{true, false},
+				},
+			},
+		},
+	}
+	uc := usecase.NewListRecords(engine)
+
+	// Act
+	result, err := uc.Execute(context.Background(), "records", 0, 10, nil, nil)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	expected := dto.RecordPage{
+		Rows: []dto.RecordRow{
+			{
+				Values:             []string{"alice", "<truncated 262145 bytes>"},
+				EditableFromBrowse: []bool{true, false},
+			},
+		},
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Fatalf("expected %v, got %v", expected, result)
+	}
+}
+
 func TestListRecords_MapsFilter(t *testing.T) {
 	// Arrange
 	engine := &fakeEngine{}

@@ -1,7 +1,11 @@
 package dto
 
 type RecordRow struct {
-	Values []string
+	Values              []string
+	EditableFromBrowse  []bool
+	RowKey              string
+	Identity            RecordIdentity
+	IdentityUnavailable bool
 }
 
 type RecordPage struct {

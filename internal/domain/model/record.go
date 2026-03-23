@@ -7,5 +7,9 @@ type Value struct {
 }
 
 type Record struct {
-	Values []Value
+	Values              []Value
+	EditableFromBrowse  []bool
+	RowKey              string
+	Identity            RecordIdentity
+	IdentityUnavailable bool
 }

@@ -219,6 +219,39 @@ func TestHandleKey_RecordDetailSetLimitCommandPreservesReloadBehavior(t *testing
 	}
 }
 
+func TestRecordDetailContentLines_RendersSafeMaterializationPlaceholders(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			records: []dto.RecordRow{
+				{
+					Values: []string{"<truncated 262145 bytes>", "<blob 2 bytes>"},
+				},
+			},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "note", Type: "TEXT"},
+					{Name: "payload", Type: "BLOB"},
+				},
+			},
+		},
+	}
+
+	// Act
+	lines := model.recordDetailContentLines(80)
+	content := strings.Join(lines, "\n")
+
+	// Assert
+	if !strings.Contains(content, "<truncated 262145 bytes>") {
+		t.Fatalf("expected truncated placeholder in record detail, got %q", content)
+	}
+	if !strings.Contains(content, "<blob 2 bytes>") {
+		t.Fatalf("expected blob placeholder in record detail, got %q", content)
+	}
+}
+
 func TestHandleKey_RecordDetailScrollMovesOffset(t *testing.T) {
 	// Arrange
 	model := &Model{

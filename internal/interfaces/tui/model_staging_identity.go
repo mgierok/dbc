@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 func (m *Model) recordValue(rowIndex, columnIndex int) string {
@@ -16,6 +17,20 @@ func (m *Model) recordValue(rowIndex, columnIndex int) string {
 		return ""
 	}
 	return values[columnIndex]
+}
+
+func (m *Model) recordCellEditableFromBrowse(rowIndex, columnIndex int) bool {
+	if rowIndex < 0 || rowIndex >= len(m.read.records) {
+		return false
+	}
+	editable := m.read.records[rowIndex].EditableFromBrowse
+	if len(editable) == 0 {
+		return true
+	}
+	if columnIndex < 0 || columnIndex >= len(editable) {
+		return false
+	}
+	return editable[columnIndex]
 }
 
 func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (stagedEdit, bool) {
@@ -36,11 +51,22 @@ func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (stagedEdit, bool) {
 }
 
 func (m *Model) recordKeyForPersistedRow(rowIndex int) (string, bool) {
-	pkColumns := m.primaryKeyColumns()
-	if len(pkColumns) == 0 || rowIndex < 0 || rowIndex >= len(m.read.records) {
+	if rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return "", false
 	}
-	values := m.read.records[rowIndex].Values
+	row := m.read.records[rowIndex]
+	if row.IdentityUnavailable {
+		return "", false
+	}
+	if row.RowKey != "" {
+		return row.RowKey, true
+	}
+
+	pkColumns := m.primaryKeyColumns()
+	if len(pkColumns) == 0 {
+		return "", false
+	}
+	values := row.Values
 	parts := make([]string, 0, len(pkColumns))
 	for _, pk := range pkColumns {
 		if pk.index < 0 || pk.index >= len(values) {
@@ -63,7 +89,17 @@ func (m *Model) recordIdentityForPersistedRow(rowIndex int) (string, dto.RecordI
 	if rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
 	}
-	return m.translatorUseCase().BuildRecordIdentity(m.read.schema, m.read.records[rowIndex])
+	row := m.read.records[rowIndex]
+	if row.IdentityUnavailable {
+		return "", dto.RecordIdentity{}, usecase.ErrSelectedRecordIdentityExceedsSafeBrowseLimit
+	}
+	if row.RowKey != "" || len(row.Identity.Keys) > 0 {
+		if row.RowKey == "" || len(row.Identity.Keys) == 0 {
+			return "", dto.RecordIdentity{}, fmt.Errorf("record identity missing")
+		}
+		return row.RowKey, row.Identity, nil
+	}
+	return m.translatorUseCase().BuildRecordIdentity(m.read.schema, row)
 }
 
 func (m *Model) primaryKeyColumns() []pkColumn {

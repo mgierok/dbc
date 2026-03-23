@@ -73,6 +73,62 @@ func TestStagedChangesTranslator_BuildRecordIdentity_ReturnsPrimaryKeyIdentity(t
 	}
 }
 
+func TestStagedChangesTranslator_BuildRecordIdentity_PrefersPrecomputedIdentity(t *testing.T) {
+	// Arrange
+	translator := usecase.NewStagedChangesTranslator()
+	schema := dto.Schema{
+		Columns: []dto.SchemaColumn{
+			{Name: "id", Type: "INTEGER", PrimaryKey: true, Nullable: false},
+		},
+	}
+	precomputed := dto.RecordIdentity{
+		Keys: []dto.RecordIdentityKey{
+			{Column: "id", Value: dto.StagedValue{Text: "7", Raw: int64(7)}},
+		},
+	}
+	row := dto.RecordRow{
+		Values:   []string{"not-an-integer"},
+		RowKey:   "id=7",
+		Identity: precomputed,
+	}
+
+	// Act
+	key, identity, err := translator.BuildRecordIdentity(schema, row)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if key != "id=7" {
+		t.Fatalf("expected precomputed key, got %q", key)
+	}
+	if len(identity.Keys) != 1 || identity.Keys[0].Column != "id" {
+		t.Fatalf("expected precomputed identity, got %+v", identity)
+	}
+}
+
+func TestStagedChangesTranslator_BuildRecordIdentity_ReturnsErrorWhenIdentityUnavailable(t *testing.T) {
+	// Arrange
+	translator := usecase.NewStagedChangesTranslator()
+	schema := dto.Schema{
+		Columns: []dto.SchemaColumn{
+			{Name: "id", Type: "INTEGER", PrimaryKey: true, Nullable: false},
+		},
+	}
+	row := dto.RecordRow{
+		Values:              []string{"1"},
+		IdentityUnavailable: true,
+	}
+
+	// Act
+	_, _, err := translator.BuildRecordIdentity(schema, row)
+
+	// Assert
+	if !errors.Is(err, usecase.ErrSelectedRecordIdentityExceedsSafeBrowseLimit) {
+		t.Fatalf("expected oversized-identity error, got %v", err)
+	}
+}
+
 func TestStagedChangesTranslator_BuildTableChanges_IgnoresUpdatesForDeletedRows(t *testing.T) {
 	// Arrange
 	translator := usecase.NewStagedChangesTranslator()

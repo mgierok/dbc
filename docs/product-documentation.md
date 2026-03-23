@@ -55,6 +55,8 @@ Current product value and scope:
 - Pending insert rows marked with `✚` stay pinned at the top of the records list and do not count toward persisted-record page size.
 - Row selection is visible in the focused records panel. Field focus mode supports cell-level navigation inside the records grid.
 - Cell content in the records grid is width-constrained and may be truncated in the list view.
+- Browse rendering materializes record cells with a per-cell safety cap of `256 KiB`. Oversized non-BLOB values render as `<truncated N bytes>` instead of raw content.
+- `BLOB` cells never render raw binary content in browse surfaces. Records view and record detail render them as `<blob N bytes>` within the safe limit and `<blob truncated N bytes>` above it.
 - Delete-marked persisted rows keep their structural row chrome (`selection prefix` and `✖` marker) readable while applying strikethrough to the row's cell content shown in the records list. If the same row also has staged edits, the list continues to show the effective staged values with the same strikethrough treatment.
 - Opening single-record detail renders the effective row state, including staged insert or edit values, as stacked field blocks: each field shows a `column (type)` header followed by wrapped value lines. Edited fields show `✱` on the field header. Detail content is wrapped instead of truncated, supports scrolling, and closes with `Esc`.
 - In record detail, a delete-marked persisted row keeps the `Marked for delete` summary line and field headers readable without strikethrough, while the wrapped field value lines render with strikethrough. If the row also has staged edits, detail continues to show the effective staged values with that same strikethrough treatment.
@@ -80,6 +82,8 @@ Current product value and scope:
 #### Edit
 
 - Editing an existing persisted record requires a table with a primary key.
+- Persisted rows whose primary-key identity exceeds the safe browse limit remain readable but are browse-only for edit/delete actions.
+- Persisted cells rendered from synthetic browse placeholders are browse-only for direct edit entry unless that cell already has a staged value in the current session.
 - Editing is performed from field focus through an edit popup that shows column identity, type, nullability, and value entry.
 - Nullable fields can be explicitly set to `NULL`.
 - Boolean and enum-like fields use option selection instead of unrestricted free-text entry.
@@ -88,6 +92,8 @@ Current product value and scope:
 #### Delete
 
 - Delete toggles a delete marker on the selected persisted record.
+- Attempting to edit a placeholder-backed persisted cell without an existing staged override keeps the selection in place and shows `Error: selected cell has no safe editable source`.
+- Attempting to edit or delete a browse-only row whose primary-key identity exceeds the safe browse limit keeps the row selected and shows `Error: selected record identity exceeds safe browse limit`.
 - For pending inserts, delete removes the staged row immediately instead of adding a delete marker.
 
 ### Staging, Undo/Redo, and Save
@@ -125,6 +131,8 @@ Current user-visible constraints:
 
 - Only SQLite is supported.
 - Editing and deleting persisted records requires a primary key in the table.
+- Persisted rows whose primary-key identity exceeds the `256 KiB` browse-safety cap are browse-only and cannot be edited or deleted from the current session.
+- Persisted cells rendered from browse placeholders are browse-only for direct edit entry unless they already have a staged value in the current session.
 - Only one active filter is supported per table.
 - Only one active sort is supported per table.
 - Runtime page-limit overrides via `:set limit=<n>` are limited to the range `1..1000` and apply only to the current runtime instance.

@@ -145,6 +145,8 @@
 ### Application Port Contracts
 
 - `Engine`: list tables, read schema, read records (with optional filter/sort), list operators, apply table changes, and return the total applied-row count for that save operation.
+- Read-record responses carry render-facing `Values` separately from persisted-row identity data, so browse placeholders do not change write identity.
+- Read-record responses also carry per-cell browse-edit safety metadata so the TUI can distinguish lossless browse values from synthetic placeholders.
 - `ConfigStore`: list/create/update/delete config entries and expose active config path.
 - `DatabaseConnectionChecker`: validate candidate DB path before persisting selector add/edit changes.
 
@@ -152,11 +154,18 @@
 
 - Persisted-row updates/deletes require non-empty identity keys.
 - Identity keys are derived from primary-key columns and carried as typed staged values (`Text`, `IsNull`, optional `Raw`).
+- Read-path record contracts (`model.Record` and `dto.RecordRow`) may provide precomputed row key + identity, and staged-change translation MUST prefer that precomputed identity over reparsing rendered values.
+- If any primary-key component exceeds the browse materialization safety cap, the read contract marks row identity unavailable instead of materializing an oversized key; edit/delete MUST then stay blocked for that row.
 - Application/domain write contracts do not depend on SQLite `rowid`.
 
 ### Records Page Contract
 
 - Read contract returns `Rows`, `TotalCount`, and `HasMore`.
+- Browse materialization is bounded to `256 KiB` per cell on read paths.
+- Oversized non-BLOB cells render as `<truncated N bytes>`.
+- `BLOB` cells render as size placeholders (`<blob N bytes>` / `<blob truncated N bytes>`) instead of raw binary/text coercions.
+- Per-cell browse-edit safety metadata marks synthetic placeholders as not editable-from-browse; the TUI MUST block direct popup entry for such persisted cells unless a staged value already exists for that cell.
+- Materialized display aliases stay internal to the projection, while `ORDER BY` continues to target the raw table columns so sort semantics remain identical to stored SQLite values.
 - `HasMore` is computed via look-ahead (`LIMIT limit+1`).
 - Runtime records page limit defaults to `20`, but page loads and total-page calculations use the effective runtime-local limit from runtime state.
 - Runtime command-driven page-limit overrides are accepted only in the bounded range `1..1000`.

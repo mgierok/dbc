@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -227,6 +229,123 @@ func TestSQLiteEngine_ListRecords_AppliesSortAscAndDesc(t *testing.T) {
 	}
 }
 
+func TestSQLiteEngine_ListRecords_SortsIntegersByStoredValue(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE scores (
+			id INTEGER PRIMARY KEY,
+			score INTEGER NOT NULL
+		);
+		INSERT INTO scores (id, score)
+		VALUES (1, 10),
+		       (2, 2);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "scores", 0, 10, nil, &model.Sort{
+		Column:    "score",
+		Direction: model.SortDirectionAsc,
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got := recordPageKeys(page); !reflect.DeepEqual(got, []string{"id=2", "id=1"}) {
+		t.Fatalf("expected integer sort by stored value, got %v", got)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_SortsRealsByStoredValue(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE metrics (
+			id INTEGER PRIMARY KEY,
+			score REAL NOT NULL
+		);
+		INSERT INTO metrics (id, score)
+		VALUES (1, 10.5),
+		       (2, 2.25);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "metrics", 0, 10, nil, &model.Sort{
+		Column:    "score",
+		Direction: model.SortDirectionAsc,
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got := recordPageKeys(page); !reflect.DeepEqual(got, []string{"id=2", "id=1"}) {
+		t.Fatalf("expected real sort by stored value, got %v", got)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_SortsBlobsByStoredValue(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE files (
+			id INTEGER PRIMARY KEY,
+			payload BLOB NOT NULL
+		);
+		INSERT INTO files (id, payload)
+		VALUES (1, X'02'),
+		       (2, X'01');
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "files", 0, 10, nil, &model.Sort{
+		Column:    "payload",
+		Direction: model.SortDirectionAsc,
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got := recordPageKeys(page); !reflect.DeepEqual(got, []string{"id=2", "id=1"}) {
+		t.Fatalf("expected blob sort by stored value, got %v", got)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_SortsOversizedTextByStoredValue(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE notes (
+			id INTEGER PRIMARY KEY,
+			note TEXT NOT NULL
+		);
+	`)
+	oversizedA := strings.Repeat("a", 262145)
+	oversizedB := strings.Repeat("b", 262145)
+	if _, err := db.Exec(`INSERT INTO notes (id, note) VALUES (?, ?)`, 1, oversizedB); err != nil {
+		t.Fatalf("failed to insert oversized B note: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO notes (id, note) VALUES (?, ?)`, 2, oversizedA); err != nil {
+		t.Fatalf("failed to insert oversized A note: %v", err)
+	}
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "notes", 0, 10, nil, &model.Sort{
+		Column:    "note",
+		Direction: model.SortDirectionAsc,
+	})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got := recordPageKeys(page); !reflect.DeepEqual(got, []string{"id=2", "id=1"}) {
+		t.Fatalf("expected oversized text sort by stored value, got %v", got)
+	}
+}
+
 func TestSQLiteEngine_ListRecords_RejectsUnknownSortColumn(t *testing.T) {
 	// Arrange
 	db := setupSQLiteSchemaDB(t, `
@@ -360,6 +479,132 @@ func TestSQLiteEngine_ListRecords_OffsetBeyondFilteredRange_ReturnsEmptyPageWith
 	}
 }
 
+func TestSQLiteEngine_ListRecords_UsesSafeDisplayMaterialization(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE records (
+			id INTEGER PRIMARY KEY,
+			note TEXT,
+			payload BLOB,
+			optional_note TEXT
+		);
+	`)
+	oversized := strings.Repeat("a", 262145)
+	if _, err := db.Exec(`INSERT INTO records (id, note, payload, optional_note) VALUES (?, ?, X'0102', NULL)`, 1, "short"); err != nil {
+		t.Fatalf("failed to insert short record: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO records (id, note, payload, optional_note) VALUES (?, ?, zeroblob(?), NULL)`, 2, oversized, 262145); err != nil {
+		t.Fatalf("failed to insert oversized record: %v", err)
+	}
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "records", 0, 10, nil, nil)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(page.Records) != 2 {
+		t.Fatalf("expected two records, got %d", len(page.Records))
+	}
+	if got := page.Records[0].Values[1].Text; got != "short" {
+		t.Fatalf("expected unchanged short text, got %q", got)
+	}
+	if got := page.Records[0].Values[2].Text; got != "<blob 2 bytes>" {
+		t.Fatalf("expected blob placeholder, got %q", got)
+	}
+	if !page.Records[0].Values[3].IsNull {
+		t.Fatal("expected NULL column to stay NULL")
+	}
+	if got := page.Records[1].Values[1].Text; got != "<truncated 262145 bytes>" {
+		t.Fatalf("expected oversized text placeholder, got %q", got)
+	}
+	if got := page.Records[1].Values[2].Text; got != "<blob truncated 262145 bytes>" {
+		t.Fatalf("expected oversized blob placeholder, got %q", got)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_PreservesWithinLimitPrimaryKeyIdentity(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE files (
+			id BLOB PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+		INSERT INTO files (id, name)
+		VALUES (X'0102', 'report');
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "files", 0, 10, nil, nil)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(page.Records) != 1 {
+		t.Fatalf("expected one record, got %d", len(page.Records))
+	}
+	record := page.Records[0]
+	if record.IdentityUnavailable {
+		t.Fatal("expected identity to stay available within the safe limit")
+	}
+	if record.RowKey != "id=0x0102" {
+		t.Fatalf("expected blob row key, got %q", record.RowKey)
+	}
+	if len(record.Identity.Keys) != 1 {
+		t.Fatalf("expected one identity key, got %d", len(record.Identity.Keys))
+	}
+	if got := record.Identity.Keys[0].Value.Text; got != "0x0102" {
+		t.Fatalf("expected blob identity text, got %q", got)
+	}
+	typed, ok := record.Identity.Keys[0].Value.Raw.([]byte)
+	if !ok || string(typed) != string([]byte{0x01, 0x02}) {
+		t.Fatalf("expected blob raw bytes, got %#v", record.Identity.Keys[0].Value.Raw)
+	}
+}
+
+func TestSQLiteEngine_ListRecords_MarksIdentityUnavailableWhenPrimaryKeyExceedsSafeLimit(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE records (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+	`)
+	oversizedID := strings.Repeat("k", 262145)
+	if _, err := db.Exec(`INSERT INTO records (id, name) VALUES (?, 'oversized')`, oversizedID); err != nil {
+		t.Fatalf("failed to insert oversized identity row: %v", err)
+	}
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	page, err := engine.ListRecords(context.Background(), "records", 0, 10, nil, nil)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(page.Records) != 1 {
+		t.Fatalf("expected one record, got %d", len(page.Records))
+	}
+	record := page.Records[0]
+	if got := record.Values[0].Text; got != "<truncated 262145 bytes>" {
+		t.Fatalf("expected truncated PK display placeholder, got %q", got)
+	}
+	if !record.IdentityUnavailable {
+		t.Fatal("expected oversized primary key to disable record identity")
+	}
+	if record.RowKey != "" {
+		t.Fatalf("expected empty row key for unavailable identity, got %q", record.RowKey)
+	}
+	if len(record.Identity.Keys) != 0 {
+		t.Fatalf("expected empty identity for unavailable row, got %+v", record.Identity)
+	}
+}
+
 func BenchmarkSQLiteEngine_ListRecords_PaginatedFilteredSorted(b *testing.B) {
 	const rowCount = 10000
 	db := setupSQLiteBenchmarkDB(b, rowCount)
@@ -443,6 +688,14 @@ func setupSQLiteBenchmarkDB(b *testing.B, rowCount int) *sql.DB {
 		b.Fatalf("failed to create benchmark index: %v", err)
 	}
 	return db
+}
+
+func recordPageKeys(page model.RecordPage) []string {
+	keys := make([]string, len(page.Records))
+	for i, record := range page.Records {
+		keys[i] = record.RowKey
+	}
+	return keys
 }
 
 func setupSQLiteSchemaDB(t *testing.T, schema string) *sql.DB {

@@ -53,7 +53,13 @@ func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, li
 				values[j] = value.Text
 			}
 		}
-		rows[i] = dto.RecordRow{Values: values}
+		rows[i] = dto.RecordRow{
+			Values:              values,
+			EditableFromBrowse:  cloneEditableFromBrowse(record.EditableFromBrowse),
+			RowKey:              record.RowKey,
+			Identity:            mapRecordIdentityToDTO(record.Identity),
+			IdentityUnavailable: record.IdentityUnavailable,
+		}
 	}
 
 	return dto.RecordPage{
@@ -61,4 +67,31 @@ func (uc *ListRecords) Execute(ctx context.Context, tableName string, offset, li
 		HasMore:    page.HasMore,
 		TotalCount: page.TotalCount,
 	}, nil
+}
+
+func mapRecordIdentityToDTO(identity model.RecordIdentity) dto.RecordIdentity {
+	if len(identity.Keys) == 0 {
+		return dto.RecordIdentity{}
+	}
+	keys := make([]dto.RecordIdentityKey, len(identity.Keys))
+	for i, key := range identity.Keys {
+		keys[i] = dto.RecordIdentityKey{
+			Column: key.Column,
+			Value: dto.StagedValue{
+				IsNull: key.Value.IsNull,
+				Text:   key.Value.Text,
+				Raw:    key.Value.Raw,
+			},
+		}
+	}
+	return dto.RecordIdentity{Keys: keys}
+}
+
+func cloneEditableFromBrowse(values []bool) []bool {
+	if len(values) == 0 {
+		return nil
+	}
+	cloned := make([]bool, len(values))
+	copy(cloned, values)
+	return cloned
 }
