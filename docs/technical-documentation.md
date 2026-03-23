@@ -58,6 +58,7 @@
 ### JSON Config Persistence
 
 - Guarantee: DBC reads and writes only JSON config at the active config path.
+- Guarantee: config reads and writes are bounded to `1 MiB`; oversized input or oversized serialized output fail explicitly with `ErrConfigTooLarge`.
 - Guarantee: trimmed-empty config content is treated as an empty config state before JSON decoding.
 - Guarantee: unknown JSON fields are rejected during config decode.
 - Enforced in: `internal/infrastructure/config/config.go`.

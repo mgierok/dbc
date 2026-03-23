@@ -14,15 +14,17 @@ import (
 )
 
 const (
-	configDirName  = ".config"
-	appDirName     = "dbc"
-	configFileName = "config.json"
+	configDirName      = ".config"
+	appDirName         = "dbc"
+	configFileName     = "config.json"
+	maxConfigSizeBytes = 1 << 20
 )
 
 var (
 	ErrMissingDatabaseName     = errors.New("database name is required")
 	ErrMissingDatabasePath     = errors.New("database path is required")
 	ErrDatabaseIndexOutOfRange = errors.New("database index out of range")
+	ErrConfigTooLarge          = errors.New("config file exceeds 1 MiB limit")
 )
 
 type Config struct {
@@ -44,9 +46,12 @@ func NewStore(path string) *Store {
 
 func Decode(r io.Reader) (Config, error) {
 	var cfg Config
-	content, err := io.ReadAll(r)
+	content, err := io.ReadAll(io.LimitReader(r, maxConfigSizeBytes+1))
 	if err != nil {
 		return Config{}, err
+	}
+	if len(content) > maxConfigSizeBytes {
+		return Config{}, ErrConfigTooLarge
 	}
 	if strings.TrimSpace(string(content)) == "" {
 		return Config{}, nil
@@ -189,6 +194,10 @@ func saveFile(path string, cfg Config) (err error) {
 	if cfg.Databases == nil {
 		cfg.Databases = []DatabaseConfig{}
 	}
+	content, err := encodeConfig(cfg)
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
@@ -202,9 +211,7 @@ func saveFile(path string, cfg Config) (err error) {
 			_ = os.Remove(tmpPath)
 		}
 	}()
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(cfg); err != nil {
+	if _, err := file.Write(content); err != nil {
 		_ = file.Close()
 		return err
 	}
@@ -215,4 +222,18 @@ func saveFile(path string, cfg Config) (err error) {
 		return err
 	}
 	return nil
+}
+
+func encodeConfig(cfg Config) ([]byte, error) {
+	var content bytes.Buffer
+
+	encoder := json.NewEncoder(&content)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(cfg); err != nil {
+		return nil, err
+	}
+	if content.Len() > maxConfigSizeBytes {
+		return nil, ErrConfigTooLarge
+	}
+	return content.Bytes(), nil
 }

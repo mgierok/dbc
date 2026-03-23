@@ -143,6 +143,41 @@ func TestDecode_MultipleDatabasesMissingPath(t *testing.T) {
 	}
 }
 
+func TestDecode_ReturnsErrorWhenConfigExceedsSizeLimit(t *testing.T) {
+	// Arrange
+	input := configDocumentWithTotalSize(t, (1<<20)+1)
+
+	// Act
+	_, err := config.Decode(strings.NewReader(input))
+
+	// Assert
+	if !errors.Is(err, config.ErrConfigTooLarge) {
+		t.Fatalf("expected error %v, got %v", config.ErrConfigTooLarge, err)
+	}
+}
+
+func TestDecode_AllowsConfigAtSizeLimit(t *testing.T) {
+	// Arrange
+	input := configDocumentWithTotalSize(t, 1<<20)
+
+	// Act
+	cfg, err := config.Decode(strings.NewReader(input))
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(cfg.Databases) != 1 {
+		t.Fatalf("expected 1 database, got %d", len(cfg.Databases))
+	}
+	if cfg.Databases[0].Path != "/tmp/db.sqlite" {
+		t.Fatalf("expected path %q, got %q", "/tmp/db.sqlite", cfg.Databases[0].Path)
+	}
+	if len(cfg.Databases[0].Name) == 0 {
+		t.Fatal("expected non-empty database name")
+	}
+}
+
 func TestResolvePathForOS_LinuxUsesHomeConfig(t *testing.T) {
 	// Arrange
 	home := "/home/tester"
@@ -183,4 +218,20 @@ func TestResolvePathForOS_UnknownOSUsesHomeConfig(t *testing.T) {
 	if path != expected {
 		t.Fatalf("expected %q, got %q", expected, path)
 	}
+}
+
+func configDocumentWithTotalSize(t *testing.T, totalSize int) string {
+	t.Helper()
+
+	const (
+		prefix = `{"databases":[{"name":"`
+		suffix = `","db_path":"/tmp/db.sqlite"}]}`
+	)
+
+	nameLength := totalSize - len(prefix) - len(suffix)
+	if nameLength <= 0 {
+		t.Fatalf("requested config size %d is too small", totalSize)
+	}
+
+	return prefix + strings.Repeat("a", nameLength) + suffix
 }

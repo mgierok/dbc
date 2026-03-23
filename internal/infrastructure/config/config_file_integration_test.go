@@ -1,8 +1,10 @@
 package config_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/infrastructure/config"
@@ -45,5 +47,23 @@ func TestLoadFile_ReturnsErrorWhenFileDoesNotExist(t *testing.T) {
 	// Assert
 	if err == nil {
 		t.Fatal("expected error for missing file, got nil")
+	}
+}
+
+func TestLoadFile_ReturnsErrorWhenConfigExceedsSizeLimit(t *testing.T) {
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	content := strings.Repeat(" ", (1<<20)+1)
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp config file: %v", err)
+	}
+
+	// Act
+	_, err := config.LoadFile(path)
+
+	// Assert
+	if !errors.Is(err, config.ErrConfigTooLarge) {
+		t.Fatalf("expected error %v, got %v", config.ErrConfigTooLarge, err)
 	}
 }
