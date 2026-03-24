@@ -1,35 +1,48 @@
 # gopls Workflows
 
-## Task Recipes
+## Task-Driven Recipes
 
-- Find a symbol across the workspace:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py workspace_symbol --workspace <path> --query <text>`
-- Jump to the declaration or type definition for a symbol under the cursor:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py definition --file <path> --line <n> --column <n>`
-- List all semantic references for a symbol:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py references --file <path> --line <n> --column <n>`
-- Find concrete implementations of an interface or method:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py implementation --file <path> --line <n> --column <n>`
-- Trace callers and callees for a function:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py call_hierarchy --file <path> --line <n> --column <n>`
+- Search the workspace by symbol name:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py search --workspace <path> --query <text>`
+- Show the semantic outline for one Go file:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py outline --file <path>`
+- Resolve `--scope` and optional `--find` before deeper commands:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py locate --file <path> --scope <scope> [--find <pattern>]`
+- Jump to the definition of the resolved target:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py definition --file <path> --scope <scope> [--find <pattern>]`
+- List semantic references:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py references --file <path> --scope <scope> [--find <pattern>]`
+- List implementations:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py implementation --file <path> --scope <scope> [--find <pattern>]`
+- Trace callers and callees:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py call_hierarchy --file <path> --scope <scope> [--find <pattern>]`
+- Read the active call signature:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py signature --file <path> --scope <scope> [--find <pattern>]`
+- Show identifier highlights:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py highlight --file <path> --scope <scope> [--find <pattern>]`
 - Read semantic diagnostics for one Go file:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py check --file <path>`
-- Check whether a rename is legal at a location:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py prepare_rename --file <path> --line <n> --column <n>`
-- Preview a rename without modifying files:
-  `python3 .agents/skills/use-gopls-for-go/scripts/gopls_query.py rename_diff --file <path> --line <n> --column <n> --name <newName>`
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py diagnostics --file <path>`
+- Check whether a rename is valid:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py rename_validate --file <path> --scope <scope> [--find <pattern>]`
+- Preview a rename without editing files:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py rename_preview --file <path> --scope <scope> [--find <pattern>] --name <newName>`
 
-## Inspection Guidance
+## Recommended Sequences
 
-- Use `workspace_symbol` first when you know the symbol name but not the file.
-- Use `definition`, `references`, `implementation`, or `call_hierarchy` after you have a precise file position.
-- After `gopls` identifies the semantic target, inspect the smallest relevant file set manually instead of broad `rg` sweeps.
-- When reviewing a possible rename, use `prepare_rename` to verify validity before looking at `rename_diff`.
-- Treat `rename_diff` as the safe default preview. Escalate to write-capable operations only if the task explicitly requires applying the rename.
+1. If only the symbol name is known, run `search`.
+2. If the file is known but the exact target is not, run `outline`.
+3. Run `locate` to confirm the resolved cursor and range before any deeper semantic command.
+4. Run `definition`, `references`, `implementation`, `call_hierarchy`, `signature`, or `highlight` from the resolved target.
+5. For rename checks, run `rename_validate` first and `rename_preview` second.
 
-## Troubleshooting
+## Examples
 
-- If the helper reports `workspace_load_failed`, ensure the file is inside a directory tree containing `go.mod` or `go.work`.
-- If the helper reports `invalid_position`, re-check the 1-based line and column against the current file contents.
-- If `gopls` is missing, install it or ensure it is on `PATH` before retrying.
-- If output is unexpectedly sparse, verify the workspace root and inspect whether build tags or generated files change package loading.
+- Find an interface by name, then inspect its outline:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py search --workspace . --query Worker`
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py outline --file ./internal/worker.go`
+- Resolve a method by symbol path and then inspect references:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py locate --file ./internal/worker.go --scope Worker.Run`
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py references --file ./internal/worker.go --scope Worker.Run`
+- Resolve a line range with a precise cursor marker before signature lookup:
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py locate --file ./internal/worker.go --scope 40,48 --find "client.<|>Do(req)"`
+  `.agents/skills/use-gopls-for-go/scripts/gopls_query.py signature --file ./internal/worker.go --scope 40,48 --find "client.<|>Do(req)"`
