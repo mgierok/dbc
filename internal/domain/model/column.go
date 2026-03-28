@@ -5,6 +5,8 @@ type Column struct {
 	Type          string
 	Nullable      bool
 	PrimaryKey    bool
+	Unique        bool
 	DefaultValue  *string
 	AutoIncrement bool
+	ForeignKeys   []ForeignKeyRef
 }

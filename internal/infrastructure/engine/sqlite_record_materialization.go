@@ -19,9 +19,11 @@ type tableColumnInfo struct {
 	name            string
 	typ             string
 	notNull         bool
+	unique          bool
 	defaultValue    *string
 	primaryKeyOrder int
 	autoIncrement   bool
+	foreignKeys     []model.ForeignKeyRef
 }
 
 func (c tableColumnInfo) toModelColumn() model.Column {
@@ -30,13 +32,23 @@ func (c tableColumnInfo) toModelColumn() model.Column {
 		Type:          c.typ,
 		Nullable:      !c.notNull,
 		PrimaryKey:    c.primaryKeyOrder > 0,
+		Unique:        c.unique,
 		DefaultValue:  c.defaultValue,
 		AutoIncrement: c.autoIncrement,
+		ForeignKeys:   append([]model.ForeignKeyRef(nil), c.foreignKeys...),
 	}
 }
 
 func (e *SQLiteEngine) tableColumnInfos(ctx context.Context, tableName string) (columns []tableColumnInfo, err error) {
 	tableSQL, err := e.tableDefinitionSQL(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	uniqueColumns, err := e.uniqueSingleColumnIndexes(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	foreignKeysByColumn, err := e.foreignKeysByColumn(ctx, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +85,11 @@ func (e *SQLiteEngine) tableColumnInfos(ctx context.Context, tableName string) (
 			name:            name,
 			typ:             typ,
 			notNull:         notNull != 0,
+			unique:          pk == 0 && uniqueColumns[name],
 			defaultValue:    defaultValue,
 			primaryKeyOrder: pk,
 			autoIncrement:   pk > 0 && columnHasAutoIncrement(tableSQL, name),
+			foreignKeys:     append([]model.ForeignKeyRef(nil), foreignKeysByColumn[name]...),
 		})
 	}
 	if err := rows.Err(); err != nil {
@@ -83,6 +97,119 @@ func (e *SQLiteEngine) tableColumnInfos(ctx context.Context, tableName string) (
 	}
 
 	return columns, nil
+}
+
+func (e *SQLiteEngine) uniqueSingleColumnIndexes(ctx context.Context, tableName string) (uniqueColumns map[string]bool, err error) {
+	query := fmt.Sprintf("PRAGMA index_list(%s)", quoteIdentifier(tableName))
+	rows, err := e.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	uniqueColumns = make(map[string]bool)
+	for rows.Next() {
+		var (
+			seq     int
+			name    string
+			unique  int
+			origin  string
+			partial int
+		)
+		if err := rows.Scan(&seq, &name, &unique, &origin, &partial); err != nil {
+			return nil, err
+		}
+		if unique == 0 || partial != 0 || strings.EqualFold(origin, "pk") {
+			continue
+		}
+		columns, err := e.indexColumns(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+		if len(columns) == 1 {
+			uniqueColumns[columns[0]] = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return uniqueColumns, nil
+}
+
+func (e *SQLiteEngine) indexColumns(ctx context.Context, indexName string) (columns []string, err error) {
+	query := fmt.Sprintf("PRAGMA index_info(%s)", quoteIdentifier(indexName))
+	rows, err := e.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	columns = make([]string, 0, 1)
+	for rows.Next() {
+		var (
+			seqno int
+			cid   int
+			name  sql.NullString
+		)
+		if err := rows.Scan(&seqno, &cid, &name); err != nil {
+			return nil, err
+		}
+		if cid < 0 || !name.Valid {
+			continue
+		}
+		columns = append(columns, name.String)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return columns, nil
+}
+
+func (e *SQLiteEngine) foreignKeysByColumn(ctx context.Context, tableName string) (foreignKeys map[string][]model.ForeignKeyRef, err error) {
+	query := fmt.Sprintf("PRAGMA foreign_key_list(%s)", quoteIdentifier(tableName))
+	rows, err := e.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	foreignKeys = make(map[string][]model.ForeignKeyRef)
+	for rows.Next() {
+		var (
+			id       int
+			seq      int
+			refTable string
+			from     string
+			to       sql.NullString
+			onUpdate string
+			onDelete string
+			match    string
+		)
+		if err := rows.Scan(&id, &seq, &refTable, &from, &to, &onUpdate, &onDelete, &match); err != nil {
+			return nil, err
+		}
+		ref := model.ForeignKeyRef{Table: refTable}
+		if to.Valid {
+			ref.Column = to.String
+		}
+		foreignKeys[from] = append(foreignKeys[from], ref)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return foreignKeys, nil
 }
 
 func appendIdentityProjection(selectParts []string, pkColumns []tableColumnInfo) []string {

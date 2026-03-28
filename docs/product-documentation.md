@@ -46,7 +46,9 @@ Current product value and scope:
 ### Table Discovery and Schema View
 
 - Table discovery excludes internal SQLite system tables and lists visible tables in alphabetical order.
-- Schema view shows column name and type for the selected table.
+- Schema view shows one row per column for the selected table with column name, type, and constraint badges in a fixed order: `PK`, `NULL` or `NOT NULL`, `UNIQUE`, `DEFAULT ...`, `AUTOINCREMENT`, and one or more `FK->table.column` badges.
+- If SQLite does not expose a referenced foreign-key column name, Schema view renders the foreign-key badge as `FK->table`.
+- Schema metadata is sanitized to single-line text and may be truncated in narrow terminals.
 - If schema data is not yet available, DBC shows an empty-state message.
 
 ### Records View and Navigation
@@ -202,7 +204,7 @@ DBC is keyboard-first by design and reuses a small set of stable navigation patt
 ## Glossary
 
 - Database Entry: Named configuration item that points to a SQLite database path.
-- Schema View: Right-panel mode that shows column names and types for the selected table.
+- Schema View: Right-panel mode that shows one row per selected-table column with name, type, and constraint badges.
 - Records View: Right-panel mode that shows table rows for the selected table.
 - Field Focus: Cell-level navigation mode used to select a specific field before editing.
 - Filter: The single active condition applied to the selected table's records.

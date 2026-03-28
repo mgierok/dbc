@@ -99,9 +99,24 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 	engine := &fakeEngine{
 		schema: model.Schema{
 			Columns: []model.Column{
-				{Name: "id", Type: "INTEGER", Nullable: false, PrimaryKey: true, AutoIncrement: true},
+				{
+					Name:          "id",
+					Type:          "INTEGER",
+					Nullable:      false,
+					PrimaryKey:    true,
+					AutoIncrement: true,
+					ForeignKeys: []model.ForeignKeyRef{
+						{Table: "accounts", Column: "owner_id"},
+					},
+				},
 				{Name: "name", Type: "TEXT", Nullable: true},
-				{Name: "display_name", Type: "TEXT", Nullable: false, DefaultValue: &defaultName},
+				{
+					Name:         "display_name",
+					Type:         "TEXT",
+					Nullable:     false,
+					DefaultValue: &defaultName,
+					Unique:       true,
+				},
 			},
 		},
 	}
@@ -124,7 +139,10 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 			Nullable:      false,
 			PrimaryKey:    true,
 			AutoIncrement: true,
-			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
+			ForeignKeys: []dto.ForeignKeyRef{
+				{Table: "accounts", Column: "owner_id"},
+			},
+			Input: dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 		{
 			Name:          "name",
@@ -139,6 +157,7 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 			Nullable:      false,
 			DefaultValue:  &defaultName,
 			AutoIncrement: false,
+			Unique:        true,
 			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 	}

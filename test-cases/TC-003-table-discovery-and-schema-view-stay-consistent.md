@@ -12,7 +12,7 @@
 ## 2. Scenario
 
 - Subject under test: table-list discovery behavior and schema rendering for selected table in the main runtime view.
-- Expected result: table list remains alphabetically ordered without SQLite internal tables, and schema view renders selected-table column metadata.
+- Expected result: table list remains alphabetically ordered without SQLite internal tables, and schema view renders selected-table column metadata with constraint badges.
 
 ## 3. Preconditions
 
@@ -27,7 +27,7 @@
 | S1 | Run `bash scripts/start-direct-launch.sh`. | Runtime opens with table list in left panel and schema view for selected table in right panel. | `A1` |
 | S2 | Inspect visible table names in left panel. | SQLite internal tables are not listed. | `A2` |
 | S3 | Verify order of visible table names. | Table list is alphabetically sorted. | `A3` |
-| S4 | Move selection to a different table using `j`/`k`. | Right panel schema updates to show that table's column names and types. | `A4` |
+| S4 | Move selection to a different table using `j`/`k`. | Right panel schema updates to show that table's column names, types, and available constraint badges. | `A4` |
 
 ## 5. Assertions
 
@@ -36,14 +36,14 @@
 | A1 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Runtime presents table-discovery list and schema panel for selected table. | `PASS` | Left panel contains table names and right panel shows schema rows immediately after startup. |
 | A2 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Table list excludes internal SQLite system tables. | `PASS` | No `sqlite_` system table names are shown in the list. |
 | A3 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Table list ordering is alphabetical for predictable scanning. | `PASS` | Visible table names are ordered lexicographically. |
-| A4 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Changing selected table refreshes schema with column name and type fields. | `PASS` | Right panel schema content updates after selection change and includes name/type information. |
+| A4 | `[Table Discovery and Schema View](../docs/product-documentation.md#table-discovery-and-schema-view)` | Changing selected table refreshes schema with column name, type, and available constraint badges such as `PK`, `NULL`/`NOT NULL`, `UNIQUE`, `DEFAULT`, `AUTOINCREMENT`, and `FK->...`. | `PASS` | Right panel schema content updates after selection change and includes name/type plus the constraint badges applicable to the selected table. |
 
 ## 6. Final Result
 
 - Test Result: `PASS`
 - Failed Assertions: `none`
 - Failure Reason: `N/A`
-- Notes: `Scenario is intentionally limited to table discovery and schema rendering ownership.`
+- Notes: `Scenario is intentionally limited to table discovery and schema rendering ownership, including visible per-column constraint badges.`
 
 ## 7. Cleanup
 

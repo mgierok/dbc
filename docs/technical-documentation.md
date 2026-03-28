@@ -85,6 +85,13 @@
 - Guarantee: filter operators come from an allowlist and sort columns are validated against table schema.
 - Enforced in: `internal/infrastructure/engine/sqlite_filter.go`, `internal/infrastructure/engine/sqlite_operator.go`, `internal/infrastructure/engine/sqlite_sort.go`, `internal/infrastructure/engine/sqlite_engine.go`.
 
+### SQLite Schema Introspection
+
+- Guarantee: schema reads keep using SQLite PRAGMA introspection and expose per-column metadata for name, type, nullability, primary-key membership, single-column uniqueness, default value, autoincrement, and foreign-key references.
+- Guarantee: single-column `UNIQUE` is derived from `PRAGMA index_list(...)` plus `PRAGMA index_info(...)`; composite unique memberships MUST NOT be surfaced as per-column `UNIQUE`, and primary-key columns MUST NOT be duplicated as `UNIQUE`.
+- Guarantee: foreign-key references are derived from `PRAGMA foreign_key_list(...)` and mapped per source column, including composite foreign keys.
+- Enforced in: `internal/infrastructure/engine/sqlite_record_materialization.go`, `internal/infrastructure/engine/sqlite_engine.go`.
+
 ### Input Normalization and Typed Parsing
 
 - Guarantee: staged values are parsed by column type and nullability before persistence payload generation.
@@ -150,6 +157,12 @@
 - Read-record responses also carry per-cell browse-edit safety metadata so the TUI can distinguish lossless browse values from synthetic placeholders.
 - `ConfigStore`: list/create/update/delete config entries and expose active config path.
 - `DatabaseConnectionChecker`: validate candidate DB path before persisting selector add/edit changes.
+
+### Schema Read Contract
+
+- Schema read contracts (`model.Column` and `dto.SchemaColumn`) carry `Name`, `Type`, `Nullable`, `PrimaryKey`, `Unique`, `DefaultValue`, `AutoIncrement`, and zero or more foreign-key references.
+- Foreign-key references are value objects with `Table` and optional `Column`; when SQLite does not expose a referenced column name, the contract keeps `Column` empty instead of synthesizing one.
+- The application `GetSchema` use case preserves schema meaning while mapping the richer engine/domain contract into TUI-facing DTOs.
 
 ### Record Identity and Change Payload Contract
 

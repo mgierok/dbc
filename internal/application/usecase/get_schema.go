@@ -29,13 +29,25 @@ func (uc *GetSchema) Execute(ctx context.Context, tableName string) (dto.Schema,
 		if inputSpec.Kind == service.InputSelect {
 			inputKind = dto.ColumnInputSelect
 		}
+		var foreignKeys []dto.ForeignKeyRef
+		if len(column.ForeignKeys) > 0 {
+			foreignKeys = make([]dto.ForeignKeyRef, len(column.ForeignKeys))
+			for j, foreignKey := range column.ForeignKeys {
+				foreignKeys[j] = dto.ForeignKeyRef{
+					Table:  foreignKey.Table,
+					Column: foreignKey.Column,
+				}
+			}
+		}
 		columns[i] = dto.SchemaColumn{
 			Name:          column.Name,
 			Type:          column.Type,
 			Nullable:      column.Nullable,
 			PrimaryKey:    column.PrimaryKey,
+			Unique:        column.Unique,
 			DefaultValue:  column.DefaultValue,
 			AutoIncrement: column.AutoIncrement,
+			ForeignKeys:   foreignKeys,
 			Input: dto.ColumnInput{
 				Kind:    inputKind,
 				Options: inputSpec.Options,

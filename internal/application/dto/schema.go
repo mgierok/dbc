@@ -22,7 +22,14 @@ type SchemaColumn struct {
 	Type          string
 	Nullable      bool
 	PrimaryKey    bool
+	Unique        bool
 	DefaultValue  *string
 	AutoIncrement bool
+	ForeignKeys   []ForeignKeyRef
 	Input         ColumnInput
+}
+
+type ForeignKeyRef struct {
+	Table  string
+	Column string
 }

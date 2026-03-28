@@ -18,13 +18,55 @@ func (m *Model) renderSchemaWithStyles(width, height int, styles primitives.Rend
 
 	items := make([]primitives.SemanticLine, len(m.read.schema.Columns))
 	for i, column := range m.read.schema.Columns {
-		items[i] = primitives.SemanticLine{
-			primitives.Span(primitives.SemanticRoleHeader, column.Name),
-			primitives.Span(primitives.SemanticRoleBody, " : "+column.Type),
-		}
+		items[i] = renderSchemaLine(column)
 	}
 	lines := primitives.RenderList(items, m.read.schemaIndex, height, width, m.read.focus == FocusContent && m.read.viewMode == ViewSchema, styles)
 	return primitives.PadLines(lines, height, width)
+}
+
+func renderSchemaLine(column dto.SchemaColumn) primitives.SemanticLine {
+	line := primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleHeader, column.Name),
+		primitives.Span(primitives.SemanticRoleBody, " : "+column.Type),
+	}
+	if column.PrimaryKey {
+		line = append(line, schemaBadge("PK")...)
+	}
+	line = append(line, schemaBadge(columnNullabilityBadge(column))...)
+	if column.Unique && !column.PrimaryKey {
+		line = append(line, schemaBadge("UNIQUE")...)
+	}
+	if column.DefaultValue != nil {
+		defaultValue := primitives.SanitizeDisplayText(*column.DefaultValue, primitives.DisplaySanitizeSingleLine)
+		line = append(line, schemaBadge("DEFAULT "+defaultValue)...)
+	}
+	if column.AutoIncrement {
+		line = append(line, schemaBadge("AUTOINCREMENT")...)
+	}
+	for _, foreignKey := range column.ForeignKeys {
+		line = append(line, schemaBadge(schemaForeignKeyBadge(foreignKey))...)
+	}
+	return line
+}
+
+func schemaBadge(label string) primitives.SemanticLine {
+	return primitives.SemanticLine{
+		primitives.Span(primitives.SemanticRoleSummary, " ["+label+"]"),
+	}
+}
+
+func columnNullabilityBadge(column dto.SchemaColumn) string {
+	if column.Nullable {
+		return "NULL"
+	}
+	return "NOT NULL"
+}
+
+func schemaForeignKeyBadge(foreignKey dto.ForeignKeyRef) string {
+	if foreignKey.Column == "" {
+		return "FK->" + foreignKey.Table
+	}
+	return "FK->" + foreignKey.Table + "." + foreignKey.Column
 }
 
 func (m *Model) renderRecords(width, height int) []string {

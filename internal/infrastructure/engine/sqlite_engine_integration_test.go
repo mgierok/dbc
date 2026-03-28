@@ -114,6 +114,127 @@ func TestSQLiteEngine_GetSchema_MapsDefaultValuesAndAutoIncrement(t *testing.T) 
 	}
 }
 
+func TestSQLiteEngine_GetSchema_MapsSingleColumnUniqueAndForeignKeys(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		PRAGMA foreign_keys = ON;
+
+		CREATE TABLE accounts (
+			id INTEGER PRIMARY KEY
+		);
+
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			email TEXT NOT NULL UNIQUE,
+			account_id INTEGER,
+			FOREIGN KEY (account_id) REFERENCES accounts(id)
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	schema, err := engine.GetSchema(context.Background(), "users")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !schema.Columns[1].Unique {
+		t.Fatalf("expected email column to be marked unique")
+	}
+	expectedRefs := []model.ForeignKeyRef{{Table: "accounts", Column: "id"}}
+	if !reflect.DeepEqual(schema.Columns[2].ForeignKeys, expectedRefs) {
+		t.Fatalf("expected account_id foreign keys %v, got %v", expectedRefs, schema.Columns[2].ForeignKeys)
+	}
+}
+
+func TestSQLiteEngine_GetSchema_DoesNotMarkCompositeUniqueMembershipAsPerColumnUnique(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE memberships (
+			user_id INTEGER NOT NULL,
+			role_id INTEGER NOT NULL,
+			UNIQUE (user_id, role_id)
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	schema, err := engine.GetSchema(context.Background(), "memberships")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if schema.Columns[0].Unique {
+		t.Fatalf("expected user_id not to be marked unique from composite unique index")
+	}
+	if schema.Columns[1].Unique {
+		t.Fatalf("expected role_id not to be marked unique from composite unique index")
+	}
+}
+
+func TestSQLiteEngine_GetSchema_DoesNotMarkPartialUniqueIndexAsPerColumnUnique(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		CREATE TABLE users (
+			id INTEGER PRIMARY KEY,
+			email TEXT NOT NULL,
+			deleted_at TEXT
+		);
+		CREATE UNIQUE INDEX users_email_active_idx
+			ON users(email)
+			WHERE deleted_at IS NULL;
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	schema, err := engine.GetSchema(context.Background(), "users")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if schema.Columns[1].Unique {
+		t.Fatalf("expected email not to be marked unique from partial unique index")
+	}
+}
+
+func TestSQLiteEngine_GetSchema_MapsCompositeForeignKeysPerSourceColumn(t *testing.T) {
+	// Arrange
+	db := setupSQLiteSchemaDB(t, `
+		PRAGMA foreign_keys = ON;
+
+		CREATE TABLE parents (
+			parent_id INTEGER NOT NULL,
+			parent_code TEXT NOT NULL,
+			PRIMARY KEY (parent_id, parent_code)
+		);
+
+		CREATE TABLE children (
+			child_parent_id INTEGER NOT NULL,
+			child_parent_code TEXT NOT NULL,
+			FOREIGN KEY (child_parent_id, child_parent_code)
+				REFERENCES parents(parent_id, parent_code)
+		);
+	`)
+	engine := NewSQLiteEngine(db)
+
+	// Act
+	schema, err := engine.GetSchema(context.Background(), "children")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if got := schema.Columns[0].ForeignKeys; !reflect.DeepEqual(got, []model.ForeignKeyRef{{Table: "parents", Column: "parent_id"}}) {
+		t.Fatalf("expected child_parent_id foreign key mapping, got %v", got)
+	}
+	if got := schema.Columns[1].ForeignKeys; !reflect.DeepEqual(got, []model.ForeignKeyRef{{Table: "parents", Column: "parent_code"}}) {
+		t.Fatalf("expected child_parent_code foreign key mapping, got %v", got)
+	}
+}
+
 func TestSQLiteEngine_ListRecords_AppliesFilterAndPagination(t *testing.T) {
 	// Arrange
 	db := setupSQLiteSchemaDB(t, `
