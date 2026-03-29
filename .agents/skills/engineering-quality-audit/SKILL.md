@@ -13,7 +13,7 @@ This skill performs an analysis-only engineering quality audit to:
 - identify stale or redundant unit tests and missing high-value coverage,
 - propose prioritized, implementable changes that improve maintainability, test value, system safety, and human or AI operability without weakening architecture boundaries.
 
-The skill is technology agnostic and project agnostic. It MUST treat project-defined architecture rules, project-defined testing rules, and current code behavior as the source of truth.
+The skill is technology agnostic and project agnostic. It MUST treat canonical architecture rules, project governance, and project-defined testing rules as normative expectations when those sources exist. It MUST treat current code behavior and current-state documentation as factual evidence about the present implementation. The audit MUST distinguish conformance failures from accurate current-state observations.
 
 ## Scope
 
@@ -43,11 +43,15 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
   - optional path to analyze,
   - default is repository root when no path is provided.
 - `project architecture rules`:
-  - architecture sections from governance and technical docs,
+  - canonical architecture guidance from the project's declared architecture source or equivalent governance documents,
   - architecture decision records, module conventions, and other local policies if present.
 - `project testing rules`:
-  - testing sections from governance and technical docs,
+  - testing guidance from project governance, testing standards, or equivalent local policy documents,
   - local testing conventions, test-layout policies, and other local policies if present.
+- `current-state evidence`:
+  - current code behavior,
+  - current-state technical, product, or operational documentation when present,
+  - repository structure, tests, and configuration that reflect the present implementation.
 - `quality-signal sources`:
   - lint, test, and coverage settings,
   - flaky-test signals and equivalent local evidence if present.
@@ -240,6 +244,8 @@ The skill is technology agnostic and project agnostic. It MUST treat project-def
 - The skill MUST prioritize architecture-compliant and test-value-positive recommendations before rule-exception candidates.
 - The skill MUST NOT recommend test deletion when evidence of redundancy or obsolescence is weak.
 - The skill MUST NOT use coverage percentage alone as proof of quality or as the sole justification for a coverage-gap finding.
+- The skill MUST distinguish normative expectations from current-state evidence in both analysis and reporting.
+- When current implementation conflicts with canonical architecture rules or project governance, the skill MUST report the mismatch as drift or non-conformance instead of normalizing it as acceptable because it exists in code.
 - The skill MUST prefer structures where the likely change location is predictable from naming, boundaries, and module ownership.
 - The skill SHOULD prefer finer-grained files, packages, or modules when the code already contains separable responsibilities or stable seams.
 - The skill SHOULD treat reduced token consumption, lower search effort, and smaller review surface as valid supporting benefits when they result from better cohesion and clearer seams.
