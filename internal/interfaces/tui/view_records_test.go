@@ -646,6 +646,42 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 	})
 }
 
+func TestRecordDetailContentLines_ShowsProjectedMetadataBadgesBelowFieldHeader(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{
+						Name:           "id",
+						Type:           "INTEGER",
+						MetadataBadges: []string{"PK", "NOT NULL", "AUTOINCREMENT", "FK->accounts.owner_id"},
+					},
+					{
+						Name:           "nickname",
+						Type:           "TEXT",
+						MetadataBadges: []string{"NULL", "DEFAULT 'guest'"},
+					},
+				},
+			},
+			records: []dto.RecordRow{
+				{Values: []string{"1", "alice"}},
+			},
+		},
+	}
+
+	// Act
+	content := stripANSI(strings.Join(model.recordDetailContentLines(80), "\n"))
+
+	// Assert
+	if !strings.Contains(content, "id (INTEGER)\n[PK] [NOT NULL] [AUTOINCREMENT] [FK->accounts.owner_id]\n  1") {
+		t.Fatalf("expected projected metadata badges under id header, got %q", content)
+	}
+	if !strings.Contains(content, "nickname (TEXT)\n[NULL] [DEFAULT 'guest']\n  alice") {
+		t.Fatalf("expected projected metadata badges under nickname header, got %q", content)
+	}
+}
+
 func TestRecordDetailContentLines_StrikesDeleteMarkedFieldValuesOnly(t *testing.T) {
 	// Arrange
 	model := &Model{

@@ -40,14 +40,15 @@ func (uc *GetSchema) Execute(ctx context.Context, tableName string) (dto.Schema,
 			}
 		}
 		columns[i] = dto.SchemaColumn{
-			Name:          column.Name,
-			Type:          column.Type,
-			Nullable:      column.Nullable,
-			PrimaryKey:    column.PrimaryKey,
-			Unique:        column.Unique,
-			DefaultValue:  column.DefaultValue,
-			AutoIncrement: column.AutoIncrement,
-			ForeignKeys:   foreignKeys,
+			Name:           column.Name,
+			Type:           column.Type,
+			Nullable:       column.Nullable,
+			PrimaryKey:     column.PrimaryKey,
+			Unique:         column.Unique,
+			DefaultValue:   column.DefaultValue,
+			AutoIncrement:  column.AutoIncrement,
+			ForeignKeys:    foreignKeys,
+			MetadataBadges: projectedSchemaMetadataBadges(column),
 			Input: dto.ColumnInput{
 				Kind:    inputKind,
 				Options: inputSpec.Options,

@@ -104,6 +104,7 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 					Type:          "INTEGER",
 					Nullable:      false,
 					PrimaryKey:    true,
+					Unique:        true,
 					AutoIncrement: true,
 					ForeignKeys: []model.ForeignKeyRef{
 						{Table: "accounts", Column: "owner_id"},
@@ -138,31 +139,66 @@ func TestGetSchema_MapsColumns(t *testing.T) {
 			Type:          "INTEGER",
 			Nullable:      false,
 			PrimaryKey:    true,
+			Unique:        true,
 			AutoIncrement: true,
 			ForeignKeys: []dto.ForeignKeyRef{
 				{Table: "accounts", Column: "owner_id"},
 			},
-			Input: dto.ColumnInput{Kind: dto.ColumnInputText},
+			MetadataBadges: []string{"PK", "NOT NULL", "AUTOINCREMENT", "FK->accounts.owner_id"},
+			Input:          dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 		{
-			Name:          "name",
-			Type:          "TEXT",
-			Nullable:      true,
-			AutoIncrement: false,
-			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
+			Name:           "name",
+			Type:           "TEXT",
+			Nullable:       true,
+			AutoIncrement:  false,
+			MetadataBadges: []string{"NULL"},
+			Input:          dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 		{
-			Name:          "display_name",
-			Type:          "TEXT",
-			Nullable:      false,
-			DefaultValue:  &defaultName,
-			AutoIncrement: false,
-			Unique:        true,
-			Input:         dto.ColumnInput{Kind: dto.ColumnInputText},
+			Name:           "display_name",
+			Type:           "TEXT",
+			Nullable:       false,
+			DefaultValue:   &defaultName,
+			AutoIncrement:  false,
+			Unique:         true,
+			MetadataBadges: []string{"NOT NULL", "UNIQUE", "DEFAULT 'guest'"},
+			Input:          dto.ColumnInput{Kind: dto.ColumnInputText},
 		},
 	}
 	if !reflect.DeepEqual(result.Columns, expectedColumns) {
 		t.Fatalf("expected %v, got %v", expectedColumns, result.Columns)
+	}
+}
+
+func TestGetSchema_MapsForeignKeyBadgeWithoutReferencedColumn(t *testing.T) {
+	// Arrange
+	engine := &fakeEngine{
+		schema: model.Schema{
+			Columns: []model.Column{
+				{
+					Name:     "account_id",
+					Type:     "INTEGER",
+					Nullable: false,
+					ForeignKeys: []model.ForeignKeyRef{
+						{Table: "accounts"},
+					},
+				},
+			},
+		},
+	}
+	uc := usecase.NewGetSchema(engine)
+
+	// Act
+	result, err := uc.Execute(context.Background(), "users")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	expected := []string{"NOT NULL", "FK->accounts"}
+	if !reflect.DeepEqual(result.Columns[0].MetadataBadges, expected) {
+		t.Fatalf("expected metadata badges %v, got %v", expected, result.Columns[0].MetadataBadges)
 	}
 }
 

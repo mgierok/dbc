@@ -18,15 +18,16 @@ type ColumnInput struct {
 }
 
 type SchemaColumn struct {
-	Name          string
-	Type          string
-	Nullable      bool
-	PrimaryKey    bool
-	Unique        bool
-	DefaultValue  *string
-	AutoIncrement bool
-	ForeignKeys   []ForeignKeyRef
-	Input         ColumnInput
+	Name           string
+	Type           string
+	Nullable       bool
+	PrimaryKey     bool
+	Unique         bool
+	DefaultValue   *string
+	AutoIncrement  bool
+	ForeignKeys    []ForeignKeyRef
+	MetadataBadges []string
+	Input          ColumnInput
 }
 
 type ForeignKeyRef struct {

@@ -29,22 +29,8 @@ func renderSchemaLine(column dto.SchemaColumn) primitives.SemanticLine {
 		primitives.Span(primitives.SemanticRoleHeader, column.Name),
 		primitives.Span(primitives.SemanticRoleBody, " : "+column.Type),
 	}
-	if column.PrimaryKey {
-		line = append(line, schemaBadge("PK")...)
-	}
-	line = append(line, schemaBadge(columnNullabilityBadge(column))...)
-	if column.Unique && !column.PrimaryKey {
-		line = append(line, schemaBadge("UNIQUE")...)
-	}
-	if column.DefaultValue != nil {
-		defaultValue := primitives.SanitizeDisplayText(*column.DefaultValue, primitives.DisplaySanitizeSingleLine)
-		line = append(line, schemaBadge("DEFAULT "+defaultValue)...)
-	}
-	if column.AutoIncrement {
-		line = append(line, schemaBadge("AUTOINCREMENT")...)
-	}
-	for _, foreignKey := range column.ForeignKeys {
-		line = append(line, schemaBadge(schemaForeignKeyBadge(foreignKey))...)
+	for _, badge := range column.MetadataBadges {
+		line = append(line, schemaBadge(badge)...)
 	}
 	return line
 }
@@ -53,20 +39,6 @@ func schemaBadge(label string) primitives.SemanticLine {
 	return primitives.SemanticLine{
 		primitives.Span(primitives.SemanticRoleSummary, " ["+label+"]"),
 	}
-}
-
-func columnNullabilityBadge(column dto.SchemaColumn) string {
-	if column.Nullable {
-		return "NULL"
-	}
-	return "NOT NULL"
-}
-
-func schemaForeignKeyBadge(foreignKey dto.ForeignKeyRef) string {
-	if foreignKey.Column == "" {
-		return "FK->" + foreignKey.Table
-	}
-	return "FK->" + foreignKey.Table + "." + foreignKey.Column
 }
 
 func (m *Model) renderRecords(width, height int) []string {
@@ -236,6 +208,10 @@ func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.
 			header += " " + styles.Render(primitives.SemanticRoleBody, primitives.IconEdit)
 		}
 		lines = append(lines, primitives.WrapTextToWidth(header, width)...)
+		if len(column.MetadataBadges) > 0 {
+			metadataLine := styles.RenderLine(renderMetadataBadgesLine(column.MetadataBadges))
+			lines = append(lines, primitives.WrapTextToWidth(metadataLine, width)...)
+		}
 
 		valueRole := primitives.SemanticRoleBody
 		if deleted {
@@ -249,6 +225,17 @@ func (m *Model) recordDetailContentLinesWithStyles(width int, styles primitives.
 		}
 	}
 	return lines
+}
+
+func renderMetadataBadgesLine(badges []string) primitives.SemanticLine {
+	line := make(primitives.SemanticLine, 0, len(badges)*2)
+	for i, badge := range badges {
+		if i > 0 {
+			line = append(line, primitives.Span(primitives.SemanticRoleBody, " "))
+		}
+		line = append(line, primitives.Span(primitives.SemanticRoleSummary, "["+badge+"]"))
+	}
+	return line
 }
 
 func (m *Model) effectiveRecordDetailValue(rowIndex, columnIndex int) (string, bool) {

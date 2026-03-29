@@ -18,22 +18,14 @@ func TestRenderSchema_ShowsConstraintBadgesInStableOrder(t *testing.T) {
 			schema: dto.Schema{
 				Columns: []dto.SchemaColumn{
 					{
-						Name:          "id",
-						Type:          "INTEGER",
-						Nullable:      false,
-						PrimaryKey:    true,
-						Unique:        true,
-						DefaultValue:  &defaultValue,
-						AutoIncrement: true,
-						ForeignKeys: []dto.ForeignKeyRef{
-							{Table: "accounts", Column: "owner_id"},
-							{Table: "profiles", Column: "id"},
-						},
+						Name:           "id",
+						Type:           "INTEGER",
+						MetadataBadges: []string{"PK", "NOT NULL", "DEFAULT " + defaultValue, "AUTOINCREMENT", "FK->accounts.owner_id", "FK->profiles.id"},
 					},
 					{
-						Name:     "nickname",
-						Type:     "TEXT",
-						Nullable: true,
+						Name:           "nickname",
+						Type:           "TEXT",
+						MetadataBadges: []string{"NULL"},
 					},
 				},
 			},

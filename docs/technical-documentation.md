@@ -160,9 +160,9 @@
 
 ### Schema Read Contract
 
-- Schema read contracts (`model.Column` and `dto.SchemaColumn`) carry `Name`, `Type`, `Nullable`, `PrimaryKey`, `Unique`, `DefaultValue`, `AutoIncrement`, and zero or more foreign-key references.
+- Schema read contracts (`model.Column` and `dto.SchemaColumn`) carry `Name`, `Type`, `Nullable`, `PrimaryKey`, `Unique`, `DefaultValue`, `AutoIncrement`, and zero or more foreign-key references; `dto.SchemaColumn` additionally carries ordered precomputed `MetadataBadges` for adapter rendering.
 - Foreign-key references are value objects with `Table` and optional `Column`; when SQLite does not expose a referenced column name, the contract keeps `Column` empty instead of synthesizing one.
-- The application `GetSchema` use case preserves schema meaning while mapping the richer engine/domain contract into TUI-facing DTOs.
+- The application `GetSchema` use case preserves schema meaning while mapping the richer engine/domain contract into TUI-facing DTOs and is the single source of truth for metadata-badge projection used by `Schema` and record-detail rendering.
 
 ### Record Identity and Change Payload Contract
 
