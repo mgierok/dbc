@@ -75,7 +75,6 @@
 
 #### General Development Rules
 
-- The agent MUST use English for identifiers and internal technical documentation.
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
 - For feature changes, bug fixes, and behavior-impacting refactors, the agent MUST follow `TDD Rules`.
 - Before finalizing a non-documentation code change, the agent MUST run the applicable formatter, tests, and linter for the affected stack.
