@@ -42,20 +42,17 @@
 #### Logic Placement
 
 - `internal/interfaces/**` MUST be limited to input handling, presentation, interaction-local state, DTO mapping, and use-case invocation.
-- `internal/interfaces/**` MUST NOT own business rules, decision policies, workflow orchestration, identity derivation, persistence semantics, or state-transition policy.
-- `internal/interfaces/tui/**` MUST remain an interface adapter and MUST NOT absorb business behavior that belongs to the domain or use cases.
+- If work in `internal/interfaces/**` would introduce business rules, decision policies, workflow orchestration, identity derivation, persistence semantics, or state-transition policy, the agent MUST move that logic inward to the application or domain layer instead of completing the change in the adapter.
 - Use cases MUST own application workflow orchestration and cross-component decision flow, but they MUST NOT absorb domain invariants or domain rules that belong in domain models or domain services.
 
 #### Change Placement Rules
 
 - Before implementing any feature change, bug fix, or behavior-impacting refactor, the agent MUST classify the target logic as domain, application, interface adapter, or infrastructure and MUST be able to state why that layer is correct.
-- When a task touches `internal/interfaces/**` and changes behavior or logic placement, the agent MUST inspect the nearest relevant domain and application seams before adding or changing logic in the adapter layer.
+- When a task touches `internal/interfaces/**` and changes behavior or logic placement, the agent MUST inspect the nearest relevant domain and application seams before adding logic in the adapter, and the final adapter change MUST remain limited to input handling, presentation, interaction-local state, DTO mapping, or use-case invocation.
 - Minimal or surgical change scope MUST NOT be used as justification for placing logic in the wrong architectural layer.
 - When adding functionality that changes behavior, the agent MUST prefer implementation flow from inner layers outward: domain, use case, port, infrastructure adapter, then UI adapter.
 - For adapter-only or infrastructure-only changes, the inner-layer steps MAY be no-op only when the change does not introduce application logic, business rules, or workflow decisions; architecture boundaries and dependency direction MUST still be preserved.
-- If an adapter change would introduce business rules, workflow decisions, identity derivation, persistence semantics, or state-transition policy, the agent MUST move that logic inward instead of completing the change in the adapter.
 - If the correct target layer remains unclear after inspection, the agent MUST call out the ambiguity explicitly before finalizing the change.
-- After implementing a behavior change, the agent MUST verify that no new application logic was introduced into `internal/interfaces/**` beyond input mapping, presentation, DTO mapping, interaction-local state, or use-case invocation.
 - Exception: the seam inspection rule MAY be skipped for clearly presentation-only, rendering-only, copy-only, or interaction-local-state-only changes that do not alter behavior contracts or logic placement.
 
 #### Architecture Maintainability Preferences
