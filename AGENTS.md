@@ -12,8 +12,8 @@
 
 ## Source Documents
 
-- `docs/technical-documentation.md` MUST be used as the primary source for current implementation state, current code structure, current technical contracts and mechanisms, current technical constraints, and known drift.
-- `docs/product-documentation.md` MUST be used as the primary source for current user-visible product state, current workflows, current interaction rules, current non-goals, and user-visible constraints.
+- `docs/technical-documentation.md` MUST be used as the primary reference for orienting within current implementation state, current code structure, current technical contracts and mechanisms, current technical constraints, and known drift.
+- `docs/product-documentation.md` MUST be used as the primary reference for orienting within current user-visible product state, current workflows, current interaction rules, current non-goals, and user-visible constraints.
 - `README.md` SHOULD be used for repository entry context, including product summary, supported environments, installation prerequisites, and basic run commands.
 - `docs/clean-architecture-ddd.md` MUST be used as the canonical architecture source for boundary placement, dependency direction, logic placement, ports/adapters decisions, and application vs adapter responsibilities.
 - `docs/test-driven-development.md` MUST be used as the normative TDD reference for behavior-impacting changes, test strategy updates, and Red-Green-Refactor decisions.
@@ -22,7 +22,7 @@
 
 ### Dependencies and Toolchain
 
-- The agent MUST take the dependency and toolchain baseline from `go.mod` and `docs/technical-documentation.md`.
+- The agent MUST take the dependency and toolchain baseline from `go.mod`, and the agent MUST use `docs/technical-documentation.md` only as the current-state reference for that baseline. If they differ, `go.mod` MUST win.
 - Adding third-party dependencies MUST have explicit approval.
 
 ### Architecture
@@ -51,10 +51,15 @@
 
 #### Change Placement Rules
 
-- When a new behavior is added, the agent MUST classify it as domain, application, interface adapter, or infrastructure before implementation.
+- Before implementing any feature change, bug fix, or behavior-impacting refactor, the agent MUST classify the target logic as domain, application, interface adapter, or infrastructure and MUST be able to state why that layer is correct.
+- When a task touches `internal/interfaces/**` and changes behavior or logic placement, the agent MUST inspect the nearest relevant domain and application seams before adding or changing logic in the adapter layer.
 - Minimal or surgical change scope MUST NOT be used as justification for placing logic in the wrong architectural layer.
 - When adding functionality that changes behavior, the agent MUST prefer implementation flow from inner layers outward: domain, use case, port, infrastructure adapter, then UI adapter.
 - For adapter-only or infrastructure-only changes, the inner-layer steps MAY be no-op only when the change does not introduce application logic, business rules, or workflow decisions; architecture boundaries and dependency direction MUST still be preserved.
+- If an adapter change would introduce business rules, workflow decisions, identity derivation, persistence semantics, or state-transition policy, the agent MUST move that logic inward instead of completing the change in the adapter.
+- If the correct target layer remains unclear after inspection, the agent MUST call out the ambiguity explicitly before finalizing the change.
+- After implementing a behavior change, the agent MUST verify that no new application logic was introduced into `internal/interfaces/**` beyond input mapping, presentation, DTO mapping, interaction-local state, or use-case invocation.
+- Exception: the seam inspection rule MAY be skipped for clearly presentation-only, rendering-only, copy-only, or interaction-local-state-only changes that do not alter behavior contracts or logic placement.
 
 #### Architecture Maintainability Preferences
 

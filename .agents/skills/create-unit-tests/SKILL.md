@@ -24,10 +24,12 @@ Produce deterministic, maintainable unit tests that verify one observable behavi
 - The skill SHOULD keep test data readable, minimal, and local where practical.
 - The skill SHOULD organize tests so affected tests are easy to locate from the changed production code, usually by following the surrounding project structure or convention.
 - The skill MUST avoid coupling to implementation details (private methods, internal call order unless order is contractually required, incidental data structures).
+- When the behavior under test is a business rule or workflow decision, the skill SHOULD prefer domain or application seams over adapter seams.
+- Adapter-level tests MUST be treated as sufficient only for adapter behavior, mapping, rendering contracts, or interaction-local state.
 
 ## Workflow
 
-1. The skill MUST define the behavior contract before writing assertions.
+1. The skill MUST define the behavior contract before writing assertions and SHOULD identify the layer that owns that contract.
 2. The skill SHOULD build a scenario matrix covering happy path, boundary values, invalid input, dependency failure, and idempotency or ordering when relevant.
 3. The skill MUST prepare minimal fixtures and isolate dependencies with test doubles.
 4. The skill MUST implement tests with explicit naming (`should_<expected_behavior>_when_<condition>` or equivalent project convention).
