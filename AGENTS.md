@@ -120,8 +120,7 @@ Quick examples:
 
 These rules apply only in Plan mode.
 - For coding-related plans, the plan MUST explicitly account for the applicable rules defined in `Development Standards`. If the plan requires a justified deviation (for example for a large refactoring), that deviation MUST be explicitly labeled with its scope and rationale.
-- For non-trivial coding plans, the agent MUST inspect the current implementation at the most likely change seams before finalizing the plan.
-- The agent MUST distinguish explicitly between confirmed facts, assumptions, and open questions.
+- For non-trivial coding plans, the agent MUST inspect the current implementation at the most likely change seams before finalizing the plan and MUST distinguish explicitly between confirmed facts, assumptions, and open questions.
 - If a decision-critical open question remains unresolved, the agent MUST NOT present the plan as execution-ready and MUST call out the gap explicitly.
 - When planning a change to existing behavior or functionality, the agent MUST keep repository planning artifacts focused on the intended resulting state and MUST NOT leave information about the previous state unless the user explicitly requests that historical context.
 - When persisting a generated plan to the repository, the agent MUST save that plan under `.plans/` with a short descriptive kebab-case filename that communicates the task intent.
