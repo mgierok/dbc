@@ -43,13 +43,13 @@ func (m *Model) toggleDeleteSelection() (tea.Model, tea.Cmd) {
 		m.normalizeRecordSelection()
 		return m, nil
 	}
-	key, identity, err := m.recordIdentityForVisibleRow(m.read.recordSelection)
+	recordRef, err := m.persistedRecordRefForVisibleRow(m.read.recordSelection)
 	if err != nil {
 		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
-	_, exists := m.currentStagingSnapshot().PendingDeletes[key]
-	if err := m.stagingSessionUseCase().SetDeleteMark(key, identity, !exists); err != nil {
+	_, exists := m.currentStagingSnapshot().PendingDeletes[recordRef.RowKey]
+	if err := m.stagingSessionUseCase().SetDeleteMark(recordRef.RowKey, recordRef.Identity, !exists); err != nil {
 		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
@@ -118,13 +118,13 @@ func (m *Model) stageEdit(rowIndex, columnIndex int, value dto.StagedValue) erro
 		m.syncStagingSnapshot()
 		return nil
 	}
-	key, identity, err := m.recordIdentityForVisibleRow(rowIndex)
+	recordRef, err := m.persistedRecordRefForVisibleRow(rowIndex)
 	if err != nil {
 		return err
 	}
 	if err := m.stagingSessionUseCase().StagePersistedEdit(
-		key,
-		identity,
+		recordRef.RowKey,
+		recordRef.Identity,
 		columnIndex,
 		m.visibleRowValue(rowIndex, columnIndex),
 		value,

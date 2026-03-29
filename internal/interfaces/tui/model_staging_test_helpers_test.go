@@ -123,8 +123,8 @@ func stagedValueEqual(left, right dto.StagedValue) bool {
 
 func (m *Model) originalDisplayValueForSeed(recordKey string, columnIndex int) string {
 	for rowIndex := range m.read.records {
-		key, _, err := m.recordIdentityForPersistedRow(rowIndex)
-		if err != nil || key != recordKey {
+		recordRef, err := m.persistedRecordRefForPersistedRow(rowIndex)
+		if err != nil || recordRef.RowKey != recordKey {
 			continue
 		}
 		return m.recordValue(rowIndex, columnIndex)

@@ -150,7 +150,7 @@
 
 - `Engine`: list tables, read schema, read records (with optional filter/sort), list operators, apply table changes, and return the total applied-row count for that save operation.
 - Read-record responses carry render-facing `Values` separately from persisted-row identity data, so browse placeholders do not change write identity.
-- Read-record responses also carry per-cell browse-edit safety metadata so the TUI can distinguish lossless browse values from synthetic placeholders.
+- Read-record responses also carry per-cell browse-edit safety metadata; the application-layer persisted-record access resolver consumes that metadata to decide whether edit may start from the current browse value.
 - `ConfigStore`: list/create/update/delete config entries and expose active config path.
 - `DatabaseConnectionChecker`: validate candidate DB path before persisting selector add/edit changes.
 
@@ -164,8 +164,9 @@
 
 - Persisted-row updates/deletes require non-empty identity keys.
 - Identity keys are derived from primary-key columns and carried as typed staged values (`Text`, `IsNull`, optional `Raw`).
-- Read-path record contracts (`model.Record` and `dto.RecordRow`) may provide precomputed row key + identity, and staged-change translation prefers that precomputed identity over reparsing rendered values.
+- Read-path record contracts (`model.Record` and `dto.RecordRow`) may provide precomputed row key + identity, and the application persisted-record access resolver prefers that precomputed identity over reparsing rendered values.
 - If any primary-key component exceeds the browse materialization safety cap, the read contract marks row identity unavailable instead of materializing an oversized key; edit/delete then stay blocked for that row.
+- The application persisted-record access resolver owns persisted-row access semantics for delete and edit-start (`ResolveForDelete` / `ResolveForEdit`) and returns a boundary DTO containing `RowKey` plus typed `Identity`.
 - Application/domain write contracts do not depend on SQLite `rowid`.
 
 ### Records Page Contract
@@ -174,7 +175,7 @@
 - Browse materialization is bounded to `256 KiB` per cell on read paths.
 - Oversized non-BLOB cells render as `<truncated N bytes>`.
 - `BLOB` cells render as size placeholders (`<blob N bytes>` / `<blob truncated N bytes>`) instead of raw binary/text coercions.
-- Per-cell browse-edit safety metadata marks synthetic placeholders as not editable-from-browse; the TUI blocks direct popup entry for such persisted cells unless a staged value already exists for that cell.
+- Per-cell browse-edit safety metadata marks synthetic placeholders as not editable-from-browse; `ResolveForEdit` rejects such cells for browse-started edit, while the TUI keeps the only local exception for reopening the popup from an already staged value.
 - Materialized display aliases stay internal to the projection, while `ORDER BY` continues to target the raw table columns so sort semantics remain identical to stored SQLite values.
 - `HasMore` is computed via look-ahead (`LIMIT limit+1`).
 - Runtime records page limit defaults to `20`, but page loads and total-page calculations use the effective runtime-local limit from runtime state.

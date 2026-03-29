@@ -30,6 +30,13 @@ func (m *Model) translatorUseCase() *usecase.StagedChangesTranslator {
 	return usecase.NewStagedChangesTranslator()
 }
 
+func (m *Model) recordAccessResolverUseCase() *usecase.PersistedRecordAccessResolver {
+	if m.recordAccessResolver != nil {
+		return m.recordAccessResolver
+	}
+	return usecase.NewPersistedRecordAccessResolver()
+}
+
 func (m *Model) stagingPolicyUseCase() *usecase.StagingPolicy {
 	if m.stagingPolicy != nil {
 		return m.stagingPolicy

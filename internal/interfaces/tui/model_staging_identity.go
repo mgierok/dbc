@@ -17,20 +17,6 @@ func (m *Model) recordValue(rowIndex, columnIndex int) string {
 	return values[columnIndex]
 }
 
-func (m *Model) recordCellEditableFromBrowse(rowIndex, columnIndex int) bool {
-	if rowIndex < 0 || rowIndex >= len(m.read.records) {
-		return false
-	}
-	editable := m.read.records[rowIndex].EditableFromBrowse
-	if len(editable) == 0 {
-		return true
-	}
-	if columnIndex < 0 || columnIndex >= len(editable) {
-		return false
-	}
-	return editable[columnIndex]
-}
-
 func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (dto.StagedEdit, bool) {
 	persistedIndex := m.persistedRowIndex(rowIndex)
 	if persistedIndex < 0 {
@@ -49,24 +35,24 @@ func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (dto.StagedEdit, boo
 }
 
 func (m *Model) recordKeyForPersistedRow(rowIndex int) (string, bool) {
-	key, _, err := m.recordIdentityForPersistedRow(rowIndex)
+	recordRef, err := m.persistedRecordRefForPersistedRow(rowIndex)
 	if err != nil {
 		return "", false
 	}
-	return key, true
+	return recordRef.RowKey, true
 }
 
-func (m *Model) recordIdentityForVisibleRow(rowIndex int) (string, dto.RecordIdentity, error) {
+func (m *Model) persistedRecordRefForVisibleRow(rowIndex int) (dto.PersistedRecordRef, error) {
 	persistedIndex := m.persistedRowIndex(rowIndex)
 	if persistedIndex < 0 {
-		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
+		return dto.PersistedRecordRef{}, fmt.Errorf("record index out of range")
 	}
-	return m.recordIdentityForPersistedRow(persistedIndex)
+	return m.persistedRecordRefForPersistedRow(persistedIndex)
 }
 
-func (m *Model) recordIdentityForPersistedRow(rowIndex int) (string, dto.RecordIdentity, error) {
+func (m *Model) persistedRecordRefForPersistedRow(rowIndex int) (dto.PersistedRecordRef, error) {
 	if rowIndex < 0 || rowIndex >= len(m.read.records) {
-		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
+		return dto.PersistedRecordRef{}, fmt.Errorf("record index out of range")
 	}
-	return m.translatorUseCase().BuildRecordIdentity(m.read.schema, m.read.records[rowIndex])
+	return m.recordAccessResolverUseCase().ResolveForDelete(m.read.schema, m.read.records[rowIndex])
 }

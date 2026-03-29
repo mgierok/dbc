@@ -69,7 +69,15 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			focus:    FocusContent,
-			records:  []dto.RecordRow{{Values: []string{"1", "alice"}}},
+			records: []dto.RecordRow{{
+				Values: []string{"not-an-integer", "alice"},
+				RowKey: "id=1",
+				Identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{
+						{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}},
+					},
+				},
+			}},
 			schema: dto.Schema{
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},
@@ -85,6 +93,13 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 	// Assert
 	if len(model.currentStagingSnapshot().PendingDeletes) != 1 {
 		t.Fatalf("expected one pending delete, got %d", len(model.currentStagingSnapshot().PendingDeletes))
+	}
+	deleteChange, ok := model.currentStagingSnapshot().PendingDeletes["id=1"]
+	if !ok {
+		t.Fatal("expected pending delete to use resolved row key")
+	}
+	if len(deleteChange.Identity.Keys) != 1 || deleteChange.Identity.Keys[0].Column != "id" {
+		t.Fatalf("expected resolved delete identity, got %+v", deleteChange.Identity)
 	}
 
 	// Act

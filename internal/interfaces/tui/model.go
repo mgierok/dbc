@@ -179,6 +179,7 @@ type Model struct {
 	listOperators               listOperatorsUseCase
 	saveChanges                 saveChangesUseCase
 	translator                  *usecase.StagedChangesTranslator
+	recordAccessResolver        *usecase.PersistedRecordAccessResolver
 	stagingPolicy               *usecase.StagingPolicy
 	stagingSession              *usecase.StagingSession
 	stagingSnapshot             dto.StagingSnapshot

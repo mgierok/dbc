@@ -28,12 +28,8 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 	if m.read.recordSelection < 0 || m.read.recordSelection >= m.totalRecordRows() {
 		return m, nil
 	}
-	if insert, isInsert := m.pendingInsertForSelection(); !isInsert {
-		if _, _, err := m.recordIdentityForVisibleRow(m.read.recordSelection); err != nil {
-			m.ui.statusMessage = "Error: " + err.Error()
-			return m, nil
-		}
-	} else if insert.ID == "" {
+	insert, isInsert := m.pendingInsertForSelection()
+	if isInsert && insert.ID == "" {
 		return m, nil
 	}
 	visibleColumns := m.visibleColumnIndicesForSelection()
@@ -48,15 +44,19 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 	}
 	column := m.read.schema.Columns[m.read.recordColumn]
 	currentValue := m.visibleRowValue(m.read.recordSelection, m.read.recordColumn)
-	if insert, isInsert := m.pendingInsertForSelection(); isInsert {
+	if isInsert {
 		if value, ok := insert.Values[m.read.recordColumn]; ok {
 			currentValue = displayValue(value.Value)
 		}
 	} else if staged, ok := m.stagedEditForRow(m.read.recordSelection, m.read.recordColumn); ok {
+		if _, err := m.persistedRecordRefForVisibleRow(m.read.recordSelection); err != nil {
+			m.ui.statusMessage = "Error: " + err.Error()
+			return m, nil
+		}
 		currentValue = displayValue(staged.Value)
 	} else if persistedIndex := m.persistedRowIndex(m.read.recordSelection); persistedIndex >= 0 {
-		if !m.recordCellEditableFromBrowse(persistedIndex, m.read.recordColumn) {
-			m.ui.statusMessage = "Error: selected cell has no safe editable source"
+		if _, err := m.recordAccessResolverUseCase().ResolveForEdit(m.read.schema, m.read.records[persistedIndex], m.read.recordColumn); err != nil {
+			m.ui.statusMessage = "Error: " + err.Error()
 			return m, nil
 		}
 	}
