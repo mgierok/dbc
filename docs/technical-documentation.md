@@ -22,7 +22,7 @@
 
 - Database access currently goes through `internal/application/port.Engine`.
 - Use cases currently orchestrate behavior against ports and stay independent from SQLite-specific details.
-- The TUI currently acts as the terminal interface adapter and delegates application behavior to use cases while retaining interaction-local state.
+- Runtime dirty-navigation orchestration now lives in application use cases; the TUI adapter renders prompts, keeps only interaction-local continuation metadata, and executes the adapter-side next action returned by application.
 - Infrastructure packages currently implement boundary ports (`Engine`, `ConfigStore`, `DatabaseConnectionChecker`).
 
 ## Components and Responsibilities
@@ -30,10 +30,10 @@
 - `cmd/dbc`: process entrypoint, startup argument handling, runtime/selector orchestration.
 - `internal/domain/model`: domain value objects, entities, and error contracts.
 - `internal/domain/service`: pure domain helpers (table sorting, typed value parsing, input spec inference).
-- `internal/application/usecase`: read/write orchestration, config management, staging policy, and dirty-navigation policy.
+- `internal/application/usecase`: read/write orchestration, config management, staging policy, runtime navigation workflow, and shared runtime/startup database-target resolution.
 - `internal/application/port`: application boundary interfaces for infrastructure implementations.
 - `internal/application/dto`: adapter-facing data contracts exchanged between use cases and interfaces.
-- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, runtime database-selector popup hosting, and runtime-session entrypoints.
+- `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, runtime database-selector popup hosting, prompt rendering, and runtime-session entrypoints.
 - `internal/interfaces/tui/internal/selector`: shared database-selector controller plus selector host rendering reused by startup selection and the runtime database-selector popup.
 - `internal/interfaces/tui/internal/primitives`: terminal UI primitives shared by runtime and selector, including key/help registry, popup/layout rendering, iconography, and style helpers.
 - `internal/infrastructure/config`: JSON config loading/validation/persistence adapter.
@@ -50,12 +50,20 @@
 ### Selector-First vs Direct-Launch Startup
 
 - Guarantee: selector-first startup is default; `-d`/`--database` enables direct-launch path.
-- Guarantee: direct-launch path resolves configured identity first via normalized SQLite path matching.
+- Guarantee: direct-launch path resolves configured identity through the same application-level SQLite target resolver used by runtime reopen requests.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
 - Guarantee: startup selector flow is separate from runtime database reopening; startup selects only the initial database, while runtime `:config` / `:c` uses a selector popup surface and runtime `:edit` / `:e` uses the command spotlight surface to request a selected database, then `cmd/dbc` reopens that database in a fresh runtime instance.
 - Guarantee: the startup selector host stays outside the runtime overlay presenter and therefore does not render the runtime backdrop treatment used by runtime popups and spotlight overlays.
 - Guarantee: runtime database-selector popup dismissal is in-model only, so popup close automatically restores the prior runtime view without per-popup resume snapshots.
 - Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
+
+### Runtime Navigation Orchestration
+
+- Guarantee: dirty table switch, runtime database reload/open, and runtime quit are planned in one application-level navigation workflow instead of being classified directly in the TUI adapter.
+- Guarantee: runtime dirty confirm popups render application-provided decision IDs and labels; the TUI does not keep separate dirty-flow enums for table switch, database transition, or quit semantics.
+- Guarantee: successful save after a dirty database navigation request resumes the pending application action, while save failure keeps that pending action and restores submitted `:edit` command input when needed.
+- Guarantee: adapter-side execution remains limited to switching to a resolved table name, quitting runtime, or exiting with `OpenDatabaseNext`.
+- Enforced in: `internal/application/usecase/runtime_navigation_workflow.go`, `internal/application/usecase/runtime_database_target_resolver.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_runtime_database_transition.go`, `internal/interfaces/tui/model_runtime_update.go`.
 
 ### JSON Config Persistence
 
@@ -135,7 +143,7 @@
 
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
-- Runtime startup opens one initial `RuntimeRunDeps` bundle and `internal/interfaces/tui.Run(...)` returns a `RuntimeExitResult` that either quits normally or requests reopening a selected database.
+- Runtime startup opens one initial `RuntimeRunDeps` bundle, including the runtime save workflow, runtime navigation workflow, and shared database-target resolver, and `internal/interfaces/tui.Run(...)` returns a `RuntimeExitResult` that either quits normally or requests reopening a selected database.
 - Runtime-initiated reopen requests carry a fully resolved `DatabaseOption`, including whether the target is config-backed or CLI-scoped.
 
 ### Configuration Contract
@@ -198,7 +206,7 @@
 - Runtime `:config` / `:c` opens an in-runtime database-selector popup over the current layout; `Esc` closes only that popup and leaves runtime state untouched.
 - Active runtime popups and the command spotlight keep the runtime layout visible underneath through the shared runtime backdrop presenter; the startup selector remains the only intentional selector exception to that rule.
 - Runtime `:w` / `:write` starts save immediately when dirty and surfaces a non-error no-op status when no staged changes exist; runtime `:wq` starts save immediately when dirty and quits only after a successful save.
-- Runtime `:config` / `:c` and `:edit` / `:e` resolve the requested target inside the TUI adapter, then exit the current runtime with a structured reopen result; if dirty state exists, save/discard/cancel is resolved before exit.
+- Runtime `:config` / `:c` and `:edit` / `:e` resolve the requested target through the shared application-level target resolver and runtime navigation workflow, then exit the current runtime with a structured reopen result; if dirty state exists, save/discard/cancel is resolved before exit.
 - `cmd/dbc` consumes runtime reopen results, tracks CLI-scoped targets, attempts the requested reopen through the normal startup/runtime loop, and falls back to the fullscreen selector with status + preferred connection string when that reopen fails.
 - Successful runtime-initiated reopen always starts a fresh per-database runtime model in a safe base state (`FocusTables` + `ViewSchema`), does not restore prior browse-state snapshots, and resets runtime-local record-limit overrides to the default `20`.
 - Runtime save is input-blocking inside the TUI adapter: user key input is ignored until the async `saveChangesMsg` response arrives, while terminal resize remains handled through `WindowSizeMsg`.
@@ -231,6 +239,12 @@
 - Current decision: startup keeps strict argument validation and fail-fast direct-launch behavior.
 - Rationale: deterministic automation behavior and clearer startup failure semantics.
 - Where: `cmd/dbc/main.go`, `cmd/dbc/startup_runtime.go`.
+
+### Application-Owned Runtime Navigation Planning
+
+- Current decision: dirty runtime navigation planning and SQLite database-target classification live in application use cases and are reused by both runtime reopen and direct-launch identity resolution.
+- Rationale: keep TUI limited to adapter concerns, remove duplicated SQLite identity logic, and centralize save/discard/cancel continuation rules in one application seam.
+- Where: `internal/application/usecase/runtime_navigation_workflow.go`, `internal/application/usecase/runtime_database_target_resolver.go`, `cmd/dbc/startup_runtime_selection.go`, `internal/interfaces/tui/model_runtime_database_transition.go`.
 
 ### JSON-Only Config
 

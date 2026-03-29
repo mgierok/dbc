@@ -151,7 +151,6 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		ui: runtimeUIState{pendingTableIndex: -1},
 	}, stagingState{
 		pendingInserts: []pendingInsertRow{{}},
 		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
@@ -198,7 +197,6 @@ func TestSetTableSelection_WithDirtyStateDiscardOptionClearsStagingAndSwitches(t
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		ui: runtimeUIState{pendingTableIndex: -1},
 	}, stagingState{
 		pendingInserts: []pendingInsertRow{{}},
 		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
@@ -225,7 +223,6 @@ func TestSetTableSelection_WithDirtyStateContinueEditingOptionPreservesStagingAn
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		ui: runtimeUIState{pendingTableIndex: -1},
 	}, stagingState{
 		pendingInserts: []pendingInsertRow{{}},
 		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
@@ -244,8 +241,8 @@ func TestSetTableSelection_WithDirtyStateContinueEditingOptionPreservesStagingAn
 	if !model.hasDirtyEdits() {
 		t.Fatalf("expected staged state to remain after selecting continue editing")
 	}
-	if model.ui.pendingTableIndex != -1 {
-		t.Fatalf("expected pending table index reset after selecting continue editing, got %d", model.ui.pendingTableIndex)
+	if model.ui.pendingNavigation != nil {
+		t.Fatalf("expected pending navigation reset after selecting continue editing, got %+v", model.ui.pendingNavigation)
 	}
 }
 
@@ -256,7 +253,6 @@ func TestSetTableSelection_WithDirtyStateNKeyIsIgnored(t *testing.T) {
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		ui: runtimeUIState{pendingTableIndex: -1},
 	}, stagingState{
 		pendingInserts: []pendingInsertRow{{}},
 		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
@@ -277,8 +273,11 @@ func TestSetTableSelection_WithDirtyStateNKeyIsIgnored(t *testing.T) {
 	if !model.hasDirtyEdits() {
 		t.Fatalf("expected staged state to remain after n key")
 	}
-	if model.ui.pendingTableIndex != 1 {
-		t.Fatalf("expected pending table index to remain pending after n key, got %d", model.ui.pendingTableIndex)
+	if model.ui.pendingNavigation == nil {
+		t.Fatal("expected pending navigation to remain pending after n key")
+	}
+	if model.ui.pendingNavigation.Action.TargetTableName != "orders" {
+		t.Fatalf("expected pending table target %q, got %q", "orders", model.ui.pendingNavigation.Action.TargetTableName)
 	}
 }
 
@@ -307,53 +306,9 @@ func TestSetTableSelection_ClearsSortOnTableSwitch(t *testing.T) {
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *testing.T) {
+func TestHandleConfirmPopupKey_SaveDecisionForPendingDatabaseNavigationStartsSaveAndKeepsPendingNavigation(t *testing.T) {
 	// Arrange
-	saveChanges := &spySaveChangesUseCase{}
-	model := withTestStaging(&Model{
-		saveChanges: saveChanges,
-		read: runtimeReadState{
-			viewMode:      ViewRecords,
-			focus:         FocusContent,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-		overlay: runtimeOverlayState{
-			confirmPopup: confirmPopup{
-				active: true,
-				action: confirmDatabaseTransitionSave,
-			},
-		},
-		ui: runtimeUIState{
-			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
-				Target: runtimeDatabaseTransitionTarget{
-					Option: DatabaseOption{
-						Name:       "primary",
-						ConnString: "/tmp/primary.sqlite",
-						Source:     DatabaseOptionSourceConfig,
-					},
-					Kind: reloadCurrentDatabase,
-				},
-				Origin: runtimeDatabaseTransitionOriginEditCommand,
-			},
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+	model := newPendingDatabaseNavigationConfirmModel(&spySaveChangesUseCase{})
 
 	// Act
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -362,68 +317,8 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *test
 	if cmd == nil {
 		t.Fatal("expected save command to be returned")
 	}
-	if model.ui.pendingDatabaseTransition == nil {
-		t.Fatal("expected pending database transition to stay set for save-and-transition flow")
-	}
-}
-
-func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveKeepsTransitionPendingWhenSaveStarts(t *testing.T) {
-	// Arrange
-	saveChanges := &spySaveChangesUseCase{}
-	model := withTestStaging(&Model{
-		saveChanges: saveChanges,
-		read: runtimeReadState{
-			viewMode:      ViewRecords,
-			focus:         FocusContent,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-		overlay: runtimeOverlayState{
-			confirmPopup: confirmPopup{
-				active: true,
-				action: confirmDatabaseTransitionSave,
-			},
-		},
-		ui: runtimeUIState{
-			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
-				Target: runtimeDatabaseTransitionTarget{
-					Option: DatabaseOption{
-						Name:       "primary",
-						ConnString: "/tmp/primary.sqlite",
-						Source:     DatabaseOptionSourceConfig,
-					},
-					Kind: reloadCurrentDatabase,
-				},
-				Origin: runtimeDatabaseTransitionOriginEditCommand,
-			},
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
-
-	// Act
-	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
-
-	// Assert
-	if cmd == nil {
-		t.Fatal("expected save command to be returned")
-	}
-	if model.ui.pendingDatabaseTransition == nil {
-		t.Fatal("expected pending database transition to stay set for save-and-transition flow")
+	if model.ui.pendingNavigation == nil {
+		t.Fatal("expected pending navigation to stay set for save-start flow")
 	}
 }
 

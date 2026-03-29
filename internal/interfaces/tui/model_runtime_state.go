@@ -54,11 +54,11 @@ type runtimeUIState struct {
 	width  int
 	height int
 
-	statusMessage             string
-	saveInFlight              bool
-	pendingSaveSuccessAction  usecase.RuntimeSaveSuccessAction
-	runtimeSwitchInFlight     bool
-	openConfigSelector        bool
-	pendingTableIndex         int
-	pendingDatabaseTransition *runtimeDatabaseTransitionRequest
+	statusMessage            string
+	saveInFlight             bool
+	pendingSaveSuccessAction usecase.RuntimeSaveSuccessAction
+	runtimeSwitchInFlight    bool
+	openConfigSelector       bool
+	pendingNavigation        *usecase.PendingRuntimeNavigation
+	pendingCommandInput      string
 }

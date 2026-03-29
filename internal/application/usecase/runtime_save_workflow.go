@@ -7,7 +7,6 @@ type RuntimeSaveIntent int
 const (
 	RuntimeSaveIntentSaveOnly RuntimeSaveIntent = iota + 1
 	RuntimeSaveIntentSaveAndQuit
-	RuntimeSaveIntentSaveForPendingTransition
 )
 
 type RuntimeSaveSuccessAction int
@@ -16,7 +15,6 @@ const (
 	RuntimeSaveSuccessActionNone RuntimeSaveSuccessAction = iota
 	RuntimeSaveSuccessActionStayInRuntime
 	RuntimeSaveSuccessActionQuitRuntime
-	RuntimeSaveSuccessActionRunPendingTransition
 )
 
 type RuntimeSaveResultNextAction int
@@ -25,7 +23,6 @@ const (
 	RuntimeSaveResultNextActionNone RuntimeSaveResultNextAction = iota
 	RuntimeSaveResultNextActionReloadRecords
 	RuntimeSaveResultNextActionQuitRuntime
-	RuntimeSaveResultNextActionRunPendingTransition
 )
 
 type RuntimeSaveRequestDecision struct {
@@ -92,8 +89,6 @@ func (w *RuntimeSaveWorkflow) ResolveResult(successAction RuntimeSaveSuccessActi
 	switch successAction {
 	case RuntimeSaveSuccessActionQuitRuntime:
 		decision.NextAction = RuntimeSaveResultNextActionQuitRuntime
-	case RuntimeSaveSuccessActionRunPendingTransition:
-		decision.NextAction = RuntimeSaveResultNextActionRunPendingTransition
 	default:
 		decision.StatusMessage = fmt.Sprintf("Affected rows: %d", affectedRows)
 		decision.NextAction = RuntimeSaveResultNextActionReloadRecords
@@ -106,8 +101,6 @@ func runtimeSaveSuccessActionForIntent(intent RuntimeSaveIntent) RuntimeSaveSucc
 	switch intent {
 	case RuntimeSaveIntentSaveAndQuit:
 		return RuntimeSaveSuccessActionQuitRuntime
-	case RuntimeSaveIntentSaveForPendingTransition:
-		return RuntimeSaveSuccessActionRunPendingTransition
 	case RuntimeSaveIntentSaveOnly:
 		return RuntimeSaveSuccessActionStayInRuntime
 	default:

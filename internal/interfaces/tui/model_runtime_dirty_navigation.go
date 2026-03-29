@@ -1,62 +1,48 @@
 package tui
 
 import (
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
-func (m *Model) dirtyNavigationPolicyUseCase() *usecase.DirtyNavigationPolicy {
-	if m.dirtyNavPolicy != nil {
-		return m.dirtyNavPolicy
-	}
-	return usecase.NewDirtyNavigationPolicy()
-}
-
-func (m *Model) confirmOptionsFromDirtyPrompt(prompt usecase.DirtyDecisionPrompt, flow dirtyConfirmFlow) []confirmOption {
+func (m *Model) confirmOptionsFromNavigationPrompt(prompt usecase.RuntimeNavigationDecisionPrompt) []confirmOption {
 	options := make([]confirmOption, 0, len(prompt.Options))
 	for _, option := range prompt.Options {
 		options = append(options, confirmOption{
-			label:  option.Label,
-			action: mapDirtyDecisionToConfirmAction(option.ID, flow),
+			label:      option.Label,
+			decisionID: option.ID,
 		})
 	}
 	return options
 }
 
-func mapDirtyDecisionToConfirmAction(decisionID string, flow dirtyConfirmFlow) confirmAction {
-	switch flow {
-	case dirtyConfirmFlowTableSwitch:
-		switch decisionID {
-		case usecase.DirtyDecisionDiscard:
-			return confirmDiscardTable
-		case usecase.DirtyDecisionCancel:
-			return confirmCancelTableSwitch
-		default:
-			return confirmCancelTableSwitch
+func (m *Model) applyRuntimeNavigationPlan(plan usecase.RuntimeNavigationPlan, pendingCommandInput string) (tea.Model, tea.Cmd) {
+	if plan.Prompt != nil && plan.Pending != nil {
+		m.ui.pendingNavigation = clonePendingRuntimeNavigation(plan.Pending)
+		m.ui.pendingCommandInput = pendingCommandInput
+		if pendingCommandInput != "" {
+			m.overlay.commandInput = commandInput{}
 		}
-	default:
-		switch flow {
-		case dirtyConfirmFlowDatabaseTransition:
-			switch decisionID {
-			case usecase.DirtyDecisionSave:
-				return confirmDatabaseTransitionSave
-			case usecase.DirtyDecisionDiscard:
-				return confirmDatabaseTransitionDiscard
-			case usecase.DirtyDecisionCancel:
-				return confirmDatabaseTransitionCancel
-			default:
-				return confirmDatabaseTransitionCancel
-			}
-		case dirtyConfirmFlowQuit:
-			switch decisionID {
-			case usecase.DirtyDecisionDiscard:
-				return confirmDiscardQuit
-			case usecase.DirtyDecisionCancel:
-				return confirmCancelQuit
-			default:
-				return confirmCancelQuit
-			}
-		default:
-			return confirmDatabaseTransitionCancel
-		}
+		m.openModalConfirmPopupWithOptions(
+			plan.Prompt.Title,
+			plan.Prompt.Message,
+			m.confirmOptionsFromNavigationPrompt(*plan.Prompt),
+			0,
+		)
+		return m, nil
 	}
+
+	if pendingCommandInput != "" {
+		m.overlay.commandInput = commandInput{}
+	}
+	return m.executeRuntimeNavigationNextAction(plan.NextAction)
+}
+
+func clonePendingRuntimeNavigation(pending *usecase.PendingRuntimeNavigation) *usecase.PendingRuntimeNavigation {
+	if pending == nil {
+		return nil
+	}
+	cloned := *pending
+	return &cloned
 }

@@ -99,15 +99,31 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case saveChangesMsg:
 		m.ui.saveInFlight = false
 		decision := m.saveWorkflowUseCase().ResolveResult(m.ui.pendingSaveSuccessAction, msg.count, msg.err)
-		pendingTransition := m.ui.pendingDatabaseTransition
 		if decision.ClearPendingSaveAction {
 			m.ui.pendingSaveSuccessAction = usecase.RuntimeSaveSuccessActionNone
 		}
-		if msg.err != nil {
-			m.ui.pendingDatabaseTransition = nil
-			if pendingTransition != nil && pendingTransition.Origin == runtimeDatabaseTransitionOriginEditCommand {
-				m.restoreEditingCommandInput(pendingTransition.Command)
+		pendingNavigation := clonePendingRuntimeNavigation(m.ui.pendingNavigation)
+		if pendingNavigation != nil {
+			navigationDecision := m.navigationWorkflowUseCase().ResolveSaveResult(pendingNavigation, msg.err)
+			m.ui.pendingNavigation = clonePendingRuntimeNavigation(navigationDecision.Pending)
+			if navigationDecision.Pending == nil {
+				m.ui.pendingCommandInput = ""
 			}
+			if msg.err != nil && m.ui.pendingCommandInput != "" {
+				m.restoreEditingCommandInput(m.ui.pendingCommandInput)
+			}
+			if msg.err != nil {
+				m.ui.statusMessage = decision.StatusMessage
+				return m, nil
+			}
+			if decision.ClearStaging {
+				m.clearStagedState()
+			}
+			m.ui.pendingNavigation = nil
+			m.ui.pendingCommandInput = ""
+			return m.executeRuntimeNavigationNextAction(navigationDecision.NextAction)
+		}
+		if msg.err != nil {
 			m.ui.statusMessage = decision.StatusMessage
 			return m, nil
 		}
@@ -120,11 +136,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch decision.NextAction {
 		case usecase.RuntimeSaveResultNextActionQuitRuntime:
 			return m, tea.Quit
-		case usecase.RuntimeSaveResultNextActionRunPendingTransition:
-			if pendingTransition == nil {
-				return m, nil
-			}
-			return m.executeRuntimeDatabaseTransition(cloneRuntimeDatabaseTransitionRequest(*pendingTransition))
 		case usecase.RuntimeSaveResultNextActionReloadRecords:
 			return m, m.loadRecordsCmd(true)
 		default:
@@ -151,7 +162,6 @@ func (m *Model) resetTableContext() {
 	m.resetReadRecordBrowsingState()
 	m.resetTableOverlayState()
 	m.clearStagedState()
-	m.ui.pendingTableIndex = -1
 }
 
 func (m *Model) resetReadRecordBrowsingState() {

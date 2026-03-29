@@ -10,15 +10,17 @@ import (
 )
 
 type RuntimeRunDeps struct {
-	ListTables       *usecase.ListTables
-	GetSchema        *usecase.GetSchema
-	ListRecords      *usecase.ListRecords
-	ListOperators    *usecase.ListOperators
-	SaveChanges      *usecase.SaveTableChanges
-	SaveWorkflow     *usecase.RuntimeSaveWorkflow
-	Translator       *usecase.StagedChangesTranslator
-	DatabaseSelector *RuntimeDatabaseSelectorDeps
-	Close            func()
+	ListTables             *usecase.ListTables
+	GetSchema              *usecase.GetSchema
+	ListRecords            *usecase.ListRecords
+	ListOperators          *usecase.ListOperators
+	SaveChanges            *usecase.SaveTableChanges
+	SaveWorkflow           *usecase.RuntimeSaveWorkflow
+	NavigationWorkflow     *usecase.RuntimeNavigationWorkflow
+	DatabaseTargetResolver *usecase.RuntimeDatabaseTargetResolver
+	Translator             *usecase.StagedChangesTranslator
+	DatabaseSelector       *RuntimeDatabaseSelectorDeps
+	Close                  func()
 }
 
 type RuntimeExitAction int

@@ -114,35 +114,14 @@ type editPopup struct {
 	errorMessage string
 }
 
-type dirtyConfirmFlow int
-
-const (
-	dirtyConfirmFlowTableSwitch dirtyConfirmFlow = iota + 1
-	dirtyConfirmFlowDatabaseTransition
-	dirtyConfirmFlowQuit
-)
-
-type confirmAction int
-
-const (
-	confirmDiscardTable confirmAction = iota + 1
-	confirmCancelTableSwitch
-	confirmDatabaseTransitionSave
-	confirmDatabaseTransitionDiscard
-	confirmDatabaseTransitionCancel
-	confirmDiscardQuit
-	confirmCancelQuit
-)
-
 type confirmOption struct {
-	label  string
-	action confirmAction
+	label      string
+	decisionID string
 }
 
 type confirmPopup struct {
 	active   bool
 	title    string
-	action   confirmAction
 	message  string
 	options  []confirmOption
 	selected int
@@ -179,12 +158,13 @@ type Model struct {
 	listOperators               listOperatorsUseCase
 	saveChanges                 saveChangesUseCase
 	saveWorkflow                *usecase.RuntimeSaveWorkflow
+	navigationWorkflow          *usecase.RuntimeNavigationWorkflow
+	databaseTargetResolver      *usecase.RuntimeDatabaseTargetResolver
 	translator                  *usecase.StagedChangesTranslator
 	recordAccessResolver        *usecase.PersistedRecordAccessResolver
 	stagingPolicy               *usecase.StagingPolicy
 	stagingSession              *usecase.StagingSession
 	stagingSnapshot             dto.StagingSnapshot
-	dirtyNavPolicy              *usecase.DirtyNavigationPolicy
 	runtimeSession              *RuntimeSessionState
 	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps
 	runtimeClose                func()
@@ -237,9 +217,6 @@ func NewModel(ctx context.Context, runtimeDeps RuntimeRunDeps, runtimeSession *R
 			focus:            FocusTables,
 			viewMode:         ViewSchema,
 			recordTotalPages: 1,
-		},
-		ui: runtimeUIState{
-			pendingTableIndex: -1,
 		},
 	}
 	model.initializeRuntimeBundle()

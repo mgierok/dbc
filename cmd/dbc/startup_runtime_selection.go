@@ -61,20 +61,19 @@ func resolveStartupSelection(
 	selectDatabase func() (tui.DatabaseOption, error),
 ) (tui.DatabaseOption, startupPath, error) {
 	if options.directLaunchConnString != "" {
-		directLaunchSelection := tui.DatabaseOption{
-			Name:       options.directLaunchConnString,
-			ConnString: options.directLaunchConnString,
-			Source:     tui.DatabaseOptionSourceCLI,
-		}
 		configuredOptions, err := listConfiguredDatabases()
 		if err != nil {
 			return tui.DatabaseOption{}, startupPathDirectLaunch, err
 		}
-		if matched, ok := resolveConfiguredDirectLaunchIdentity(directLaunchSelection.ConnString, configuredOptions); ok {
-			matched.Source = tui.DatabaseOptionSourceConfig
-			return matched, startupPathDirectLaunch, nil
+		target, err := usecase.NewRuntimeDatabaseTargetResolver().Resolve(
+			usecase.RuntimeDatabaseOption{},
+			runtimeDatabaseOptionsFromSelectorOptions(configuredOptions),
+			options.directLaunchConnString,
+		)
+		if err != nil {
+			return tui.DatabaseOption{}, startupPathDirectLaunch, err
 		}
-		return directLaunchSelection, startupPathDirectLaunch, nil
+		return selectorOptionFromRuntimeDatabaseOption(target.Option), startupPathDirectLaunch, nil
 	}
 
 	selected, err := selectDatabase()
@@ -100,25 +99,6 @@ func listConfiguredDatabaseOptions(ctx context.Context, listConfiguredDatabases 
 		}
 	}
 	return options, nil
-}
-
-func resolveConfiguredDirectLaunchIdentity(directLaunchConnString string, configuredOptions []tui.DatabaseOption) (tui.DatabaseOption, bool) {
-	normalizedDirectLaunch := normalizeSQLiteConnectionIdentity(directLaunchConnString)
-	if normalizedDirectLaunch == "" {
-		return tui.DatabaseOption{}, false
-	}
-
-	for _, option := range configuredOptions {
-		normalizedConfigured := normalizeSQLiteConnectionIdentity(option.ConnString)
-		if normalizedConfigured == "" {
-			continue
-		}
-		if sqliteConnectionIdentityEqual(normalizedDirectLaunch, normalizedConfigured) {
-			return option, true
-		}
-	}
-
-	return tui.DatabaseOption{}, false
 }
 
 func normalizeSQLiteConnectionIdentity(connString string) string {
@@ -184,4 +164,35 @@ func cloneDatabaseOptions(options []tui.DatabaseOption) []tui.DatabaseOption {
 	cloned := make([]tui.DatabaseOption, len(options))
 	copy(cloned, options)
 	return cloned
+}
+
+func runtimeDatabaseOptionsFromSelectorOptions(options []tui.DatabaseOption) []usecase.RuntimeDatabaseOption {
+	if len(options) == 0 {
+		return nil
+	}
+	converted := make([]usecase.RuntimeDatabaseOption, len(options))
+	for i, option := range options {
+		source := usecase.RuntimeDatabaseOptionSourceConfig
+		if option.Source == tui.DatabaseOptionSourceCLI {
+			source = usecase.RuntimeDatabaseOptionSourceCLI
+		}
+		converted[i] = usecase.RuntimeDatabaseOption{
+			Name:       option.Name,
+			ConnString: option.ConnString,
+			Source:     source,
+		}
+	}
+	return converted
+}
+
+func selectorOptionFromRuntimeDatabaseOption(option usecase.RuntimeDatabaseOption) tui.DatabaseOption {
+	source := tui.DatabaseOptionSourceConfig
+	if option.Source == usecase.RuntimeDatabaseOptionSourceCLI {
+		source = tui.DatabaseOptionSourceCLI
+	}
+	return tui.DatabaseOption{
+		Name:       option.Name,
+		ConnString: option.ConnString,
+		Source:     source,
+	}
 }

@@ -145,13 +145,15 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 	model := withTestStaging(&Model{
 		ui: runtimeUIState{
 			saveInFlight:             true,
-			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionRunPendingTransition,
-			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
-				Target: runtimeDatabaseTransitionTarget{
-					Option: current,
-					Kind:   reloadCurrentDatabase,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionStayInRuntime,
+			pendingNavigation: &usecase.PendingRuntimeNavigation{
+				Action: usecase.RuntimeNavigationAction{
+					Kind: usecase.RuntimeNavigationActionOpenDatabase,
+					DatabaseTarget: usecase.RuntimeDatabaseTarget{
+						Option:         runtimeDatabaseOptionFromSelectorOption(current),
+						TransitionKind: usecase.RuntimeDatabaseTransitionReloadCurrent,
+					},
 				},
-				Origin: runtimeDatabaseTransitionOriginEditCommand,
 			},
 		},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
@@ -173,8 +175,8 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged state to be cleared after successful save")
 	}
-	if model.ui.pendingDatabaseTransition != nil {
-		t.Fatal("expected pending database transition to be cleared after successful save")
+	if model.ui.pendingNavigation != nil {
+		t.Fatal("expected pending navigation to be cleared after successful save")
 	}
 	if model.ui.saveInFlight {
 		t.Fatal("expected save-in-flight flag to be cleared after successful save")
@@ -520,13 +522,15 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionPreservesCurrentBrowseSta
 		},
 		ui: runtimeUIState{
 			saveInFlight:             true,
-			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionRunPendingTransition,
-			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
-				Target: runtimeDatabaseTransitionTarget{
-					Option: current,
-					Kind:   reloadCurrentDatabase,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionStayInRuntime,
+			pendingNavigation: &usecase.PendingRuntimeNavigation{
+				Action: usecase.RuntimeNavigationAction{
+					Kind: usecase.RuntimeNavigationActionOpenDatabase,
+					DatabaseTarget: usecase.RuntimeDatabaseTarget{
+						Option:         runtimeDatabaseOptionFromSelectorOption(current),
+						TransitionKind: usecase.RuntimeDatabaseTransitionReloadCurrent,
+					},
 				},
-				Origin: runtimeDatabaseTransitionOriginConfigSelector,
 			},
 		},
 	}, stagingState{

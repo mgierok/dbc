@@ -2,155 +2,71 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
-	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
 
-type runtimeDatabaseTransitionKind int
-
-const (
-	reloadCurrentDatabase runtimeDatabaseTransitionKind = iota + 1
-	switchDifferentDatabase
-)
-
-type runtimeDatabaseTransitionOrigin string
-
-const (
-	runtimeDatabaseTransitionOriginConfigSelector runtimeDatabaseTransitionOrigin = "config-selector"
-	runtimeDatabaseTransitionOriginEditCommand    runtimeDatabaseTransitionOrigin = "edit-command"
-)
-
-type runtimeDatabaseTransitionTarget struct {
-	Option DatabaseOption
-	Kind   runtimeDatabaseTransitionKind
+func (m *Model) requestRuntimeDatabaseTransition(target usecase.RuntimeDatabaseTarget, force bool, pendingCommandInput string) (tea.Model, tea.Cmd) {
+	plan := m.navigationWorkflowUseCase().PlanDatabaseTransition(target, m.hasDirtyEdits() && !force, m.dirtyEditCount())
+	return m.applyRuntimeNavigationPlan(plan, pendingCommandInput)
 }
 
-type runtimeDatabaseTransitionRequest struct {
-	Target  runtimeDatabaseTransitionTarget
-	Force   bool
-	Origin  runtimeDatabaseTransitionOrigin
-	Command string
-}
-
-func (m *Model) requestRuntimeDatabaseTransition(request runtimeDatabaseTransitionRequest) (tea.Model, tea.Cmd) {
-	if m.hasDirtyEdits() && !request.Force {
-		clonedRequest := cloneRuntimeDatabaseTransitionRequest(request)
-		m.ui.pendingDatabaseTransition = &clonedRequest
-		prompt := m.databaseTransitionDirtyPrompt(request.Target.Kind)
-		m.openModalConfirmPopupWithOptions(
-			prompt.Title,
-			prompt.Message,
-			m.confirmOptionsFromDirtyPrompt(prompt, dirtyConfirmFlowDatabaseTransition),
-			0,
-		)
-		return m, nil
-	}
-
-	return m.executeRuntimeDatabaseTransition(request)
-}
-
-func (m *Model) executeRuntimeDatabaseTransition(request runtimeDatabaseTransitionRequest) (tea.Model, tea.Cmd) {
-	m.ui.pendingDatabaseTransition = nil
-	if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
-		m.overlay.commandInput = commandInput{}
-	}
-	m.exitResult = runtimeExitResultOpenDatabaseNext(request.Target.Option)
-	return m, tea.Quit
-}
-
-func (m *Model) confirmDatabaseTransitionSave() (tea.Model, tea.Cmd) {
-	request := m.ui.pendingDatabaseTransition
-	if request == nil {
-		return m, nil
-	}
-
-	if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
-		m.overlay.commandInput = commandInput{}
-	}
-	updatedModel, cmd := m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveForPendingTransition)
-	if cmd == nil {
-		m.ui.pendingDatabaseTransition = nil
-		if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
-			m.restoreEditingCommandInput(request.Command)
+func (m *Model) executeRuntimeNavigationNextAction(action usecase.RuntimeNavigationNextAction) (tea.Model, tea.Cmd) {
+	switch action.Kind {
+	case usecase.RuntimeNavigationNextActionSwitchTable:
+		targetIndex := m.indexOfTableByName(action.TargetTableName)
+		if targetIndex < 0 {
+			m.ui.statusMessage = fmt.Sprintf("Error: target table %q is no longer available", action.TargetTableName)
+			return m, nil
 		}
-	}
-	return updatedModel, cmd
-}
-
-func (m *Model) confirmDatabaseTransitionDiscard() (tea.Model, tea.Cmd) {
-	request := m.ui.pendingDatabaseTransition
-	if request == nil {
+		if action.ClearDirtyState {
+			m.clearStagedState()
+		}
+		m.read.selectedTable = targetIndex
+		m.resetTableContext()
+		return m, m.loadViewForSelection()
+	case usecase.RuntimeNavigationNextActionOpenDatabase:
+		if action.ClearDirtyState {
+			m.clearStagedState()
+		}
+		m.overlay.commandInput = commandInput{}
+		m.exitResult = runtimeExitResultOpenDatabaseNext(databaseOptionFromRuntimeDatabaseOption(action.DatabaseTarget.Option))
+		return m, tea.Quit
+	case usecase.RuntimeNavigationNextActionQuitRuntime:
+		m.ui.pendingSaveSuccessAction = usecase.RuntimeSaveSuccessActionNone
+		if action.ClearDirtyState {
+			m.clearStagedState()
+		}
+		m.ui.pendingNavigation = nil
+		m.ui.pendingCommandInput = ""
+		return m, tea.Quit
+	case usecase.RuntimeNavigationNextActionStayInRuntime, usecase.RuntimeNavigationNextActionNone:
+		return m, nil
+	default:
 		return m, nil
 	}
-
-	cloned := cloneRuntimeDatabaseTransitionRequest(*request)
-	m.ui.pendingDatabaseTransition = nil
-	m.clearStagedState()
-	return m.executeRuntimeDatabaseTransition(cloned)
 }
 
-func (m *Model) resolveRuntimeDatabaseTransitionTargetFromOption(selected DatabaseOption) (runtimeDatabaseTransitionTarget, error) {
+func (m *Model) resolveRuntimeDatabaseTransitionTargetFromOption(selected DatabaseOption) (usecase.RuntimeDatabaseTarget, error) {
 	return m.resolveRuntimeDatabaseTransitionTargetFromConnString(selected.ConnString)
 }
 
-func (m *Model) resolveRuntimeDatabaseTransitionTargetFromConnString(connString string) (runtimeDatabaseTransitionTarget, error) {
-	trimmedConnString := strings.TrimSpace(connString)
-	if trimmedConnString == "" {
-		current := m.currentRuntimeDatabaseOption()
-		if strings.TrimSpace(current.ConnString) == "" {
-			return runtimeDatabaseTransitionTarget{}, fmt.Errorf("current database unavailable")
-		}
-		return runtimeDatabaseTransitionTarget{
-			Option: current,
-			Kind:   reloadCurrentDatabase,
-		}, nil
-	}
-
+func (m *Model) resolveRuntimeDatabaseTransitionTargetFromConnString(connString string) (usecase.RuntimeDatabaseTarget, error) {
 	configuredOptions, err := m.configuredRuntimeDatabaseOptions()
 	if err != nil {
-		return runtimeDatabaseTransitionTarget{}, err
+		return usecase.RuntimeDatabaseTarget{}, err
 	}
 
-	resolvedOption := DatabaseOption{
-		Name:       trimmedConnString,
-		ConnString: trimmedConnString,
-		Source:     DatabaseOptionSourceCLI,
-	}
-	if matched, ok := resolveConfiguredRuntimeDatabaseIdentity(trimmedConnString, configuredOptions); ok {
-		matched.Source = DatabaseOptionSourceConfig
-		resolvedOption = matched
-	}
-
-	kind := switchDifferentDatabase
-	if sqliteidentity.Equivalent(resolvedOption.ConnString, m.currentRuntimeDatabaseConnString()) {
-		kind = reloadCurrentDatabase
-	}
-	return runtimeDatabaseTransitionTarget{
-		Option: resolvedOption,
-		Kind:   kind,
-	}, nil
+	return m.databaseTargetResolverUseCase().Resolve(
+		runtimeDatabaseOptionFromSelectorOption(m.currentRuntimeDatabaseOption()),
+		configuredOptions,
+		connString,
+	)
 }
 
-func resolveConfiguredRuntimeDatabaseIdentity(connString string, configuredOptions []DatabaseOption) (DatabaseOption, bool) {
-	normalizedConnString := sqliteidentity.Normalize(connString)
-	if normalizedConnString == "" {
-		return DatabaseOption{}, false
-	}
-
-	for _, option := range configuredOptions {
-		if sqliteidentity.Equivalent(normalizedConnString, option.ConnString) {
-			return option, true
-		}
-	}
-
-	return DatabaseOption{}, false
-}
-
-func (m *Model) configuredRuntimeDatabaseOptions() ([]DatabaseOption, error) {
+func (m *Model) configuredRuntimeDatabaseOptions() ([]usecase.RuntimeDatabaseOption, error) {
 	if m.runtimeDatabaseSelectorDeps == nil || m.runtimeDatabaseSelectorDeps.ListConfiguredDatabases == nil {
 		return nil, fmt.Errorf("database selector unavailable")
 	}
@@ -160,34 +76,46 @@ func (m *Model) configuredRuntimeDatabaseOptions() ([]DatabaseOption, error) {
 		return nil, err
 	}
 
-	options := make([]DatabaseOption, len(entries))
+	options := make([]usecase.RuntimeDatabaseOption, len(entries))
 	for i, entry := range entries {
-		options[i] = DatabaseOption{
+		options[i] = usecase.RuntimeDatabaseOption{
 			Name:       entry.Name,
 			ConnString: entry.Path,
-			Source:     DatabaseOptionSourceConfig,
+			Source:     usecase.RuntimeDatabaseOptionSourceConfig,
 		}
 	}
 	return options, nil
 }
 
-func (m *Model) databaseTransitionDirtyPrompt(kind runtimeDatabaseTransitionKind) usecase.DirtyDecisionPrompt {
-	switch kind {
-	case reloadCurrentDatabase:
-		return m.dirtyNavigationPolicyUseCase().BuildDatabaseReloadPrompt(m.dirtyEditCount())
-	default:
-		return m.dirtyNavigationPolicyUseCase().BuildDatabaseOpenPrompt(m.dirtyEditCount())
+func runtimeDatabaseOptionFromSelectorOption(option DatabaseOption) usecase.RuntimeDatabaseOption {
+	source := usecase.RuntimeDatabaseOptionSourceConfig
+	if option.Source == DatabaseOptionSourceCLI {
+		source = usecase.RuntimeDatabaseOptionSourceCLI
+	}
+	return usecase.RuntimeDatabaseOption{
+		Name:       option.Name,
+		ConnString: option.ConnString,
+		Source:     source,
 	}
 }
 
-func cloneRuntimeDatabaseTransitionRequest(request runtimeDatabaseTransitionRequest) runtimeDatabaseTransitionRequest {
-	return runtimeDatabaseTransitionRequest{
-		Target: runtimeDatabaseTransitionTarget{
-			Option: request.Target.Option,
-			Kind:   request.Target.Kind,
-		},
-		Force:   request.Force,
-		Origin:  request.Origin,
-		Command: request.Command,
+func databaseOptionFromRuntimeDatabaseOption(option usecase.RuntimeDatabaseOption) DatabaseOption {
+	source := DatabaseOptionSourceConfig
+	if option.Source == usecase.RuntimeDatabaseOptionSourceCLI {
+		source = DatabaseOptionSourceCLI
 	}
+	return DatabaseOption{
+		Name:       option.Name,
+		ConnString: option.ConnString,
+		Source:     source,
+	}
+}
+
+func (m *Model) indexOfTableByName(target string) int {
+	for i, table := range m.read.tables {
+		if table.Name == target {
+			return i
+		}
+	}
+	return -1
 }

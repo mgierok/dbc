@@ -11,7 +11,8 @@ func (m *Model) requestSaveChanges() (tea.Model, tea.Cmd) {
 	if !m.nonBlockingRuntimeCommandContextActive() {
 		return m, nil
 	}
-	m.ui.pendingDatabaseTransition = nil
+	m.ui.pendingNavigation = nil
+	m.ui.pendingCommandInput = ""
 	return m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveOnly)
 }
 
@@ -19,7 +20,8 @@ func (m *Model) requestSaveAndQuit() (tea.Model, tea.Cmd) {
 	if !m.nonBlockingRuntimeCommandContextActive() {
 		return m, nil
 	}
-	m.ui.pendingDatabaseTransition = nil
+	m.ui.pendingNavigation = nil
+	m.ui.pendingCommandInput = ""
 	return m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveAndQuit)
 }
 
@@ -59,24 +61,11 @@ func (m *Model) startRuntimeSave(intent usecase.RuntimeSaveIntent) (tea.Model, t
 	return m, saveChangesCmd(m.ctx, m.saveChanges, m.currentTableName(), changes)
 }
 
-func (m *Model) confirmDiscardTableSwitch() (tea.Model, tea.Cmd) {
-	if m.ui.pendingTableIndex < 0 || m.ui.pendingTableIndex >= len(m.read.tables) {
-		m.ui.pendingTableIndex = -1
+func (m *Model) startSaveForPendingNavigation() (tea.Model, tea.Cmd) {
+	if m.ui.pendingNavigation == nil {
 		return m, nil
 	}
-	target := m.ui.pendingTableIndex
-	m.ui.pendingTableIndex = -1
-	m.clearStagedState()
-	m.read.selectedTable = target
-	m.resetTableContext()
-	return m, m.loadViewForSelection()
-}
-
-func (m *Model) confirmDiscardQuit() (tea.Model, tea.Cmd) {
-	m.ui.pendingSaveSuccessAction = usecase.RuntimeSaveSuccessActionNone
-	m.ui.pendingDatabaseTransition = nil
-	m.clearStagedState()
-	return m, tea.Quit
+	return m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveOnly)
 }
 
 func (m *Model) applyRuntimeSaveRequestDecision(decision usecase.RuntimeSaveRequestDecision) (tea.Model, tea.Cmd) {

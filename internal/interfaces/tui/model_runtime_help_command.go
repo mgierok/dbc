@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
@@ -54,12 +55,7 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 			m.restoreEditingCommandInput(submittedValue)
 			return m, nil
 		}
-		return m.requestRuntimeDatabaseTransition(runtimeDatabaseTransitionRequest{
-			Target:  target,
-			Force:   commandSpec.Force,
-			Origin:  runtimeDatabaseTransitionOriginEditCommand,
-			Command: submittedValue,
-		})
+		return m.requestRuntimeDatabaseTransition(target, commandSpec.Force, submittedValue)
 	case primitives.RuntimeCommandActionSave:
 		m.overlay.commandInput = commandInput{}
 		return m.requestSaveChanges()
@@ -68,20 +64,14 @@ func (m *Model) submitCommandInput() (tea.Model, tea.Cmd) {
 		return m.requestSaveAndQuit()
 	case primitives.RuntimeCommandActionQuit:
 		m.overlay.commandInput = commandInput{}
-		if m.hasDirtyEdits() {
-			prompt := m.dirtyNavigationPolicyUseCase().BuildQuitPrompt(m.dirtyEditCount())
-			m.openModalConfirmPopupWithOptions(
-				prompt.Title,
-				prompt.Message,
-				m.confirmOptionsFromDirtyPrompt(prompt, dirtyConfirmFlowQuit),
-				0,
-			)
-			return m, nil
-		}
-		return m, tea.Quit
+		plan := m.navigationWorkflowUseCase().PlanQuit(m.hasDirtyEdits(), m.dirtyEditCount())
+		return m.applyRuntimeNavigationPlan(plan, "")
 	case primitives.RuntimeCommandActionForcedQuit:
 		m.overlay.commandInput = commandInput{}
-		return m.confirmDiscardQuit()
+		return m.executeRuntimeNavigationNextAction(usecase.RuntimeNavigationNextAction{
+			Kind:            usecase.RuntimeNavigationNextActionQuitRuntime,
+			ClearDirtyState: m.hasDirtyEdits(),
+		})
 	case primitives.RuntimeCommandActionOpenConfig:
 		m.overlay.commandInput = commandInput{}
 		m.openRuntimeDatabaseSelectorPopup()

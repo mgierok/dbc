@@ -68,17 +68,7 @@ func (m *Model) handleRuntimeDatabaseSelection(selected DatabaseOption) (tea.Mod
 		m.ui.statusMessage = "Error: " + err.Error()
 		return m, nil
 	}
-	return m.requestRuntimeDatabaseTransition(runtimeDatabaseTransitionRequest{
-		Target: target,
-		Origin: runtimeDatabaseTransitionOriginConfigSelector,
-	})
-}
-
-func (m *Model) currentRuntimeDatabaseConnString() string {
-	if m.runtimeDatabaseSelectorDeps == nil {
-		return ""
-	}
-	return m.runtimeDatabaseSelectorDeps.CurrentDatabase.ConnString
+	return m.requestRuntimeDatabaseTransition(target, false, "")
 }
 
 func (m *Model) currentRuntimeDatabaseOption() DatabaseOption {

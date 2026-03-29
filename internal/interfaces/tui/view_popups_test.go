@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
 )
@@ -376,9 +377,9 @@ func TestRenderConfirmPopup_DirtyDatabaseReloadShowsMessageAndOptionLabels(t *te
 				title:   "Reload Database",
 				message: "Reloading the current database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel.",
 				options: []confirmOption{
-					{label: "Save and reload database", action: confirmDatabaseTransitionSave},
-					{label: "Discard changes and reload database", action: confirmDatabaseTransitionDiscard},
-					{label: "Cancel", action: confirmDatabaseTransitionCancel},
+					{label: "Save and reload database", decisionID: usecase.DirtyDecisionSave},
+					{label: "Discard changes and reload database", decisionID: usecase.DirtyDecisionDiscard},
+					{label: "Cancel", decisionID: usecase.DirtyDecisionCancel},
 				},
 				selected: 0,
 				modal:    true,
@@ -417,8 +418,8 @@ func TestRenderConfirmPopup_DirtyTableSwitchShowsMessageAndExplicitActions(t *te
 				title:   "Switch Table",
 				message: "Switching tables will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data?",
 				options: []confirmOption{
-					{label: "Discard changes and switch table", action: confirmDiscardTable},
-					{label: "Continue editing", action: confirmCancelTableSwitch},
+					{label: "Discard changes and switch table", decisionID: usecase.DirtyDecisionDiscard},
+					{label: "Continue editing", decisionID: usecase.DirtyDecisionCancel},
 				},
 				selected: 0,
 				modal:    true,

@@ -1,14 +1,11 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-
-	"github.com/mgierok/dbc/internal/application/dto"
 )
 
 func TestHandleKey_DirtyConfigCommandOpensRuntimeDatabaseSelectorPopup(t *testing.T) {
@@ -53,11 +50,7 @@ func TestHandleKey_DirtyConfigCommandOpensRuntimeDatabaseSelectorPopup(t *testin
 
 func TestHandleKey_DirtyRuntimeDatabaseSelectionOpensReloadDecisionPrompt(t *testing.T) {
 	// Arrange
-	current := DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     DatabaseOptionSourceConfig,
-	}
+	current := runtimeTestDatabaseOption()
 	model := withTestStaging(&Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
@@ -82,11 +75,7 @@ func TestHandleKey_DirtyRuntimeDatabaseSelectionOpensReloadDecisionPrompt(t *tes
 
 func TestHandleConfirmPopupKey_DirtyDatabaseTransitionCancelKeepsSelectorOpenAndStagedState(t *testing.T) {
 	// Arrange
-	current := DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     DatabaseOptionSourceConfig,
-	}
+	current := runtimeTestDatabaseOption()
 	model := withTestStaging(&Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
@@ -111,11 +100,7 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionCancelKeepsSelectorOpenAnd
 
 func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStartsTransition(t *testing.T) {
 	// Arrange
-	current := DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     DatabaseOptionSourceConfig,
-	}
+	current := runtimeTestDatabaseOption()
 	model := withTestStaging(&Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
@@ -128,12 +113,7 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStart
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
-	if cmd == nil {
-		t.Fatal("expected discard decision to quit runtime")
-	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg after discard decision, got %T", cmd())
-	}
+	assertQuitCommand(t, cmd, "discard database navigation decision")
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared on discard")
 	}
@@ -144,37 +124,7 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStart
 
 func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing.T) {
 	// Arrange
-	saveChanges := &spySaveChangesUseCase{}
-	current := DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     DatabaseOptionSourceConfig,
-	}
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: saveChanges,
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-			tables: []dto.Table{{Name: "users"}},
-		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+	model := newDirtyRuntimeNavigationModel(&spySaveChangesUseCase{})
 	submitTypedRuntimeCommand(model, "edit")
 
 	// Act
@@ -186,12 +136,7 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 	_, followupCmd := model.Update(msg)
 
 	// Assert
-	if followupCmd == nil {
-		t.Fatal("expected save-then-reopen flow to quit runtime")
-	}
-	if _, ok := followupCmd().(tea.QuitMsg); !ok {
-		t.Fatalf("expected tea.QuitMsg after save-then-reopen flow, got %T", followupCmd())
-	}
+	assertQuitCommand(t, followupCmd, "save-then-reopen flow")
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged changes to be cleared after successful save")
 	}
@@ -202,37 +147,7 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 
 func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(t *testing.T) {
 	// Arrange
-	saveChanges := &spySaveChangesUseCase{err: errors.New("boom")}
-	current := DatabaseOption{
-		Name:       "primary",
-		ConnString: "/tmp/primary.sqlite",
-		Source:     DatabaseOptionSourceConfig,
-	}
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: saveChanges,
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-			tables: []dto.Table{{Name: "users"}},
-		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+	model := newDirtyRuntimeNavigationModel(&spySaveChangesUseCase{err: errors.New("boom")})
 	submitTypedRuntimeCommand(model, "edit")
 
 	// Act
@@ -335,63 +250,55 @@ func TestHandleKey_DirtyForcedQuitCommandDiscardsStateWithoutPrompt(t *testing.T
 	}
 }
 
-func TestHandleConfirmPopupKey_DirtyQuitEscapeKeepsStagedState(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{viewMode: ViewRecords},
-	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
-	submitTypedRuntimeCommand(model, "quit")
+func TestHandleConfirmPopupKey_DirtyQuitNonAcceptKeysPreserveState(t *testing.T) {
+	for _, tc := range []struct {
+		name               string
+		key                tea.KeyMsg
+		prepareSelection   bool
+		expectPopupOpen    bool
+		assertActiveCtxMsg string
+	}{
+		{
+			name:               "escape closes prompt",
+			key:                tea.KeyMsg{Type: tea.KeyEsc},
+			expectPopupOpen:    false,
+			assertActiveCtxMsg: "dirty quit cancel",
+		},
+		{
+			name:               "n key is ignored",
+			key:                tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}},
+			prepareSelection:   true,
+			expectPopupOpen:    true,
+			assertActiveCtxMsg: "dirty quit n ignored",
+		},
+		{
+			name:               "y key is ignored",
+			key:                tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}},
+			expectPopupOpen:    true,
+			assertActiveCtxMsg: "dirty quit y ignored",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := withTestStaging(&Model{
+				read: runtimeReadState{viewMode: ViewRecords},
+			}, stagingState{pendingInserts: []pendingInsertRow{{}}})
+			submitTypedRuntimeCommand(model, "quit")
+			if tc.prepareSelection {
+				model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+			}
 
-	// Act
-	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEsc})
+			// Act
+			_, cmd := model.handleConfirmPopupKey(tc.key)
 
-	// Assert
-	assertRuntimeSessionActive(t, cmd, "dirty quit cancel")
-	if model.overlay.confirmPopup.active {
-		t.Fatal("expected decision popup to close on escape")
-	}
-	if !model.hasDirtyEdits() {
-		t.Fatal("expected staged changes to stay untouched on escape")
-	}
-}
-
-func TestHandleConfirmPopupKey_DirtyQuitNKeyIsIgnored(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{viewMode: ViewRecords},
-	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
-	submitTypedRuntimeCommand(model, "quit")
-	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-
-	// Act
-	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
-
-	// Assert
-	assertRuntimeSessionActive(t, cmd, "dirty quit n ignored")
-	if !model.overlay.confirmPopup.active {
-		t.Fatal("expected decision popup to remain open on n key")
-	}
-	if !model.hasDirtyEdits() {
-		t.Fatal("expected staged changes to stay untouched on n key")
-	}
-}
-
-func TestHandleConfirmPopupKey_DirtyQuitYKeyIsIgnored(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{viewMode: ViewRecords},
-	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
-	submitTypedRuntimeCommand(model, "quit")
-
-	// Act
-	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
-
-	// Assert
-	assertRuntimeSessionActive(t, cmd, "dirty quit y ignored")
-	if !model.overlay.confirmPopup.active {
-		t.Fatal("expected decision popup to remain open on y key")
-	}
-	if !model.hasDirtyEdits() {
-		t.Fatal("expected staged changes to stay untouched on y key")
+			// Assert
+			assertRuntimeSessionActive(t, cmd, tc.assertActiveCtxMsg)
+			if model.overlay.confirmPopup.active != tc.expectPopupOpen {
+				t.Fatalf("expected prompt active=%t, got %t", tc.expectPopupOpen, model.overlay.confirmPopup.active)
+			}
+			if !model.hasDirtyEdits() {
+				t.Fatal("expected staged changes to stay untouched")
+			}
+		})
 	}
 }

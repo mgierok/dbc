@@ -37,6 +37,20 @@ func (m *Model) saveWorkflowUseCase() *usecase.RuntimeSaveWorkflow {
 	return usecase.NewRuntimeSaveWorkflow()
 }
 
+func (m *Model) navigationWorkflowUseCase() *usecase.RuntimeNavigationWorkflow {
+	if m.navigationWorkflow != nil {
+		return m.navigationWorkflow
+	}
+	return usecase.NewRuntimeNavigationWorkflow()
+}
+
+func (m *Model) databaseTargetResolverUseCase() *usecase.RuntimeDatabaseTargetResolver {
+	if m.databaseTargetResolver != nil {
+		return m.databaseTargetResolver
+	}
+	return usecase.NewRuntimeDatabaseTargetResolver()
+}
+
 func (m *Model) recordAccessResolverUseCase() *usecase.PersistedRecordAccessResolver {
 	if m.recordAccessResolver != nil {
 		return m.recordAccessResolver

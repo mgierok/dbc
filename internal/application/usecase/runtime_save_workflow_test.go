@@ -67,11 +67,6 @@ func TestRuntimeSaveWorkflow_PlanStart_StartsSaveWithExpectedSuccessActionForEff
 			intent:        usecase.RuntimeSaveIntentSaveAndQuit,
 			successAction: usecase.RuntimeSaveSuccessActionQuitRuntime,
 		},
-		{
-			name:          "save for pending transition",
-			intent:        usecase.RuntimeSaveIntentSaveForPendingTransition,
-			successAction: usecase.RuntimeSaveSuccessActionRunPendingTransition,
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
@@ -111,11 +106,6 @@ func TestRuntimeSaveWorkflow_PlanStart_SkipsContinuationWhenDirtyStateBuildsNoEf
 		{
 			name:           "save and quit",
 			intent:         usecase.RuntimeSaveIntentSaveAndQuit,
-			expectedStatus: "",
-		},
-		{
-			name:           "save for pending transition",
-			intent:         usecase.RuntimeSaveIntentSaveForPendingTransition,
 			expectedStatus: "",
 		},
 	} {
@@ -183,12 +173,6 @@ func TestRuntimeSaveWorkflow_ResolveResult_ReturnsAdapterActionForSuccessfulSave
 			successAction:  usecase.RuntimeSaveSuccessActionQuitRuntime,
 			expectedStatus: "",
 			expectedNext:   usecase.RuntimeSaveResultNextActionQuitRuntime,
-		},
-		{
-			name:           "run pending transition",
-			successAction:  usecase.RuntimeSaveSuccessActionRunPendingTransition,
-			expectedStatus: "",
-			expectedNext:   usecase.RuntimeSaveResultNextActionRunPendingTransition,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
