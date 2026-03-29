@@ -1,5 +1,7 @@
 # Product Documentation Title
 
+> This document MUST describe current user-visible product state only and MUST NOT define internal implementation or architecture rules.
+
 ## Product Overview
 - Summarize what the product does, for whom, and why it is useful now.
 - Keep this section high level.

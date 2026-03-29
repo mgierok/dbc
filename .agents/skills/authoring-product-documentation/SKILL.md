@@ -7,11 +7,14 @@ description: Assess whether changes require updating `docs/product-documentation
 
 ## Purpose and Authority
 
-- This skill MUST be the single source of truth for deciding whether `docs/product-documentation.md` requires an update.
-- This skill MUST be the single source of truth for authoring updates to `docs/product-documentation.md`.
+- This skill MUST be the single source of truth for the workflow that decides whether `docs/product-documentation.md` requires an update.
+- This skill MUST be the single source of truth for the workflow that authors updates to `docs/product-documentation.md`.
 - This skill MUST be used for an explicit user request to assess, create, or modify `docs/product-documentation.md`.
 - This skill MUST be used whenever the agent updates `docs/product-documentation.md`, even if the user did not name this skill explicitly.
 - This skill MUST NOT be auto-invoked solely because a task changes one or more non-documentation files without updating `docs/product-documentation.md`.
+- `docs/product-documentation.md` MUST describe current user-visible product state only.
+- `docs/product-documentation.md` MUST NOT be used as the canonical source for architecture or internal engineering policy.
+- When current implementation and product documentation diverge, the skill MUST update `docs/product-documentation.md` to match current user-visible behavior, unless the user explicitly requests planned future-state documentation.
 
 ## Scope
 
