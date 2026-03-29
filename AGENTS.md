@@ -113,6 +113,12 @@ Quick examples:
 ### General Rules
 
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
+- After every non-documentation code change, the agent MUST invoke skill `authoring-technical-documentation` to assess whether `docs/technical-documentation.md` requires an update.
+- If the agent notices possible drift between current code and `docs/technical-documentation.md`, the agent MUST invoke skill `authoring-technical-documentation`.
+- The decision whether a technical-documentation update is required MUST belong only to skill `authoring-technical-documentation`.
+- After every non-documentation code change that MAY affect current user-visible product behavior, workflows, interaction rules, non-goals, or user-visible constraints, the agent MUST invoke skill `authoring-product-documentation` to assess whether `docs/product-documentation.md` requires an update.
+- If the agent notices possible drift between current code and `docs/product-documentation.md` in user-visible product behavior or constraints, the agent MUST invoke skill `authoring-product-documentation`.
+- The decision whether a product-documentation update is required MUST belong only to skill `authoring-product-documentation`.
 - For repository entry context, including product summary, supported environments, installation prerequisites, and basic run commands, the agent SHOULD use `README.md`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
 
