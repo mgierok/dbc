@@ -136,7 +136,7 @@ When adding or changing instructions:
 - Each rule SHOULD define condition, expected behavior, and boundary/exception (if relevant).
 - Overlapping instructions SHOULD be merged.
 - Duplicative restatements SHOULD be removed.
-- Source-document routing guidance SHOULD be kept separate from implementation guardrails when both concerns exist.
+- Source-document routing guidance SHOULD be colocated with the decision area it governs, or kept in a small dedicated section when that is clearer; it SHOULD NOT be duplicated across both.
 - Sections that point to source documents SHOULD state what operational questions those documents answer for the agent.
 - `AGENTS.md` sections such as architecture or dependencies/toolchain SHOULD stay governance-focused and SHOULD NOT restate detailed technical facts already delegated to source documents, unless a short enforcement summary materially improves compliance.
 
@@ -149,8 +149,8 @@ When editing `AGENTS.md`:
 3. Add new rules only when no existing section can safely absorb the intent.
 4. If numeric heading prefixes are used (for example `1.`, `1.1`, `2.`), they MUST remain sequential and consistent after edits.
 5. Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
-6. If source-of-truth document guidance exists, it SHOULD appear before engineering guardrails that depend on it.
-7. Standalone documentation-policy sections SHOULD be removed when their content fits more cleanly into global rules or source-document guidance.
+6. If source-of-truth document guidance exists, it SHOULD appear near the guardrails that depend on it, either immediately before them or colocated within the governing section.
+7. Standalone documentation-policy sections SHOULD be removed when their content fits more cleanly into global rules or colocated source-document guidance.
 
 ## Anti-Patterns and Quality Checks
 
@@ -163,7 +163,7 @@ When editing `AGENTS.md`:
 - Overly long and multi-clause sentences that reduce junior readability.
 - Skill descriptions that explain only “what” but not “when”.
 - Mixed formatting conventions for equivalent structures in the same governance file (`AGENTS.md` or `SKILL.md`).
-- Architecture or dependency sections in `AGENTS.md` that mostly duplicate facts already assigned to source documents.
+- Architecture or dependency sections in `AGENTS.md` that mostly duplicate facts already assigned to source documents without adding concise enforcement guidance.
 - Source-document guidance that only lists file names without stating what the agent should use each file for.
 
 ### Final Quality Gate
