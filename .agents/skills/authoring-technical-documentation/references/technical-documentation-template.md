@@ -1,12 +1,14 @@
 # Technical Documentation Title
 
 ## Technical Overview
-- State only stable technical context needed to understand implementation constraints.
+- State only current factual technical context needed to understand the implementation as it exists now.
+- Keep the document descriptive of the current codebase, not prescriptive for future architecture changes.
 - Avoid feature chronology and release-history narrative.
 
 ## Architecture and Boundaries
-- List architecture invariants that MUST remain true during development.
-- Document boundary responsibilities only when they influence dependency direction or change safety.
+- Describe the current architecture boundaries and current dependency shape visible in the implementation.
+- Document boundary responsibilities only when they influence current dependency direction, change safety, or maintenance understanding.
+- Document material drift from `docs/clean-architecture-ddd.md` when it exists and matters for safe future changes.
 
 ## Components and Responsibilities
 - Document only stable component responsibilities and ownership boundaries.
@@ -28,16 +30,16 @@
 - Omit operational trivia that does not affect coding decisions.
 
 ## Technical Decisions and Tradeoffs
-- Record stable decisions that constrain future implementation.
-- For each decision, include: decision, rationale, and code location(s).
-- Add a new entry only when the decision is durable and reusable for future work.
+- Record stable decisions that currently shape the implementation and maintenance context.
+- For each decision, include: current decision, rationale, and code location(s).
+- Add a new entry only when the decision is materially reflected in the current codebase and useful for explaining present maintenance context.
 
 ## Technology Stack and Versions
 - Keep only stack/tool versions and dependency facts that affect build/runtime behavior.
 - Avoid listing transitive details without maintenance impact.
 
 ## Technical Constraints and Risks
-- List active constraints and risks that should influence implementation choices.
+- List active constraints and risks that help readers understand current implementation limits and maintenance risks.
 - Remove stale items once no longer true.
 
 ## Deep-Dive References
