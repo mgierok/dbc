@@ -85,9 +85,7 @@ Quick examples:
 
 #### TDD Rules
 
-- This section MUST be applied whenever `General Development Rules` routes work to `TDD Rules`.
-- Before starting unit-test work for such changes, the agent MUST invoke skill `create-unit-tests`.
-- The `create-unit-tests` prerequisite MUST apply to adding, editing, fixing, refactoring, reviewing, and designing unit tests, independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
+- When `General Development Rules` route work to `TDD Rules`, the agent MUST invoke skill `create-unit-tests` before starting unit-test work, including adding, editing, fixing, refactoring, reviewing, and designing unit tests, independent of the chosen language, test framework, or test workflow (`TDD`, `BDD`, or test-after).
 - The agent MUST treat `docs/test-driven-development.md` as the normative TDD reference and SHOULD consult it for behavior-impacting implementation, test strategy updates, and non-trivial Red-Green-Refactor decisions.
 - For bug fixes, the agent MUST add a regression unit test that reproduces the bug before applying the fix.
 - The agent MUST NOT weaken assertions only to make failing behavior pass.
