@@ -72,6 +72,7 @@
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
 - For feature changes, bug fixes, and behavior-impacting refactors, the agent MUST follow `TDD Rules`.
 - Before finalizing a non-documentation code change, the agent MUST run the applicable formatter, tests, and linter for the affected stack.
+- When a refactoring, a broad code modification, or a change to existing application behavior affects a larger implementation area, the agent MUST review and clean up related unit tests in the affected area so the tests remain aligned with current responsibilities, behavior, naming, and coverage boundaries.
 - The agent MUST NOT add speculative abstractions, configurability, or extensibility that were not requested.
 - Changes MUST stay minimal, surgical, and scoped to task intent; every changed line MUST map directly to task intent.
 - The agent SHOULD prefer decomposition or simplification that removes mixed responsibilities, duplicated orchestration, unstable change coupling, unnecessary complexity, unnecessary nesting, redundancy, or over-abstraction, but it MUST keep cohesive workflows together when splitting would add indirection without architectural gain.
