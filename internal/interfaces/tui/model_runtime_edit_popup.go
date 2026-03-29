@@ -28,10 +28,7 @@ func (m *Model) openEditPopup() (tea.Model, tea.Cmd) {
 	if m.read.recordSelection < 0 || m.read.recordSelection >= m.totalRecordRows() {
 		return m, nil
 	}
-	if insert, isInsert := m.pendingInsertForSelection(); !isInsert && !m.canEditRecords() {
-		m.ui.statusMessage = "Error: table has no primary key"
-		return m, nil
-	} else if !isInsert {
+	if insert, isInsert := m.pendingInsertForSelection(); !isInsert {
 		if _, _, err := m.recordIdentityForVisibleRow(m.read.recordSelection); err != nil {
 			m.ui.statusMessage = "Error: " + err.Error()
 			return m, nil

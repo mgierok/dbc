@@ -43,10 +43,6 @@ func (m *Model) toggleDeleteSelection() (tea.Model, tea.Cmd) {
 		m.normalizeRecordSelection()
 		return m, nil
 	}
-	if !m.canEditRecords() {
-		m.ui.statusMessage = "Error: table has no primary key"
-		return m, nil
-	}
 	key, identity, err := m.recordIdentityForVisibleRow(m.read.recordSelection)
 	if err != nil {
 		m.ui.statusMessage = "Error: " + err.Error()
@@ -137,15 +133,6 @@ func (m *Model) stageEdit(rowIndex, columnIndex int, value dto.StagedValue) erro
 	}
 	m.syncStagingSnapshot()
 	return nil
-}
-
-func (m *Model) canEditRecords() bool {
-	for _, column := range m.read.schema.Columns {
-		if column.PrimaryKey {
-			return true
-		}
-	}
-	return false
 }
 
 func (m *Model) editColumn() (dto.SchemaColumn, bool) {

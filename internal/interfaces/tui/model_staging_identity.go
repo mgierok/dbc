@@ -2,16 +2,9 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/mgierok/dbc/internal/application/dto"
-	"github.com/mgierok/dbc/internal/application/usecase"
 )
-
-type pkColumn struct {
-	index  int
-	column dto.SchemaColumn
-}
 
 func (m *Model) recordValue(rowIndex, columnIndex int) string {
 	if rowIndex < 0 || rowIndex >= len(m.read.records) {
@@ -56,30 +49,11 @@ func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (dto.StagedEdit, boo
 }
 
 func (m *Model) recordKeyForPersistedRow(rowIndex int) (string, bool) {
-	if rowIndex < 0 || rowIndex >= len(m.read.records) {
+	key, _, err := m.recordIdentityForPersistedRow(rowIndex)
+	if err != nil {
 		return "", false
 	}
-	row := m.read.records[rowIndex]
-	if row.IdentityUnavailable {
-		return "", false
-	}
-	if row.RowKey != "" {
-		return row.RowKey, true
-	}
-
-	pkColumns := m.primaryKeyColumns()
-	if len(pkColumns) == 0 {
-		return "", false
-	}
-	values := row.Values
-	parts := make([]string, 0, len(pkColumns))
-	for _, pk := range pkColumns {
-		if pk.index < 0 || pk.index >= len(values) {
-			return "", false
-		}
-		parts = append(parts, fmt.Sprintf("%s=%s", pk.column.Name, values[pk.index]))
-	}
-	return strings.Join(parts, "|"), true
+	return key, true
 }
 
 func (m *Model) recordIdentityForVisibleRow(rowIndex int) (string, dto.RecordIdentity, error) {
@@ -94,28 +68,5 @@ func (m *Model) recordIdentityForPersistedRow(rowIndex int) (string, dto.RecordI
 	if rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return "", dto.RecordIdentity{}, fmt.Errorf("record index out of range")
 	}
-	row := m.read.records[rowIndex]
-	if row.IdentityUnavailable {
-		return "", dto.RecordIdentity{}, usecase.ErrSelectedRecordIdentityExceedsSafeBrowseLimit
-	}
-	if row.RowKey != "" || len(row.Identity.Keys) > 0 {
-		if row.RowKey == "" || len(row.Identity.Keys) == 0 {
-			return "", dto.RecordIdentity{}, fmt.Errorf("record identity missing")
-		}
-		return row.RowKey, row.Identity, nil
-	}
-	return m.translatorUseCase().BuildRecordIdentity(m.read.schema, row)
-}
-
-func (m *Model) primaryKeyColumns() []pkColumn {
-	if len(m.read.schema.Columns) == 0 {
-		return nil
-	}
-	var pkColumns []pkColumn
-	for i, column := range m.read.schema.Columns {
-		if column.PrimaryKey {
-			pkColumns = append(pkColumns, pkColumn{index: i, column: column})
-		}
-	}
-	return pkColumns
+	return m.translatorUseCase().BuildRecordIdentity(m.read.schema, m.read.records[rowIndex])
 }

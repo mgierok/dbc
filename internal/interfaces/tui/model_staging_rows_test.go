@@ -8,6 +8,17 @@ import (
 	"github.com/mgierok/dbc/internal/application/dto"
 )
 
+func newDeleteSelectionTestModel(records []dto.RecordRow, schema dto.Schema) *Model {
+	return &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			records:  records,
+			schema:   schema,
+		},
+	}
+}
+
 func TestHandleKey_InsertCreatesPendingRowAtTop(t *testing.T) {
 	// Arrange
 	defaultName := "guest"
@@ -85,12 +96,15 @@ func TestHandleKey_DeleteTogglesPersistedRow(t *testing.T) {
 	}
 }
 
-func TestHandleKey_DeleteBlocksRowsWithUnavailableIdentity(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			focus:    FocusContent,
+func TestHandleKey_DeleteBlocksUnremovableRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		records []dto.RecordRow
+		schema  dto.Schema
+		wantErr string
+	}{
+		{
+			name: "identity unavailable",
 			records: []dto.RecordRow{
 				{
 					Values:              []string{"<truncated 262145 bytes>", "alice"},
@@ -103,18 +117,38 @@ func TestHandleKey_DeleteBlocksRowsWithUnavailableIdentity(t *testing.T) {
 					{Name: "name", Type: "TEXT"},
 				},
 			},
+			wantErr: "Error: selected record identity exceeds safe browse limit",
+		},
+		{
+			name: "missing primary key",
+			records: []dto.RecordRow{
+				{Values: []string{"alice"}},
+			},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			wantErr: "Error: table has no primary key",
 		},
 	}
 
-	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			model := newDeleteSelectionTestModel(tt.records, tt.schema)
 
-	// Assert
-	if len(model.currentStagingSnapshot().PendingDeletes) != 0 {
-		t.Fatalf("expected no pending deletes, got %d", len(model.currentStagingSnapshot().PendingDeletes))
-	}
-	if model.ui.statusMessage != "Error: selected record identity exceeds safe browse limit" {
-		t.Fatalf("expected explicit oversized-identity status, got %q", model.ui.statusMessage)
+			// Act
+			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+			// Assert
+			if len(model.currentStagingSnapshot().PendingDeletes) != 0 {
+				t.Fatalf("expected no pending deletes, got %d", len(model.currentStagingSnapshot().PendingDeletes))
+			}
+			if model.ui.statusMessage != tt.wantErr {
+				t.Fatalf("expected status %q, got %q", tt.wantErr, model.ui.statusMessage)
+			}
+		})
 	}
 }
 
