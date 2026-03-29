@@ -10,28 +10,26 @@
 - The agent MUST treat such conflicts as drift and MUST NOT use them to justify, extend, normalize, or preserve future changes.
 - When the task touches material drift between current code and documentation or canonical rules, the agent MUST report that drift explicitly.
 
-## Source Documents
-
-- `docs/technical-documentation.md` MUST be used as the primary reference for orienting within current implementation state, current code structure, current technical contracts and mechanisms, current technical constraints, and known drift.
-- `docs/product-documentation.md` MUST be used as the primary reference for orienting within current user-visible product state, current workflows, current interaction rules, current non-goals, and user-visible constraints.
-- `README.md` SHOULD be used for repository entry context, including product summary, supported environments, installation prerequisites, and basic run commands.
-- `docs/clean-architecture-ddd.md` MUST be used as the canonical architecture source for boundary placement, dependency direction, logic placement, ports/adapters decisions, and application vs adapter responsibilities.
-- `docs/test-driven-development.md` MUST be used as the normative TDD reference for behavior-impacting changes, test strategy updates, and Red-Green-Refactor decisions.
-
 ## Engineering Guardrails
 
 ### Dependencies and Toolchain
 
-- The agent MUST take the dependency and toolchain baseline from `go.mod`, and the agent MUST use `docs/technical-documentation.md` only as the current-state reference for that baseline. If they differ, `go.mod` MUST win.
+- The agent MUST take the dependency and toolchain baseline from `go.mod`.
+- For current implementation state, current code structure, current technical contracts and mechanisms, current technical constraints, and known drift, the agent MUST use `docs/technical-documentation.md` as the primary reference.
+- If `docs/technical-documentation.md` conflicts with current code or `go.mod`, current code or `go.mod` MUST win.
 - Adding third-party dependencies MUST have explicit approval.
+
+### Product Behavior
+
+- For current user-visible product behavior, current workflows, current interaction rules, current non-goals, and user-visible constraints, the agent MUST use `docs/product-documentation.md` as the primary reference.
+- The agent MUST treat `docs/product-documentation.md` as a source of product behavior and constraints, not as a source of internal implementation rules.
 
 ### Architecture
 
 #### Architecture Authority and Interpretation
 
-- The agent MUST use `docs/clean-architecture-ddd.md` as the canonical architecture guide for all future code changes.
-- The agent MUST treat `docs/technical-documentation.md` as a description of current implementation state, not as the canonical source of future architecture rules.
-- The agent MUST treat `docs/product-documentation.md` as a description of current product behavior, not as the canonical source of internal implementation rules.
+- The agent MUST use `docs/clean-architecture-ddd.md` as the canonical architecture source for all future code changes, including boundary placement, dependency direction, logic placement, ports/adapters decisions, and application vs adapter responsibilities.
+- The agent MUST treat `docs/technical-documentation.md` as a current-state reference, not as the canonical source of future architecture rules.
 
 #### Dependency Boundaries
 
@@ -122,6 +120,7 @@ Quick examples:
 ### General Rules
 
 - For commit-message creation, validation, classification, or commit requests without an explicit message, the agent MUST invoke skill `write-commit-messages`.
+- For repository entry context, including product summary, supported environments, installation prerequisites, and basic run commands, the agent SHOULD use `README.md`.
 - For manual `TC-*` execution and reporting (`single test case` and `full test case suite`), the agent MUST use `docs/test-case-execution-reporting-specification.md`.
 
 ### Plan Mode Rules
