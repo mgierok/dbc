@@ -79,19 +79,17 @@ func TestRenderStatus_ShowsCleanIconInsteadOfReadOnlyLabel(t *testing.T) {
 
 func TestRenderStatus_ShowsDirtyIconInsteadOfDirtyCountText(t *testing.T) {
 	// Arrange
-	model := &Model{
-		staging: stagingState{
-			pendingUpdates: map[string]recordEdits{
-				"id=1": {
-					changes: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-					},
+	model := withTestStaging(&Model{}, stagingState{
+		pendingUpdates: map[string]recordEdits{
+			"id=1": {
+				changes: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
 				},
 			},
-			pendingInserts: []pendingInsertRow{{}},
-			pendingDeletes: map[string]recordDelete{"id=2": {}},
 		},
-	}
+		pendingInserts: []pendingInsertRow{{}},
+		pendingDeletes: map[string]recordDelete{"id=2": {}},
+	})
 
 	// Act
 	status := stripANSI(model.renderStatus(80))

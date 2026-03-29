@@ -72,6 +72,7 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 	testCases := []struct {
 		name     string
 		model    Model
+		seed     stagingState
 		expected string
 	}{
 		{
@@ -124,12 +125,12 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 					},
 					records: []dto.RecordRow{{Values: []string{"1"}}},
 				},
-				staging: stagingState{
-					pendingUpdates: map[string]recordEdits{
-						"id=1": {
-							changes: map[int]stagedEdit{
-								0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
-							},
+			},
+			seed: stagingState{
+				pendingUpdates: map[string]recordEdits{
+					"id=1": {
+						changes: map[int]stagedEdit{
+							0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
 						},
 					},
 				},
@@ -163,6 +164,9 @@ func TestView_RuntimeRightPanelTopBorderUsesDynamicTitle(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if len(tc.seed.pendingInserts) > 0 || len(tc.seed.pendingUpdates) > 0 || len(tc.seed.pendingDeletes) > 0 {
+				withTestStaging(&tc.model, tc.seed)
+			}
 			view := tc.model.View()
 			topLine := stripANSI(strings.Split(view, "\n")[0])
 			if !strings.Contains(topLine, tc.expected) {
@@ -230,7 +234,7 @@ func TestView_CommandSpotlightOverlaysRuntimePanelsAndStatusBar(t *testing.T) {
 
 func TestView_CommandSpotlightBackdropSubduesDirtyRecordsTitle(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		styles: primitives.NewRenderStyles(true),
 		ui: runtimeUIState{
 			width:  140,
@@ -246,15 +250,14 @@ func TestView_CommandSpotlightBackdropSubduesDirtyRecordsTitle(t *testing.T) {
 			},
 			records: []dto.RecordRow{{Values: []string{"1"}}},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
-		},
 		overlay: runtimeOverlayState{
 			commandInput: commandInput{
 				active: true,
 			},
 		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{{}},
+	})
 
 	// Act
 	view := model.View()

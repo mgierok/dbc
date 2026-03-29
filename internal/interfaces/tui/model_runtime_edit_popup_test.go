@@ -166,7 +166,7 @@ func TestHandleKey_EInFieldFocusBlocksPlaceholderBackedBlobCells(t *testing.T) {
 
 func TestHandleKey_EInFieldFocusAllowsEditingExistingStagedValueOnPlaceholderCell(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			viewMode:         ViewRecords,
 			focus:            FocusContent,
@@ -187,17 +187,16 @@ func TestHandleKey_EInFieldFocusAllowsEditingExistingStagedValueOnPlaceholderCel
 				},
 			},
 		},
-		staging: stagingState{
-			pendingUpdates: map[string]recordEdits{
-				"id=1": {
-					identity: dto.RecordIdentity{Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}}},
-					changes: map[int]stagedEdit{
-						1: {Value: dto.StagedValue{Text: "edited", Raw: "edited"}},
-					},
+	}, stagingState{
+		pendingUpdates: map[string]recordEdits{
+			"id=1": {
+				identity: dto.RecordIdentity{Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}}},
+				changes: map[int]stagedEdit{
+					1: {Value: dto.StagedValue{Text: "edited", Raw: "edited"}},
 				},
 			},
 		},
-	}
+	})
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})

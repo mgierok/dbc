@@ -11,7 +11,7 @@ import (
 
 func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			viewMode:         ViewRecords,
 			focus:            FocusContent,
@@ -28,18 +28,17 @@ func TestHandleKey_FieldFocusNavigationAdjustsColumnForPendingInsertRows(t *test
 				},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})

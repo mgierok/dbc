@@ -277,20 +277,19 @@ func TestView_HelpPopupShowsBackdropRuntimePanelsAndHelpContent(t *testing.T) {
 
 func TestView_DirtyConfigCommandOpensRuntimeSelectorWithBackdropRuntimeLayout(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		styles: primitives.NewRenderStyles(true),
 		read:   runtimeReadState{viewMode: ViewRecords},
 		ui: runtimeUIState{
 			width:  80,
 			height: 24,
 		},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(DatabaseOption{
 			Name:       "primary",
 			ConnString: "/tmp/primary.sqlite",
 			Source:     DatabaseOptionSourceConfig,
 		}),
-	}
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})

@@ -209,7 +209,7 @@ func TestFormatRecordsHeaderRows_UsesDoubleSpaceSeparatorBetweenColumns(t *testi
 
 func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			focus:    FocusContent,
@@ -223,24 +223,23 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 				{Values: []string{"1", "alice"}},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
-						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "2", Raw: "2"}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
 			},
 		},
-	}
+	})
 	key, ok := model.recordKeyForPersistedRow(0)
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	content := strings.Join(model.renderRecords(80, 8), "\n")
@@ -275,13 +274,13 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingUpdates = map[string]recordEdits{
+	setTestPendingUpdates(model, map[string]recordEdits{
 		key: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
-	}
+	})
 
 	// Act
 	content := strings.Join(model.renderRecords(80, 6), "\n")
@@ -297,7 +296,7 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 
 func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			focus:    FocusContent,
@@ -312,37 +311,36 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 				{Values: []string{"2", "bob"}},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "10", Raw: "10"}},
-						1: {Value: dto.StagedValue{Text: "inserted", Raw: "inserted"}},
-					},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "10", Raw: "10"}},
+					1: {Value: dto.StagedValue{Text: "inserted", Raw: "inserted"}},
 				},
 			},
 		},
-	}
+	})
 
 	editedKey, ok := model.recordKeyForPersistedRow(0)
 	if !ok {
 		t.Fatal("expected edited row key")
 	}
-	model.staging.pendingUpdates = map[string]recordEdits{
+	setTestPendingUpdates(model, map[string]recordEdits{
 		editedKey: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
-	}
+	})
 
 	deleteKey, ok := model.recordKeyForPersistedRow(1)
 	if !ok {
 		t.Fatal("expected delete row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		deleteKey: {},
-	}
+	})
 
 	// Act
 	lines := model.renderRecords(90, 8)
@@ -394,16 +392,16 @@ func TestRenderRecords_StrikesThroughDeleteMarkedRowCellContent(t *testing.T) {
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingUpdates = map[string]recordEdits{
+	setTestPendingUpdates(model, map[string]recordEdits{
 		key: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
-	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	})
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	lines := model.renderRecords(80, 6)
@@ -444,9 +442,9 @@ func TestRenderRecords_CombinesSelectedAndDeletedStylesWithoutStrikingPrefixOrMa
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	lines := model.renderRecords(80, 6)
@@ -546,7 +544,7 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 
 	t.Run("pending insert row", func(t *testing.T) {
 		// Arrange
-		model := &Model{
+		model := withTestStaging(&Model{
 			read: runtimeReadState{
 				schema: dto.Schema{
 					Columns: []dto.SchemaColumn{
@@ -554,12 +552,11 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 					},
 				},
 			},
-			staging: stagingState{
-				pendingInserts: []pendingInsertRow{
-					{},
-				},
+		}, stagingState{
+			pendingInserts: []pendingInsertRow{
+				{},
 			},
-		}
+		})
 
 		// Act
 		lines := model.recordDetailContentLines(40)
@@ -588,9 +585,9 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !ok {
 			t.Fatal("expected persisted row key")
 		}
-		model.staging.pendingDeletes = map[string]recordDelete{
+		setTestPendingDeletes(model, map[string]recordDelete{
 			key: {},
-		}
+		})
 
 		// Act
 		lines := model.recordDetailContentLines(40)
@@ -621,13 +618,13 @@ func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T
 		if !ok {
 			t.Fatal("expected persisted row key")
 		}
-		model.staging.pendingUpdates = map[string]recordEdits{
+		setTestPendingUpdates(model, map[string]recordEdits{
 			key: {
 				changes: map[int]stagedEdit{
 					1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 				},
 			},
-		}
+		})
 
 		// Act
 		lines := model.recordDetailContentLines(40)
@@ -702,16 +699,16 @@ func TestRecordDetailContentLines_StrikesDeleteMarkedFieldValuesOnly(t *testing.
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingUpdates = map[string]recordEdits{
+	setTestPendingUpdates(model, map[string]recordEdits{
 		key: {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
-	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	})
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	lines := model.recordDetailContentLines(40)
@@ -749,9 +746,9 @@ func TestRecordDetailContentLines_StrikesEveryWrappedDeleteMarkedValueLine(t *te
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	lines := model.recordDetailContentLines(14)
@@ -788,9 +785,9 @@ func TestRecordDetailContentLinesWithStyles_BackdropKeepsDeletedStyleAcrossWrapp
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	lines := model.recordDetailContentLinesWithStyles(14, primitives.NewRenderStyles(true).Backdrop())
@@ -827,9 +824,9 @@ func TestRecordDetailContentLinesWithStyles_BackdropKeepsDeletedStyleAcrossExpli
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	lines := model.recordDetailContentLinesWithStyles(20, primitives.NewRenderStyles(true).Backdrop())
@@ -869,9 +866,9 @@ func TestDeleteMarkedViews_FallBackToPlainTextWhenStylesAreDisabled(t *testing.T
 	if !ok {
 		t.Fatal("expected persisted row key")
 	}
-	model.staging.pendingDeletes = map[string]recordDelete{
+	setTestPendingDeletes(model, map[string]recordDelete{
 		key: {},
-	}
+	})
 
 	// Act
 	recordLines := model.renderRecords(80, 6)

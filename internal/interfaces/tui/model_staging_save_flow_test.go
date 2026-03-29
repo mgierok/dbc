@@ -13,7 +13,7 @@ import (
 func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{count: 1}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
@@ -25,18 +25,17 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 
 	// Act
 	_, cmd := model.confirmSaveChanges()
@@ -61,7 +60,7 @@ func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
 func TestConfirmSaveChanges_UsesAppliedRowCountFromUseCaseInsteadOfDirtyRowCount(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{count: 1}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
@@ -74,20 +73,19 @@ func TestConfirmSaveChanges_UsesAppliedRowCountFromUseCaseInsteadOfDirtyRowCount
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: stagingState{
-			pendingUpdates: map[string]recordEdits{
-				"id=1": {
-					identity: dto.RecordIdentity{
-						Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
-					},
-					changes: map[int]stagedEdit{
-						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-						2: {Value: dto.StagedValue{Text: "alice@example.com", Raw: "alice@example.com"}},
-					},
+	}, stagingState{
+		pendingUpdates: map[string]recordEdits{
+			"id=1": {
+				identity: dto.RecordIdentity{
+					Keys: []dto.RecordIdentityKey{{Column: "id", Value: dto.StagedValue{Text: "1", Raw: int64(1)}}},
+				},
+				changes: map[int]stagedEdit{
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+					2: {Value: dto.StagedValue{Text: "alice@example.com", Raw: "alice@example.com"}},
 				},
 			},
 		},
-	}
+	})
 
 	// Act
 	_, cmd := model.confirmSaveChanges()
@@ -105,7 +103,7 @@ func TestConfirmSaveChanges_UsesAppliedRowCountFromUseCaseInsteadOfDirtyRowCount
 
 func TestConfirmSaveChanges_StartsBlockingSaveStateAndShowsSavingStatus(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: &spySaveChangesUseCase{count: 1},
 		read: runtimeReadState{
@@ -117,19 +115,18 @@ func TestConfirmSaveChanges_StartsBlockingSaveStateAndShowsSavingStatus(t *testi
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-					},
-					explicitAuto: map[int]bool{},
+		ui: runtimeUIState{statusMessage: "stale status"},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-		ui: runtimeUIState{statusMessage: "stale status"},
-	}
+	})
 
 	// Act
 	_, cmd := model.confirmSaveChanges()
@@ -148,18 +145,17 @@ func TestConfirmSaveChanges_StartsBlockingSaveStateAndShowsSavingStatus(t *testi
 
 func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
-			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-			pendingDeletes: map[string]recordDelete{"id=2": {}},
-		},
 		ui: runtimeUIState{pendingTableIndex: -1},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{{}},
+		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+		pendingDeletes: map[string]recordDelete{"id=2": {}},
+	})
 
 	// Act
 	model.setTableSelection(1)
@@ -196,18 +192,17 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 
 func TestSetTableSelection_WithDirtyStateDiscardOptionClearsStagingAndSwitches(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
-			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-			pendingDeletes: map[string]recordDelete{"id=2": {}},
-		},
 		ui: runtimeUIState{pendingTableIndex: -1},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{{}},
+		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+		pendingDeletes: map[string]recordDelete{"id=2": {}},
+	})
 
 	// Act
 	model.setTableSelection(1)
@@ -224,18 +219,17 @@ func TestSetTableSelection_WithDirtyStateDiscardOptionClearsStagingAndSwitches(t
 
 func TestSetTableSelection_WithDirtyStateContinueEditingOptionPreservesStagingAndSelection(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
-			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-			pendingDeletes: map[string]recordDelete{"id=2": {}},
-		},
 		ui: runtimeUIState{pendingTableIndex: -1},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{{}},
+		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+		pendingDeletes: map[string]recordDelete{"id=2": {}},
+	})
 
 	// Act
 	model.setTableSelection(1)
@@ -256,18 +250,17 @@ func TestSetTableSelection_WithDirtyStateContinueEditingOptionPreservesStagingAn
 
 func TestSetTableSelection_WithDirtyStateNKeyIsIgnored(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
 			selectedTable: 0,
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
-			pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-			pendingDeletes: map[string]recordDelete{"id=2": {}},
-		},
 		ui: runtimeUIState{pendingTableIndex: -1},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{{}},
+		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
+		pendingDeletes: map[string]recordDelete{"id=2": {}},
+	})
 
 	// Act
 	model.setTableSelection(1)
@@ -316,7 +309,7 @@ func TestSetTableSelection_ClearsSortOnTableSwitch(t *testing.T) {
 func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
-	model := &Model{
+	model := withTestStaging(&Model{
 		saveChanges: saveChanges,
 		read: runtimeReadState{
 			viewMode:      ViewRecords,
@@ -327,17 +320,6 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *test
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},
 					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-					},
-					explicitAuto: map[int]bool{},
 				},
 			},
 		},
@@ -360,7 +342,17 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *test
 				Origin: runtimeDatabaseTransitionOriginEditCommand,
 			},
 		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -377,7 +369,7 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveStartsSaveFlow(t *test
 func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveKeepsTransitionPendingWhenSaveStarts(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{}
-	model := &Model{
+	model := withTestStaging(&Model{
 		saveChanges: saveChanges,
 		read: runtimeReadState{
 			viewMode:      ViewRecords,
@@ -388,17 +380,6 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveKeepsTransitionPending
 				Columns: []dto.SchemaColumn{
 					{Name: "id", Type: "INTEGER", PrimaryKey: true},
 					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-					},
-					explicitAuto: map[int]bool{},
 				},
 			},
 		},
@@ -421,7 +402,17 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveKeepsTransitionPending
 				Origin: runtimeDatabaseTransitionOriginEditCommand,
 			},
 		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -437,7 +428,7 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionSaveKeepsTransitionPending
 
 func TestRequestSaveChanges_StartsSaveImmediatelyFromSchemaWithDirtyStateStartedInRecords(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: &spySaveChangesUseCase{count: 1},
 		read: runtimeReadState{
@@ -452,18 +443,17 @@ func TestRequestSaveChanges_StartsSaveImmediatelyFromSchemaWithDirtyStateStarted
 				},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 
 	// Act
 	_, cmd := model.requestSaveChanges()
@@ -486,7 +476,7 @@ func TestRequestSaveChanges_StartsSaveImmediatelyFromSchemaWithDirtyStateStarted
 func TestRequestSaveAndQuit_BlocksRuntimeInputUntilSaveResponse(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{count: 1}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
@@ -501,18 +491,17 @@ func TestRequestSaveAndQuit_BlocksRuntimeInputUntilSaveResponse(t *testing.T) {
 				},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 
 	// Act
 	_, saveCmd := model.requestSaveAndQuit()
@@ -544,7 +533,7 @@ func TestRequestSaveAndQuit_BlocksRuntimeInputUntilSaveResponse(t *testing.T) {
 
 func TestRequestSaveChanges_StartsSaveImmediatelyFromTablesWithDirtyStateStartedInRecords(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: &spySaveChangesUseCase{count: 1},
 		read: runtimeReadState{
@@ -559,18 +548,17 @@ func TestRequestSaveChanges_StartsSaveImmediatelyFromTablesWithDirtyStateStarted
 				},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 
 	// Act
 	_, cmd := model.requestSaveChanges()
@@ -621,7 +609,7 @@ func TestRequestSaveChanges_WithNoDirtyStateShowsNoChangesStatus(t *testing.T) {
 func TestRequestSaveAndQuit_StartsSaveImmediatelyWithoutPopup(t *testing.T) {
 	// Arrange
 	saveChanges := &spySaveChangesUseCase{count: 1}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
@@ -636,18 +624,17 @@ func TestRequestSaveAndQuit_StartsSaveImmediatelyWithoutPopup(t *testing.T) {
 				},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 	// Act
 	_, cmd := model.requestSaveAndQuit()
 

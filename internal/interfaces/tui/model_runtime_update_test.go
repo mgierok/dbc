@@ -141,17 +141,7 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
-				},
-			},
-		},
+	model := withTestStaging(&Model{
 		ui: runtimeUIState{
 			saveInFlight: true,
 			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
@@ -163,7 +153,16 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 			},
 		},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.Update(saveChangesMsg{count: 1})
@@ -191,22 +190,21 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 
 func TestUpdate_SaveChangesMsgPendingQuitAfterSaveClearsStateAndQuits(t *testing.T) {
 	// Arrange
-	model := &Model{
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
-				},
-			},
-		},
+	model := withTestStaging(&Model{
 		ui: runtimeUIState{
 			pendingQuitAfterSave: true,
 			saveInFlight:         true,
 		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.Update(saveChangesMsg{count: 1})
@@ -240,27 +238,26 @@ func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T
 			TotalCount: 1,
 		},
 	}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		listRecords: listRecords,
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			tables:   []dto.Table{{Name: "users"}},
 		},
-		staging: stagingState{
-			pendingUpdates: map[string]recordEdits{
-				"id=1": {
-					changes: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-						1: {Value: dto.StagedValue{Text: "alice@example.com", Raw: "alice@example.com"}},
-					},
-				},
-			},
-		},
 		ui: runtimeUIState{
 			saveInFlight: true,
 		},
-	}
+	}, stagingState{
+		pendingUpdates: map[string]recordEdits{
+			"id=1": {
+				changes: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+					1: {Value: dto.StagedValue{Text: "alice@example.com", Raw: "alice@example.com"}},
+				},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.Update(saveChangesMsg{count: 1})
@@ -303,22 +300,21 @@ func TestFormatSavedRowsMessage_AllowsZeroAffectedRows(t *testing.T) {
 
 func TestUpdate_SaveChangesMsgErrorClearsPendingQuitAfterSaveAndPreservesDirtyState(t *testing.T) {
 	// Arrange
-	model := &Model{
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
-				},
-			},
-		},
+	model := withTestStaging(&Model{
 		ui: runtimeUIState{
 			pendingQuitAfterSave: true,
 			saveInFlight:         true,
 		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.Update(saveChangesMsg{err: errors.New("boom")})
@@ -513,17 +509,7 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionPreservesCurrentBrowseSta
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
-				},
-			},
-		},
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			focus:            FocusContent,
 			viewMode:         ViewRecords,
@@ -551,7 +537,16 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionPreservesCurrentBrowseSta
 				Origin: runtimeDatabaseTransitionOriginConfigSelector,
 			},
 		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
 
 	// Act
 	_, cmd := model.Update(saveChangesMsg{count: 1})

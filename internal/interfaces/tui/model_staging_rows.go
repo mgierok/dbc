@@ -1,26 +1,33 @@
 package tui
 
-import (
-	"fmt"
-)
+import "github.com/mgierok/dbc/internal/application/dto"
 
 func (m *Model) totalRecordRows() int {
-	return len(m.staging.pendingInserts) + len(m.read.records)
+	return len(m.currentStagingSnapshot().PendingInserts) + len(m.read.records)
 }
 
 func (m *Model) pendingInsertIndex(rowIndex int) (int, bool) {
-	if rowIndex < 0 || rowIndex >= len(m.staging.pendingInserts) {
+	pendingInserts := m.currentStagingSnapshot().PendingInserts
+	if rowIndex < 0 || rowIndex >= len(pendingInserts) {
 		return -1, false
 	}
 	return rowIndex, true
 }
 
-func (m *Model) pendingInsertIndexForSelection() (int, bool) {
-	return m.pendingInsertIndex(m.read.recordSelection)
+func (m *Model) pendingInsertForRow(rowIndex int) (dto.InsertDraftSnapshot, bool) {
+	index, ok := m.pendingInsertIndex(rowIndex)
+	if !ok {
+		return dto.InsertDraftSnapshot{}, false
+	}
+	return m.currentStagingSnapshot().PendingInserts[index], true
+}
+
+func (m *Model) pendingInsertForSelection() (dto.InsertDraftSnapshot, bool) {
+	return m.pendingInsertForRow(m.read.recordSelection)
 }
 
 func (m *Model) persistedRowIndex(rowIndex int) int {
-	persisted := rowIndex - len(m.staging.pendingInserts)
+	persisted := rowIndex - len(m.currentStagingSnapshot().PendingInserts)
 	if persisted < 0 || persisted >= len(m.read.records) {
 		return -1
 	}
@@ -28,9 +35,8 @@ func (m *Model) persistedRowIndex(rowIndex int) int {
 }
 
 func (m *Model) visibleRowValue(rowIndex, columnIndex int) string {
-	if insertIndex, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		row := m.staging.pendingInserts[insertIndex]
-		if value, ok := row.values[columnIndex]; ok {
+	if row, isInsert := m.pendingInsertForRow(rowIndex); isInsert {
+		if value, ok := row.Values[columnIndex]; ok {
 			return displayValue(value.Value)
 		}
 		return ""
@@ -51,36 +57,8 @@ func (m *Model) isRowMarkedDelete(rowIndex int) bool {
 	if !ok {
 		return false
 	}
-	_, marked := m.staging.pendingDeletes[key]
+	_, marked := m.currentStagingSnapshot().PendingDeletes[key]
 	return marked
-}
-
-func (m *Model) removePendingInsert(index int) (pendingInsertRow, error) {
-	if index < 0 || index >= len(m.staging.pendingInserts) {
-		return pendingInsertRow{}, fmt.Errorf("insert index out of range")
-	}
-	removed := clonePendingInsertRow(m.staging.pendingInserts[index])
-	m.staging.pendingInserts = append(m.staging.pendingInserts[:index], m.staging.pendingInserts[index+1:]...)
-	if m.read.recordSelection > index {
-		m.read.recordSelection--
-	}
-	m.normalizeRecordSelection()
-	return removed, nil
-}
-
-func (m *Model) insertPendingRowAt(index int, row pendingInsertRow) error {
-	if index < 0 || index > len(m.staging.pendingInserts) {
-		return fmt.Errorf("insert index out of range")
-	}
-	cloned := clonePendingInsertRow(row)
-	m.staging.pendingInserts = append(m.staging.pendingInserts, pendingInsertRow{})
-	copy(m.staging.pendingInserts[index+1:], m.staging.pendingInserts[index:])
-	m.staging.pendingInserts[index] = cloned
-	if m.read.recordSelection >= index {
-		m.read.recordSelection++
-	}
-	m.normalizeRecordSelection()
-	return nil
 }
 
 func (m *Model) normalizeRecordSelection() {
@@ -108,18 +86,7 @@ func (m *Model) syncRecordColumnForSelection() {
 }
 
 func (m *Model) visibleColumnIndicesForSelection() []int {
-	if len(m.read.schema.Columns) == 0 {
-		return nil
-	}
-	insertIndex, isInsert := m.pendingInsertIndexForSelection()
-	columns := make([]int, 0, len(m.read.schema.Columns))
-	for idx, column := range m.read.schema.Columns {
-		if isInsert && !m.staging.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
-			continue
-		}
-		columns = append(columns, idx)
-	}
-	return columns
+	return m.visibleColumnIndicesForRow(m.read.recordSelection)
 }
 
 func (m *Model) defaultRecordColumnForRow(rowIndex int) int {
@@ -134,10 +101,10 @@ func (m *Model) visibleColumnIndicesForRow(rowIndex int) []int {
 	if len(m.read.schema.Columns) == 0 {
 		return nil
 	}
-	insertIndex, isInsert := m.pendingInsertIndex(rowIndex)
+	insert, isInsert := m.pendingInsertForRow(rowIndex)
 	columns := make([]int, 0, len(m.read.schema.Columns))
 	for idx, column := range m.read.schema.Columns {
-		if isInsert && !m.staging.pendingInserts[insertIndex].showAuto && column.AutoIncrement {
+		if isInsert && !m.showAutoForInsert(insert.ID) && column.AutoIncrement {
 			continue
 		}
 		columns = append(columns, idx)

@@ -83,6 +83,7 @@ func (m *Model) renderRecordsWithStyles(width, height int, styles primitives.Ren
 	totalRows := m.totalRecordRows()
 	start := primitives.ScrollStart(m.read.recordSelection, listHeight, totalRows)
 	end := primitives.MinInt(totalRows, start+listHeight)
+	snapshot := m.currentStagingSnapshot()
 	for i := start; i < end; i++ {
 		prefix := primitives.SelectionUnselectedPrefix()
 		selected := m.read.focus == FocusContent && m.read.viewMode == ViewRecords && i == m.read.recordSelection
@@ -91,8 +92,9 @@ func (m *Model) renderRecordsWithStyles(width, height int, styles primitives.Ren
 		}
 		displayValues := make([]string, len(columns))
 		if insertIndex, isInsert := m.pendingInsertIndex(i); isInsert {
+			insert := snapshot.PendingInserts[insertIndex]
 			for colIndex := range columns {
-				if value, ok := m.staging.pendingInserts[insertIndex].values[colIndex]; ok {
+				if value, ok := insert.Values[colIndex]; ok {
 					displayValues[colIndex] = displayValue(value.Value)
 				}
 			}
@@ -239,8 +241,8 @@ func renderMetadataBadgesLine(badges []string) primitives.SemanticLine {
 }
 
 func (m *Model) effectiveRecordDetailValue(rowIndex, columnIndex int) (string, bool) {
-	if insertIndex, isInsert := m.pendingInsertIndex(rowIndex); isInsert {
-		if value, ok := m.staging.pendingInserts[insertIndex].values[columnIndex]; ok {
+	if insert, isInsert := m.pendingInsertForRow(rowIndex); isInsert {
+		if value, ok := insert.Values[columnIndex]; ok {
 			return displayValue(value.Value), false
 		}
 		return "", false
@@ -260,11 +262,11 @@ func (m *Model) isRowEdited(rowIndex int) bool {
 	if !ok {
 		return false
 	}
-	edits, ok := m.staging.pendingUpdates[key]
+	edits, ok := m.currentStagingSnapshot().PendingUpdates[key]
 	if !ok {
 		return false
 	}
-	return len(edits.changes) > 0
+	return len(edits.Changes) > 0
 }
 
 func (m *Model) schemaColumnsForRecordsHeader() []string {

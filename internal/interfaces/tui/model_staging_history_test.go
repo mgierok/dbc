@@ -26,15 +26,15 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesInsertAdd(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 
 	// Assert
-	if len(model.staging.pendingInserts) != 1 {
-		t.Fatalf("expected one pending insert after add, got %d", len(model.staging.pendingInserts))
+	if len(model.currentStagingSnapshot().PendingInserts) != 1 {
+		t.Fatalf("expected one pending insert after add, got %d", len(model.currentStagingSnapshot().PendingInserts))
 	}
 
 	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
 
 	// Assert
-	if len(model.staging.pendingInserts) != 0 {
+	if len(model.currentStagingSnapshot().PendingInserts) != 0 {
 		t.Fatalf("expected insert to be undone")
 	}
 
@@ -42,7 +42,7 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesInsertAdd(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlR})
 
 	// Assert
-	if len(model.staging.pendingInserts) != 1 {
+	if len(model.currentStagingSnapshot().PendingInserts) != 1 {
 		t.Fatalf("expected insert to be redone")
 	}
 }
@@ -67,16 +67,11 @@ func TestHandleKey_NewActionClearsRedoStack(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 
 	// Assert
-	if len(model.staging.future) != 0 {
-		t.Fatalf("expected redo stack to be cleared by new staged action")
-	}
-
-	// Act
 	model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlR})
 
 	// Assert
-	if len(model.staging.pendingInserts) != 1 {
-		t.Fatalf("expected redo to have no effect after redo stack clear, got %d inserts", len(model.staging.pendingInserts))
+	if len(model.currentStagingSnapshot().PendingInserts) != 1 {
+		t.Fatalf("expected redo to have no effect after redo stack clear, got %d inserts", len(model.currentStagingSnapshot().PendingInserts))
 	}
 }
 
@@ -103,7 +98,7 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesPersistedCellEdit(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
 
 	// Assert
-	if len(model.staging.pendingUpdates) != 0 {
+	if len(model.currentStagingSnapshot().PendingUpdates) != 0 {
 		t.Fatalf("expected persisted edit to be undone")
 	}
 
@@ -111,8 +106,8 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesPersistedCellEdit(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlR})
 
 	// Assert
-	edits := model.staging.pendingUpdates["id=1"]
-	change, ok := edits.changes[1]
+	edits := model.currentStagingSnapshot().PendingUpdates["id=1"]
+	change, ok := edits.Changes[1]
 	if !ok {
 		t.Fatalf("expected persisted edit to be restored by redo")
 	}
@@ -141,7 +136,7 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesDeleteToggle(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
 
 	// Assert
-	if len(model.staging.pendingDeletes) != 1 {
+	if len(model.currentStagingSnapshot().PendingDeletes) != 1 {
 		t.Fatalf("expected delete toggle to be staged")
 	}
 
@@ -149,7 +144,7 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesDeleteToggle(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
 
 	// Assert
-	if len(model.staging.pendingDeletes) != 0 {
+	if len(model.currentStagingSnapshot().PendingDeletes) != 0 {
 		t.Fatalf("expected delete toggle to be undone")
 	}
 
@@ -157,7 +152,7 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesDeleteToggle(t *testing.T) {
 	model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlR})
 
 	// Assert
-	if len(model.staging.pendingDeletes) != 1 {
+	if len(model.currentStagingSnapshot().PendingDeletes) != 1 {
 		t.Fatalf("expected delete toggle to be redone")
 	}
 }

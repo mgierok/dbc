@@ -44,7 +44,15 @@ type StagedEdit struct {
 	Value StagedValue
 }
 
+type InsertDraftID string
+
 type PendingInsertRow struct {
+	Values       map[int]StagedEdit
+	ExplicitAuto map[int]bool
+}
+
+type InsertDraftSnapshot struct {
+	ID           InsertDraftID
 	Values       map[int]StagedEdit
 	ExplicitAuto map[int]bool
 }
@@ -56,4 +64,10 @@ type PendingRecordEdits struct {
 
 type PendingRecordDelete struct {
 	Identity RecordIdentity
+}
+
+type StagingSnapshot struct {
+	PendingInserts []InsertDraftSnapshot
+	PendingUpdates map[string]PendingRecordEdits
+	PendingDeletes map[string]PendingRecordDelete
 }

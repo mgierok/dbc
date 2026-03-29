@@ -187,6 +187,7 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 		name    string
 		command string
 		model   *Model
+		seed    stagingState
 	}{
 		{
 			name:    "short command in records",
@@ -206,15 +207,15 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 						},
 					},
 				},
-				staging: stagingState{
-					pendingInserts: []pendingInsertRow{
-						{
-							values: map[int]stagedEdit{
-								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-							},
-							explicitAuto: map[int]bool{},
+			},
+			seed: stagingState{
+				pendingInserts: []pendingInsertRow{
+					{
+						values: map[int]stagedEdit{
+							0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+							1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 						},
+						explicitAuto: map[int]bool{},
 					},
 				},
 			},
@@ -237,15 +238,15 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 						},
 					},
 				},
-				staging: stagingState{
-					pendingInserts: []pendingInsertRow{
-						{
-							values: map[int]stagedEdit{
-								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-							},
-							explicitAuto: map[int]bool{},
+			},
+			seed: stagingState{
+				pendingInserts: []pendingInsertRow{
+					{
+						values: map[int]stagedEdit{
+							0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+							1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 						},
+						explicitAuto: map[int]bool{},
 					},
 				},
 			},
@@ -268,15 +269,15 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 						},
 					},
 				},
-				staging: stagingState{
-					pendingInserts: []pendingInsertRow{
-						{
-							values: map[int]stagedEdit{
-								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-							},
-							explicitAuto: map[int]bool{},
+			},
+			seed: stagingState{
+				pendingInserts: []pendingInsertRow{
+					{
+						values: map[int]stagedEdit{
+							0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+							1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 						},
+						explicitAuto: map[int]bool{},
 					},
 				},
 			},
@@ -299,15 +300,15 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 						},
 					},
 				},
-				staging: stagingState{
-					pendingInserts: []pendingInsertRow{
-						{
-							values: map[int]stagedEdit{
-								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-							},
-							explicitAuto: map[int]bool{},
+			},
+			seed: stagingState{
+				pendingInserts: []pendingInsertRow{
+					{
+						values: map[int]stagedEdit{
+							0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+							1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 						},
+						explicitAuto: map[int]bool{},
 					},
 				},
 			},
@@ -330,19 +331,19 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 						},
 					},
 				},
-				staging: stagingState{
-					pendingInserts: []pendingInsertRow{
-						{
-							values: map[int]stagedEdit{
-								0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-								1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-							},
-							explicitAuto: map[int]bool{},
-						},
-					},
-				},
 				overlay: runtimeOverlayState{
 					recordDetail: recordDetailState{active: true},
+				},
+			},
+			seed: stagingState{
+				pendingInserts: []pendingInsertRow{
+					{
+						values: map[int]stagedEdit{
+							0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+							1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+						},
+						explicitAuto: map[int]bool{},
+					},
 				},
 			},
 		},
@@ -350,6 +351,9 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			model := tc.model
+			if len(tc.seed.pendingInserts) > 0 || len(tc.seed.pendingUpdates) > 0 || len(tc.seed.pendingDeletes) > 0 {
+				withTestStaging(model, tc.seed)
+			}
 
 			// Act
 			_, cmd := submitTypedRuntimeCommand(model, tc.command)
@@ -371,7 +375,7 @@ func TestHandleKey_CommandSaveAliasesStartSaveImmediately(t *testing.T) {
 
 func TestHandleKey_CommandSaveAndQuitStartsSaveImmediatelyWhenDirty(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: &spySaveChangesUseCase{},
 		read: runtimeReadState{
@@ -386,18 +390,17 @@ func TestHandleKey_CommandSaveAndQuitStartsSaveImmediatelyWhenDirty(t *testing.T
 				},
 			},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-						1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-					},
-					explicitAuto: map[int]bool{},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-	}
+	})
 
 	// Act
 	_, cmd := submitTypedRuntimeCommand(model, "wq")
@@ -622,15 +625,14 @@ func TestHandleKey_QKeyWithoutCommandPrefixKeepsSessionActive(t *testing.T) {
 
 func TestHandleKey_WKeyWithoutCommandPrefixDoesNotOpenSavePopup(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			focus:    FocusContent,
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{{}},
-		},
-	}
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{{}},
+	})
 
 	// Act
 	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})

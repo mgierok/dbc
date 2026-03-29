@@ -8,6 +8,11 @@ import (
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
+type pkColumn struct {
+	index  int
+	column dto.SchemaColumn
+}
+
 func (m *Model) recordValue(rowIndex, columnIndex int) string {
 	if rowIndex < 0 || rowIndex >= len(m.read.records) {
 		return ""
@@ -33,20 +38,20 @@ func (m *Model) recordCellEditableFromBrowse(rowIndex, columnIndex int) bool {
 	return editable[columnIndex]
 }
 
-func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (stagedEdit, bool) {
+func (m *Model) stagedEditForRow(rowIndex, columnIndex int) (dto.StagedEdit, bool) {
 	persistedIndex := m.persistedRowIndex(rowIndex)
 	if persistedIndex < 0 {
-		return stagedEdit{}, false
+		return dto.StagedEdit{}, false
 	}
 	key, ok := m.recordKeyForPersistedRow(persistedIndex)
 	if !ok {
-		return stagedEdit{}, false
+		return dto.StagedEdit{}, false
 	}
-	edits, ok := m.staging.pendingUpdates[key]
+	edits, ok := m.currentStagingSnapshot().PendingUpdates[key]
 	if !ok {
-		return stagedEdit{}, false
+		return dto.StagedEdit{}, false
 	}
-	edit, ok := edits.changes[columnIndex]
+	edit, ok := edits.Changes[columnIndex]
 	return edit, ok
 }
 

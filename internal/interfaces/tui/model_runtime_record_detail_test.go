@@ -289,7 +289,7 @@ func TestHandleKey_RecordDetailScrollMovesOffset(t *testing.T) {
 
 func TestRecordDetailContentLines_UsesStagedEffectiveValue(t *testing.T) {
 	// Arrange
-	model := &Model{
+	model := withTestStaging(&Model{
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			focus:    FocusContent,
@@ -303,16 +303,15 @@ func TestRecordDetailContentLines_UsesStagedEffectiveValue(t *testing.T) {
 				{Values: []string{"1", "alice"}},
 			},
 		},
-		staging: stagingState{
-			pendingUpdates: map[string]recordEdits{
-				"id=1": {
-					changes: map[int]stagedEdit{
-						1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-					},
+	}, stagingState{
+		pendingUpdates: map[string]recordEdits{
+			"id=1": {
+				changes: map[int]stagedEdit{
+					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
 				},
 			},
 		},
-	}
+	})
 
 	// Act
 	content := strings.Join(model.recordDetailContentLines(80), "\n")

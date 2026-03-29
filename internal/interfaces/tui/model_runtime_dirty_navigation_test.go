@@ -26,11 +26,10 @@ func TestHandleKey_DirtyConfigCommandOpensRuntimeDatabaseSelectorPopup(t *testin
 				ConnString: "/tmp/primary.sqlite",
 				Source:     DatabaseOptionSourceConfig,
 			}
-			model := &Model{
+			model := withTestStaging(&Model{
 				read:                        runtimeReadState{viewMode: ViewRecords},
-				staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
 				runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-			}
+			}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 
 			// Act
 			model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
@@ -59,11 +58,10 @@ func TestHandleKey_DirtyRuntimeDatabaseSelectionOpensReloadDecisionPrompt(t *tes
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
+	model := withTestStaging(&Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
-		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 	submitTypedRuntimeCommand(model, "config")
 
 	// Act
@@ -89,11 +87,10 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionCancelKeepsSelectorOpenAnd
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
+	model := withTestStaging(&Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
-		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 	submitTypedRuntimeCommand(model, "config")
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 
@@ -119,11 +116,10 @@ func TestHandleConfirmPopupKey_DirtyDatabaseTransitionDiscardClearsStateAndStart
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
+	model := withTestStaging(&Model{
 		read:                        runtimeReadState{viewMode: ViewRecords},
-		staging:                     stagingState{pendingInserts: []pendingInsertRow{{}}},
 		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 	submitTypedRuntimeCommand(model, "config")
 	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
@@ -154,7 +150,7 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
@@ -167,19 +163,18 @@ func TestUpdate_DirtyDatabaseTransitionSaveSuccessContinuesTransition(t *testing
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}
+	})
 	submitTypedRuntimeCommand(model, "edit")
 
 	// Act
@@ -213,7 +208,7 @@ func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(
 		ConnString: "/tmp/primary.sqlite",
 		Source:     DatabaseOptionSourceConfig,
 	}
-	model := &Model{
+	model := withTestStaging(&Model{
 		ctx:         context.Background(),
 		saveChanges: saveChanges,
 		read: runtimeReadState{
@@ -226,19 +221,18 @@ func TestUpdate_DirtyDatabaseTransitionSaveFailureKeepsStateAndBlocksTransition(
 			},
 			tables: []dto.Table{{Name: "users"}},
 		},
-		staging: stagingState{
-			pendingInserts: []pendingInsertRow{
-				{
-					values: map[int]stagedEdit{
-						0: {Value: dto.StagedValue{Text: "", Raw: ""}},
-						1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
-					},
-					explicitAuto: map[int]bool{},
+		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+					1: {Value: dto.StagedValue{Text: "new", Raw: "new"}},
 				},
+				explicitAuto: map[int]bool{},
 			},
 		},
-		runtimeDatabaseSelectorDeps: runtimeDatabaseSelectorDepsForTest(current),
-	}
+	})
 	submitTypedRuntimeCommand(model, "edit")
 
 	// Act
@@ -279,10 +273,9 @@ func TestHandleKey_DirtyQuitCommandOpensDecisionPrompt(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			model := &Model{
-				read:    runtimeReadState{viewMode: ViewRecords},
-				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
-			}
+			model := withTestStaging(&Model{
+				read: runtimeReadState{viewMode: ViewRecords},
+			}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 
 			// Act
 			_, cmd := submitTypedRuntimeCommand(model, tc.command)
@@ -318,10 +311,9 @@ func TestHandleKey_DirtyForcedQuitCommandDiscardsStateWithoutPrompt(t *testing.T
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			model := &Model{
-				read:    runtimeReadState{viewMode: ViewRecords},
-				staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
-			}
+			model := withTestStaging(&Model{
+				read: runtimeReadState{viewMode: ViewRecords},
+			}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 
 			// Act
 			_, cmd := submitTypedRuntimeCommand(model, tc.command)
@@ -345,10 +337,9 @@ func TestHandleKey_DirtyForcedQuitCommandDiscardsStateWithoutPrompt(t *testing.T
 
 func TestHandleConfirmPopupKey_DirtyQuitEscapeKeepsStagedState(t *testing.T) {
 	// Arrange
-	model := &Model{
-		read:    runtimeReadState{viewMode: ViewRecords},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
-	}
+	model := withTestStaging(&Model{
+		read: runtimeReadState{viewMode: ViewRecords},
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 	submitTypedRuntimeCommand(model, "quit")
 
 	// Act
@@ -366,10 +357,9 @@ func TestHandleConfirmPopupKey_DirtyQuitEscapeKeepsStagedState(t *testing.T) {
 
 func TestHandleConfirmPopupKey_DirtyQuitNKeyIsIgnored(t *testing.T) {
 	// Arrange
-	model := &Model{
-		read:    runtimeReadState{viewMode: ViewRecords},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
-	}
+	model := withTestStaging(&Model{
+		read: runtimeReadState{viewMode: ViewRecords},
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 	submitTypedRuntimeCommand(model, "quit")
 	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
@@ -388,10 +378,9 @@ func TestHandleConfirmPopupKey_DirtyQuitNKeyIsIgnored(t *testing.T) {
 
 func TestHandleConfirmPopupKey_DirtyQuitYKeyIsIgnored(t *testing.T) {
 	// Arrange
-	model := &Model{
-		read:    runtimeReadState{viewMode: ViewRecords},
-		staging: stagingState{pendingInserts: []pendingInsertRow{{}}},
-	}
+	model := withTestStaging(&Model{
+		read: runtimeReadState{viewMode: ViewRecords},
+	}, stagingState{pendingInserts: []pendingInsertRow{{}}})
 	submitTypedRuntimeCommand(model, "quit")
 
 	// Act

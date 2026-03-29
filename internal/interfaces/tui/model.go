@@ -180,6 +180,8 @@ type Model struct {
 	saveChanges                 saveChangesUseCase
 	translator                  *usecase.StagedChangesTranslator
 	stagingPolicy               *usecase.StagingPolicy
+	stagingSession              *usecase.StagingSession
+	stagingSnapshot             dto.StagingSnapshot
 	dirtyNavPolicy              *usecase.DirtyNavigationPolicy
 	runtimeSession              *RuntimeSessionState
 	runtimeDatabaseSelectorDeps *RuntimeDatabaseSelectorDeps
@@ -187,10 +189,10 @@ type Model struct {
 	styles                      primitives.RenderStyles
 	exitResult                  RuntimeExitResult
 
-	staging stagingState
-	read    runtimeReadState
-	overlay runtimeOverlayState
-	ui      runtimeUIState
+	stagingUI stagingUIState
+	read      runtimeReadState
+	overlay   runtimeOverlayState
+	ui        runtimeUIState
 }
 
 var _ tea.Model = (*Model)(nil)
