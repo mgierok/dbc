@@ -73,12 +73,10 @@
 - For feature changes, bug fixes, and behavior-impacting refactors, the agent MUST follow `TDD Rules`.
 - Before finalizing a non-documentation code change, the agent MUST run the applicable formatter, tests, and linter for the affected stack.
 - The agent MUST NOT add speculative abstractions, configurability, or extensibility that were not requested.
-- Changes MUST stay minimal and scoped to task intent.
-- Changes MUST stay surgical; every changed line MUST map directly to task intent.
-- The agent MUST NOT refactor adjacent or orthogonal code unless explicitly requested.
+- Changes MUST stay minimal, surgical, and scoped to task intent; every changed line MUST map directly to task intent.
 - The agent SHOULD prefer decomposition or simplification that removes mixed responsibilities, duplicated orchestration, unstable change coupling, unnecessary complexity, unnecessary nesting, redundancy, or over-abstraction, but it MUST keep cohesive workflows together when splitting would add indirection without architectural gain.
 - The agent MUST NOT simplify in a way that merges distinct concerns, weakens separation of responsibilities, or makes debugging harder.
-- If unrelated issues are discovered, the agent MUST report them separately instead of changing them.
+- Adjacent, orthogonal, or otherwise unrelated issues MUST NOT be changed unless explicitly requested and MUST be reported separately when discovered.
 
 Quick examples:
 
