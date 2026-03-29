@@ -6,9 +6,9 @@
 - The agent MUST communicate with the user in Polish by default.
 - The agent MUST use English for identifiers, code, plans, internal technical documentation, and operational artifacts.
 - Exception: The agent MAY use another language for direct user communication when the user explicitly requests it.
-- If documentation that describes current state conflicts with current code behavior, the agent MUST treat current code as the factual current state.
-- If current code conflicts with canonical rules in `AGENTS.md` or `docs/clean-architecture-ddd.md`, the agent MUST treat the code as factual current state but MUST NOT use that conflict to justify future changes.
-- When the task touches a material conflict between current code and canonical rules, the agent MUST report that drift explicitly.
+- If current code conflicts with documentation that describes current state, or with canonical rules in `AGENTS.md` or `docs/clean-architecture-ddd.md`, the agent MUST treat current code as the factual current state.
+- The agent MUST treat such conflicts as drift and MUST NOT use them to justify, extend, normalize, or preserve future changes.
+- When the task touches material drift between current code and documentation or canonical rules, the agent MUST report that drift explicitly.
 
 ## Source Documents
 
@@ -32,7 +32,6 @@
 - The agent MUST use `docs/clean-architecture-ddd.md` as the canonical architecture guide for all future code changes.
 - The agent MUST treat `docs/technical-documentation.md` as a description of current implementation state, not as the canonical source of future architecture rules.
 - The agent MUST treat `docs/product-documentation.md` as a description of current product behavior, not as the canonical source of internal implementation rules.
-- If current code conflicts with `docs/clean-architecture-ddd.md`, the agent MUST treat the code as factual current state but MUST NOT extend, normalize, or justify the conflict for future changes.
 
 #### Dependency Boundaries
 
