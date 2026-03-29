@@ -139,6 +139,8 @@ When adding or changing instructions:
 - Source-document routing guidance SHOULD be colocated with the decision area it governs, or kept in a small dedicated section when that is clearer; it SHOULD NOT be duplicated across both.
 - Sections that point to source documents SHOULD state what operational questions those documents answer for the agent.
 - `AGENTS.md` sections such as architecture or dependencies/toolchain SHOULD stay governance-focused and SHOULD NOT restate detailed technical facts already delegated to source documents, unless a short enforcement summary materially improves compliance.
+- When a canonical source document uses generic architecture terminology that does not directly match repository package naming, `AGENTS.md` SHOULD include a short terminology bridge for interpretation-critical mappings.
+- Such a terminology bridge MUST stay limited to mappings needed for correct rule application and MUST NOT expand into a full current-state package inventory.
 
 ### Editing Discipline
 
@@ -151,6 +153,7 @@ When editing `AGENTS.md`:
 5. Whenever Markdown headings are changed (title or numeric prefix), the agent MUST update inbound heading references across the repository in the same change set.
 6. If source-of-truth document guidance exists, it SHOULD appear near the guardrails that depend on it, either immediately before them or colocated within the governing section.
 7. Standalone documentation-policy sections SHOULD be removed when their content fits more cleanly into global rules or colocated source-document guidance.
+8. If a generic-to-repository terminology mismatch would otherwise force agents to infer boundary mappings, the agent SHOULD add or refine a concise terminology bridge in `AGENTS.md` instead of leaving the interpretation implicit.
 
 ## Anti-Patterns and Quality Checks
 
@@ -165,6 +168,7 @@ When editing `AGENTS.md`:
 - Mixed formatting conventions for equivalent structures in the same governance file (`AGENTS.md` or `SKILL.md`).
 - Architecture or dependency sections in `AGENTS.md` that mostly duplicate facts already assigned to source documents without adding concise enforcement guidance.
 - Source-document guidance that only lists file names without stating what the agent should use each file for.
+- Architecture governance that relies on generic terms from a canonical document while leaving repository-specific boundary mappings implicit when that ambiguity can affect change placement.
 
 ### Final Quality Gate
 

@@ -30,6 +30,8 @@
 
 - The agent MUST use `docs/clean-architecture-ddd.md` as the canonical architecture source for all future code changes, including boundary placement, dependency direction, logic placement, ports/adapters decisions, and application vs adapter responsibilities.
 - The agent MUST treat `docs/technical-documentation.md` as a current-state reference, not as the canonical source of future architecture rules.
+- The agent MUST interpret generic architecture terms from `docs/clean-architecture-ddd.md` through this repository's package naming when classifying or placing changes.
+- In this repository, `interface adapters` map to `internal/interfaces/**`, `infrastructure adapters` map to `internal/infrastructure/**`, and the composition root/startup wiring maps to `cmd/dbc`.
 
 #### Dependency Boundaries
 
