@@ -6,14 +6,16 @@
 - The agent MUST communicate with the user in Polish by default.
 - The agent MUST use English for identifiers, code, plans, internal technical documentation, and operational artifacts.
 - Exception: The agent MAY use another language for direct user communication when the user explicitly requests it.
-- If any documentation conflicts with current code behavior, the agent MUST treat current code as factual state.
+- If documentation that describes current state conflicts with current code behavior, the agent MUST treat current code as the factual current state.
+- If current code conflicts with canonical rules in `AGENTS.md` or `docs/clean-architecture-ddd.md`, the agent MUST treat the code as factual current state but MUST NOT use that conflict to justify future changes.
+- When the task touches a material conflict between current code and canonical rules, the agent MUST report that drift explicitly.
 
 ## Source Documents
 
-- `docs/technical-documentation.md` MUST be used as the primary source for architecture boundaries, dependency direction, component responsibilities, technical contracts, supported stack versions, and operational constraints.
-- `docs/product-documentation.md` MUST be used as the primary source for user-visible behavior, workflows, interaction rules, product constraints, and current non-goals.
+- `docs/technical-documentation.md` MUST be used as the primary source for current implementation state, current code structure, current technical contracts and mechanisms, current technical constraints, and known drift.
+- `docs/product-documentation.md` MUST be used as the primary source for current user-visible product state, current workflows, current interaction rules, current non-goals, and user-visible constraints.
 - `README.md` SHOULD be used for repository entry context, including product summary, supported environments, installation prerequisites, and basic run commands.
-- `docs/clean-architecture-ddd.md` SHOULD be used for non-trivial architecture work, especially boundary changes, dependency-direction decisions, and new ports/adapters.
+- `docs/clean-architecture-ddd.md` MUST be used as the canonical architecture source for boundary placement, dependency direction, logic placement, ports/adapters decisions, and application vs adapter responsibilities.
 - `docs/test-driven-development.md` MUST be used as the normative TDD reference for behavior-impacting changes, test strategy updates, and Red-Green-Refactor decisions.
 
 ## Engineering Guardrails
@@ -25,10 +27,37 @@
 
 ### Architecture
 
-The agent MUST use `docs/technical-documentation.md#architecture-and-boundaries` as the primary architecture guide.
-For non-trivial architecture work, the agent SHOULD consult `docs/clean-architecture-ddd.md`, especially for boundary changes, dependency-direction decisions, and new ports/adapters.
+#### Architecture Authority and Interpretation
 
-- The agent MUST preserve the architecture boundaries and dependency direction defined in `docs/technical-documentation.md`.
+- The agent MUST use `docs/clean-architecture-ddd.md` as the canonical architecture guide for all future code changes.
+- The agent MUST treat `docs/technical-documentation.md` as a description of current implementation state, not as the canonical source of future architecture rules.
+- The agent MUST treat `docs/product-documentation.md` as a description of current product behavior, not as the canonical source of internal implementation rules.
+- If current code conflicts with `docs/clean-architecture-ddd.md`, the agent MUST treat the code as factual current state but MUST NOT extend, normalize, or justify the conflict for future changes.
+
+#### Dependency Boundaries
+
+- Allowed dependency direction MUST remain `interfaces -> application -> domain` and `infrastructure -> application/domain`.
+- `internal/domain/**` MUST NOT import `internal/application/**`, `internal/interfaces/**`, or `internal/infrastructure/**`.
+- `internal/application/**` MUST NOT import `internal/interfaces/**` or `internal/infrastructure/**`.
+- Repository interfaces MUST belong to the inner layers, and repository implementations MUST live in infrastructure adapters.
+- Interface adapters MUST NOT import infrastructure adapters directly.
+
+#### Logic Placement
+
+- `internal/interfaces/**` MUST be limited to input handling, presentation, interaction-local state, DTO mapping, and use-case invocation.
+- `internal/interfaces/**` MUST NOT own business rules, decision policies, workflow orchestration, identity derivation, persistence semantics, or state-transition policy.
+- `internal/interfaces/tui/**` MUST remain an interface adapter and MUST NOT absorb business behavior that belongs to the domain or use cases.
+- Use cases MUST own application workflow orchestration and cross-component decision flow, but they MUST NOT absorb domain invariants or domain rules that belong in domain models or domain services.
+
+#### Change Placement Rules
+
+- When a new behavior is added, the agent MUST classify it as domain, application, interface adapter, or infrastructure before implementation.
+- Minimal or surgical change scope MUST NOT be used as justification for placing logic in the wrong architectural layer.
+- When adding functionality that changes behavior, the agent MUST prefer implementation flow from inner layers outward: domain, use case, port, infrastructure adapter, then UI adapter.
+- For adapter-only or infrastructure-only changes, the inner-layer steps MAY be no-op only when the change does not introduce application logic, business rules, or workflow decisions; architecture boundaries and dependency direction MUST still be preserved.
+
+#### Architecture Maintainability Preferences
+
 - The agent MUST treat human and AI discoverability as first-class quality concerns.
 - The agent SHOULD prefer structures where the likely change location is predictable from naming, boundaries, and module ownership.
 - The agent SHOULD prefer interface-driven changes through application ports instead of adapter-to-adapter coupling.
@@ -36,11 +65,6 @@ For non-trivial architecture work, the agent SHOULD consult `docs/clean-architec
 - The agent MUST NOT split files, packages, or modules only to reduce size, only to reduce token usage, or only to satisfy a generic granularity preference.
 - The agent MAY treat lower token consumption, smaller review surface, and easier navigation as secondary benefits when a decomposition is already justified by cohesion, boundary clarity, testability, or reduced change blast radius.
 - When proposing or applying decomposition, the agent MUST be able to name the architectural seam or responsibility split that justifies it.
-
-#### Architecture Rules for New Features
-
-- When adding functionality that changes behavior, the agent MUST prefer implementation flow from inner layers outward: domain, use case, port, infrastructure adapter, then UI adapter.
-- For adapter-only or infrastructure-only changes that do not change domain behavior, the inner-layer steps MAY be no-op, but architecture boundaries and dependency direction MUST still be preserved.
 
 ### Development Standards
 
