@@ -56,8 +56,10 @@ func (r *RuntimeDatabaseTargetResolver) Resolve(current RuntimeDatabaseOption, c
 		ConnString: trimmedConnString,
 		Source:     RuntimeDatabaseOptionSourceCLI,
 	}
+	matchedConfiguredOption := false
 	if matched, ok := resolveConfiguredRuntimeDatabaseOption(trimmedConnString, configuredOptions); ok {
 		resolvedOption = matched
+		matchedConfiguredOption = true
 	}
 
 	target := RuntimeDatabaseTarget{
@@ -65,7 +67,7 @@ func (r *RuntimeDatabaseTargetResolver) Resolve(current RuntimeDatabaseOption, c
 		TransitionKind: RuntimeDatabaseTransitionOpenDifferent,
 	}
 	if sqliteidentity.Equivalent(resolvedOption.ConnString, current.ConnString) {
-		if strings.TrimSpace(current.ConnString) != "" {
+		if !matchedConfiguredOption && strings.TrimSpace(current.ConnString) != "" {
 			target.Option = current
 		}
 		target.TransitionKind = RuntimeDatabaseTransitionReloadCurrent

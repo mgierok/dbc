@@ -65,7 +65,16 @@ func (m *Model) startSaveForPendingNavigation() (tea.Model, tea.Cmd) {
 	if m.ui.pendingNavigation == nil {
 		return m, nil
 	}
-	return m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveOnly)
+	model, cmd := m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveOnly)
+	if m.ui.saveInFlight {
+		return model, cmd
+	}
+	m.ui.pendingNavigation = nil
+	if m.ui.pendingCommandInput != "" {
+		m.restoreEditingCommandInput(m.ui.pendingCommandInput)
+	}
+	m.ui.pendingCommandInput = ""
+	return model, cmd
 }
 
 func (m *Model) applyRuntimeSaveRequestDecision(decision usecase.RuntimeSaveRequestDecision) (tea.Model, tea.Cmd) {

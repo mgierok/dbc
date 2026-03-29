@@ -57,6 +57,40 @@ func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConnStringReloadsCurren
 	}
 }
 
+func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConfiguredTargetPreservesConfiguredIdentityOnReload(t *testing.T) {
+	// Arrange
+	resolver := usecase.NewRuntimeDatabaseTargetResolver()
+	currentPath := filepath.Join(t.TempDir(), "primary.sqlite")
+	current := usecase.RuntimeDatabaseOption{
+		Name:       currentPath,
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceCLI,
+	}
+	configured := usecase.RuntimeDatabaseOption{
+		Name:       "primary",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+
+	// Act
+	target, err := resolver.Resolve(
+		current,
+		[]usecase.RuntimeDatabaseOption{configured},
+		currentPath+string(os.PathSeparator)+".",
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if target.TransitionKind != usecase.RuntimeDatabaseTransitionReloadCurrent {
+		t.Fatalf("expected reload-current transition, got %v", target.TransitionKind)
+	}
+	if target.Option != configured {
+		t.Fatalf("expected configured identity %+v, got %+v", configured, target.Option)
+	}
+}
+
 func TestRuntimeDatabaseTargetResolver_Resolve_ConfiguredMatchWinsOverAnonymousCLIEquivalent(t *testing.T) {
 	// Arrange
 	resolver := usecase.NewRuntimeDatabaseTargetResolver()

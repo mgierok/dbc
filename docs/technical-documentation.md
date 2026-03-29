@@ -61,7 +61,7 @@
 
 - Guarantee: dirty table switch, runtime database reload/open, and runtime quit are planned in one application-level navigation workflow instead of being classified directly in the TUI adapter.
 - Guarantee: runtime dirty confirm popups render application-provided decision IDs and labels; the TUI does not keep separate dirty-flow enums for table switch, database transition, or quit semantics.
-- Guarantee: successful save after a dirty database navigation request resumes the pending application action, while save failure keeps that pending action and restores submitted `:edit` command input when needed.
+- Guarantee: successful save after a dirty database navigation request resumes the pending application action; async save failure keeps that pending action and restores submitted `:edit` command input when needed, while a save request that does not start synchronously clears the adapter-local pending navigation state and restores submitted `:edit` input instead of leaving orphaned continuation state.
 - Guarantee: adapter-side execution remains limited to switching to a resolved table name, quitting runtime, or exiting with `OpenDatabaseNext`.
 - Enforced in: `internal/application/usecase/runtime_navigation_workflow.go`, `internal/application/usecase/runtime_database_target_resolver.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_runtime_database_transition.go`, `internal/interfaces/tui/model_runtime_update.go`.
 
@@ -144,7 +144,7 @@
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
 - Runtime startup opens one initial `RuntimeRunDeps` bundle, including the runtime save workflow, runtime navigation workflow, and shared database-target resolver, and `internal/interfaces/tui.Run(...)` returns a `RuntimeExitResult` that either quits normally or requests reopening a selected database.
-- Runtime-initiated reopen requests carry a fully resolved `DatabaseOption`, including whether the target is config-backed or CLI-scoped.
+- Runtime-initiated reopen requests carry a fully resolved `DatabaseOption`, including whether the target is config-backed or CLI-scoped; for same-target reloads, configured identity survives when the resolver found an equivalent config-backed option, while fallback to the current runtime identity is used only when no configured match exists.
 
 ### Configuration Contract
 

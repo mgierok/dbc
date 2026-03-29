@@ -322,6 +322,122 @@ func TestHandleConfirmPopupKey_SaveDecisionForPendingDatabaseNavigationStartsSav
 	}
 }
 
+func TestHandleConfirmPopupKey_SaveDecisionForPendingDatabaseNavigationCleansPendingStateWhenSaveFailsBeforeStart(t *testing.T) {
+	// Arrange
+	model := withTestStaging(&Model{
+		saveChanges: &spySaveChangesUseCase{},
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+		overlay: runtimeOverlayState{
+			confirmPopup: confirmPopup{
+				active: true,
+				options: []confirmOption{
+					{label: "Save and reload database", decisionID: usecase.DirtyDecisionSave},
+				},
+			},
+		},
+		ui: runtimeUIState{
+			pendingNavigation: &usecase.PendingRuntimeNavigation{
+				Action: usecase.RuntimeNavigationAction{
+					Kind: usecase.RuntimeNavigationActionOpenDatabase,
+					DatabaseTarget: usecase.RuntimeDatabaseTarget{
+						Option:         runtimeDatabaseOptionFromSelectorOption(runtimeTestDatabaseOption()),
+						TransitionKind: usecase.RuntimeDatabaseTransitionReloadCurrent,
+					},
+				},
+			},
+			pendingCommandInput: "edit",
+		},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "", Raw: ""}},
+				},
+				explicitAuto: map[int]bool{},
+			},
+		},
+	})
+
+	// Act
+	_, cmd := model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected synchronous save-start failure not to return async command")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected failed pre-save path not to enter save-in-flight state")
+	}
+	if model.ui.pendingNavigation != nil {
+		t.Fatalf("expected pending navigation cleanup after pre-save failure, got %+v", model.ui.pendingNavigation)
+	}
+	if model.ui.pendingCommandInput != "" {
+		t.Fatalf("expected pending command input cleanup after pre-save failure, got %q", model.ui.pendingCommandInput)
+	}
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to reopen after pre-save failure")
+	}
+	if model.overlay.commandInput.value != "edit" {
+		t.Fatalf("expected restored :edit input, got %q", model.overlay.commandInput.value)
+	}
+	if model.ui.statusMessage != `Error: value for column "name" is required` {
+		t.Fatalf("expected validation error status, got %q", model.ui.statusMessage)
+	}
+}
+
+func TestStartSaveForPendingNavigation_CleansPendingStateWhenSaveIsImmediateNoOp(t *testing.T) {
+	// Arrange
+	model := &Model{
+		ui: runtimeUIState{
+			pendingNavigation: &usecase.PendingRuntimeNavigation{
+				Action: usecase.RuntimeNavigationAction{
+					Kind: usecase.RuntimeNavigationActionOpenDatabase,
+					DatabaseTarget: usecase.RuntimeDatabaseTarget{
+						Option:         runtimeDatabaseOptionFromSelectorOption(runtimeTestDatabaseOption()),
+						TransitionKind: usecase.RuntimeDatabaseTransitionReloadCurrent,
+					},
+				},
+			},
+			pendingCommandInput: "edit",
+		},
+	}
+
+	// Act
+	_, cmd := model.startSaveForPendingNavigation()
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected immediate no-op save path not to return async command")
+	}
+	if model.ui.saveInFlight {
+		t.Fatal("expected immediate no-op save path not to enter save-in-flight state")
+	}
+	if model.ui.pendingNavigation != nil {
+		t.Fatalf("expected pending navigation cleanup after no-op save path, got %+v", model.ui.pendingNavigation)
+	}
+	if model.ui.pendingCommandInput != "" {
+		t.Fatalf("expected pending command input cleanup after no-op save path, got %q", model.ui.pendingCommandInput)
+	}
+	if !model.overlay.commandInput.active {
+		t.Fatal("expected :edit spotlight to reopen after no-op save path")
+	}
+	if model.overlay.commandInput.value != "edit" {
+		t.Fatalf("expected restored :edit input, got %q", model.overlay.commandInput.value)
+	}
+	if model.ui.statusMessage != "No changes to save" {
+		t.Fatalf("expected no-op save status, got %q", model.ui.statusMessage)
+	}
+}
+
 func TestRequestSaveChanges_StartsSaveImmediatelyFromSchemaWithDirtyStateStartedInRecords(t *testing.T) {
 	// Arrange
 	model := withTestStaging(&Model{

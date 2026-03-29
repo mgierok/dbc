@@ -33,6 +33,7 @@ Current product value and scope:
 - `:set limit=<n>` accepts only whole-number values in the range `1..1000`. Invalid `:set limit` input keeps the previous limit unchanged and surfaces an explicit validation error.
 - A successful `:set limit=<n>` replaces any earlier runtime-local value, is never persisted into config, resets to the default `20` after a runtime-initiated reopen, and resets persisted-record pagination to page `1`. If Records view is already open, records reload immediately with the new limit.
 - If `:config` / `:c` or `:edit` / `:e` is invoked while staged changes exist, DBC requires an explicit `save`, `discard`, or `cancel` decision before navigation.
+- If dirty `:edit` navigation does not complete because the selected `save` path fails before or after save start, DBC keeps the current runtime active, preserves staged changes, shows the error, and restores the submitted `edit` command in the spotlight so the user can retry or adjust the target.
 
 ### Main Layout and Focus Model
 
@@ -108,6 +109,7 @@ Current product value and scope:
 - While save is in progress, runtime navigation and command entry are temporarily blocked until the save result arrives.
 - On save success, staged state is cleared, the status line reports the number of saved affected rows, and records reload for the current table with the active filter and sort still applied.
 - On save failure, staged state is retained and the error is shown in the status line.
+- When a dirty `:edit` navigation chooses `save` but the save does not complete the navigation, DBC restores the submitted `edit` command in the spotlight instead of leaving the session in a stuck pending-navigation state.
 - Attempting to switch tables with unsaved changes opens a `Switch Table` decision popup that warns about unsaved-change loss using the affected-row count and requires an explicit discard decision before the table switch proceeds.
 - Invoking `:config` / `:c` or `:edit` / `:e` with unsaved changes blocks navigation until the user explicitly chooses `save`, `discard`, or `cancel`.
 - A successful runtime-initiated database reopen starts a fresh runtime in the safe base state (`Tables` focus + `Schema` view), resets `:set limit=<n>` to the default `20`, and does not restore the previous table, filter, sort, page, record selection, or record detail even when reopening the same database.
