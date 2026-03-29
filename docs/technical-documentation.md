@@ -2,26 +2,28 @@
 
 ## Technical Overview
 
+- This document describes the current factual implementation state and helps readers navigate the repository as it exists today.
+- Canonical architecture guidance for future changes lives in `docs/clean-architecture-ddd.md`, and operational agent rules live in `AGENTS.md`.
 - DBC is a terminal SQLite data browser/editor written in Go.
 - Runtime behavior is split into read operations through application ports and staged write operations applied only on explicit save.
-- The implementation follows Clean Architecture / DDD-style boundaries with inward dependency direction.
+- The current package layout is organized around Clean Architecture / DDD-style boundaries with inward dependency direction.
 - Current implementation target is macOS/Linux runtime with SQLite as the only engine.
 
 ## Architecture and Boundaries
 
-### Dependency Invariants
+### Current Dependency Shape
 
-- Allowed dependency direction: `interfaces -> application -> domain` and `infrastructure -> application/domain`.
-- Domain layer MUST NOT import `application`, `interfaces`, or `infrastructure`.
-- Application layer MUST NOT import `interfaces` or `infrastructure`.
-- Interface adapters MUST NOT import infrastructure adapters directly.
+- The current dependency shape is `interfaces -> application -> domain` and `infrastructure -> application/domain`.
+- Current imports keep the domain layer isolated from `application`, `interfaces`, and `infrastructure`.
+- Current imports keep the application layer isolated from `interfaces` and `infrastructure`.
+- Current interface adapters do not import infrastructure adapters directly.
 
 ### Boundary Contracts
 
-- Database access is behind `internal/application/port.Engine`.
-- Use cases orchestrate behavior against ports and stay independent from SQLite-specific details.
-- TUI remains an adapter layer and delegates business behavior to use cases.
-- Infrastructure packages implement boundary ports (`Engine`, `ConfigStore`, `DatabaseConnectionChecker`).
+- Database access currently goes through `internal/application/port.Engine`.
+- Use cases currently orchestrate behavior against ports and stay independent from SQLite-specific details.
+- The TUI currently acts as the terminal interface adapter and delegates application behavior to use cases while retaining interaction-local state.
+- Infrastructure packages currently implement boundary ports (`Engine`, `ConfigStore`, `DatabaseConnectionChecker`).
 
 ## Components and Responsibilities
 
@@ -88,7 +90,7 @@
 ### SQLite Schema Introspection
 
 - Guarantee: schema reads keep using SQLite PRAGMA introspection and expose per-column metadata for name, type, nullability, primary-key membership, single-column uniqueness, default value, autoincrement, and foreign-key references.
-- Guarantee: single-column `UNIQUE` is derived from `PRAGMA index_list(...)` plus `PRAGMA index_info(...)`; composite unique memberships MUST NOT be surfaced as per-column `UNIQUE`, and primary-key columns MUST NOT be duplicated as `UNIQUE`.
+- Guarantee: single-column `UNIQUE` is derived from `PRAGMA index_list(...)` plus `PRAGMA index_info(...)`; composite unique memberships are not surfaced as per-column `UNIQUE`, and primary-key columns are not duplicated as `UNIQUE`.
 - Guarantee: foreign-key references are derived from `PRAGMA foreign_key_list(...)` and mapped per source column, including composite foreign keys.
 - Enforced in: `internal/infrastructure/engine/sqlite_record_materialization.go`, `internal/infrastructure/engine/sqlite_engine.go`.
 
@@ -102,7 +104,7 @@
 
 - Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
 - Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts, and all of them are disabled while `saveInFlight` is active.
-- Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, but remains the single source of truth for runtime/selector input semantics.
+- Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, while remaining the central definition point for runtime/selector input semantics.
 - Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
 - Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_command_context.go`, `internal/interfaces/tui/model_staging_save_flow.go`.
 
@@ -118,16 +120,10 @@
 
 - Guarantee: runtime and selector models resolve their styling profile once at construction time and render deterministically from that profile.
 - Guarantee: TUI emphasis uses only ANSI SGR attributes (`bold`, `faint`, `underline`, `reverse`, `strike`) on the terminal's current foreground/background theme; the application does not define its own color palette.
-- Guarantee: every user-visible TUI text MUST be assigned a semantic role before final ANSI rendering; plain text MAY remain only for structural layout elements without standalone semantic meaning.
-- Guarantee: semantic roles are the single source of truth for TUI visual meaning across normal and backdrop rendering profiles.
+- Guarantee: the current renderer assigns every user-visible TUI text a semantic role before final ANSI rendering; plain text remains only for structural layout elements without standalone semantic meaning.
+- Guarantee: semantic roles remain the central meaning-to-style mapping across normal and backdrop rendering profiles.
 - Guarantee: the active semantic-role catalog is `Body`, `Muted`, `Title`, `Header`, `Summary`, `Label`, `Dirty`, `Error`, `Selected`, `Deleted`, and `SelectedDeleted`.
-- Guarantee: `Body` is the default user-content role for regular values, rows, selector content, popup rows, and command input content.
-- Guarantee: `Muted` is reserved for secondary helper text such as contextual hints and scroll indicators.
-- Guarantee: `Title` is reserved for panel and popup titles; `Header` is reserved for structural headers inside content such as column and field names.
-- Guarantee: `Summary` is reserved for short contextual state summaries; `Label` is reserved for label-value prefixes such as `Table:` or `Path:`.
-- Guarantee: `Dirty` is reserved for explicit unsaved-change tokens; `Error` is reserved for validation and runtime error content.
-- Guarantee: `Selected`, `Deleted`, and `SelectedDeleted` are reserved for interactive stateful content and MUST be preferred over local ANSI overrides for selected or delete-marked rows.
-- Guarantee: role selection MUST prefer an existing semantic role first; a new role MAY be added only when a text category has a stable distinct meaning and requires a different style mapping in at least one active render profile.
+- Guarantee: regular content, helper text, structural headers, dirty/error states, and selected/delete-marked rows each map through those semantic roles instead of ad hoc local ANSI overrides.
 - Guarantee: runtime background rendering accepts an explicit render-style profile, so the shared runtime overlay presenter can render the background in a backdrop variant while keeping overlay content in the normal profile.
 - Guarantee: the backdrop variant stays terminal-theme-driven and uses only subdued ANSI attributes; it does not introduce an application-defined palette or colorscheme detection.
 - Guarantee: setting `NO_COLOR` or running with `TERM=dumb` disables ANSI styling and falls back to plain text rendering without changing the shared overlay composition path.
@@ -162,14 +158,14 @@
 
 - Schema read contracts (`model.Column` and `dto.SchemaColumn`) carry `Name`, `Type`, `Nullable`, `PrimaryKey`, `Unique`, `DefaultValue`, `AutoIncrement`, and zero or more foreign-key references; `dto.SchemaColumn` additionally carries ordered precomputed `MetadataBadges` for adapter rendering.
 - Foreign-key references are value objects with `Table` and optional `Column`; when SQLite does not expose a referenced column name, the contract keeps `Column` empty instead of synthesizing one.
-- The application `GetSchema` use case preserves schema meaning while mapping the richer engine/domain contract into TUI-facing DTOs and is the single source of truth for metadata-badge projection used by `Schema` and record-detail rendering.
+- The application `GetSchema` use case preserves schema meaning while mapping the richer engine/domain contract into TUI-facing DTOs and remains the central mapping point for metadata-badge projection used by `Schema` and record-detail rendering.
 
 ### Record Identity and Change Payload Contract
 
 - Persisted-row updates/deletes require non-empty identity keys.
 - Identity keys are derived from primary-key columns and carried as typed staged values (`Text`, `IsNull`, optional `Raw`).
-- Read-path record contracts (`model.Record` and `dto.RecordRow`) may provide precomputed row key + identity, and staged-change translation MUST prefer that precomputed identity over reparsing rendered values.
-- If any primary-key component exceeds the browse materialization safety cap, the read contract marks row identity unavailable instead of materializing an oversized key; edit/delete MUST then stay blocked for that row.
+- Read-path record contracts (`model.Record` and `dto.RecordRow`) may provide precomputed row key + identity, and staged-change translation prefers that precomputed identity over reparsing rendered values.
+- If any primary-key component exceeds the browse materialization safety cap, the read contract marks row identity unavailable instead of materializing an oversized key; edit/delete then stay blocked for that row.
 - Application/domain write contracts do not depend on SQLite `rowid`.
 
 ### Records Page Contract
@@ -178,7 +174,7 @@
 - Browse materialization is bounded to `256 KiB` per cell on read paths.
 - Oversized non-BLOB cells render as `<truncated N bytes>`.
 - `BLOB` cells render as size placeholders (`<blob N bytes>` / `<blob truncated N bytes>`) instead of raw binary/text coercions.
-- Per-cell browse-edit safety metadata marks synthetic placeholders as not editable-from-browse; the TUI MUST block direct popup entry for such persisted cells unless a staged value already exists for that cell.
+- Per-cell browse-edit safety metadata marks synthetic placeholders as not editable-from-browse; the TUI blocks direct popup entry for such persisted cells unless a staged value already exists for that cell.
 - Materialized display aliases stay internal to the projection, while `ORDER BY` continues to target the raw table columns so sort semantics remain identical to stored SQLite values.
 - `HasMore` is computed via look-ahead (`LIMIT limit+1`).
 - Runtime records page limit defaults to `20`, but page loads and total-page calculations use the effective runtime-local limit from runtime state.
@@ -213,69 +209,63 @@
 
 ### SQLite-First with Engine Port
 
-- Decision: keep one production engine (SQLite) behind application engine port.
+- Current decision: one production engine (SQLite) sits behind the application engine port.
 - Rationale: low infrastructure complexity now, explicit seam for later engine extensions.
 - Where: `internal/application/port/engine.go`, `internal/infrastructure/engine/sqlite_engine.go`.
 
 ### Staged Edits Before Save
 
-- Decision: write operations are staged first and persisted only on explicit save.
+- Current decision: write operations are staged first and persisted only on explicit save.
 - Rationale: explicit write boundary and recoverable in-session edit workflow.
 - Where: `internal/interfaces/tui/model_staging_*.go`, `internal/application/usecase/save_table_changes.go`.
 
 ### Primary-Key Identity for Persisted Writes
 
-- Decision: persisted update/delete operations use primary-key-derived identities.
+- Current decision: persisted update/delete operations use primary-key-derived identities.
 - Rationale: stable app/domain contract without SQLite `rowid` coupling.
 - Where: `internal/application/usecase/staged_changes_translator.go`, `internal/domain/model/update.go`.
 
 ### Strict Startup Contract with Explicit Direct-Launch Failure
 
-- Decision: keep strict argument validation and fail-fast direct-launch behavior.
+- Current decision: startup keeps strict argument validation and fail-fast direct-launch behavior.
 - Rationale: deterministic automation behavior and clearer startup failure semantics.
 - Where: `cmd/dbc/main.go`, `cmd/dbc/startup_runtime.go`.
 
 ### JSON-Only Config
 
-- Decision: support only `config.json` at runtime.
+- Current decision: runtime supports only `config.json`.
 - Rationale: keep config handling isolated in one adapter and use only Go stdlib JSON handling.
 - Where: `internal/infrastructure/config/config.go`.
 
 ### Centralized Keybinding and Command Registry
 
-- Decision: keep shortcut bindings, command aliases, parameterized runtime commands, and help/status hints centralized in `internal/interfaces/tui/internal/primitives`, split by concern rather than reintroduced through adapter-local bridge files.
+- Current decision: shortcut bindings, command aliases, parameterized runtime commands, and help/status hints stay centralized in `internal/interfaces/tui/internal/primitives`, split by concern rather than reintroduced through adapter-local bridge files.
 - Rationale: prevent drift between key handlers, command parsing, and rendered guidance while keeping the shared primitives surface discoverable after registry decomposition.
 - Where: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`.
 
 ### Session-Scoped Runtime Overrides
 
-- Decision: keep runtime-only overrides, including the records page limit, inside one runtime instance instead of persisting them to config or carrying them across runtime-initiated reopen.
+- Current decision: runtime-only overrides, including the records page limit, stay inside one runtime instance instead of being persisted to config or carried across runtime-initiated reopen.
 - Rationale: preserve temporary local behavior without mutating the config contract and keep reopened runtimes deterministic.
 - Where: `internal/interfaces/tui/app.go`, `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_runtime_record_limit.go`, `internal/interfaces/tui/runtime_session.go`.
 
 ### Selector-First Decomposition Inside The TUI Adapter
 
-- Decision: keep `internal/interfaces/tui` as the public facade/runtime package, isolate selector workflow plus low-level terminal UI primitives in internal subpackages, keep runtime write-side state behind `Model.staging`, centralize runtime overlay dispatch in one runtime presenter, and reuse one selector controller across a startup host and a runtime popup host.
+- Current decision: `internal/interfaces/tui` remains the public facade/runtime package, selector workflow plus low-level terminal UI primitives stay isolated in internal subpackages, runtime write-side state stays behind `Model.staging`, runtime overlay dispatch stays centralized in one runtime presenter, and one selector controller is reused across a startup host and a runtime popup host.
 - Rationale: reduce mixed-context hotspots while preserving the adapter boundary, stable top-level runtime entry points used by `cmd/dbc`, a predictable change location for overlay composition, and the startup/runtime selector split without reintroducing runtime restart/resume logic for selector dismissal.
 - Where: `internal/interfaces/tui/model.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_filter_sort.go`, `internal/interfaces/tui/model_runtime_edit_popup.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_record_detail.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_staging_state.go`, `internal/interfaces/tui/model_staging_*.go`, `internal/interfaces/tui/selector.go`, `internal/interfaces/tui/internal/selector/*.go`, `internal/interfaces/tui/internal/primitives/*.go`.
 
 ### Terminal-Theme-Driven TUI Styling
 
-- Decision: keep TUI styling limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors, including for shared runtime backdrop rendering, with semantic text roles as the only style-selection input.
+- Current decision: TUI styling stays limited to terminal-native ANSI attributes and the terminal's active foreground/background theme instead of app-defined colors, including for shared runtime backdrop rendering, with semantic text roles as the only style-selection input.
 - Rationale: inherit the user's terminal colorscheme automatically while preserving a predictable monochrome fallback path, one overlay composition architecture for both styled and unstyled terminals, and one central mapping from text meaning to presentation.
 - Where: `internal/interfaces/tui/internal/primitives/render_style.go`, `internal/interfaces/tui/internal/primitives/view_layout.go`, `internal/interfaces/tui/internal/primitives/popup_component.go`, `internal/interfaces/tui/view*.go`, `internal/interfaces/tui/internal/selector/view.go`.
 
 ### Guarded Dynamic Query Composition
 
-- Decision: keep operator allowlist, schema-validated sort columns, and identifier quoting for dynamic SQL paths.
+- Current decision: dynamic SQL paths keep operator allowlists, schema-validated sort columns, and identifier quoting.
 - Rationale: reduce malformed query risk and unsafe string composition.
 - Where: `internal/infrastructure/engine/sqlite_filter.go`, `internal/infrastructure/engine/sqlite_operator.go`, `internal/infrastructure/engine/sqlite_sort.go`.
-
-### Explicit Infrastructure Test Naming
-
-- Decision: use `*_unit_test.go` for pure logic tests and `*_integration_test.go` for filesystem-backed or real-SQLite-backed adapter tests; both run in `go test ./...`.
-- Rationale: make test level obvious without splitting the default test lane.
-- Where: `internal/infrastructure/{config,engine}`.
 
 ## Technology Stack and Versions
 
