@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 func TestHandleKey_CommandConfigOpensRuntimeDatabaseSelectorPopup(t *testing.T) {
@@ -413,8 +414,8 @@ func TestHandleKey_CommandSaveAndQuitStartsSaveImmediatelyWhenDirty(t *testing.T
 	if !model.ui.saveInFlight {
 		t.Fatal("expected :wq to start save immediately")
 	}
-	if !model.ui.pendingQuitAfterSave {
-		t.Fatal("expected :wq to set pending quit flag")
+	if model.ui.pendingSaveSuccessAction != usecase.RuntimeSaveSuccessActionQuitRuntime {
+		t.Fatalf("expected :wq to set quit action, got %v", model.ui.pendingSaveSuccessAction)
 	}
 	if model.ui.statusMessage != "Saving changes..." {
 		t.Fatalf("expected :wq to show saving status, got %q", model.ui.statusMessage)

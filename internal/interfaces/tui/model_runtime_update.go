@@ -2,12 +2,12 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 type tablesMsg struct {
@@ -98,27 +98,38 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case saveChangesMsg:
 		m.ui.saveInFlight = false
+		decision := m.saveWorkflowUseCase().ResolveResult(m.ui.pendingSaveSuccessAction, msg.count, msg.err)
+		pendingTransition := m.ui.pendingDatabaseTransition
+		if decision.ClearPendingSaveAction {
+			m.ui.pendingSaveSuccessAction = usecase.RuntimeSaveSuccessActionNone
+		}
 		if msg.err != nil {
-			pendingTransition := m.ui.pendingDatabaseTransition
-			m.ui.pendingQuitAfterSave = false
 			m.ui.pendingDatabaseTransition = nil
 			if pendingTransition != nil && pendingTransition.Origin == runtimeDatabaseTransitionOriginEditCommand {
 				m.restoreEditingCommandInput(pendingTransition.Command)
 			}
-			m.ui.statusMessage = "Error: " + msg.err.Error()
+			m.ui.statusMessage = decision.StatusMessage
 			return m, nil
 		}
-		m.clearStagedState()
-		if m.ui.pendingQuitAfterSave {
-			m.ui.pendingQuitAfterSave = false
+		if decision.ClearStaging {
+			m.clearStagedState()
+		}
+		if decision.StatusMessage != "" {
+			m.ui.statusMessage = decision.StatusMessage
+		}
+		switch decision.NextAction {
+		case usecase.RuntimeSaveResultNextActionQuitRuntime:
 			return m, tea.Quit
+		case usecase.RuntimeSaveResultNextActionRunPendingTransition:
+			if pendingTransition == nil {
+				return m, nil
+			}
+			return m.executeRuntimeDatabaseTransition(cloneRuntimeDatabaseTransitionRequest(*pendingTransition))
+		case usecase.RuntimeSaveResultNextActionReloadRecords:
+			return m, m.loadRecordsCmd(true)
+		default:
+			return m, nil
 		}
-		if m.ui.pendingDatabaseTransition != nil {
-			request := cloneRuntimeDatabaseTransitionRequest(*m.ui.pendingDatabaseTransition)
-			return m.executeRuntimeDatabaseTransition(request)
-		}
-		m.ui.statusMessage = formatSavedRowsMessage(msg.count)
-		return m, m.loadRecordsCmd(true)
 	case errMsg:
 		if msg.bundleToken != m.runtimeBundleToken {
 			return m, nil
@@ -269,8 +280,4 @@ func saveChangesCmd(ctx context.Context, uc saveChangesUseCase, tableName string
 		count, err := uc.ExecuteDTO(ctx, tableName, changes)
 		return saveChangesMsg{count: count, err: err}
 	}
-}
-
-func formatSavedRowsMessage(count int) string {
-	return fmt.Sprintf("Affected rows: %d", count)
 }

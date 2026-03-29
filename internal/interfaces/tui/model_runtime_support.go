@@ -16,6 +16,7 @@ func (m *Model) applyRuntimeRunDeps(runtimeDeps RuntimeRunDeps) {
 	m.listRecords = runtimeDeps.ListRecords
 	m.listOperators = runtimeDeps.ListOperators
 	m.saveChanges = runtimeDeps.SaveChanges
+	m.saveWorkflow = runtimeDeps.SaveWorkflow
 	m.translator = runtimeDeps.Translator
 	m.runtimeDatabaseSelectorDeps = runtimeDeps.DatabaseSelector
 	m.runtimeClose = runtimeDeps.Close

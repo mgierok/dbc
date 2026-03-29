@@ -178,6 +178,7 @@ type Model struct {
 	listRecords                 listRecordsUseCase
 	listOperators               listOperatorsUseCase
 	saveChanges                 saveChangesUseCase
+	saveWorkflow                *usecase.RuntimeSaveWorkflow
 	translator                  *usecase.StagedChangesTranslator
 	recordAccessResolver        *usecase.PersistedRecordAccessResolver
 	stagingPolicy               *usecase.StagingPolicy

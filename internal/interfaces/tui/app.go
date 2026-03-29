@@ -15,6 +15,7 @@ type RuntimeRunDeps struct {
 	ListRecords      *usecase.ListRecords
 	ListOperators    *usecase.ListOperators
 	SaveChanges      *usecase.SaveTableChanges
+	SaveWorkflow     *usecase.RuntimeSaveWorkflow
 	Translator       *usecase.StagedChangesTranslator
 	DatabaseSelector *RuntimeDatabaseSelectorDeps
 	Close            func()

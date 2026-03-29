@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 type stubGetSchemaUseCase struct {
@@ -143,7 +144,8 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionClearsStateAndStartsTrans
 	}
 	model := withTestStaging(&Model{
 		ui: runtimeUIState{
-			saveInFlight: true,
+			saveInFlight:             true,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionRunPendingTransition,
 			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
 				Target: runtimeDatabaseTransitionTarget{
 					Option: current,
@@ -192,8 +194,8 @@ func TestUpdate_SaveChangesMsgPendingQuitAfterSaveClearsStateAndQuits(t *testing
 	// Arrange
 	model := withTestStaging(&Model{
 		ui: runtimeUIState{
-			pendingQuitAfterSave: true,
-			saveInFlight:         true,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionQuitRuntime,
+			saveInFlight:             true,
 		},
 	}, stagingState{
 		pendingInserts: []pendingInsertRow{
@@ -213,8 +215,8 @@ func TestUpdate_SaveChangesMsgPendingQuitAfterSaveClearsStateAndQuits(t *testing
 	if model.hasDirtyEdits() {
 		t.Fatal("expected staged state to be cleared after successful save")
 	}
-	if model.ui.pendingQuitAfterSave {
-		t.Fatal("expected pending quit flag to be cleared after successful save")
+	if model.ui.pendingSaveSuccessAction != usecase.RuntimeSaveSuccessActionNone {
+		t.Fatal("expected pending save action to be cleared after successful save")
 	}
 	if model.ui.saveInFlight {
 		t.Fatal("expected save-in-flight flag to be cleared after successful save")
@@ -246,7 +248,8 @@ func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T
 			tables:   []dto.Table{{Name: "users"}},
 		},
 		ui: runtimeUIState{
-			saveInFlight: true,
+			saveInFlight:             true,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionStayInRuntime,
 		},
 	}, stagingState{
 		pendingUpdates: map[string]recordEdits{
@@ -286,24 +289,12 @@ func TestUpdate_SaveChangesMsgShowsSavedRowsStatusAndReloadsRecords(t *testing.T
 	}
 }
 
-func TestFormatSavedRowsMessage_AllowsZeroAffectedRows(t *testing.T) {
-	// Arrange
-
-	// Act
-	message := formatSavedRowsMessage(0)
-
-	// Assert
-	if message != "Affected rows: 0" {
-		t.Fatalf("expected zero-count affected-row message, got %q", message)
-	}
-}
-
 func TestUpdate_SaveChangesMsgErrorClearsPendingQuitAfterSaveAndPreservesDirtyState(t *testing.T) {
 	// Arrange
 	model := withTestStaging(&Model{
 		ui: runtimeUIState{
-			pendingQuitAfterSave: true,
-			saveInFlight:         true,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionQuitRuntime,
+			saveInFlight:             true,
 		},
 	}, stagingState{
 		pendingInserts: []pendingInsertRow{
@@ -326,8 +317,8 @@ func TestUpdate_SaveChangesMsgErrorClearsPendingQuitAfterSaveAndPreservesDirtySt
 	if !model.hasDirtyEdits() {
 		t.Fatal("expected staged state to stay dirty after failed save")
 	}
-	if model.ui.pendingQuitAfterSave {
-		t.Fatal("expected pending quit flag to be cleared after failed save")
+	if model.ui.pendingSaveSuccessAction != usecase.RuntimeSaveSuccessActionNone {
+		t.Fatal("expected pending save action to be cleared after failed save")
 	}
 	if model.ui.saveInFlight {
 		t.Fatal("expected save-in-flight flag to be cleared after failed save")
@@ -528,7 +519,8 @@ func TestUpdate_SaveChangesMsgPendingDatabaseTransitionPreservesCurrentBrowseSta
 			},
 		},
 		ui: runtimeUIState{
-			saveInFlight: true,
+			saveInFlight:             true,
+			pendingSaveSuccessAction: usecase.RuntimeSaveSuccessActionRunPendingTransition,
 			pendingDatabaseTransition: &runtimeDatabaseTransitionRequest{
 				Target: runtimeDatabaseTransitionTarget{
 					Option: current,

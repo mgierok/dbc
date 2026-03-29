@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 func TestConfirmSaveChanges_SubmitsBuiltTableChanges(t *testing.T) {
@@ -520,8 +521,8 @@ func TestRequestSaveAndQuit_BlocksRuntimeInputUntilSaveResponse(t *testing.T) {
 	if model.read.selectedTable != 0 {
 		t.Fatalf("expected table selection to stay unchanged while save is in flight, got %d", model.read.selectedTable)
 	}
-	if model.ui.pendingQuitAfterSave {
-		t.Fatal("expected pending quit flag to clear after save response")
+	if model.ui.pendingSaveSuccessAction != usecase.RuntimeSaveSuccessActionNone {
+		t.Fatal("expected pending save action to clear after save response")
 	}
 	if quitCmd == nil {
 		t.Fatal("expected save-and-quit flow to quit after save response")
@@ -645,8 +646,8 @@ func TestRequestSaveAndQuit_StartsSaveImmediatelyWithoutPopup(t *testing.T) {
 	if model.overlay.confirmPopup.active {
 		t.Fatal("expected save-and-quit request not to open confirm popup")
 	}
-	if !model.ui.pendingQuitAfterSave {
-		t.Fatal("expected save-and-quit flow to set pending quit flag")
+	if model.ui.pendingSaveSuccessAction != usecase.RuntimeSaveSuccessActionQuitRuntime {
+		t.Fatalf("expected save-and-quit flow to set quit action, got %v", model.ui.pendingSaveSuccessAction)
 	}
 	if !model.ui.saveInFlight {
 		t.Fatal("expected save-and-quit flow to enter save-in-flight state")

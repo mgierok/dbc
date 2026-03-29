@@ -30,6 +30,13 @@ func (m *Model) translatorUseCase() *usecase.StagedChangesTranslator {
 	return usecase.NewStagedChangesTranslator()
 }
 
+func (m *Model) saveWorkflowUseCase() *usecase.RuntimeSaveWorkflow {
+	if m.saveWorkflow != nil {
+		return m.saveWorkflow
+	}
+	return usecase.NewRuntimeSaveWorkflow()
+}
+
 func (m *Model) recordAccessResolverUseCase() *usecase.PersistedRecordAccessResolver {
 	if m.recordAccessResolver != nil {
 		return m.recordAccessResolver

@@ -211,6 +211,7 @@ func (o *runtimeStartupOrchestrator) openRuntimeRunDeps(selected tui.DatabaseOpt
 		ListRecords:   usecase.NewListRecords(sqliteEngine),
 		ListOperators: usecase.NewListOperators(sqliteEngine),
 		SaveChanges:   usecase.NewSaveTableChanges(sqliteEngine),
+		SaveWorkflow:  usecase.NewRuntimeSaveWorkflow(),
 		Translator:    usecase.NewStagedChangesTranslator(),
 		DatabaseSelector: &tui.RuntimeDatabaseSelectorDeps{
 			ListConfiguredDatabases:  o.deps.listConfiguredDatabases,

@@ -71,7 +71,7 @@ func (m *Model) confirmDatabaseTransitionSave() (tea.Model, tea.Cmd) {
 	if request.Origin == runtimeDatabaseTransitionOriginEditCommand {
 		m.overlay.commandInput = commandInput{}
 	}
-	updatedModel, cmd := m.confirmSaveChanges()
+	updatedModel, cmd := m.requestRuntimeSave(usecase.RuntimeSaveIntentSaveForPendingTransition)
 	if cmd == nil {
 		m.ui.pendingDatabaseTransition = nil
 		if request.Origin == runtimeDatabaseTransitionOriginEditCommand {

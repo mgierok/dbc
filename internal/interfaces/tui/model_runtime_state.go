@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/mgierok/dbc/internal/application/dto"
+import (
+	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/usecase"
+)
 
 // runtimeReadState keeps the mutable read-side runtime state together so
 // navigation and data-browsing concerns stay distinct from overlays and UI.
@@ -53,9 +56,9 @@ type runtimeUIState struct {
 
 	statusMessage             string
 	saveInFlight              bool
+	pendingSaveSuccessAction  usecase.RuntimeSaveSuccessAction
 	runtimeSwitchInFlight     bool
 	openConfigSelector        bool
 	pendingTableIndex         int
-	pendingQuitAfterSave      bool
 	pendingDatabaseTransition *runtimeDatabaseTransitionRequest
 }
