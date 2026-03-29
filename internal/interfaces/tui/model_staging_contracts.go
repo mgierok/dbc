@@ -47,7 +47,6 @@ func (m *Model) stagingSessionUseCase() *usecase.StagingSession {
 
 func (m *Model) syncStagingSnapshot() {
 	m.stagingSnapshot = m.stagingSessionUseCase().Snapshot()
-	m.pruneStagingUIState()
 }
 
 func (m *Model) currentStagingSnapshot() dto.StagingSnapshot {
@@ -55,25 +54,6 @@ func (m *Model) currentStagingSnapshot() dto.StagingSnapshot {
 		m.syncStagingSnapshot()
 	}
 	return m.stagingSnapshot
-}
-
-func (m *Model) pruneStagingUIState() {
-	if len(m.stagingUI.showAuto) == 0 {
-		return
-	}
-	valid := make(map[dto.InsertDraftID]struct{}, len(m.stagingSnapshot.PendingInserts))
-	for _, row := range m.stagingSnapshot.PendingInserts {
-		valid[row.ID] = struct{}{}
-	}
-	for id := range m.stagingUI.showAuto {
-		if _, ok := valid[id]; ok {
-			continue
-		}
-		delete(m.stagingUI.showAuto, id)
-	}
-	if len(m.stagingUI.showAuto) == 0 {
-		m.stagingUI.showAuto = nil
-	}
 }
 
 func (m *Model) showAutoForInsert(insertID dto.InsertDraftID) bool {

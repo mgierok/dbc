@@ -156,3 +156,114 @@ func TestHandleKey_UndoRedo_RevertsAndReappliesDeleteToggle(t *testing.T) {
 		t.Fatalf("expected delete toggle to be redone")
 	}
 }
+
+func TestHandleKey_UndoRestorePendingInsert_PreservesAutoFieldVisibility(t *testing.T) {
+	// Arrange
+	model := withTestStaging(&Model{
+		read: runtimeReadState{
+			viewMode:         ViewRecords,
+			focus:            FocusContent,
+			recordSelection:  0,
+			recordColumn:     1,
+			recordFieldFocus: true,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				values: map[int]stagedEdit{
+					0: {Value: dto.StagedValue{Text: "42", Raw: "42"}},
+					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
+				},
+				explicitAuto: map[int]bool{0: true},
+				showAuto:     true,
+			},
+		},
+	})
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+
+	// Assert
+	snapshot := model.currentStagingSnapshot()
+	if len(snapshot.PendingInserts) != 1 {
+		t.Fatalf("expected pending insert to be restored, got %d inserts", len(snapshot.PendingInserts))
+	}
+	if !snapshot.PendingInserts[0].ExplicitAuto[0] {
+		t.Fatalf("expected restored insert to keep explicit auto flag for id column")
+	}
+	if got := model.visibleRowValue(0, 0); got != "42" {
+		t.Fatalf("expected restored auto value 42 to stay visible, got %q", got)
+	}
+	if !containsInt(model.visibleColumnIndicesForSelection(), 0) {
+		t.Fatalf("expected restored insert to show auto-increment column")
+	}
+}
+
+func TestHandleKey_RedoRestoresAutoFieldVisibilityForPendingInsert(t *testing.T) {
+	// Arrange
+	model := &Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+	}
+
+	// Act
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlA})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+	model.handleKey(tea.KeyMsg{Type: tea.KeyCtrlR})
+
+	// Assert
+	snapshot := model.currentStagingSnapshot()
+	if len(snapshot.PendingInserts) != 1 {
+		t.Fatalf("expected pending insert to be restored by redo, got %d inserts", len(snapshot.PendingInserts))
+	}
+	if !containsInt(model.visibleColumnIndicesForSelection(), 0) {
+		t.Fatalf("expected redone insert to show auto-increment column")
+	}
+}
+
+func TestClearStagedState_DropsAutoFieldVisibilityAcrossSessions(t *testing.T) {
+	// Arrange
+	model := withTestStaging(&Model{
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER", PrimaryKey: true, AutoIncrement: true},
+					{Name: "name", Type: "TEXT", Nullable: false},
+				},
+			},
+		},
+	}, stagingState{
+		pendingInserts: []pendingInsertRow{
+			{
+				showAuto: true,
+			},
+		},
+	})
+
+	// Act
+	model.clearStagedState()
+	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+
+	// Assert
+	if containsInt(model.visibleColumnIndicesForSelection(), 0) {
+		t.Fatalf("expected new staging session to hide auto-increment column by default")
+	}
+}
