@@ -99,11 +99,8 @@ Quick examples:
 - To lint full repository scope, the agent MUST run `golangci-lint run ./...`.
 - To test full repository scope, the agent MUST run `go test ./...`.
 - The agent MUST NOT introduce new lint violations.
-- The agent MUST NOT use unchecked `defer x.Close()` in production code.
-- The agent MUST handle `Close()` errors explicitly or justify a deliberate ignore.
-- The agent MUST NOT build runtime SQL using unvalidated string interpolation.
-- The agent MUST use placeholders for values.
-- For dynamic identifiers (table/column names), the agent MUST use strict allowlist and/or safe identifier quoting.
+- The agent MUST NOT use unchecked `defer x.Close()` in production code and MUST handle `Close()` errors explicitly or justify a deliberate ignore.
+- The agent MUST NOT build runtime SQL using unvalidated string interpolation; values MUST use placeholders, and dynamic identifiers (table or column names) MUST use strict allowlists and/or safe identifier quoting.
 - The agent MUST NOT disable security linters globally to silence findings.
 - If an exception is required, the agent MUST apply it locally (`#nosec` / `nolint`) with a concrete inline justification.
 - Every local linter exception MUST have explicit user approval each time (no blanket pre-approval).
