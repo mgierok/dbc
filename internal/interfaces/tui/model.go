@@ -11,10 +11,6 @@ import (
 	selectorpkg "github.com/mgierok/dbc/internal/interfaces/tui/internal/selector"
 )
 
-const (
-	defaultRecordPageLimit = 20
-)
-
 type PanelFocus int
 
 const (
@@ -158,6 +154,7 @@ type Model struct {
 	listOperators               listOperatorsUseCase
 	saveChanges                 saveChangesUseCase
 	saveWorkflow                *usecase.RuntimeSaveWorkflow
+	recordLimitPolicy           *usecase.RuntimeRecordLimitPolicy
 	navigationWorkflow          *usecase.RuntimeNavigationWorkflow
 	databaseTargetResolver      *usecase.RuntimeDatabaseTargetResolver
 	translator                  *usecase.StagedChangesTranslator

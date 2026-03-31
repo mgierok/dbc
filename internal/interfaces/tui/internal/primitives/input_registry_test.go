@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 	"testing"
-
-	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
 func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
@@ -38,7 +36,9 @@ func TestResolveRuntimeCommand_ResolvesAliasesCaseInsensitive(t *testing.T) {
 		{name: "forced edit connection string with spaces", input: ":e!  /tmp/analytics copy.sqlite  ", action: RuntimeCommandActionEdit, force: true, connString: "/tmp/analytics copy.sqlite"},
 		{name: "set limit", input: ":set limit=10", action: RuntimeCommandActionSetRecordLimit, recordLimit: 10},
 		{name: "set limit keyword uppercase", input: ":SET LIMIT=25", action: RuntimeCommandActionSetRecordLimit, recordLimit: 25},
-		{name: "set limit max boundary", input: ":set limit=1000", action: RuntimeCommandActionSetRecordLimit, recordLimit: runtimecontract.MaxRecordPageLimit},
+		{name: "set limit zero stays parser-valid", input: ":set limit=0", action: RuntimeCommandActionSetRecordLimit, recordLimit: 0},
+		{name: "set limit negative stays parser-valid", input: ":set limit=-1", action: RuntimeCommandActionSetRecordLimit, recordLimit: -1},
+		{name: "set limit oversized stays parser-valid", input: ":set limit=100000000", action: RuntimeCommandActionSetRecordLimit, recordLimit: 100000000},
 	}
 
 	for _, tc := range tests {
@@ -94,9 +94,6 @@ func TestParseRuntimeCommand_RejectsInvalidSetLimitFormsWithValidationError(t *t
 	}{
 		{name: "missing value", input: ":set limit="},
 		{name: "missing equals", input: ":set limit"},
-		{name: "zero", input: ":set limit=0"},
-		{name: "negative", input: ":set limit=-1"},
-		{name: "too large", input: ":set limit=100000000"},
 		{name: "non integer", input: ":set limit=abc"},
 		{name: "space after equals", input: ":set limit= 10"},
 	}
@@ -115,8 +112,8 @@ func TestParseRuntimeCommand_RejectsInvalidSetLimitFormsWithValidationError(t *t
 			if !errors.Is(err, errInvalidRuntimeCommand) {
 				t.Fatalf("expected invalid runtime command error for %q, got %v", tc.input, err)
 			}
-			if !strings.Contains(err.Error(), ":set limit=<1-1000>") {
-				t.Fatalf("expected deterministic validation hint for %q, got %v", tc.input, err)
+			if !strings.Contains(err.Error(), ":set limit=<n>") {
+				t.Fatalf("expected deterministic syntax hint for %q, got %v", tc.input, err)
 			}
 		})
 	}

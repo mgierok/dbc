@@ -17,6 +17,7 @@ func (m *Model) applyRuntimeRunDeps(runtimeDeps RuntimeRunDeps) {
 	m.listOperators = runtimeDeps.ListOperators
 	m.saveChanges = runtimeDeps.SaveChanges
 	m.saveWorkflow = runtimeDeps.SaveWorkflow
+	m.recordLimitPolicy = runtimeDeps.RecordLimitPolicy
 	m.navigationWorkflow = runtimeDeps.NavigationWorkflow
 	m.databaseTargetResolver = runtimeDeps.DatabaseTargetResolver
 	m.translator = runtimeDeps.Translator
@@ -66,9 +67,9 @@ func (m *Model) pageSize() int {
 
 func (m *Model) effectiveRecordLimit() int {
 	if m.runtimeSession == nil {
-		return defaultRecordPageLimit
+		return m.recordLimitPolicyUseCase().Effective(0)
 	}
-	return m.runtimeSession.effectiveRecordsPageLimit()
+	return m.recordLimitPolicyUseCase().Effective(m.runtimeSession.RecordsPageLimit)
 }
 
 func (m *Model) contentHeight() int {

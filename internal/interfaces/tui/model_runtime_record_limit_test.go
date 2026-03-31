@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
-	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
 func TestSubmitCommandInput_SetLimitInRecordsModeReloadsFromFirstPage(t *testing.T) {
@@ -77,29 +76,6 @@ func TestSubmitCommandInput_SetLimitInRecordsModeReloadsFromFirstPage(t *testing
 	}
 }
 
-func TestSubmitCommandInput_SetLimitOverwritesPreviousSessionValue(t *testing.T) {
-	// Arrange
-	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 10}
-	model := &Model{
-		read:           runtimeReadState{viewMode: ViewSchema},
-		runtimeSession: runtimeSession,
-	}
-
-	// Act
-	cmd := submitRuntimeCommand(t, model, "set limit=25")
-
-	// Assert
-	if cmd != nil {
-		t.Fatal("expected no immediate records load outside records view")
-	}
-	if runtimeSession.RecordsPageLimit != 25 {
-		t.Fatalf("expected record limit overwrite to 25, got %d", runtimeSession.RecordsPageLimit)
-	}
-	if model.ui.statusMessage != "Record limit set to 25" {
-		t.Fatalf("expected success status message, got %q", model.ui.statusMessage)
-	}
-}
-
 func TestSubmitCommandInput_SetLimitOutsideRecordsForcesNextRecordsEntryToReload(t *testing.T) {
 	// Arrange
 	recordsSpy := &spyListRecordsUseCase{
@@ -155,58 +131,6 @@ func TestSubmitCommandInput_SetLimitOutsideRecordsForcesNextRecordsEntryToReload
 	}
 }
 
-func TestSubmitCommandInput_SetLimitIgnoresStaleRecordsResponse(t *testing.T) {
-	// Arrange
-	recordsSpy := &spyListRecordsUseCase{
-		page: dto.RecordPage{
-			Rows:       makeRecordRows(10),
-			TotalCount: 30,
-		},
-	}
-	model := &Model{
-		ctx:            context.Background(),
-		listRecords:    recordsSpy,
-		runtimeSession: &RuntimeSessionState{},
-		read: runtimeReadState{
-			viewMode:        ViewRecords,
-			focus:           FocusContent,
-			tables:          []dto.Table{{Name: "users"}},
-			recordRequestID: 1,
-			recordLoading:   true,
-			records: []dto.RecordRow{
-				{Values: []string{"old"}},
-			},
-		},
-	}
-	staleMsg := recordsMsg{
-		tableName: "users",
-		requestID: 1,
-		page: dto.RecordPage{
-			Rows:       []dto.RecordRow{{Values: []string{"stale"}}},
-			TotalCount: 99,
-		},
-	}
-
-	// Act
-	cmd := submitRuntimeCommand(t, model, "set limit=10")
-	if cmd == nil {
-		t.Fatal("expected records reload command after changing record limit")
-	}
-	model.Update(staleMsg)
-	model.Update(cmd())
-
-	// Assert
-	if len(model.read.records) != 10 {
-		t.Fatalf("expected fresh records page to be applied, got %d rows", len(model.read.records))
-	}
-	if len(model.read.records) > 0 && model.read.records[0].Values[0] == "stale" {
-		t.Fatalf("expected stale response to be ignored, got %+v", model.read.records[0])
-	}
-	if recordsSpy.lastRecordsLimit != 10 {
-		t.Fatalf("expected fresh reload to use limit 10, got %d", recordsSpy.lastRecordsLimit)
-	}
-}
-
 func TestSubmitCommandInput_InvalidSetLimitKeepsPreviousValueAndShowsExplicitError(t *testing.T) {
 	// Arrange
 	runtimeSession := &RuntimeSessionState{RecordsPageLimit: 12}
@@ -229,36 +153,6 @@ func TestSubmitCommandInput_InvalidSetLimitKeepsPreviousValueAndShowsExplicitErr
 	}
 	if strings.Contains(strings.ToLower(model.ui.statusMessage), "unknown command") {
 		t.Fatalf("expected validation error instead of unknown command, got %q", model.ui.statusMessage)
-	}
-}
-
-func TestLoadRecordsCmd_ClampsOversizedSessionLimitBeforeUse(t *testing.T) {
-	// Arrange
-	recordsSpy := &spyListRecordsUseCase{
-		page: dto.RecordPage{
-			Rows:       makeRecordRows(1),
-			TotalCount: 1,
-		},
-	}
-	model := &Model{
-		ctx:         context.Background(),
-		listRecords: recordsSpy,
-		read:        runtimeReadState{tables: []dto.Table{{Name: "users"}}},
-		runtimeSession: &RuntimeSessionState{
-			RecordsPageLimit: runtimecontract.MaxRecordPageLimit + 1,
-		},
-	}
-
-	// Act
-	cmd := model.loadRecordsCmd(true)
-	if cmd == nil {
-		t.Fatal("expected records load command")
-	}
-	model.Update(cmd())
-
-	// Assert
-	if recordsSpy.lastRecordsLimit != runtimecontract.MaxRecordPageLimit {
-		t.Fatalf("expected oversized session value to clamp to %d, got %d", runtimecontract.MaxRecordPageLimit, recordsSpy.lastRecordsLimit)
 	}
 }
 

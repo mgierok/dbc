@@ -30,7 +30,7 @@
 - `cmd/dbc`: process entrypoint, startup argument handling, runtime/selector orchestration.
 - `internal/domain/model`: domain value objects, entities, and error contracts.
 - `internal/domain/service`: pure domain helpers (table sorting, typed value parsing, input spec inference).
-- `internal/application/usecase`: read/write orchestration, config management, selector-state loading policy, staging policy, runtime navigation workflow, and shared runtime/startup database-target resolution.
+- `internal/application/usecase`: read/write orchestration, config management, selector-state loading policy, staging policy, runtime navigation workflow, runtime record-limit policy, and shared runtime/startup database-target resolution.
 - `internal/application/port`: application boundary interfaces for infrastructure implementations.
 - `internal/application/dto`: adapter-facing data contracts exchanged between use cases and interfaces.
 - `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, runtime database-selector popup hosting, prompt rendering, and runtime-session entrypoints.
@@ -65,6 +65,13 @@
 - Guarantee: successful save after a dirty database navigation request resumes the pending application action; async save failure keeps that pending action and restores submitted `:edit` command input when needed, while a save request that does not start synchronously clears the adapter-local pending navigation state and restores submitted `:edit` input instead of leaving orphaned continuation state.
 - Guarantee: adapter-side execution remains limited to switching to a resolved table name, quitting runtime, or exiting with `OpenDatabaseNext`.
 - Enforced in: `internal/application/usecase/runtime_navigation_workflow.go`, `internal/application/usecase/runtime_database_target_resolver.go`, `internal/interfaces/tui/model_runtime_confirm_popup.go`, `internal/interfaces/tui/model_runtime_database_transition.go`, `internal/interfaces/tui/model_runtime_update.go`.
+
+### Runtime Record-Limit Policy
+
+- Guarantee: the runtime-local persisted-record page-limit policy lives in the application layer, not in the TUI adapter.
+- Guarantee: one application policy owns the default limit (`20`), accepted command range (`1..1000`), deterministic validation hint, and clamp of stored session values used for page loads and total-page calculations.
+- Guarantee: the TUI parser validates only `:set limit=<int>` syntax, while semantic range validation happens when the adapter applies the parsed command.
+- Enforced in: `internal/application/usecase/runtime_record_limit_policy.go`, `cmd/dbc/startup_runtime.go`, `internal/interfaces/tui/model_runtime_record_limit.go`, `internal/interfaces/tui/model_runtime_support.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`.
 
 ### JSON Config Persistence
 
@@ -114,7 +121,7 @@
 - Guarantee: key bindings, exact command aliases, parameterized runtime commands, and help text are maintained in one shared primitives registry surface.
 - Guarantee: runtime command-entry availability and runtime save availability are gated by one shared non-blocking runtime-context rule inside the TUI adapter, so `:`, `:w`, and context help stay aligned across `Tables`, `Schema`, `Records`, and record-detail contexts, and all of them are disabled while `saveInFlight` is active.
 - Guarantee: the shared registry is split by concern-specific files for keys, runtime commands, runtime help/status text, and selector help/status text, while remaining the central definition point for runtime/selector input semantics.
-- Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands.
+- Guarantee: command parsing trims optional `:`, matches command keywords case-insensitively, and returns explicit validation errors for recognized malformed commands; for `:set limit`, that parser contract is syntax-only and does not own semantic range validation.
 - Enforced in: `internal/interfaces/tui/internal/primitives/input_registry_keys.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_commands.go`, `internal/interfaces/tui/internal/primitives/input_registry_runtime_text.go`, `internal/interfaces/tui/internal/primitives/input_registry_selector_text.go`, `internal/interfaces/tui/model_runtime_help_command.go`, `internal/interfaces/tui/model_runtime_key_dispatch.go`, `internal/interfaces/tui/model_runtime_command_context.go`, `internal/interfaces/tui/model_staging_save_flow.go`.
 
 ### Shared Runtime Overlay Presentation
@@ -144,7 +151,7 @@
 
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
-- Runtime startup opens one initial `RuntimeRunDeps` bundle, including the runtime save workflow, runtime navigation workflow, and shared database-target resolver, and `internal/interfaces/tui.Run(...)` returns a `RuntimeExitResult` that either quits normally or requests reopening a selected database.
+- Runtime startup opens one initial `RuntimeRunDeps` bundle, including the runtime save workflow, runtime record-limit policy, runtime navigation workflow, and shared database-target resolver, and `internal/interfaces/tui.Run(...)` returns a `RuntimeExitResult` that either quits normally or requests reopening a selected database.
 - Runtime-initiated reopen requests carry a fully resolved `DatabaseOption`, including whether the target is config-backed or CLI-scoped; for same-target reloads, an explicit config-backed alias request wins when that exact live configured entry was selected, otherwise the resolver preserves the current configured identity only while that exact configured entry still exists in live config, switches stale configured identity to a live equivalent configured entry when present, and treats CLI-scoped requests as identity-based requests that promote to configured identity only when the resolver found an equivalent config-backed option, otherwise falling back to the current runtime identity.
 
 ### Configuration Contract
@@ -187,8 +194,8 @@
 - Per-cell browse-edit safety metadata marks synthetic placeholders as not editable-from-browse; `ResolveForEdit` rejects such cells for browse-started edit, while the TUI keeps the only local exception for reopening the popup from an already staged value.
 - Materialized display aliases stay internal to the projection, while `ORDER BY` continues to target the raw table columns so sort semantics remain identical to stored SQLite values.
 - `HasMore` is computed via look-ahead (`LIMIT limit+1`).
-- Runtime records page limit defaults to `20`, but page loads and total-page calculations use the effective runtime-local limit from runtime state.
-- Runtime command-driven page-limit overrides are accepted only in the bounded range `1..1000`.
+- Runtime records page limit defaults to `20`, but page loads and total-page calculations use the effective runtime-local limit from the application-layer runtime record-limit policy against the stored runtime session value.
+- Runtime command-driven page-limit overrides are accepted only in the bounded range `1..1000`; the parser accepts any integer-shaped `:set limit=<int>` input and the application policy rejects out-of-range values with the deterministic runtime validation hint.
 
 ### Selector Launch Contract
 

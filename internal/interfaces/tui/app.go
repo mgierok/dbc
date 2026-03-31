@@ -16,6 +16,7 @@ type RuntimeRunDeps struct {
 	ListOperators          *usecase.ListOperators
 	SaveChanges            *usecase.SaveTableChanges
 	SaveWorkflow           *usecase.RuntimeSaveWorkflow
+	RecordLimitPolicy      *usecase.RuntimeRecordLimitPolicy
 	NavigationWorkflow     *usecase.RuntimeNavigationWorkflow
 	DatabaseTargetResolver *usecase.RuntimeDatabaseTargetResolver
 	Translator             *usecase.StagedChangesTranslator

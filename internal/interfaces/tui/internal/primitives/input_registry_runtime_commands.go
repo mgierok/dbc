@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
 type RuntimeCommandAction int
@@ -142,7 +140,7 @@ func matchSetRecordLimitCommand(input string, spec RuntimeCommandSpec) (RuntimeC
 	}
 
 	recordLimit, err := strconv.Atoi(recordLimitText)
-	if err != nil || !runtimecontract.IsValidRecordPageLimit(recordLimit) {
+	if err != nil {
 		return RuntimeCommandSpec{}, true, invalidSetRecordLimitCommandError()
 	}
 
@@ -186,7 +184,7 @@ func splitRuntimeCommandKeyword(input string) (string, string, bool) {
 }
 
 func invalidSetRecordLimitCommandError() error {
-	return fmt.Errorf("%w: %s", errInvalidRuntimeCommand, runtimecontract.InvalidSetRecordLimitHint())
+	return fmt.Errorf("%w: expected :set limit=<n>", errInvalidRuntimeCommand)
 }
 
 func IsUnknownRuntimeCommand(err error) bool {

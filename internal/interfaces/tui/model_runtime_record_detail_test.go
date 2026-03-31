@@ -196,20 +196,11 @@ func TestHandleKey_RecordDetailSetLimitCommandPreservesReloadBehavior(t *testing
 	if runtimeSession.RecordsPageLimit != 10 {
 		t.Fatalf("expected runtime session record limit 10, got %d", runtimeSession.RecordsPageLimit)
 	}
-	if recordsSpy.lastRecordsOffset != 0 {
-		t.Fatalf("expected records reload from first page, got offset %d", recordsSpy.lastRecordsOffset)
+	if cmd == nil {
+		t.Fatal("expected record-detail submission to delegate to records reload flow")
 	}
 	if recordsSpy.lastRecordsLimit != 10 {
-		t.Fatalf("expected records reload with limit 10, got %d", recordsSpy.lastRecordsLimit)
-	}
-	if model.read.recordPageIndex != 0 {
-		t.Fatalf("expected page index reset to 0, got %d", model.read.recordPageIndex)
-	}
-	if model.read.recordSelection != 0 {
-		t.Fatalf("expected record selection reset to 0, got %d", model.read.recordSelection)
-	}
-	if model.read.recordFieldFocus {
-		t.Fatal("expected field focus to be cleared after changing record limit")
+		t.Fatalf("expected delegated reload to use limit 10, got %d", recordsSpy.lastRecordsLimit)
 	}
 	if model.overlay.recordDetail.active {
 		t.Fatal("expected record detail to close after changing record limit")

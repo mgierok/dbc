@@ -37,6 +37,13 @@ func (m *Model) saveWorkflowUseCase() *usecase.RuntimeSaveWorkflow {
 	return usecase.NewRuntimeSaveWorkflow()
 }
 
+func (m *Model) recordLimitPolicyUseCase() *usecase.RuntimeRecordLimitPolicy {
+	if m.recordLimitPolicy != nil {
+		return m.recordLimitPolicy
+	}
+	return usecase.NewRuntimeRecordLimitPolicy()
+}
+
 func (m *Model) navigationWorkflowUseCase() *usecase.RuntimeNavigationWorkflow {
 	if m.navigationWorkflow != nil {
 		return m.navigationWorkflow

@@ -4,13 +4,11 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-
-	runtimecontract "github.com/mgierok/dbc/internal/interfaces/tui/internal"
 )
 
 func (m *Model) applyRecordLimit(recordLimit int) (tea.Model, tea.Cmd) {
-	if !runtimecontract.IsValidRecordPageLimit(recordLimit) {
-		m.ui.statusMessage = fmt.Sprintf("Error: %s", runtimecontract.InvalidSetRecordLimitHint())
+	if err := m.recordLimitPolicyUseCase().Validate(recordLimit); err != nil {
+		m.ui.statusMessage = fmt.Sprintf("Error: %s", err.Error())
 		return m, nil
 	}
 	if m.runtimeSession == nil {
