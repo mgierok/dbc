@@ -72,6 +72,7 @@
 #### General Development Rules
 
 - The implementation SHOULD prefer the simplest solution that satisfies requirements.
+- The agent SHOULD prefer readability through explicit naming and self-documenting code.
 - For feature changes, bug fixes, and behavior-impacting refactors, the agent MUST follow `TDD Rules`.
 - Before finalizing a non-documentation code change, the agent MUST run the applicable formatter, tests, and linter for the affected stack.
 - When a refactoring, a broad code modification, or a change to existing application behavior affects a larger implementation area, the agent MUST review and clean up related unit tests in the affected area so the tests remain aligned with current responsibilities, behavior, naming, and coverage boundaries.
