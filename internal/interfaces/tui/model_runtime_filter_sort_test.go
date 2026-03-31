@@ -129,18 +129,16 @@ func TestHandleKey_ShiftFIgnoredOutsideRecordsContext(t *testing.T) {
 	}
 }
 
-func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T) {
+func TestHandleFilterPopupKey_EnterLoadsOperatorsForSelectedColumn(t *testing.T) {
 	// Arrange
 	operatorsSpy := &spyListOperatorsUseCase{
 		operators: []dto.Operator{
 			{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
 		},
 	}
-	recordsSpy := &spyListRecordsUseCase{}
 	model := &Model{
 		ctx:           context.Background(),
 		listOperators: operatorsSpy,
-		listRecords:   recordsSpy,
 		read: runtimeReadState{
 			viewMode: ViewRecords,
 			focus:    FocusContent,
@@ -175,9 +173,28 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if operatorsSpy.lastColumnType != "TEXT" {
 		t.Fatalf("expected operator lookup for TEXT column, got %q", operatorsSpy.lastColumnType)
 	}
+	if len(model.overlay.filterPopup.operators) != 1 {
+		t.Fatalf("expected one loaded operator, got %d", len(model.overlay.filterPopup.operators))
+	}
+}
+
+func TestHandleFilterPopupKey_EnterMovesToValueInputWhenOperatorRequiresValue(t *testing.T) {
+	// Arrange
+	model := &Model{
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active:        true,
+				step:          filterSelectOperator,
+				operatorIndex: 0,
+				operators: []dto.Operator{
+					{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+				},
+			},
+		},
+	}
 
 	// Act
-	_, cmd = model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Assert
 	if cmd != nil {
@@ -186,10 +203,47 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if model.overlay.filterPopup.step != filterInputValue {
 		t.Fatalf("expected value-input step, got %v", model.overlay.filterPopup.step)
 	}
+	if model.overlay.filterPopup.input != "" {
+		t.Fatalf("expected empty input when opening value step, got %q", model.overlay.filterPopup.input)
+	}
+	if model.overlay.filterPopup.cursor != 0 {
+		t.Fatalf("expected cursor reset to 0, got %d", model.overlay.filterPopup.cursor)
+	}
+}
+
+func TestHandleFilterPopupKey_EnterAppliesFilterWithoutValueWhenOperatorDoesNotRequireIt(t *testing.T) {
+	// Arrange
+	recordsSpy := &spyListRecordsUseCase{}
+	model := &Model{
+		ctx:         context.Background(),
+		listRecords: recordsSpy,
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			recordPageIndex: 2,
+		},
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active:        true,
+				step:          filterSelectOperator,
+				columnIndex:   1,
+				operatorIndex: 0,
+				operators: []dto.Operator{
+					{Name: "Is Null", Kind: dto.OperatorKindIsNull, RequiresValue: false},
+				},
+			},
+		},
+	}
 
 	// Act
-	model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("alice")})
-	_, cmd = model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil {
 		t.Fatal("expected records reload command after filter apply")
 	}
@@ -200,30 +254,78 @@ func TestHandleFilterPopupKey_EnterProgressesStepsAndAppliesFilter(t *testing.T)
 	if model.overlay.filterPopup.active {
 		t.Fatal("expected filter popup to close after apply")
 	}
-	if model.read.currentFilter == nil {
-		t.Fatal("expected current filter to be set")
-	}
-	if model.read.currentFilter.Column != "name" {
-		t.Fatalf("expected filter column name, got %q", model.read.currentFilter.Column)
-	}
-	if model.read.currentFilter.Value != "alice" {
-		t.Fatalf("expected filter value alice, got %q", model.read.currentFilter.Value)
-	}
-	if model.read.currentFilter.Operator.Kind != dto.OperatorKindEq {
-		t.Fatalf("expected operator kind %q, got %q", dto.OperatorKindEq, model.read.currentFilter.Operator.Kind)
-	}
+	assertFilterEqual(t, model.read.currentFilter, &dto.Filter{
+		Column:   "name",
+		Operator: dto.Operator{Name: "Is Null", Kind: dto.OperatorKindIsNull, RequiresValue: false},
+		Value:    "",
+	})
 	if model.read.recordPageIndex != 0 {
 		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.read.recordPageIndex)
 	}
-	if recordsSpy.lastFilter == nil {
-		t.Fatal("expected filter forwarded to list-records use case")
+	assertFilterEqual(t, recordsSpy.lastFilter, &dto.Filter{
+		Column:   "name",
+		Operator: dto.Operator{Name: "Is Null", Kind: dto.OperatorKindIsNull, RequiresValue: false},
+		Value:    "",
+	})
+}
+
+func TestHandleFilterPopupKey_EnterAppliesFilterWithCurrentInputValue(t *testing.T) {
+	// Arrange
+	recordsSpy := &spyListRecordsUseCase{}
+	model := &Model{
+		ctx:         context.Background(),
+		listRecords: recordsSpy,
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+			tables:   []dto.Table{{Name: "users"}},
+			schema: dto.Schema{
+				Columns: []dto.SchemaColumn{
+					{Name: "id", Type: "INTEGER"},
+					{Name: "name", Type: "TEXT"},
+				},
+			},
+			recordPageIndex: 3,
+		},
+		overlay: runtimeOverlayState{
+			filterPopup: filterPopup{
+				active:        true,
+				step:          filterInputValue,
+				columnIndex:   1,
+				operatorIndex: 0,
+				input:         "alice",
+				operators: []dto.Operator{
+					{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+				},
+			},
+		},
 	}
-	if recordsSpy.lastFilter.Column != "name" {
-		t.Fatalf("expected forwarded filter column name, got %q", recordsSpy.lastFilter.Column)
+
+	// Act
+	_, cmd := model.handleFilterPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected records reload command after filter apply")
 	}
-	if recordsSpy.lastFilter.Value != "alice" {
-		t.Fatalf("expected forwarded filter value alice, got %q", recordsSpy.lastFilter.Value)
+	msg := cmd()
+	model.Update(msg)
+
+	// Assert
+	if model.overlay.filterPopup.active {
+		t.Fatal("expected filter popup to close after apply")
 	}
+	assertFilterEqual(t, model.read.currentFilter, &dto.Filter{
+		Column:   "name",
+		Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+		Value:    "alice",
+	})
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0 after filter apply, got %d", model.read.recordPageIndex)
+	}
+	assertFilterEqual(t, recordsSpy.lastFilter, &dto.Filter{
+		Column:   "name",
+		Operator: dto.Operator{Name: "Equals", Kind: dto.OperatorKindEq, RequiresValue: true},
+		Value:    "alice",
+	})
 }
 
 func TestHandleFilterPopupKey_InputEditingSupportsCursorMovementAndBackspace(t *testing.T) {
@@ -280,7 +382,30 @@ func TestHandleFilterPopupKey_EscClosesPopup(t *testing.T) {
 	}
 }
 
-func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
+func TestHandleSortPopupKey_EnterMovesToDirectionStep(t *testing.T) {
+	// Arrange
+	model := &Model{
+		overlay: runtimeOverlayState{
+			sortPopup: sortPopup{
+				active: true,
+				step:   sortSelectColumn,
+			},
+		},
+	}
+
+	// Act
+	_, cmd := model.handleSortPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd != nil {
+		t.Fatal("expected no command when moving to direction step")
+	}
+	if model.overlay.sortPopup.step != sortSelectDirection {
+		t.Fatalf("expected direction step, got %v", model.overlay.sortPopup.step)
+	}
+}
+
+func TestHandleSortPopupKey_EnterAppliesSelectedSort(t *testing.T) {
 	// Arrange
 	recordsSpy := &spyListRecordsUseCase{
 		page: dto.RecordPage{
@@ -302,14 +427,20 @@ func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 					{Name: "name", Type: "TEXT"},
 				},
 			},
+			recordPageIndex: 4,
+		},
+		overlay: runtimeOverlayState{
+			sortPopup: sortPopup{
+				active:         true,
+				step:           sortSelectDirection,
+				columnIndex:    0,
+				directionIndex: 1,
+			},
 		},
 	}
 
 	// Act
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
-	model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
-	model.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-	_, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	_, cmd := model.handleSortPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil {
 		t.Fatal("expected records reload command after applying sort")
 	}
@@ -323,16 +454,15 @@ func TestHandleKey_ShiftSApplySortReloadsRecords(t *testing.T) {
 	if model.read.currentSort == nil {
 		t.Fatal("expected current sort to be set")
 	}
-	if model.read.currentSort.Column != "id" {
-		t.Fatalf("expected sorted column id, got %q", model.read.currentSort.Column)
+	assertSortEqual(t, model.read.currentSort, &dto.Sort{
+		Column:    "id",
+		Direction: dto.SortDirectionDesc,
+	})
+	if model.read.recordPageIndex != 0 {
+		t.Fatalf("expected page index reset to 0 after sort apply, got %d", model.read.recordPageIndex)
 	}
-	if model.read.currentSort.Direction != dto.SortDirectionDesc {
-		t.Fatalf("expected sort direction DESC, got %s", model.read.currentSort.Direction)
-	}
-	if recordsSpy.lastSort == nil {
-		t.Fatal("expected engine to receive sort")
-	}
-	if recordsSpy.lastSort.Column != "id" || recordsSpy.lastSort.Direction != dto.SortDirectionDesc {
-		t.Fatalf("expected engine sort id DESC, got %+v", recordsSpy.lastSort)
-	}
+	assertSortEqual(t, recordsSpy.lastSort, &dto.Sort{
+		Column:    "id",
+		Direction: dto.SortDirectionDesc,
+	})
 }
