@@ -92,6 +92,14 @@ Quick examples:
 - To format changed Go files, the agent MUST run `gofmt -w <changed-go-files>`.
 - To lint full repository scope, the agent MUST run `golangci-lint run ./...`.
 - To test full repository scope, the agent MUST run `go test ./...`.
+
+##### Go Testing Rules
+
+- When a Go test validates the same contract across multiple input or output scenarios, the agent SHOULD prefer table-driven tests with explicit case names, and the agent SHOULD use subtests when they materially improve failure isolation, filtering, or diagnosis.
+- The agent SHOULD prefer Go standard-library testing facilities over custom test harness code when they fit the case, including `t.Helper()`, `t.Cleanup()`, `t.TempDir()`, and `net/http/httptest`.
+- The agent SHOULD use `t.Parallel()` only when test cases are independent and do not observe shared mutable state, and the agent MUST NOT add parallelism to tests that depend on execution order or shared fixtures.
+- For stable rendering or serialization contracts with substantial output, the agent MAY use golden-file tests under `testdata/`, but the agent MUST prefer narrower semantic assertions when they express the contract more clearly.
+- Benchmarks and fuzz tests SHOULD be added only when the task touches performance-sensitive paths, parser-like or validator-like inputs, concurrency-sensitive behavior, or previously fragile invariants, and the agent MUST NOT add them as a default substitute for unit tests.
 - The agent MUST NOT introduce new lint violations.
 - The agent MUST NOT use unchecked `defer x.Close()` in production code and MUST handle `Close()` errors explicitly or justify a deliberate ignore.
 - The agent MUST NOT build runtime SQL using unvalidated string interpolation; values MUST use placeholders, and dynamic identifiers (table or column names) MUST use strict allowlists and/or safe identifier quoting.
