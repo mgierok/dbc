@@ -33,27 +33,12 @@
 - The agent MUST interpret generic architecture terms from `docs/clean-architecture-ddd.md` through this repository's package naming when classifying or placing changes.
 - In this repository, `interface adapters` map to `internal/interfaces/**`, `infrastructure adapters` map to `internal/infrastructure/**`, and the composition root/startup wiring maps to `cmd/dbc`.
 
-#### Dependency Boundaries
-
-- Allowed dependency direction MUST remain `interfaces -> application -> domain` and `infrastructure -> application/domain`.
-- `internal/domain/**` MUST NOT import `internal/application/**`, `internal/interfaces/**`, or `internal/infrastructure/**`.
-- `internal/application/**` MUST NOT import `internal/interfaces/**` or `internal/infrastructure/**`.
-- Repository interfaces MUST belong to the inner layers, and repository implementations MUST live in infrastructure adapters.
-- Interface adapters MUST NOT import infrastructure adapters directly.
-
-#### Logic Placement
-
-- `internal/interfaces/**` MUST be limited to input handling, presentation, interaction-local state, DTO mapping, and use-case invocation.
-- If work in `internal/interfaces/**` would introduce business rules, decision policies, workflow orchestration, identity derivation, persistence semantics, or state-transition policy, the agent MUST move that logic inward to the application or domain layer instead of completing the change in the adapter.
-- Use cases MUST own application workflow orchestration and cross-component decision flow, but they MUST NOT absorb domain invariants or domain rules that belong in domain models or domain services.
-
 #### Change Placement Rules
 
-- Before implementing any feature change, bug fix, or behavior-impacting refactor, the agent MUST classify the target logic as domain, application, interface adapter, or infrastructure and MUST be able to state why that layer is correct.
-- When a task touches `internal/interfaces/**` and changes behavior or logic placement, the agent MUST inspect the nearest relevant domain and application seams before adding logic in the adapter, and the final adapter change MUST remain limited to input handling, presentation, interaction-local state, DTO mapping, or use-case invocation.
-- Minimal or surgical change scope MUST NOT be used as justification for placing logic in the wrong architectural layer.
-- When adding functionality that changes behavior, the agent MUST prefer implementation flow from inner layers outward: domain, use case, port, infrastructure adapter, then UI adapter.
-- For adapter-only or infrastructure-only changes, the inner-layer steps MAY be no-op only when the change does not introduce application logic, business rules, or workflow decisions; architecture boundaries and dependency direction MUST still be preserved.
+- Before implementing any feature change, bug fix, or behavior-impacting refactor, the agent MUST classify the target logic as domain, application, interface adapter, or infrastructure and MUST be able to state why that layer is correct under `docs/clean-architecture-ddd.md`.
+- When a task touches `internal/interfaces/**` and changes behavior or logic placement, the agent MUST inspect the nearest relevant inner-layer seams before adding logic in the adapter.
+- Minimal or surgical change scope MUST NOT be used as justification for violating the canonical architecture.
+- When adding functionality that changes behavior, the agent SHOULD prefer implementation flow from inner layers outward when that order best preserves boundary clarity.
 - If the correct target layer remains unclear after inspection, the agent MUST call out the ambiguity explicitly before finalizing the change.
 - Exception: the seam inspection rule MAY be skipped for clearly presentation-only, rendering-only, copy-only, or interaction-local-state-only changes that do not alter behavior contracts or logic placement.
 
@@ -61,10 +46,7 @@
 
 - The agent MUST treat human and AI discoverability as first-class quality concerns.
 - The agent SHOULD prefer structures where the likely change location is predictable from naming, boundaries, and module ownership.
-- The agent SHOULD prefer interface-driven changes through application ports instead of adapter-to-adapter coupling.
-- The agent SHOULD prefer finer-grained files, packages, and modules when the current code mixes separable architectural responsibilities or crosses stable change seams.
 - The agent MUST NOT split files, packages, or modules only to reduce size, only to reduce token usage, or only to satisfy a generic granularity preference.
-- The agent MAY treat lower token consumption, smaller review surface, and easier navigation as secondary benefits when a decomposition is already justified by cohesion, boundary clarity, testability, or reduced change blast radius.
 - When proposing or applying decomposition, the agent MUST be able to name the architectural seam or responsibility split that justifies it.
 
 ### Development Standards
@@ -99,6 +81,14 @@ Quick examples:
 
 - The agent MUST write idiomatic Go.
 - The agent SHOULD keep functions focused and explicit in error handling.
+- The agent SHOULD add error context at repository and infrastructure boundaries when that context materially improves diagnosis, and the agent SHOULD preserve sentinel/type-based error inspection with `errors.Is` or `errors.As` when callers depend on it.
+- The agent SHOULD prefer small, consumer-shaped interfaces and MUST NOT introduce broad interfaces that combine unrelated responsibilities only for future flexibility.
+- The agent SHOULD define an interface in the consuming layer when that interface exists only to express what the consumer needs; the agent SHOULD NOT move such an interface to the provider side unless multiple consumers share the same abstraction.
+- The agent SHOULD design types so their zero value is useful when that can be achieved without hiding required invariants or creating invalid partially initialized state.
+- The agent MUST keep Go receiver choice consistent for a given type, unless a mixed receiver set is required by a concrete language or interface constraint.
+- The agent MUST accept `context.Context` as the first parameter for operations that perform I/O, block, cross process boundaries, or may be cancelled, and the agent MUST NOT store request-scoped context in structs except when required by an external interface contract.
+- The agent SHOULD treat concurrency patterns, allocation optimizations, and pooling as opt-in techniques justified by a concrete workload, correctness requirement, or measured bottleneck; the agent MUST NOT introduce them by default in repository changes.
+- The agent SHOULD prefer explicit constructors and plain structs over functional options, embedding-based API shaping, or other configurability patterns unless the task has a demonstrated need for that additional abstraction.
 - To format changed Go files, the agent MUST run `gofmt -w <changed-go-files>`.
 - To lint full repository scope, the agent MUST run `golangci-lint run ./...`.
 - To test full repository scope, the agent MUST run `go test ./...`.
