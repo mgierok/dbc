@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/mgierok/dbc/internal/application/dto"
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 	"github.com/mgierok/dbc/internal/sqliteidentity"
 )
@@ -35,9 +36,9 @@ type selectorForm struct {
 }
 
 type selectorDeleteConfirm struct {
-	active       bool
-	optionIndex  int
-	managerIndex int
+	active      bool
+	optionIndex int
+	configIndex int
 }
 
 type selectorHelpPopup struct {
@@ -77,7 +78,7 @@ type databaseSelectorModel struct {
 
 	activeConfigPath string
 
-	launchAdditionalOptions []DatabaseOption
+	launchAdditionalOptions []dto.DatabaseSelectorAdditionalOption
 	browseEscBehavior       SelectorBrowseEscBehavior
 	hostConfig              controllerHostConfig
 	configOptionCount       int
@@ -114,19 +115,15 @@ func newDatabaseSelectorModelWithHost(ctx context.Context, manager selectorManag
 		manager:                 manager,
 		styles:                  detectRenderStyles(),
 		mode:                    selectorModeBrowse,
-		launchAdditionalOptions: normalizeAdditionalOptions(launchState.AdditionalOptions),
+		launchAdditionalOptions: mapLaunchAdditionalOptions(launchState.AdditionalOptions),
 		browseEscBehavior:       launchState.BrowseEscBehavior,
 		hostConfig:              hostConfig,
 	}
 	if err := model.refreshOptions(); err != nil {
 		return nil, err
 	}
-	if err := model.refreshActivePath(); err != nil {
-		return nil, err
-	}
 	model.applyLaunchState(launchState)
-	if len(model.options) == 0 {
-		model.requiresFirstEntry = true
+	if model.requiresFirstEntry && len(model.options) == 0 {
 		model.openAddForm()
 		model.browse.statusMessage = "First database entry is required"
 	}
@@ -166,35 +163,21 @@ func (m *databaseSelectorModel) applyLaunchState(state SelectorLaunchState) {
 }
 
 func (m *databaseSelectorModel) refreshOptions() error {
-	entries, err := m.manager.List(m.ctx)
+	state, err := m.manager.LoadState(m.ctx, dto.DatabaseSelectorLoadInput{
+		AdditionalOptions: cloneDatabaseSelectorAdditionalOptions(m.launchAdditionalOptions),
+	})
 	if err != nil {
 		return err
 	}
-	configOptions := make([]DatabaseOption, len(entries))
-	for i, entry := range entries {
-		configOptions[i] = DatabaseOption{
-			Name:         entry.Name,
-			ConnString:   entry.Path,
-			Source:       DatabaseOptionSourceConfig,
-			managerIndex: i,
-		}
-	}
-	m.configOptionCount = len(configOptions)
-	m.options = mergeConfigAndAdditionalOptions(configOptions, m.launchAdditionalOptions)
+	m.activeConfigPath = state.ActiveConfigPath
+	m.requiresFirstEntry = state.RequiresFirstEntry
+	m.options = mapDatabaseSelectorOptions(state.Options)
+	m.configOptionCount = countConfigBackedOptions(m.options)
 	if len(m.options) == 0 {
 		m.browse.selected = 0
 		return nil
 	}
 	m.browse.selected = clamp(m.browse.selected, 0, len(m.options)-1)
-	return nil
-}
-
-func (m *databaseSelectorModel) refreshActivePath() error {
-	path, err := m.manager.ActivePath(m.ctx)
-	if err != nil {
-		return err
-	}
-	m.activeConfigPath = path
 	return nil
 }
 
@@ -311,4 +294,64 @@ func (m *databaseSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	default:
 		return m, nil
 	}
+}
+
+func mapLaunchAdditionalOptions(options []DatabaseOption) []dto.DatabaseSelectorAdditionalOption {
+	if len(options) == 0 {
+		return nil
+	}
+	mapped := make([]dto.DatabaseSelectorAdditionalOption, len(options))
+	for i, option := range options {
+		source := dto.DatabaseSelectorOptionSourceConfig
+		if option.Source == DatabaseOptionSourceCLI {
+			source = dto.DatabaseSelectorOptionSourceCLI
+		}
+		mapped[i] = dto.DatabaseSelectorAdditionalOption{
+			Name:       option.Name,
+			ConnString: option.ConnString,
+			Source:     source,
+		}
+	}
+	return mapped
+}
+
+func cloneDatabaseSelectorAdditionalOptions(options []dto.DatabaseSelectorAdditionalOption) []dto.DatabaseSelectorAdditionalOption {
+	if len(options) == 0 {
+		return nil
+	}
+	cloned := make([]dto.DatabaseSelectorAdditionalOption, len(options))
+	copy(cloned, options)
+	return cloned
+}
+
+func mapDatabaseSelectorOptions(options []dto.DatabaseSelectorOption) []DatabaseOption {
+	if len(options) == 0 {
+		return nil
+	}
+	mapped := make([]DatabaseOption, len(options))
+	for i, option := range options {
+		source := DatabaseOptionSourceConfig
+		if option.Source == dto.DatabaseSelectorOptionSourceCLI {
+			source = DatabaseOptionSourceCLI
+		}
+		mapped[i] = DatabaseOption{
+			Name:        option.Name,
+			ConnString:  option.ConnString,
+			Source:      source,
+			configIndex: option.ConfigIndex,
+			canEdit:     option.CanEdit,
+			canDelete:   option.CanDelete,
+		}
+	}
+	return mapped
+}
+
+func countConfigBackedOptions(options []DatabaseOption) int {
+	count := 0
+	for _, option := range options {
+		if option.configIndex >= 0 {
+			count++
+		}
+	}
+	return count
 }

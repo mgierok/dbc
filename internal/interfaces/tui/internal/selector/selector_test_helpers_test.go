@@ -8,6 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/port"
+	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
 func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
@@ -27,15 +29,17 @@ type fakeSelectorManager struct {
 	entries    []dto.ConfigDatabase
 	activePath string
 
-	listErr       error
+	loadStateErr  error
 	activePathErr error
 	createErr     error
 	updateErr     error
 	deleteErr     error
 
-	created []dto.ConfigDatabase
-	updated []updatedEntry
-	deleted []int
+	loadState     *dto.DatabaseSelectorState
+	lastLoadInput dto.DatabaseSelectorLoadInput
+	created       []dto.ConfigDatabase
+	updated       []updatedEntry
+	deleted       []int
 }
 
 type updatedEntry struct {
@@ -43,13 +47,26 @@ type updatedEntry struct {
 	entry dto.ConfigDatabase
 }
 
-func (f *fakeSelectorManager) List(_ context.Context) ([]dto.ConfigDatabase, error) {
-	if f.listErr != nil {
-		return nil, f.listErr
+func (f *fakeSelectorManager) LoadState(ctx context.Context, input dto.DatabaseSelectorLoadInput) (dto.DatabaseSelectorState, error) {
+	f.lastLoadInput = input
+	if f.loadStateErr != nil {
+		return dto.DatabaseSelectorState{}, f.loadStateErr
 	}
-	result := make([]dto.ConfigDatabase, len(f.entries))
-	copy(result, f.entries)
-	return result, nil
+	if f.loadState != nil {
+		return *f.loadState, nil
+	}
+
+	entries := make([]port.ConfigEntry, len(f.entries))
+	for i, entry := range f.entries {
+		entries[i] = port.ConfigEntry{Name: entry.Name, DBPath: entry.Path}
+	}
+
+	store := fakeSelectorManagerConfigStore{
+		entries:       entries,
+		activePath:    f.activePath,
+		activePathErr: f.activePathErr,
+	}
+	return usecase.NewLoadDatabaseSelectorState(&store).Execute(ctx, input)
 }
 
 func (f *fakeSelectorManager) Create(_ context.Context, entry dto.ConfigDatabase) error {
@@ -88,7 +105,31 @@ func (f *fakeSelectorManager) Delete(_ context.Context, index int) error {
 	return nil
 }
 
-func (f *fakeSelectorManager) ActivePath(_ context.Context) (string, error) {
+type fakeSelectorManagerConfigStore struct {
+	entries       []port.ConfigEntry
+	activePath    string
+	activePathErr error
+}
+
+func (f *fakeSelectorManagerConfigStore) List(_ context.Context) ([]port.ConfigEntry, error) {
+	result := make([]port.ConfigEntry, len(f.entries))
+	copy(result, f.entries)
+	return result, nil
+}
+
+func (f *fakeSelectorManagerConfigStore) Create(_ context.Context, _ port.ConfigEntry) error {
+	return errors.New("unexpected create call")
+}
+
+func (f *fakeSelectorManagerConfigStore) Update(_ context.Context, _ int, _ port.ConfigEntry) error {
+	return errors.New("unexpected update call")
+}
+
+func (f *fakeSelectorManagerConfigStore) Delete(_ context.Context, _ int) error {
+	return errors.New("unexpected delete call")
+}
+
+func (f *fakeSelectorManagerConfigStore) ActivePath(_ context.Context) (string, error) {
 	if f.activePathErr != nil {
 		return "", f.activePathErr
 	}

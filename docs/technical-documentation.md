@@ -30,11 +30,11 @@
 - `cmd/dbc`: process entrypoint, startup argument handling, runtime/selector orchestration.
 - `internal/domain/model`: domain value objects, entities, and error contracts.
 - `internal/domain/service`: pure domain helpers (table sorting, typed value parsing, input spec inference).
-- `internal/application/usecase`: read/write orchestration, config management, staging policy, runtime navigation workflow, and shared runtime/startup database-target resolution.
+- `internal/application/usecase`: read/write orchestration, config management, selector-state loading policy, staging policy, runtime navigation workflow, and shared runtime/startup database-target resolution.
 - `internal/application/port`: application boundary interfaces for infrastructure implementations.
 - `internal/application/dto`: adapter-facing data contracts exchanged between use cases and interfaces.
 - `internal/interfaces/tui`: public TUI adapter facade plus runtime UI model/router, runtime write-side staging-state ownership, runtime database-selector popup hosting, prompt rendering, and runtime-session entrypoints.
-- `internal/interfaces/tui/internal/selector`: shared database-selector controller plus selector host rendering reused by startup selection and the runtime database-selector popup.
+- `internal/interfaces/tui/internal/selector`: shared database-selector controller plus selector host rendering reused by startup selection and the runtime database-selector popup; it consumes application-loaded selector state and keeps only interaction-local UI behavior.
 - `internal/interfaces/tui/internal/primitives`: terminal UI primitives shared by runtime and selector, including key/help registry, popup/layout rendering, iconography, and style helpers.
 - `internal/infrastructure/config`: JSON config loading/validation/persistence adapter.
 - `internal/infrastructure/engine`: SQLite adapter for reads/writes/filter/sort and connectivity checks.
@@ -52,10 +52,11 @@
 - Guarantee: selector-first startup is default; `-d`/`--database` enables direct-launch path.
 - Guarantee: direct-launch path resolves configured identity through the same application-level SQLite target resolver used by runtime reopen requests.
 - Guarantee: direct-launch failure exits non-zero without selector fallback.
+- Guarantee: startup selector and runtime `:config` popup both load selector state through one application use case that merges config-backed entries with session-scoped CLI options, deduplicates equivalent SQLite identities, returns the active config path, and exposes edit/delete permissions per option.
 - Guarantee: startup selector flow is separate from runtime database reopening; startup selects only the initial database, while runtime `:config` / `:c` uses a selector popup surface and runtime `:edit` / `:e` uses the command spotlight surface to request a selected database, then `cmd/dbc` reopens that database in a fresh runtime instance.
 - Guarantee: the startup selector host stays outside the runtime overlay presenter and therefore does not render the runtime backdrop treatment used by runtime popups and spotlight overlays.
 - Guarantee: runtime database-selector popup dismissal is in-model only, so popup close automatically restores the prior runtime view without per-popup resume snapshots.
-- Enforced in: `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`.
+- Enforced in: `internal/application/usecase/database_selector_state.go`, `cmd/dbc/startup_runtime.go`, `cmd/dbc/startup_runtime_selection.go`, `internal/interfaces/tui/internal/selector/state.go`.
 
 ### Runtime Navigation Orchestration
 
@@ -193,8 +194,9 @@
 
 - Selector launch state supports preferred connection string reselection and additional session-scoped options.
 - Startup selector API remains `SelectDatabaseWithState(...)` and is startup-only; runtime popup selection does not route through that startup contract.
-- Session-scoped options are CLI-origin and are not persisted into config.
-- Selector edit/delete operations are allowed only for config-backed entries.
+- Application selector-state loading (`LoadDatabaseSelectorState`) accepts session-scoped additional options and returns the active config path plus a merged selector state.
+- Session-scoped options are normalized as CLI-origin, are not persisted into config, and are deduplicated both against equivalent session entries and against equivalent config-backed entries.
+- Each loaded selector option carries `ConfigIndex`, `CanEdit`, and `CanDelete`; the TUI selector consumes those flags instead of deriving config-management policy locally.
 
 ## Runtime and Operational Considerations
 

@@ -18,7 +18,7 @@ func TestSelectDatabaseWithState_ReturnsErrorWhenConfigUseCasesMissing(t *testin
 	ctx := context.Background()
 
 	// Act
-	_, err := SelectDatabaseWithState(ctx, nil, nil, nil, nil, nil, SelectorLaunchState{})
+	_, err := SelectDatabaseWithState(ctx, nil, nil, nil, nil, SelectorLaunchState{})
 
 	// Assert
 	if err == nil {
@@ -63,15 +63,41 @@ func TestSelectDatabaseWithState_DelegatesStateAndUsesConfigManagementAdapter(t 
 			t.Fatalf("expected selector launch state %+v, got %+v", expectedState, state)
 		}
 
-		listed, err := manager.List(ctx)
+		loadState, err := manager.LoadState(ctx, dto.DatabaseSelectorLoadInput{
+			AdditionalOptions: []dto.DatabaseSelectorAdditionalOption{
+				{
+					Name:       "/tmp/direct.sqlite",
+					ConnString: "/tmp/direct.sqlite",
+					Source:     dto.DatabaseSelectorOptionSourceCLI,
+				},
+			},
+		})
 		if err != nil {
-			t.Fatalf("expected list without error, got %v", err)
+			t.Fatalf("expected load state without error, got %v", err)
 		}
-		expectedListed := []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
+		expectedLoadState := dto.DatabaseSelectorState{
+			ActiveConfigPath: "/tmp/config.json",
+			Options: []dto.DatabaseSelectorOption{
+				{
+					Name:        "local",
+					ConnString:  "/tmp/local.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceConfig,
+					ConfigIndex: 0,
+					CanEdit:     true,
+					CanDelete:   true,
+				},
+				{
+					Name:        "/tmp/direct.sqlite",
+					ConnString:  "/tmp/direct.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceCLI,
+					ConfigIndex: -1,
+					CanEdit:     false,
+					CanDelete:   false,
+				},
+			},
 		}
-		if !reflect.DeepEqual(listed, expectedListed) {
-			t.Fatalf("expected listed entries %+v, got %+v", expectedListed, listed)
+		if !reflect.DeepEqual(loadState, expectedLoadState) {
+			t.Fatalf("expected loaded state %+v, got %+v", expectedLoadState, loadState)
 		}
 
 		if err := manager.Create(ctx, dto.ConfigDatabase{Name: "analytics", Path: "/tmp/analytics.sqlite"}); err != nil {
@@ -84,31 +110,21 @@ func TestSelectDatabaseWithState_DelegatesStateAndUsesConfigManagementAdapter(t 
 			t.Fatalf("expected delete without error, got %v", err)
 		}
 
-		activePath, err := manager.ActivePath(ctx)
-		if err != nil {
-			t.Fatalf("expected active path without error, got %v", err)
-		}
-		if activePath != "/tmp/config.json" {
-			t.Fatalf("expected active path %q, got %q", "/tmp/config.json", activePath)
-		}
-
 		return expectedOption, nil
 	}
 
-	listConfiguredDatabases := usecase.NewListConfiguredDatabases(store)
+	loadDatabaseSelectorState := usecase.NewLoadDatabaseSelectorState(store)
 	createConfiguredDatabase := usecase.NewCreateConfiguredDatabase(store, checker)
 	updateConfiguredDatabase := usecase.NewUpdateConfiguredDatabase(store, checker)
 	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(store)
-	getActiveConfigPath := usecase.NewGetActiveConfigPath(store)
 
 	// Act
 	selected, err := SelectDatabaseWithState(
 		context.Background(),
-		listConfiguredDatabases,
+		loadDatabaseSelectorState,
 		createConfiguredDatabase,
 		updateConfiguredDatabase,
 		deleteConfiguredDatabase,
-		getActiveConfigPath,
 		expectedState,
 	)
 
@@ -150,20 +166,18 @@ func TestSelectDatabaseWithState_PropagatesDelegatedError(t *testing.T) {
 		return DatabaseOption{}, expectedErr
 	}
 
-	listConfiguredDatabases := usecase.NewListConfiguredDatabases(store)
+	loadDatabaseSelectorState := usecase.NewLoadDatabaseSelectorState(store)
 	createConfiguredDatabase := usecase.NewCreateConfiguredDatabase(store, checker)
 	updateConfiguredDatabase := usecase.NewUpdateConfiguredDatabase(store, checker)
 	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(store)
-	getActiveConfigPath := usecase.NewGetActiveConfigPath(store)
 
 	// Act
 	_, err := SelectDatabaseWithState(
 		context.Background(),
-		listConfiguredDatabases,
+		loadDatabaseSelectorState,
 		createConfiguredDatabase,
 		updateConfiguredDatabase,
 		deleteConfiguredDatabase,
-		getActiveConfigPath,
 		SelectorLaunchState{},
 	)
 
@@ -189,20 +203,18 @@ func TestSelectDatabase_UsesEmptyLaunchState(t *testing.T) {
 		return expected, nil
 	}
 
-	listConfiguredDatabases := usecase.NewListConfiguredDatabases(store)
+	loadDatabaseSelectorState := usecase.NewLoadDatabaseSelectorState(store)
 	createConfiguredDatabase := usecase.NewCreateConfiguredDatabase(store, checker)
 	updateConfiguredDatabase := usecase.NewUpdateConfiguredDatabase(store, checker)
 	deleteConfiguredDatabase := usecase.NewDeleteConfiguredDatabase(store)
-	getActiveConfigPath := usecase.NewGetActiveConfigPath(store)
 
 	// Act
 	selected, err := SelectDatabase(
 		context.Background(),
-		listConfiguredDatabases,
+		loadDatabaseSelectorState,
 		createConfiguredDatabase,
 		updateConfiguredDatabase,
 		deleteConfiguredDatabase,
-		getActiveConfigPath,
 	)
 
 	// Assert

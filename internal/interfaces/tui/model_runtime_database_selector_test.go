@@ -63,13 +63,13 @@ func runtimeDatabaseSelectorDepsForTest(current DatabaseOption, additionalOption
 	}
 	checker := fakeRuntimeSelectorConnectionChecker{}
 	return &RuntimeDatabaseSelectorDeps{
-		ListConfiguredDatabases:  usecase.NewListConfiguredDatabases(store),
-		CreateConfiguredDatabase: usecase.NewCreateConfiguredDatabase(store, checker),
-		UpdateConfiguredDatabase: usecase.NewUpdateConfiguredDatabase(store, checker),
-		DeleteConfiguredDatabase: usecase.NewDeleteConfiguredDatabase(store),
-		GetActiveConfigPath:      usecase.NewGetActiveConfigPath(store),
-		CurrentDatabase:          current,
-		AdditionalOptions:        additionalOptions,
+		LoadDatabaseSelectorState: usecase.NewLoadDatabaseSelectorState(store),
+		ListConfiguredDatabases:   usecase.NewListConfiguredDatabases(store),
+		CreateConfiguredDatabase:  usecase.NewCreateConfiguredDatabase(store, checker),
+		UpdateConfiguredDatabase:  usecase.NewUpdateConfiguredDatabase(store, checker),
+		DeleteConfiguredDatabase:  usecase.NewDeleteConfiguredDatabase(store),
+		CurrentDatabase:           current,
+		AdditionalOptions:         additionalOptions,
 	}
 }
 
@@ -267,12 +267,12 @@ func TestHandleKey_RuntimeDatabaseSelectorSelectionUsesLiveConfiguredIdentityWhe
 			focus:    FocusContent,
 		},
 		runtimeDatabaseSelectorDeps: &RuntimeDatabaseSelectorDeps{
-			ListConfiguredDatabases:  usecase.NewListConfiguredDatabases(store),
-			CreateConfiguredDatabase: usecase.NewCreateConfiguredDatabase(store, checker),
-			UpdateConfiguredDatabase: usecase.NewUpdateConfiguredDatabase(store, checker),
-			DeleteConfiguredDatabase: usecase.NewDeleteConfiguredDatabase(store),
-			GetActiveConfigPath:      usecase.NewGetActiveConfigPath(store),
-			CurrentDatabase:          current,
+			LoadDatabaseSelectorState: usecase.NewLoadDatabaseSelectorState(store),
+			ListConfiguredDatabases:   usecase.NewListConfiguredDatabases(store),
+			CreateConfiguredDatabase:  usecase.NewCreateConfiguredDatabase(store, checker),
+			UpdateConfiguredDatabase:  usecase.NewUpdateConfiguredDatabase(store, checker),
+			DeleteConfiguredDatabase:  usecase.NewDeleteConfiguredDatabase(store),
+			CurrentDatabase:           current,
 		},
 	}
 	model.openRuntimeDatabaseSelectorPopup()
@@ -324,12 +324,12 @@ func TestHandleKey_RuntimeDatabaseSelectorSelectionHonorsExplicitConfiguredAlias
 			focus:    FocusContent,
 		},
 		runtimeDatabaseSelectorDeps: &RuntimeDatabaseSelectorDeps{
-			ListConfiguredDatabases:  usecase.NewListConfiguredDatabases(store),
-			CreateConfiguredDatabase: usecase.NewCreateConfiguredDatabase(store, checker),
-			UpdateConfiguredDatabase: usecase.NewUpdateConfiguredDatabase(store, checker),
-			DeleteConfiguredDatabase: usecase.NewDeleteConfiguredDatabase(store),
-			GetActiveConfigPath:      usecase.NewGetActiveConfigPath(store),
-			CurrentDatabase:          current,
+			LoadDatabaseSelectorState: usecase.NewLoadDatabaseSelectorState(store),
+			ListConfiguredDatabases:   usecase.NewListConfiguredDatabases(store),
+			CreateConfiguredDatabase:  usecase.NewCreateConfiguredDatabase(store, checker),
+			UpdateConfiguredDatabase:  usecase.NewUpdateConfiguredDatabase(store, checker),
+			DeleteConfiguredDatabase:  usecase.NewDeleteConfiguredDatabase(store),
+			CurrentDatabase:           current,
 		},
 	}
 	model.openRuntimeDatabaseSelectorPopup()

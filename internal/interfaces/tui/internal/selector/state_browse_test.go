@@ -256,3 +256,77 @@ func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing
 		t.Fatalf("expected no delete calls for CLI session entry, got %d", len(manager.deleted))
 	}
 }
+
+func TestDatabaseSelector_EditIsUnavailableWhenLoadedStateDisablesEditForConfigSource(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		loadState: &dto.DatabaseSelectorState{
+			ActiveConfigPath: "/tmp/config.json",
+			Options: []dto.DatabaseSelectorOption{
+				{
+					Name:        "local",
+					ConnString:  "/tmp/local.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceConfig,
+					ConfigIndex: 0,
+					CanEdit:     false,
+					CanDelete:   true,
+				},
+			},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+
+	// Assert
+	if model.mode != selectorModeBrowse {
+		t.Fatalf("expected browse mode to stay active, got %v", model.mode)
+	}
+	if !strings.Contains(strings.ToLower(model.browse.statusMessage), "cannot be edited") {
+		t.Fatalf("expected edit-block status message, got %q", model.browse.statusMessage)
+	}
+	if len(manager.updated) != 0 {
+		t.Fatalf("expected no update calls when edit permission is disabled, got %d", len(manager.updated))
+	}
+}
+
+func TestDatabaseSelector_DeleteIsUnavailableWhenLoadedStateDisablesDeleteForConfigSource(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		loadState: &dto.DatabaseSelectorState{
+			ActiveConfigPath: "/tmp/config.json",
+			Options: []dto.DatabaseSelectorOption{
+				{
+					Name:        "local",
+					ConnString:  "/tmp/local.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceConfig,
+					ConfigIndex: 0,
+					CanEdit:     true,
+					CanDelete:   false,
+				},
+			},
+		},
+	}
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	// Act
+	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+	// Assert
+	if model.mode != selectorModeBrowse {
+		t.Fatalf("expected browse mode to stay active, got %v", model.mode)
+	}
+	if !strings.Contains(strings.ToLower(model.browse.statusMessage), "cannot be deleted") {
+		t.Fatalf("expected delete-block status message, got %q", model.browse.statusMessage)
+	}
+	if len(manager.deleted) != 0 {
+		t.Fatalf("expected no delete calls when delete permission is disabled, got %d", len(manager.deleted))
+	}
+}

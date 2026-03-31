@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mgierok/dbc/internal/application/dto"
+	"github.com/mgierok/dbc/internal/application/port"
 	"github.com/mgierok/dbc/internal/application/usecase"
 	"github.com/mgierok/dbc/internal/interfaces/tui"
 )
@@ -40,16 +42,16 @@ func TestNewRuntimeStartupDependencies_UsesDefaultConfigPathAndBuildsUseCases(t 
 	if deps.deleteConfiguredDB == nil {
 		t.Fatal("expected deleteConfiguredDB use case to be initialized")
 	}
-	if deps.getActiveConfigPath == nil {
-		t.Fatal("expected getActiveConfigPath use case to be initialized")
+	if deps.loadDatabaseSelectorState == nil {
+		t.Fatal("expected loadDatabaseSelectorState use case to be initialized")
 	}
 
-	activePath, err := deps.getActiveConfigPath.Execute(context.Background())
+	state, err := deps.loadDatabaseSelectorState.Execute(context.Background(), dto.DatabaseSelectorLoadInput{})
 	if err != nil {
-		t.Fatalf("expected active config path to resolve, got %v", err)
+		t.Fatalf("expected selector state to resolve, got %v", err)
 	}
-	if activePath != expectedPath {
-		t.Fatalf("expected active config path %q, got %q", expectedPath, activePath)
+	if state.ActiveConfigPath != expectedPath {
+		t.Fatalf("expected active config path %q, got %q", expectedPath, state.ActiveConfigPath)
 	}
 }
 
@@ -306,17 +308,26 @@ func TestRuntimeStartupOrchestratorSelectDatabase_UsesSelectorState(t *testing.T
 		ConnString: "/tmp/analytics.sqlite",
 		Source:     tui.DatabaseOptionSourceConfig,
 	}
-	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{})
+	store := &fakeStartupSelectionConfigStore{
+		entries: []port.ConfigEntry{
+			{Name: "local", DBPath: "/tmp/local.sqlite"},
+		},
+	}
+	orchestrator := newRuntimeStartupOrchestrator(startupOptions{}, runtimeStartupDependencies{
+		loadDatabaseSelectorState: usecase.NewLoadDatabaseSelectorState(store),
+	})
 	orchestrator.selectorState = expectedState
 	selectDatabaseWithStateFn = func(
 		ctx context.Context,
-		listConfiguredDatabases *usecase.ListConfiguredDatabases,
+		loadDatabaseSelectorState *usecase.LoadDatabaseSelectorState,
 		createConfiguredDatabase *usecase.CreateConfiguredDatabase,
 		updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
 		deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
-		getActiveConfigPath *usecase.GetActiveConfigPath,
 		state tui.SelectorLaunchState,
 	) (tui.DatabaseOption, error) {
+		if loadDatabaseSelectorState == nil {
+			t.Fatal("expected loadDatabaseSelectorState to be wired")
+		}
 		if !reflect.DeepEqual(state, expectedState) {
 			t.Fatalf("expected selector state %+v, got %+v", expectedState, state)
 		}

@@ -216,8 +216,20 @@ func TestHandleHelpPopupKey_NonScrollKeyDoesNotChangeRenderedWindow(t *testing.T
 
 type runtimeSelectorManagerStub struct{}
 
-func (runtimeSelectorManagerStub) List(_ context.Context) ([]dto.ConfigDatabase, error) {
-	return []dto.ConfigDatabase{{Name: "local", Path: "/tmp/local.sqlite"}}, nil
+func (runtimeSelectorManagerStub) LoadState(_ context.Context, _ dto.DatabaseSelectorLoadInput) (dto.DatabaseSelectorState, error) {
+	return dto.DatabaseSelectorState{
+		ActiveConfigPath: "/tmp/config.json",
+		Options: []dto.DatabaseSelectorOption{
+			{
+				Name:        "local",
+				ConnString:  "/tmp/local.sqlite",
+				Source:      dto.DatabaseSelectorOptionSourceConfig,
+				ConfigIndex: 0,
+				CanEdit:     true,
+				CanDelete:   true,
+			},
+		},
+	}, nil
 }
 
 func (runtimeSelectorManagerStub) Create(_ context.Context, _ dto.ConfigDatabase) error {
@@ -230,10 +242,6 @@ func (runtimeSelectorManagerStub) Update(_ context.Context, _ int, _ dto.ConfigD
 
 func (runtimeSelectorManagerStub) Delete(_ context.Context, _ int) error {
 	return nil
-}
-
-func (runtimeSelectorManagerStub) ActivePath(_ context.Context) (string, error) {
-	return "/tmp/config.json", nil
 }
 
 func TestView_HelpPopupShowsBackdropRuntimePanelsAndHelpContent(t *testing.T) {

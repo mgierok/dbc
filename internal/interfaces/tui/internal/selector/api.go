@@ -27,7 +27,9 @@ type DatabaseOption struct {
 	ConnString string
 	Source     DatabaseOptionSource
 
-	managerIndex int
+	configIndex int
+	canEdit     bool
+	canDelete   bool
 }
 
 type SelectorBrowseEscBehavior int
@@ -45,11 +47,10 @@ type SelectorLaunchState struct {
 }
 
 type Manager interface {
-	List(ctx context.Context) ([]dto.ConfigDatabase, error)
+	LoadState(ctx context.Context, input dto.DatabaseSelectorLoadInput) (dto.DatabaseSelectorState, error)
 	Create(ctx context.Context, entry dto.ConfigDatabase) error
 	Update(ctx context.Context, index int, entry dto.ConfigDatabase) error
 	Delete(ctx context.Context, index int) error
-	ActivePath(ctx context.Context) (string, error)
 }
 
 type selectorManager = Manager

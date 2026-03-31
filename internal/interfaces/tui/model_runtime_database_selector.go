@@ -12,17 +12,16 @@ func (m *Model) openRuntimeDatabaseSelectorPopup() {
 		return
 	}
 	deps := m.runtimeDatabaseSelectorDeps
-	if deps.ListConfiguredDatabases == nil || deps.CreateConfiguredDatabase == nil || deps.UpdateConfiguredDatabase == nil || deps.DeleteConfiguredDatabase == nil || deps.GetActiveConfigPath == nil {
+	if deps.LoadDatabaseSelectorState == nil || deps.ListConfiguredDatabases == nil || deps.CreateConfiguredDatabase == nil || deps.UpdateConfiguredDatabase == nil || deps.DeleteConfiguredDatabase == nil {
 		m.ui.statusMessage = "Error: database selector unavailable"
 		return
 	}
 
 	controller, err := selectorpkg.NewRuntimeController(m.ctx, selectorUseCaseAdapter{
-		list:   deps.ListConfiguredDatabases,
+		load:   deps.LoadDatabaseSelectorState,
 		create: deps.CreateConfiguredDatabase,
 		update: deps.UpdateConfiguredDatabase,
 		del:    deps.DeleteConfiguredDatabase,
-		active: deps.GetActiveConfigPath,
 	}, selectorpkg.SelectorLaunchState{
 		PreferConnString:  deps.CurrentDatabase.ConnString,
 		AdditionalOptions: cloneDatabaseOptions(deps.AdditionalOptions),

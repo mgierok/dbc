@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/dto"
@@ -25,6 +26,33 @@ func TestDatabaseSelector_EmptyConfigStartsInForcedSetupForm(t *testing.T) {
 	}
 	if !model.requiresFirstEntry {
 		t.Fatal("expected forced setup mode when no configured databases exist")
+	}
+	if model.mode != selectorModeAdd {
+		t.Fatalf("expected add form mode in forced setup, got %v", model.mode)
+	}
+}
+
+func TestDatabaseSelector_ForcedSetupUsesLoadStateInsteadOfAdapterLocalMerge(t *testing.T) {
+	// Arrange
+	manager := &fakeSelectorManager{
+		entries: []dto.ConfigDatabase{
+			{Name: "ignored", Path: "/tmp/ignored.sqlite"},
+		},
+		loadState: &dto.DatabaseSelectorState{
+			ActiveConfigPath:   "/tmp/config.json",
+			RequiresFirstEntry: true,
+		},
+	}
+
+	// Act
+	model, err := newDatabaseSelectorModel(context.Background(), manager)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+	if !model.requiresFirstEntry {
+		t.Fatal("expected forced setup flag from loaded state")
 	}
 	if model.mode != selectorModeAdd {
 		t.Fatalf("expected add form mode in forced setup, got %v", model.mode)
@@ -123,12 +151,30 @@ func TestDatabaseSelector_IgnoresMissingPreferredConnString(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_DeduplicatesEquivalentAdditionalOptionsAgainstConfig(t *testing.T) {
+func TestDatabaseSelector_PassesAdditionalOptionsToLoadState(t *testing.T) {
 	// Arrange
-	basePath := filepath.Join(t.TempDir(), "local.sqlite")
 	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: basePath},
+		loadState: &dto.DatabaseSelectorState{
+			ActiveConfigPath: "/tmp/config.json",
+			Options: []dto.DatabaseSelectorOption{
+				{
+					Name:        "local",
+					ConnString:  "/tmp/local.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceConfig,
+					ConfigIndex: 0,
+					CanEdit:     true,
+					CanDelete:   true,
+				},
+			},
+		},
+	}
+	expectedInput := dto.DatabaseSelectorLoadInput{
+		AdditionalOptions: []dto.DatabaseSelectorAdditionalOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     dto.DatabaseSelectorOptionSourceCLI,
+			},
 		},
 	}
 
@@ -136,8 +182,8 @@ func TestDatabaseSelector_DeduplicatesEquivalentAdditionalOptionsAgainstConfig(t
 	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
 		AdditionalOptions: []DatabaseOption{
 			{
-				Name:       basePath + string(os.PathSeparator) + ".",
-				ConnString: basePath + string(os.PathSeparator) + ".",
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
 				Source:     DatabaseOptionSourceCLI,
 			},
 		},
@@ -147,19 +193,37 @@ func TestDatabaseSelector_DeduplicatesEquivalentAdditionalOptionsAgainstConfig(t
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
-	if len(model.options) != 1 {
-		t.Fatalf("expected equivalent config and CLI entries to deduplicate, got %d options", len(model.options))
+	if model == nil {
+		t.Fatal("expected selector model instance")
 	}
-	if model.options[0].Source != DatabaseOptionSourceConfig {
-		t.Fatalf("expected deduplicated option to remain config-backed, got %q", model.options[0].Source)
+	if !reflect.DeepEqual(manager.lastLoadInput, expectedInput) {
+		t.Fatalf("expected selector load input %+v, got %+v", expectedInput, manager.lastLoadInput)
 	}
 }
 
-func TestDatabaseSelector_AppendsSessionScopedAdditionalOptions(t *testing.T) {
+func TestDatabaseSelector_UsesLoadedStateToRenderSessionScopedAdditionalOptions(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
+		loadState: &dto.DatabaseSelectorState{
+			ActiveConfigPath: "/tmp/config.json",
+			Options: []dto.DatabaseSelectorOption{
+				{
+					Name:        "local",
+					ConnString:  "/tmp/local.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceConfig,
+					ConfigIndex: 0,
+					CanEdit:     true,
+					CanDelete:   true,
+				},
+				{
+					Name:        "/tmp/direct.sqlite",
+					ConnString:  "/tmp/direct.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceCLI,
+					ConfigIndex: -1,
+					CanEdit:     false,
+					CanDelete:   false,
+				},
+			},
 		},
 	}
 
@@ -189,11 +253,38 @@ func TestDatabaseSelector_AppendsSessionScopedAdditionalOptions(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_AdditionalOptionsSurviveRefresh(t *testing.T) {
+func TestDatabaseSelector_RefreshOptionsReloadsStateUsingLaunchAdditionalOptions(t *testing.T) {
 	// Arrange
 	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
+		loadState: &dto.DatabaseSelectorState{
+			ActiveConfigPath: "/tmp/config.json",
+			Options: []dto.DatabaseSelectorOption{
+				{
+					Name:        "local",
+					ConnString:  "/tmp/local.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceConfig,
+					ConfigIndex: 0,
+					CanEdit:     true,
+					CanDelete:   true,
+				},
+				{
+					Name:        "/tmp/direct.sqlite",
+					ConnString:  "/tmp/direct.sqlite",
+					Source:      dto.DatabaseSelectorOptionSourceCLI,
+					ConfigIndex: -1,
+					CanEdit:     false,
+					CanDelete:   false,
+				},
+			},
+		},
+	}
+	expectedInput := dto.DatabaseSelectorLoadInput{
+		AdditionalOptions: []dto.DatabaseSelectorAdditionalOption{
+			{
+				Name:       "/tmp/direct.sqlite",
+				ConnString: "/tmp/direct.sqlite",
+				Source:     dto.DatabaseSelectorOptionSourceCLI,
+			},
 		},
 	}
 	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
@@ -208,6 +299,27 @@ func TestDatabaseSelector_AdditionalOptionsSurviveRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected selector model, got error %v", err)
 	}
+	manager.loadState = &dto.DatabaseSelectorState{
+		ActiveConfigPath: "/tmp/config.json",
+		Options: []dto.DatabaseSelectorOption{
+			{
+				Name:        "analytics",
+				ConnString:  "/tmp/analytics.sqlite",
+				Source:      dto.DatabaseSelectorOptionSourceConfig,
+				ConfigIndex: 0,
+				CanEdit:     true,
+				CanDelete:   true,
+			},
+			{
+				Name:        "/tmp/direct.sqlite",
+				ConnString:  "/tmp/direct.sqlite",
+				Source:      dto.DatabaseSelectorOptionSourceCLI,
+				ConfigIndex: -1,
+				CanEdit:     false,
+				CanDelete:   false,
+			},
+		},
+	}
 
 	// Act
 	if err := model.refreshOptions(); err != nil {
@@ -215,8 +327,14 @@ func TestDatabaseSelector_AdditionalOptionsSurviveRefresh(t *testing.T) {
 	}
 
 	// Assert
+	if !reflect.DeepEqual(manager.lastLoadInput, expectedInput) {
+		t.Fatalf("expected refreshed selector load input %+v, got %+v", expectedInput, manager.lastLoadInput)
+	}
 	if len(model.options) != 2 {
-		t.Fatalf("expected additional session option to survive refresh, got %d options", len(model.options))
+		t.Fatalf("expected refreshed selector options, got %d options", len(model.options))
+	}
+	if model.options[0].Name != "analytics" {
+		t.Fatalf("expected refreshed config option name %q, got %q", "analytics", model.options[0].Name)
 	}
 	if model.options[1].Source != DatabaseOptionSourceCLI {
 		t.Fatalf("expected refreshed session option source %q, got %q", DatabaseOptionSourceCLI, model.options[1].Source)
@@ -225,9 +343,9 @@ func TestDatabaseSelector_AdditionalOptionsSurviveRefresh(t *testing.T) {
 
 func TestDatabaseSelector_ReturnsErrorWhenListingEntriesFails(t *testing.T) {
 	// Arrange
-	listErr := errors.New("list failed")
+	loadStateErr := errors.New("load state failed")
 	manager := &fakeSelectorManager{
-		listErr: listErr,
+		loadStateErr: loadStateErr,
 	}
 
 	// Act
@@ -237,8 +355,8 @@ func TestDatabaseSelector_ReturnsErrorWhenListingEntriesFails(t *testing.T) {
 	if model != nil {
 		t.Fatalf("expected nil model when list fails, got %#v", model)
 	}
-	if !errors.Is(err, listErr) {
-		t.Fatalf("expected list error %v, got %v", listErr, err)
+	if !errors.Is(err, loadStateErr) {
+		t.Fatalf("expected load-state error %v, got %v", loadStateErr, err)
 	}
 }
 

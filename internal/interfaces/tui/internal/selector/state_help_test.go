@@ -70,7 +70,7 @@ func TestDatabaseSelector_ContextHelpPopupEscClosesAndRestoresSelectorMode(t *te
 		t.Fatalf("expected selector model, got error %v", err)
 	}
 	model.mode = selectorModeConfirmDelete
-	model.confirmDelete = selectorDeleteConfirm{active: true, optionIndex: 0, managerIndex: 0}
+	model.confirmDelete = selectorDeleteConfirm{active: true, optionIndex: 0, configIndex: 0}
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
 	if !model.helpPopup.active {
 		t.Fatal("expected context help popup to open before close check")

@@ -32,15 +32,14 @@ type DatabaseOption = selectorpkg.DatabaseOption
 type SelectorLaunchState = selectorpkg.SelectorLaunchState
 
 type selectorUseCaseAdapter struct {
-	list   *usecase.ListConfiguredDatabases
+	load   *usecase.LoadDatabaseSelectorState
 	create *usecase.CreateConfiguredDatabase
 	update *usecase.UpdateConfiguredDatabase
 	del    *usecase.DeleteConfiguredDatabase
-	active *usecase.GetActiveConfigPath
 }
 
-func (a selectorUseCaseAdapter) List(ctx context.Context) ([]dto.ConfigDatabase, error) {
-	return a.list.Execute(ctx)
+func (a selectorUseCaseAdapter) LoadState(ctx context.Context, input dto.DatabaseSelectorLoadInput) (dto.DatabaseSelectorState, error) {
+	return a.load.Execute(ctx, input)
 }
 
 func (a selectorUseCaseAdapter) Create(ctx context.Context, entry dto.ConfigDatabase) error {
@@ -55,48 +54,40 @@ func (a selectorUseCaseAdapter) Delete(ctx context.Context, index int) error {
 	return a.del.Execute(ctx, index)
 }
 
-func (a selectorUseCaseAdapter) ActivePath(ctx context.Context) (string, error) {
-	return a.active.Execute(ctx)
-}
-
 func SelectDatabase(
 	ctx context.Context,
-	listConfiguredDatabases *usecase.ListConfiguredDatabases,
+	loadDatabaseSelectorState *usecase.LoadDatabaseSelectorState,
 	createConfiguredDatabase *usecase.CreateConfiguredDatabase,
 	updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
 	deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
-	getActiveConfigPath *usecase.GetActiveConfigPath,
 ) (DatabaseOption, error) {
 	return SelectDatabaseWithState(
 		ctx,
-		listConfiguredDatabases,
+		loadDatabaseSelectorState,
 		createConfiguredDatabase,
 		updateConfiguredDatabase,
 		deleteConfiguredDatabase,
-		getActiveConfigPath,
 		SelectorLaunchState{},
 	)
 }
 
 func SelectDatabaseWithState(
 	ctx context.Context,
-	listConfiguredDatabases *usecase.ListConfiguredDatabases,
+	loadDatabaseSelectorState *usecase.LoadDatabaseSelectorState,
 	createConfiguredDatabase *usecase.CreateConfiguredDatabase,
 	updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
 	deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
-	getActiveConfigPath *usecase.GetActiveConfigPath,
 	state SelectorLaunchState,
 ) (DatabaseOption, error) {
-	if listConfiguredDatabases == nil || createConfiguredDatabase == nil || updateConfiguredDatabase == nil || deleteConfiguredDatabase == nil || getActiveConfigPath == nil {
+	if loadDatabaseSelectorState == nil || createConfiguredDatabase == nil || updateConfiguredDatabase == nil || deleteConfiguredDatabase == nil {
 		return DatabaseOption{}, errors.New("selector config management use cases are required")
 	}
 
 	return selectDatabaseWithStateFn(ctx, selectorUseCaseAdapter{
-		list:   listConfiguredDatabases,
+		load:   loadDatabaseSelectorState,
 		create: createConfiguredDatabase,
 		update: updateConfiguredDatabase,
 		del:    deleteConfiguredDatabase,
-		active: getActiveConfigPath,
 	}, state)
 }
 

@@ -138,13 +138,13 @@ type DatabaseConnectionValidator interface {
 }
 
 type RuntimeDatabaseSelectorDeps struct {
-	ListConfiguredDatabases  *usecase.ListConfiguredDatabases
-	CreateConfiguredDatabase *usecase.CreateConfiguredDatabase
-	UpdateConfiguredDatabase *usecase.UpdateConfiguredDatabase
-	DeleteConfiguredDatabase *usecase.DeleteConfiguredDatabase
-	GetActiveConfigPath      *usecase.GetActiveConfigPath
-	CurrentDatabase          DatabaseOption
-	AdditionalOptions        []DatabaseOption
+	LoadDatabaseSelectorState *usecase.LoadDatabaseSelectorState
+	ListConfiguredDatabases   *usecase.ListConfiguredDatabases
+	CreateConfiguredDatabase  *usecase.CreateConfiguredDatabase
+	UpdateConfiguredDatabase  *usecase.UpdateConfiguredDatabase
+	DeleteConfiguredDatabase  *usecase.DeleteConfiguredDatabase
+	CurrentDatabase           DatabaseOption
+	AdditionalOptions         []DatabaseOption
 }
 
 type Model struct {

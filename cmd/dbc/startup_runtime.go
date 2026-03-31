@@ -23,11 +23,11 @@ var (
 )
 
 type runtimeStartupDependencies struct {
-	listConfiguredDatabases *usecase.ListConfiguredDatabases
-	createConfiguredDB      *usecase.CreateConfiguredDatabase
-	updateConfiguredDB      *usecase.UpdateConfiguredDatabase
-	deleteConfiguredDB      *usecase.DeleteConfiguredDatabase
-	getActiveConfigPath     *usecase.GetActiveConfigPath
+	loadDatabaseSelectorState *usecase.LoadDatabaseSelectorState
+	listConfiguredDatabases   *usecase.ListConfiguredDatabases
+	createConfiguredDB        *usecase.CreateConfiguredDatabase
+	updateConfiguredDB        *usecase.UpdateConfiguredDatabase
+	deleteConfiguredDB        *usecase.DeleteConfiguredDatabase
 }
 
 func newRuntimeStartupDependencies() (runtimeStartupDependencies, error) {
@@ -39,11 +39,11 @@ func newRuntimeStartupDependencies() (runtimeStartupDependencies, error) {
 	configStore := config.NewStore(cfgPath)
 	connectionChecker := engine.NewSQLiteConnectionChecker()
 	return runtimeStartupDependencies{
-		listConfiguredDatabases: usecase.NewListConfiguredDatabases(configStore),
-		createConfiguredDB:      usecase.NewCreateConfiguredDatabase(configStore, connectionChecker),
-		updateConfiguredDB:      usecase.NewUpdateConfiguredDatabase(configStore, connectionChecker),
-		deleteConfiguredDB:      usecase.NewDeleteConfiguredDatabase(configStore),
-		getActiveConfigPath:     usecase.NewGetActiveConfigPath(configStore),
+		loadDatabaseSelectorState: usecase.NewLoadDatabaseSelectorState(configStore),
+		listConfiguredDatabases:   usecase.NewListConfiguredDatabases(configStore),
+		createConfiguredDB:        usecase.NewCreateConfiguredDatabase(configStore, connectionChecker),
+		updateConfiguredDB:        usecase.NewUpdateConfiguredDatabase(configStore, connectionChecker),
+		deleteConfiguredDB:        usecase.NewDeleteConfiguredDatabase(configStore),
 	}, nil
 }
 
@@ -136,11 +136,10 @@ func (o *runtimeStartupOrchestrator) selectDatabase() (tui.DatabaseOption, start
 		func() (tui.DatabaseOption, error) {
 			return selectDatabaseWithStateFn(
 				context.Background(),
-				o.deps.listConfiguredDatabases,
+				o.deps.loadDatabaseSelectorState,
 				o.deps.createConfiguredDB,
 				o.deps.updateConfiguredDB,
 				o.deps.deleteConfiguredDB,
-				o.deps.getActiveConfigPath,
 				o.selectorState,
 			)
 		},
@@ -216,13 +215,13 @@ func (o *runtimeStartupOrchestrator) openRuntimeRunDeps(selected tui.DatabaseOpt
 		DatabaseTargetResolver: usecase.NewRuntimeDatabaseTargetResolver(),
 		Translator:             usecase.NewStagedChangesTranslator(),
 		DatabaseSelector: &tui.RuntimeDatabaseSelectorDeps{
-			ListConfiguredDatabases:  o.deps.listConfiguredDatabases,
-			CreateConfiguredDatabase: o.deps.createConfiguredDB,
-			UpdateConfiguredDatabase: o.deps.updateConfiguredDB,
-			DeleteConfiguredDatabase: o.deps.deleteConfiguredDB,
-			GetActiveConfigPath:      o.deps.getActiveConfigPath,
-			CurrentDatabase:          selected,
-			AdditionalOptions:        cloneDatabaseOptions(o.sessionScopedOptions),
+			LoadDatabaseSelectorState: o.deps.loadDatabaseSelectorState,
+			ListConfiguredDatabases:   o.deps.listConfiguredDatabases,
+			CreateConfiguredDatabase:  o.deps.createConfiguredDB,
+			UpdateConfiguredDatabase:  o.deps.updateConfiguredDB,
+			DeleteConfiguredDatabase:  o.deps.deleteConfiguredDB,
+			CurrentDatabase:           selected,
+			AdditionalOptions:         cloneDatabaseOptions(o.sessionScopedOptions),
 		},
 		Close: func() {
 			if closeErr := closeDatabaseFn(db); closeErr != nil {

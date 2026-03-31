@@ -16,14 +16,14 @@ func (m *databaseSelectorModel) handleDeleteConfirmationKey(msg tea.KeyMsg) (tea
 		return m, nil
 	case primitives.KeyMatches(primitives.KeySelectorDeleteConfirm, key):
 		optionIndex := m.confirmDelete.optionIndex
-		managerIndex := m.confirmDelete.managerIndex
-		if optionIndex < 0 || optionIndex >= len(m.options) || managerIndex < 0 {
+		configIndex := m.confirmDelete.configIndex
+		if optionIndex < 0 || optionIndex >= len(m.options) || configIndex < 0 {
 			m.mode = selectorModeBrowse
 			m.confirmDelete = selectorDeleteConfirm{}
 			m.browse.statusMessage = "Invalid selection for delete"
 			return m, nil
 		}
-		if err := m.manager.Delete(m.ctx, managerIndex); err != nil {
+		if err := m.manager.Delete(m.ctx, configIndex); err != nil {
 			m.mode = selectorModeBrowse
 			m.confirmDelete = selectorDeleteConfirm{}
 			m.browse.statusMessage = "Delete failed: " + err.Error()

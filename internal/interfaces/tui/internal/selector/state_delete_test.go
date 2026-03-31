@@ -71,7 +71,7 @@ func TestDatabaseSelector_DeleteLastEntryLeavesEmptyListInBrowseMode(t *testing.
 	if model.mode != selectorModeBrowse {
 		t.Fatalf("expected browse mode after deleting last entry, got %v", model.mode)
 	}
-	if model.requiresFirstEntry {
-		t.Fatal("expected first-setup mode to remain disabled after deleting last entry")
+	if !model.requiresFirstEntry {
+		t.Fatal("expected first-setup mode to become required after deleting last entry")
 	}
 }

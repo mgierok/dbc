@@ -43,13 +43,13 @@ func (m *databaseSelectorModel) openEditForm() {
 		return
 	}
 	selected := m.options[m.browse.selected]
-	if !selected.isConfigBacked() {
-		m.browse.statusMessage = "CLI session entry cannot be edited"
+	if !selected.canEdit || selected.configIndex < 0 {
+		m.browse.statusMessage = "Selected entry cannot be edited"
 		return
 	}
 	m.mode = selectorModeEdit
 	m.form = selectorForm{
-		editIndex:   selected.managerIndex,
+		editIndex:   selected.configIndex,
 		activeField: selectorInputName,
 		nameValue:   selected.Name,
 		pathValue:   selected.ConnString,
@@ -62,14 +62,14 @@ func (m *databaseSelectorModel) openDeleteConfirmation() {
 		return
 	}
 	selected := m.options[m.browse.selected]
-	if !selected.isConfigBacked() {
-		m.browse.statusMessage = "CLI session entry cannot be deleted"
+	if !selected.canDelete || selected.configIndex < 0 {
+		m.browse.statusMessage = "Selected entry cannot be deleted"
 		return
 	}
 	m.mode = selectorModeConfirmDelete
 	m.confirmDelete = selectorDeleteConfirm{
-		active:       true,
-		optionIndex:  m.browse.selected,
-		managerIndex: selected.managerIndex,
+		active:      true,
+		optionIndex: m.browse.selected,
+		configIndex: selected.configIndex,
 	}
 }
