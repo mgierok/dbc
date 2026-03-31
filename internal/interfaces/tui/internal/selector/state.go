@@ -177,7 +177,7 @@ func (m *databaseSelectorModel) refreshOptions() error {
 		m.browse.selected = 0
 		return nil
 	}
-	m.browse.selected = clamp(m.browse.selected, 0, len(m.options)-1)
+	m.browse.selected = clamp(m.browse.selected, len(m.options)-1)
 	return nil
 }
 

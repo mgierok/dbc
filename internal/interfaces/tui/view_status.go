@@ -21,53 +21,53 @@ func (m *Model) renderStatusWithStyles(width int, styles primitives.RenderStyles
 	}
 	parts := []primitives.SemanticLine{
 		mode,
-		m.statusSegment("Table", m.currentTableName(), styles),
+		m.statusSegment("Table", m.currentTableName()),
 	}
 	if m.read.viewMode == ViewRecords {
-		parts = append(parts, m.recordsSummary(styles), m.pageSummary(styles))
+		parts = append(parts, m.recordsSummary(), m.pageSummary())
 	}
-	parts = append(parts, m.filterSummary(styles), m.sortSummary(styles))
+	parts = append(parts, m.filterSummary(), m.sortSummary())
 	if strings.TrimSpace(m.ui.statusMessage) != "" {
-		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage, styles))
+		parts = append(parts, m.styleStatusMessage(m.ui.statusMessage))
 	}
 	left := primitives.JoinSemanticLines(parts, primitives.FrameSegmentSeparator, primitives.SemanticRoleBody)
 	return primitives.RenderSemanticStatusWithRightHint(left, primitives.SemanticText(primitives.SemanticRoleMuted, primitives.RuntimeStatusContextHelpHint()), styles, width)
 }
 
-func (m *Model) filterSummary(styles primitives.RenderStyles) primitives.SemanticLine {
+func (m *Model) filterSummary() primitives.SemanticLine {
 	if m.read.currentFilter == nil {
-		return m.statusSegment("Filter", "none", styles)
+		return m.statusSegment("Filter", "none")
 	}
 	if m.read.currentFilter.Operator.RequiresValue {
-		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name, m.read.currentFilter.Value), styles)
+		return m.statusSegment("Filter", fmt.Sprintf("%s %s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name, m.read.currentFilter.Value))
 	}
-	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name), styles)
+	return m.statusSegment("Filter", fmt.Sprintf("%s %s", m.read.currentFilter.Column, m.read.currentFilter.Operator.Name))
 }
 
-func (m *Model) sortSummary(styles primitives.RenderStyles) primitives.SemanticLine {
+func (m *Model) sortSummary() primitives.SemanticLine {
 	if m.read.currentSort == nil {
-		return m.statusSegment("Sort", "none", styles)
+		return m.statusSegment("Sort", "none")
 	}
-	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.read.currentSort.Column, m.read.currentSort.Direction), styles)
+	return m.statusSegment("Sort", fmt.Sprintf("%s %s", m.read.currentSort.Column, m.read.currentSort.Direction))
 }
 
-func (m *Model) recordsSummary(styles primitives.RenderStyles) primitives.SemanticLine {
-	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.read.records), m.read.recordTotalCount), styles)
+func (m *Model) recordsSummary() primitives.SemanticLine {
+	return m.statusSegment("Records", fmt.Sprintf("%d/%d", len(m.read.records), m.read.recordTotalCount))
 }
 
-func (m *Model) pageSummary(styles primitives.RenderStyles) primitives.SemanticLine {
+func (m *Model) pageSummary() primitives.SemanticLine {
 	currentPage := clamp(m.read.recordPageIndex+1, 1, primitives.MaxInt(1, m.read.recordTotalPages))
-	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.read.recordTotalPages)), styles)
+	return m.statusSegment("Page", fmt.Sprintf("%d/%d", currentPage, primitives.MaxInt(1, m.read.recordTotalPages)))
 }
 
-func (m *Model) statusSegment(label, value string, styles primitives.RenderStyles) primitives.SemanticLine {
+func (m *Model) statusSegment(label, value string) primitives.SemanticLine {
 	return primitives.SemanticLine{
 		primitives.Span(primitives.SemanticRoleLabel, label+":"),
 		primitives.Span(primitives.SemanticRoleBody, " "+value),
 	}
 }
 
-func (m *Model) styleStatusMessage(message string, styles primitives.RenderStyles) primitives.SemanticLine {
+func (m *Model) styleStatusMessage(message string) primitives.SemanticLine {
 	sanitizedMessage := primitives.SanitizeDisplayText(message, primitives.DisplaySanitizeSingleLine)
 	if primitives.IsErrorLikeMessage(sanitizedMessage) {
 		return primitives.SemanticText(primitives.SemanticRoleError, sanitizedMessage)

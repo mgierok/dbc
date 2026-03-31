@@ -1,8 +1,8 @@
 package selector
 
-func clamp(value, min, max int) int {
-	if value < min {
-		return min
+func clamp(value, max int) int {
+	if value < 0 {
+		return 0
 	}
 	if value > max {
 		return max

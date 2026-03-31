@@ -70,5 +70,5 @@ func (m *databaseSelectorModel) helpPopupMaxOffset() int {
 
 func (m *databaseSelectorModel) moveHelpPopupScroll(delta int) {
 	maxOffset := m.helpPopupMaxOffset()
-	m.helpPopup.scrollOffset = clamp(m.helpPopup.scrollOffset+delta, 0, maxOffset)
+	m.helpPopup.scrollOffset = clamp(m.helpPopup.scrollOffset+delta, maxOffset)
 }

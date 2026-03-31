@@ -142,7 +142,7 @@ func (c *Controller) SetSelectedIndex(index int) {
 	if c == nil || c.model == nil || len(c.model.options) == 0 {
 		return
 	}
-	c.model.browse.selected = clamp(index, 0, len(c.model.options)-1)
+	c.model.browse.selected = clamp(index, len(c.model.options)-1)
 }
 
 type startupHostModel struct {

@@ -4,7 +4,7 @@ func (m *databaseSelectorModel) moveSelection(delta int) {
 	if len(m.options) == 0 {
 		return
 	}
-	m.browse.selected = clamp(m.browse.selected+delta, 0, len(m.options)-1)
+	m.browse.selected = clamp(m.browse.selected+delta, len(m.options)-1)
 }
 
 func (m *databaseSelectorModel) selectTop() {

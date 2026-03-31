@@ -102,7 +102,7 @@ func (m *databaseSelectorModel) submitForm() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if previousMode == selectorModeEdit && m.configOptionCount > 0 {
-		m.browse.selected = clamp(previousEditIndex, 0, m.configOptionCount-1)
+		m.browse.selected = clamp(previousEditIndex, m.configOptionCount-1)
 		m.browse.statusMessage = "Database updated"
 	}
 	return m, nil
