@@ -50,7 +50,16 @@ func (m *Model) executeRuntimeNavigationNextAction(action usecase.RuntimeNavigat
 }
 
 func (m *Model) resolveRuntimeDatabaseTransitionTargetFromOption(selected DatabaseOption) (usecase.RuntimeDatabaseTarget, error) {
-	return m.resolveRuntimeDatabaseTransitionTargetFromConnString(selected.ConnString)
+	configuredOptions, err := m.configuredRuntimeDatabaseOptions()
+	if err != nil {
+		return usecase.RuntimeDatabaseTarget{}, err
+	}
+
+	return m.databaseTargetResolverUseCase().Resolve(
+		runtimeDatabaseOptionFromSelectorOption(m.currentRuntimeDatabaseOption()),
+		configuredOptions,
+		runtimeDatabaseOptionFromSelectorOption(selected),
+	)
 }
 
 func (m *Model) resolveRuntimeDatabaseTransitionTargetFromConnString(connString string) (usecase.RuntimeDatabaseTarget, error) {
@@ -62,7 +71,7 @@ func (m *Model) resolveRuntimeDatabaseTransitionTargetFromConnString(connString 
 	return m.databaseTargetResolverUseCase().Resolve(
 		runtimeDatabaseOptionFromSelectorOption(m.currentRuntimeDatabaseOption()),
 		configuredOptions,
-		connString,
+		runtimeDatabaseRequestOptionFromConnString(connString),
 	)
 }
 
@@ -96,6 +105,14 @@ func runtimeDatabaseOptionFromSelectorOption(option DatabaseOption) usecase.Runt
 		Name:       option.Name,
 		ConnString: option.ConnString,
 		Source:     source,
+	}
+}
+
+func runtimeDatabaseRequestOptionFromConnString(connString string) usecase.RuntimeDatabaseOption {
+	return usecase.RuntimeDatabaseOption{
+		Name:       connString,
+		ConnString: connString,
+		Source:     usecase.RuntimeDatabaseOptionSourceCLI,
 	}
 }
 

@@ -144,7 +144,7 @@
 - Process entrypoint: `cmd/dbc/main.go`.
 - Runtime boundary: `internal/interfaces/tui.Run(...)`.
 - Runtime startup opens one initial `RuntimeRunDeps` bundle, including the runtime save workflow, runtime navigation workflow, and shared database-target resolver, and `internal/interfaces/tui.Run(...)` returns a `RuntimeExitResult` that either quits normally or requests reopening a selected database.
-- Runtime-initiated reopen requests carry a fully resolved `DatabaseOption`, including whether the target is config-backed or CLI-scoped; for same-target reloads, configured identity survives when the resolver found an equivalent config-backed option, while fallback to the current runtime identity is used only when no configured match exists.
+- Runtime-initiated reopen requests carry a fully resolved `DatabaseOption`, including whether the target is config-backed or CLI-scoped; for same-target reloads, an explicit config-backed alias request wins when that exact live configured entry was selected, otherwise the resolver preserves the current configured identity only while that exact configured entry still exists in live config, switches stale configured identity to a live equivalent configured entry when present, and treats CLI-scoped requests as identity-based requests that promote to configured identity only when the resolver found an equivalent config-backed option, otherwise falling back to the current runtime identity.
 
 ### Configuration Contract
 

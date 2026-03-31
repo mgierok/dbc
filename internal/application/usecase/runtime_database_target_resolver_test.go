@@ -18,7 +18,7 @@ func TestRuntimeDatabaseTargetResolver_Resolve_BlankConnStringReloadsCurrentData
 	}
 
 	// Act
-	target, err := resolver.Resolve(current, nil, "   ")
+	target, err := resolver.Resolve(current, nil, usecase.RuntimeDatabaseOption{ConnString: "   "})
 
 	// Assert
 	if err != nil {
@@ -43,7 +43,7 @@ func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConnStringReloadsCurren
 	}
 
 	// Act
-	target, err := resolver.Resolve(current, nil, currentPath+string(os.PathSeparator)+".")
+	target, err := resolver.Resolve(current, nil, runtimeDatabaseRequestOption(currentPath+string(os.PathSeparator)+"."))
 
 	// Assert
 	if err != nil {
@@ -76,7 +76,7 @@ func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConfiguredTargetPreserv
 	target, err := resolver.Resolve(
 		current,
 		[]usecase.RuntimeDatabaseOption{configured},
-		currentPath+string(os.PathSeparator)+".",
+		runtimeDatabaseRequestOption(currentPath+string(os.PathSeparator)+"."),
 	)
 
 	// Assert
@@ -88,6 +88,108 @@ func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConfiguredTargetPreserv
 	}
 	if target.Option != configured {
 		t.Fatalf("expected configured identity %+v, got %+v", configured, target.Option)
+	}
+}
+
+func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConfiguredReloadPreservesCurrentAliasWhenAnotherConfiguredAliasMatchesFirst(t *testing.T) {
+	// Arrange
+	resolver := usecase.NewRuntimeDatabaseTargetResolver()
+	currentPath := filepath.Join(t.TempDir(), "primary.sqlite")
+	current := usecase.RuntimeDatabaseOption{
+		Name:       "primary",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+	otherAlias := usecase.RuntimeDatabaseOption{
+		Name:       "primary-copy",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+
+	// Act
+	target, err := resolver.Resolve(
+		current,
+		[]usecase.RuntimeDatabaseOption{otherAlias, current},
+		runtimeDatabaseRequestOption(currentPath+string(os.PathSeparator)+"."),
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if target.TransitionKind != usecase.RuntimeDatabaseTransitionReloadCurrent {
+		t.Fatalf("expected reload-current transition, got %v", target.TransitionKind)
+	}
+	if target.Option != current {
+		t.Fatalf("expected current configured alias %+v, got %+v", current, target.Option)
+	}
+}
+
+func TestRuntimeDatabaseTargetResolver_Resolve_EquivalentConfiguredReloadUsesLiveConfiguredAliasWhenCurrentIdentityIsStale(t *testing.T) {
+	// Arrange
+	resolver := usecase.NewRuntimeDatabaseTargetResolver()
+	currentPath := filepath.Join(t.TempDir(), "primary.sqlite")
+	current := usecase.RuntimeDatabaseOption{
+		Name:       "primary-old",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+	liveConfigured := usecase.RuntimeDatabaseOption{
+		Name:       "primary-renamed",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+
+	// Act
+	target, err := resolver.Resolve(
+		current,
+		[]usecase.RuntimeDatabaseOption{liveConfigured},
+		runtimeDatabaseRequestOption(currentPath+string(os.PathSeparator)+"."),
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if target.TransitionKind != usecase.RuntimeDatabaseTransitionReloadCurrent {
+		t.Fatalf("expected reload-current transition, got %v", target.TransitionKind)
+	}
+	if target.Option != liveConfigured {
+		t.Fatalf("expected live configured alias %+v, got %+v", liveConfigured, target.Option)
+	}
+}
+
+func TestRuntimeDatabaseTargetResolver_Resolve_ExplicitConfiguredAliasSelectionWinsForEquivalentReload(t *testing.T) {
+	// Arrange
+	resolver := usecase.NewRuntimeDatabaseTargetResolver()
+	currentPath := filepath.Join(t.TempDir(), "primary.sqlite")
+	current := usecase.RuntimeDatabaseOption{
+		Name:       "primary",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+	selectedAlias := usecase.RuntimeDatabaseOption{
+		Name:       "primary-copy",
+		ConnString: currentPath,
+		Source:     usecase.RuntimeDatabaseOptionSourceConfig,
+	}
+
+	// Act
+	target, err := resolver.Resolve(
+		current,
+		[]usecase.RuntimeDatabaseOption{current, selectedAlias},
+		selectedAlias,
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if target.TransitionKind != usecase.RuntimeDatabaseTransitionReloadCurrent {
+		t.Fatalf("expected reload-current transition, got %v", target.TransitionKind)
+	}
+	if target.Option != selectedAlias {
+		t.Fatalf("expected selected configured alias %+v, got %+v", selectedAlias, target.Option)
 	}
 }
 
@@ -106,7 +208,7 @@ func TestRuntimeDatabaseTargetResolver_Resolve_ConfiguredMatchWinsOverAnonymousC
 				Source:     usecase.RuntimeDatabaseOptionSourceConfig,
 			},
 		},
-		configuredPath+string(os.PathSeparator)+".",
+		runtimeDatabaseRequestOption(configuredPath+string(os.PathSeparator)+"."),
 	)
 
 	// Assert
@@ -131,7 +233,7 @@ func TestRuntimeDatabaseTargetResolver_Resolve_DistinctConnStringOpensDifferentD
 	}
 
 	// Act
-	target, err := resolver.Resolve(current, nil, "/tmp/analytics.sqlite")
+	target, err := resolver.Resolve(current, nil, runtimeDatabaseRequestOption("/tmp/analytics.sqlite"))
 
 	// Assert
 	if err != nil {
@@ -145,5 +247,13 @@ func TestRuntimeDatabaseTargetResolver_Resolve_DistinctConnStringOpensDifferentD
 	}
 	if target.Option.Source != usecase.RuntimeDatabaseOptionSourceCLI {
 		t.Fatalf("expected CLI source for distinct conn string, got %q", target.Option.Source)
+	}
+}
+
+func runtimeDatabaseRequestOption(connString string) usecase.RuntimeDatabaseOption {
+	return usecase.RuntimeDatabaseOption{
+		Name:       connString,
+		ConnString: connString,
+		Source:     usecase.RuntimeDatabaseOptionSourceCLI,
 	}
 }

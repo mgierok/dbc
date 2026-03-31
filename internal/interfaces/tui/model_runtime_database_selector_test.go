@@ -246,6 +246,120 @@ func TestHandleRuntimeDatabaseSelection_EquivalentCurrentDatabaseRequestsReopen(
 	}
 }
 
+func TestHandleKey_RuntimeDatabaseSelectorSelectionUsesLiveConfiguredIdentityWhenCurrentConfigIdentityIsStale(t *testing.T) {
+	// Arrange
+	basePath := filepath.Join(t.TempDir(), "primary.sqlite")
+	current := DatabaseOption{
+		Name:       "primary-old",
+		ConnString: basePath,
+		Source:     DatabaseOptionSourceConfig,
+	}
+	store := &fakeRuntimeSelectorConfigStore{
+		entries: []port.ConfigEntry{
+			{Name: "primary-renamed", DBPath: basePath},
+		},
+	}
+	checker := fakeRuntimeSelectorConnectionChecker{}
+	model := &Model{
+		ctx: context.Background(),
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		runtimeDatabaseSelectorDeps: &RuntimeDatabaseSelectorDeps{
+			ListConfiguredDatabases:  usecase.NewListConfiguredDatabases(store),
+			CreateConfiguredDatabase: usecase.NewCreateConfiguredDatabase(store, checker),
+			UpdateConfiguredDatabase: usecase.NewUpdateConfiguredDatabase(store, checker),
+			DeleteConfiguredDatabase: usecase.NewDeleteConfiguredDatabase(store),
+			GetActiveConfigPath:      usecase.NewGetActiveConfigPath(store),
+			CurrentDatabase:          current,
+		},
+	}
+	model.openRuntimeDatabaseSelectorPopup()
+
+	// Act
+	updated, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected quit command after selecting runtime database")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after selecting runtime database, got %T", cmd())
+	}
+	runtimeModel := updated.(*Model)
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected runtime reopen exit action, got %v", runtimeModel.exitResult.Action)
+	}
+	if runtimeModel.exitResult.NextDatabase.ConnString != basePath {
+		t.Fatalf("expected reopen target %q, got %q", basePath, runtimeModel.exitResult.NextDatabase.ConnString)
+	}
+	if runtimeModel.exitResult.NextDatabase.Name != "primary-renamed" {
+		t.Fatalf("expected live configured name %q, got %q", "primary-renamed", runtimeModel.exitResult.NextDatabase.Name)
+	}
+	if runtimeModel.exitResult.NextDatabase.Source != DatabaseOptionSourceConfig {
+		t.Fatalf("expected configured source, got %q", runtimeModel.exitResult.NextDatabase.Source)
+	}
+}
+
+func TestHandleKey_RuntimeDatabaseSelectorSelectionHonorsExplicitConfiguredAliasChoiceForEquivalentTarget(t *testing.T) {
+	// Arrange
+	basePath := filepath.Join(t.TempDir(), "primary.sqlite")
+	current := DatabaseOption{
+		Name:       "primary",
+		ConnString: basePath,
+		Source:     DatabaseOptionSourceConfig,
+	}
+	store := &fakeRuntimeSelectorConfigStore{
+		entries: []port.ConfigEntry{
+			{Name: "primary", DBPath: basePath},
+			{Name: "primary-copy", DBPath: basePath},
+		},
+	}
+	checker := fakeRuntimeSelectorConnectionChecker{}
+	model := &Model{
+		ctx: context.Background(),
+		read: runtimeReadState{
+			viewMode: ViewRecords,
+			focus:    FocusContent,
+		},
+		runtimeDatabaseSelectorDeps: &RuntimeDatabaseSelectorDeps{
+			ListConfiguredDatabases:  usecase.NewListConfiguredDatabases(store),
+			CreateConfiguredDatabase: usecase.NewCreateConfiguredDatabase(store, checker),
+			UpdateConfiguredDatabase: usecase.NewUpdateConfiguredDatabase(store, checker),
+			DeleteConfiguredDatabase: usecase.NewDeleteConfiguredDatabase(store),
+			GetActiveConfigPath:      usecase.NewGetActiveConfigPath(store),
+			CurrentDatabase:          current,
+		},
+	}
+	model.openRuntimeDatabaseSelectorPopup()
+	model.overlay.databaseSelector.controller.SetSelectedIndex(1)
+
+	// Act
+	updated, cmd := model.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	// Assert
+	if cmd == nil {
+		t.Fatal("expected quit command after selecting runtime database")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected tea.QuitMsg after selecting runtime database, got %T", cmd())
+	}
+	runtimeModel := updated.(*Model)
+	if runtimeModel.exitResult.Action != RuntimeExitActionOpenDatabaseNext {
+		t.Fatalf("expected runtime reopen exit action, got %v", runtimeModel.exitResult.Action)
+	}
+	if runtimeModel.exitResult.NextDatabase.ConnString != basePath {
+		t.Fatalf("expected reopen target %q, got %q", basePath, runtimeModel.exitResult.NextDatabase.ConnString)
+	}
+	if runtimeModel.exitResult.NextDatabase.Name != "primary-copy" {
+		t.Fatalf("expected selected configured name %q, got %q", "primary-copy", runtimeModel.exitResult.NextDatabase.Name)
+	}
+	if runtimeModel.exitResult.NextDatabase.Source != DatabaseOptionSourceConfig {
+		t.Fatalf("expected configured source, got %q", runtimeModel.exitResult.NextDatabase.Source)
+	}
+}
+
 func TestHandleKey_RuntimeDatabaseSelectorSelectionRequestsChosenTarget(t *testing.T) {
 	// Arrange
 	current := DatabaseOption{

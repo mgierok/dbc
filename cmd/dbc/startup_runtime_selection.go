@@ -68,7 +68,7 @@ func resolveStartupSelection(
 		target, err := usecase.NewRuntimeDatabaseTargetResolver().Resolve(
 			usecase.RuntimeDatabaseOption{},
 			runtimeDatabaseOptionsFromSelectorOptions(configuredOptions),
-			options.directLaunchConnString,
+			runtimeDatabaseRequestOptionFromConnString(options.directLaunchConnString),
 		)
 		if err != nil {
 			return tui.DatabaseOption{}, startupPathDirectLaunch, err
@@ -194,5 +194,13 @@ func selectorOptionFromRuntimeDatabaseOption(option usecase.RuntimeDatabaseOptio
 		Name:       option.Name,
 		ConnString: option.ConnString,
 		Source:     source,
+	}
+}
+
+func runtimeDatabaseRequestOptionFromConnString(connString string) usecase.RuntimeDatabaseOption {
+	return usecase.RuntimeDatabaseOption{
+		Name:       connString,
+		ConnString: connString,
+		Source:     usecase.RuntimeDatabaseOptionSourceCLI,
 	}
 }

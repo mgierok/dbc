@@ -39,8 +39,8 @@ func NewRuntimeDatabaseTargetResolver() *RuntimeDatabaseTargetResolver {
 	return &RuntimeDatabaseTargetResolver{}
 }
 
-func (r *RuntimeDatabaseTargetResolver) Resolve(current RuntimeDatabaseOption, configuredOptions []RuntimeDatabaseOption, connString string) (RuntimeDatabaseTarget, error) {
-	trimmedConnString := strings.TrimSpace(connString)
+func (r *RuntimeDatabaseTargetResolver) Resolve(current RuntimeDatabaseOption, configuredOptions []RuntimeDatabaseOption, requested RuntimeDatabaseOption) (RuntimeDatabaseTarget, error) {
+	trimmedConnString := strings.TrimSpace(requested.ConnString)
 	if trimmedConnString == "" {
 		if strings.TrimSpace(current.ConnString) == "" {
 			return RuntimeDatabaseTarget{}, fmt.Errorf("current database unavailable")
@@ -51,24 +51,43 @@ func (r *RuntimeDatabaseTargetResolver) Resolve(current RuntimeDatabaseOption, c
 		}, nil
 	}
 
-	resolvedOption := RuntimeDatabaseOption{
-		Name:       trimmedConnString,
-		ConnString: trimmedConnString,
-		Source:     RuntimeDatabaseOptionSourceCLI,
+	resolvedOption := requested
+	resolvedOption.ConnString = trimmedConnString
+	if strings.TrimSpace(resolvedOption.Name) == "" {
+		resolvedOption.Name = trimmedConnString
 	}
+	if resolvedOption.Source == RuntimeDatabaseOptionSourceUnknown {
+		resolvedOption.Source = RuntimeDatabaseOptionSourceCLI
+	}
+
 	matchedConfiguredOption := false
-	if matched, ok := resolveConfiguredRuntimeDatabaseOption(trimmedConnString, configuredOptions); ok {
-		resolvedOption = matched
+	requestedConfiguredOption, requestedConfigured := resolveExactConfiguredRuntimeDatabaseOption(requested, configuredOptions)
+	switch {
+	case requestedConfigured:
+		resolvedOption = requestedConfiguredOption
 		matchedConfiguredOption = true
+	case true:
+		if matched, ok := resolveConfiguredRuntimeDatabaseOption(trimmedConnString, configuredOptions); ok {
+			resolvedOption = matched
+			matchedConfiguredOption = true
+		}
 	}
+	currentConfiguredOption, currentStillConfigured := resolveExactConfiguredRuntimeDatabaseOption(current, configuredOptions)
 
 	target := RuntimeDatabaseTarget{
 		Option:         resolvedOption,
 		TransitionKind: RuntimeDatabaseTransitionOpenDifferent,
 	}
 	if sqliteidentity.Equivalent(resolvedOption.ConnString, current.ConnString) {
-		if !matchedConfiguredOption && strings.TrimSpace(current.ConnString) != "" {
-			target.Option = current
+		if strings.TrimSpace(current.ConnString) != "" {
+			switch {
+			case requestedConfigured:
+				target.Option = requestedConfiguredOption
+			case currentStillConfigured:
+				target.Option = currentConfiguredOption
+			case !matchedConfiguredOption:
+				target.Option = current
+			}
 		}
 		target.TransitionKind = RuntimeDatabaseTransitionReloadCurrent
 	}
@@ -82,6 +101,31 @@ func resolveConfiguredRuntimeDatabaseOption(connString string, configuredOptions
 	}
 
 	for _, option := range configuredOptions {
+		if sqliteidentity.Equivalent(normalizedConnString, option.ConnString) {
+			return option, true
+		}
+	}
+
+	return RuntimeDatabaseOption{}, false
+}
+
+func resolveExactConfiguredRuntimeDatabaseOption(requested RuntimeDatabaseOption, configuredOptions []RuntimeDatabaseOption) (RuntimeDatabaseOption, bool) {
+	if requested.Source != RuntimeDatabaseOptionSourceConfig || strings.TrimSpace(requested.Name) == "" {
+		return RuntimeDatabaseOption{}, false
+	}
+
+	normalizedConnString := sqliteidentity.Normalize(requested.ConnString)
+	if normalizedConnString == "" {
+		return RuntimeDatabaseOption{}, false
+	}
+
+	for _, option := range configuredOptions {
+		if option.Name != requested.Name {
+			continue
+		}
+		if option.Source != RuntimeDatabaseOptionSourceConfig {
+			continue
+		}
 		if sqliteidentity.Equivalent(normalizedConnString, option.ConnString) {
 			return option, true
 		}
