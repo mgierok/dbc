@@ -104,30 +104,9 @@ func TestConfirmSaveChanges_UsesAppliedRowCountFromUseCaseInsteadOfDirtyRowCount
 
 func TestConfirmSaveChanges_StartsBlockingSaveStateAndShowsSavingStatus(t *testing.T) {
 	// Arrange
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: &spySaveChangesUseCase{count: 1},
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-			tables: []dto.Table{{Name: "users"}},
-		},
-		ui: runtimeUIState{statusMessage: "stale status"},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+	model := newDirtyRuntimeSaveModel(ViewRecords, FocusContent)
+	model.ui.statusMessage = "stale status"
+	model.saveChanges = &spySaveChangesUseCase{count: 1}
 
 	// Act
 	_, cmd := model.confirmSaveChanges()
@@ -136,26 +115,12 @@ func TestConfirmSaveChanges_StartsBlockingSaveStateAndShowsSavingStatus(t *testi
 	if cmd == nil {
 		t.Fatal("expected save command to be returned")
 	}
-	if !model.ui.saveInFlight {
-		t.Fatal("expected save-in-flight flag to be enabled when save starts")
-	}
-	if model.ui.statusMessage != "Saving changes..." {
-		t.Fatalf("expected saving status message, got %q", model.ui.statusMessage)
-	}
+	assertRuntimeSaveStarted(t, model, "confirmSaveChanges")
 }
 
 func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *testing.T) {
 	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{
-			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
-			selectedTable: 0,
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{{}},
-		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes: map[string]recordDelete{"id=2": {}},
-	})
+	model := newDirtyTableSwitchModel()
 
 	// Act
 	model.setTableSelection(1)
@@ -190,94 +155,77 @@ func TestSetTableSelection_WithDirtyStateOpensInformationalSwitchTablePopup(t *t
 	}
 }
 
-func TestSetTableSelection_WithDirtyStateDiscardOptionClearsStagingAndSwitches(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{
-			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
-			selectedTable: 0,
+func TestSetTableSelection_WithDirtyStatePopupDecisions(t *testing.T) {
+	for _, tc := range []struct {
+		name                string
+		keys                []tea.KeyMsg
+		wantSelectedTable   int
+		wantDirty           bool
+		wantPopupActive     bool
+		wantPendingNav      bool
+		wantPendingTable    string
+		wantPendingNavReset bool
+	}{
+		{
+			name:              "discard switches table and clears staging",
+			keys:              []tea.KeyMsg{{Type: tea.KeyEnter}},
+			wantSelectedTable: 1,
+			wantDirty:         false,
+			wantPopupActive:   false,
 		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{{}},
-		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes: map[string]recordDelete{"id=2": {}},
-	})
-
-	// Act
-	model.setTableSelection(1)
-	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
-
-	// Assert
-	if model.read.selectedTable != 1 {
-		t.Fatalf("expected table switch after selecting discard")
-	}
-	if model.hasDirtyEdits() {
-		t.Fatalf("expected staged state to be cleared after discard")
-	}
-}
-
-func TestSetTableSelection_WithDirtyStateContinueEditingOptionPreservesStagingAndSelection(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{
-			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
-			selectedTable: 0,
+		{
+			name: "continue editing preserves staging",
+			keys: []tea.KeyMsg{
+				{Type: tea.KeyRunes, Runes: []rune{'j'}},
+				{Type: tea.KeyEnter},
+			},
+			wantSelectedTable:   0,
+			wantDirty:           true,
+			wantPopupActive:     false,
+			wantPendingNavReset: true,
 		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{{}},
-		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes: map[string]recordDelete{"id=2": {}},
-	})
-
-	// Act
-	model.setTableSelection(1)
-	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyEnter})
-
-	// Assert
-	if model.read.selectedTable != 0 {
-		t.Fatalf("expected table selection to stay unchanged after selecting continue editing")
-	}
-	if !model.hasDirtyEdits() {
-		t.Fatalf("expected staged state to remain after selecting continue editing")
-	}
-	if model.ui.pendingNavigation != nil {
-		t.Fatalf("expected pending navigation reset after selecting continue editing, got %+v", model.ui.pendingNavigation)
-	}
-}
-
-func TestSetTableSelection_WithDirtyStateNKeyIsIgnored(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		read: runtimeReadState{
-			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
-			selectedTable: 0,
+		{
+			name: "n keeps popup open and navigation pending",
+			keys: []tea.KeyMsg{
+				{Type: tea.KeyRunes, Runes: []rune{'n'}},
+			},
+			wantSelectedTable: 0,
+			wantDirty:         true,
+			wantPopupActive:   true,
+			wantPendingNav:    true,
+			wantPendingTable:  "orders",
 		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{{}},
-		pendingUpdates: map[string]recordEdits{"id=1": {changes: map[int]stagedEdit{0: {Value: dto.StagedValue{Text: "x", Raw: "x"}}}}},
-		pendingDeletes: map[string]recordDelete{"id=2": {}},
-	})
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := newDirtyTableSwitchModel()
+			model.setTableSelection(1)
 
-	// Act
-	model.setTableSelection(1)
-	model.handleConfirmPopupKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+			// Act
+			for _, key := range tc.keys {
+				model.handleConfirmPopupKey(key)
+			}
 
-	// Assert
-	if !model.overlay.confirmPopup.active {
-		t.Fatal("expected n key to leave table-switch popup open")
-	}
-	if model.read.selectedTable != 0 {
-		t.Fatalf("expected table selection to stay unchanged after n key")
-	}
-	if !model.hasDirtyEdits() {
-		t.Fatalf("expected staged state to remain after n key")
-	}
-	if model.ui.pendingNavigation == nil {
-		t.Fatal("expected pending navigation to remain pending after n key")
-	}
-	if model.ui.pendingNavigation.Action.TargetTableName != "orders" {
-		t.Fatalf("expected pending table target %q, got %q", "orders", model.ui.pendingNavigation.Action.TargetTableName)
+			// Assert
+			if model.read.selectedTable != tc.wantSelectedTable {
+				t.Fatalf("expected selected table %d, got %d", tc.wantSelectedTable, model.read.selectedTable)
+			}
+			if model.hasDirtyEdits() != tc.wantDirty {
+				t.Fatalf("expected dirty state %t, got %t", tc.wantDirty, model.hasDirtyEdits())
+			}
+			if model.overlay.confirmPopup.active != tc.wantPopupActive {
+				t.Fatalf("expected popup active=%t, got %t", tc.wantPopupActive, model.overlay.confirmPopup.active)
+			}
+			if tc.wantPendingNav && model.ui.pendingNavigation == nil {
+				t.Fatal("expected pending navigation to remain set")
+			}
+			if !tc.wantPendingNav && tc.wantPendingNavReset && model.ui.pendingNavigation != nil {
+				t.Fatalf("expected pending navigation reset, got %+v", model.ui.pendingNavigation)
+			}
+			if tc.wantPendingTable != "" && model.ui.pendingNavigation.Action.TargetTableName != tc.wantPendingTable {
+				t.Fatalf("expected pending table target %q, got %q", tc.wantPendingTable, model.ui.pendingNavigation.Action.TargetTableName)
+			}
+		})
 	}
 }
 
@@ -438,82 +386,11 @@ func TestStartSaveForPendingNavigation_CleansPendingStateWhenSaveIsImmediateNoOp
 	}
 }
 
-func TestRequestSaveChanges_StartsSaveImmediatelyFromSchemaWithDirtyStateStartedInRecords(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: &spySaveChangesUseCase{count: 1},
-		read: runtimeReadState{
-			focus:         FocusContent,
-			viewMode:      ViewSchema,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
-
-	// Act
-	_, cmd := model.requestSaveChanges()
-
-	// Assert
-	if cmd == nil {
-		t.Fatal("expected schema save request to start save immediately")
-	}
-	if model.overlay.confirmPopup.active {
-		t.Fatal("expected schema save request not to open confirm popup")
-	}
-	if !model.ui.saveInFlight {
-		t.Fatal("expected schema save request to enter save-in-flight state")
-	}
-	if model.ui.statusMessage != "Saving changes..." {
-		t.Fatalf("expected saving status message, got %q", model.ui.statusMessage)
-	}
-}
-
 func TestRequestSaveAndQuit_BlocksRuntimeInputUntilSaveResponse(t *testing.T) {
 	// Arrange
-	saveChanges := &spySaveChangesUseCase{count: 1}
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: saveChanges,
-		read: runtimeReadState{
-			focus:         FocusContent,
-			viewMode:      ViewRecords,
-			tables:        []dto.Table{{Name: "users"}, {Name: "orders"}},
-			selectedTable: 0,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "bob", Raw: "bob"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+	model := newDirtyRuntimeSaveModel(ViewRecords, FocusContent)
+	model.saveChanges = &spySaveChangesUseCase{count: 1}
+	model.read.tables = []dto.Table{{Name: "users"}, {Name: "orders"}}
 
 	// Act
 	_, saveCmd := model.requestSaveAndQuit()
@@ -543,50 +420,29 @@ func TestRequestSaveAndQuit_BlocksRuntimeInputUntilSaveResponse(t *testing.T) {
 	}
 }
 
-func TestRequestSaveChanges_StartsSaveImmediatelyFromTablesWithDirtyStateStartedInRecords(t *testing.T) {
-	// Arrange
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: &spySaveChangesUseCase{count: 1},
-		read: runtimeReadState{
-			focus:         FocusTables,
-			viewMode:      ViewSchema,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+func TestRequestSaveChanges_StartsSaveImmediatelyFromNonRecordsDirtyContexts(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		viewMode ViewMode
+		focus    PanelFocus
+	}{
+		{name: "schema", viewMode: ViewSchema, focus: FocusContent},
+		{name: "tables", viewMode: ViewSchema, focus: FocusTables},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := newDirtyRuntimeSaveModel(tc.viewMode, tc.focus)
+			model.saveChanges = &spySaveChangesUseCase{count: 1}
 
-	// Act
-	_, cmd := model.requestSaveChanges()
+			// Act
+			_, cmd := model.requestSaveChanges()
 
-	// Assert
-	if cmd == nil {
-		t.Fatal("expected tables save request to start save immediately")
-	}
-	if model.overlay.confirmPopup.active {
-		t.Fatal("expected tables save request not to open confirm popup")
-	}
-	if !model.ui.saveInFlight {
-		t.Fatal("expected tables save request to enter save-in-flight state")
-	}
-	if model.ui.statusMessage != "Saving changes..." {
-		t.Fatalf("expected saving status message, got %q", model.ui.statusMessage)
+			// Assert
+			if cmd == nil {
+				t.Fatalf("expected %s save request to start save immediately", tc.name)
+			}
+			assertRuntimeSaveStarted(t, model, "requestSaveChanges/"+tc.name)
+		})
 	}
 }
 
@@ -620,33 +476,9 @@ func TestRequestSaveChanges_WithNoDirtyStateShowsNoChangesStatus(t *testing.T) {
 
 func TestRequestSaveAndQuit_StartsSaveImmediatelyWithoutPopup(t *testing.T) {
 	// Arrange
-	saveChanges := &spySaveChangesUseCase{count: 1}
-	model := withTestStaging(&Model{
-		ctx:         context.Background(),
-		saveChanges: saveChanges,
-		read: runtimeReadState{
-			viewMode:      ViewRecords,
-			focus:         FocusContent,
-			tables:        []dto.Table{{Name: "users"}},
-			selectedTable: 0,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT", Nullable: false},
-				},
-			},
-		},
-	}, stagingState{
-		pendingInserts: []pendingInsertRow{
-			{
-				values: map[int]stagedEdit{
-					0: {Value: dto.StagedValue{Text: "1", Raw: "1"}},
-					1: {Value: dto.StagedValue{Text: "alice", Raw: "alice"}},
-				},
-				explicitAuto: map[int]bool{},
-			},
-		},
-	})
+	model := newDirtyRuntimeSaveModel(ViewRecords, FocusContent)
+	model.saveChanges = &spySaveChangesUseCase{count: 1}
+
 	// Act
 	_, cmd := model.requestSaveAndQuit()
 
@@ -654,13 +486,8 @@ func TestRequestSaveAndQuit_StartsSaveImmediatelyWithoutPopup(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("expected save-and-quit request to start save flow")
 	}
-	if model.overlay.confirmPopup.active {
-		t.Fatal("expected save-and-quit request not to open confirm popup")
-	}
+	assertRuntimeSaveStarted(t, model, "requestSaveAndQuit")
 	if model.ui.pendingSaveSuccessAction != usecase.RuntimeSaveSuccessActionQuitRuntime {
 		t.Fatalf("expected save-and-quit flow to set quit action, got %v", model.ui.pendingSaveSuccessAction)
-	}
-	if !model.ui.saveInFlight {
-		t.Fatal("expected save-and-quit flow to enter save-in-flight state")
 	}
 }

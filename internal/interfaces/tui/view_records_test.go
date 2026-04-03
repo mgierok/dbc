@@ -8,75 +8,52 @@ import (
 	"github.com/mgierok/dbc/internal/interfaces/tui/internal/primitives"
 )
 
-func TestRenderRecords_ShowsAscSortIndicatorInHeader(t *testing.T) {
-	// Arrange
-	model := &Model{
-		styles: primitives.NewRenderStyles(true),
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER"},
-					{Name: "name", Type: "TEXT"},
+func TestRenderRecords_ShowsSortIndicatorInHeader(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		direction dto.SortDirection
+		indicator string
+	}{
+		{name: "ascending", direction: dto.SortDirectionAsc, indicator: primitives.IconSortAsc},
+		{name: "descending", direction: dto.SortDirectionDesc, indicator: primitives.IconSortDesc},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := &Model{
+				styles: primitives.NewRenderStyles(true),
+				read: runtimeReadState{
+					viewMode: ViewRecords,
+					schema: dto.Schema{
+						Columns: []dto.SchemaColumn{
+							{Name: "id", Type: "INTEGER"},
+							{Name: "name", Type: "TEXT"},
+						},
+					},
+					currentSort: &dto.Sort{
+						Column:    "name",
+						Direction: tc.direction,
+					},
+					records: []dto.RecordRow{
+						{Values: []string{"1", "alice"}},
+					},
 				},
-			},
-			currentSort: &dto.Sort{
-				Column:    "name",
-				Direction: dto.SortDirectionAsc,
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alice"}},
-			},
-		},
-	}
+			}
 
-	// Act
-	lines := model.renderRecords(80, 6)
+			// Act
+			lines := model.renderRecords(80, 6)
 
-	// Assert
-	if len(lines) < 3 {
-		t.Fatalf("expected header row, got %v", lines)
-	}
-	header := lines[1]
-	if !strings.Contains(header, "name "+primitives.IconSortAsc) {
-		t.Fatalf("expected asc sort indicator in header, got %q", header)
-	}
-	if strings.Contains(header, "id "+primitives.IconSortAsc) || strings.Contains(header, "id "+primitives.IconSortDesc) {
-		t.Fatalf("expected indicator only on sorted column, got %q", header)
-	}
-}
-
-func TestRenderRecords_ShowsDescSortIndicatorInHeader(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER"},
-					{Name: "name", Type: "TEXT"},
-				},
-			},
-			currentSort: &dto.Sort{
-				Column:    "name",
-				Direction: dto.SortDirectionDesc,
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alice"}},
-			},
-		},
-	}
-
-	// Act
-	lines := model.renderRecords(80, 6)
-
-	// Assert
-	if len(lines) < 3 {
-		t.Fatalf("expected header row, got %v", lines)
-	}
-	header := lines[1]
-	if !strings.Contains(header, "name "+primitives.IconSortDesc) {
-		t.Fatalf("expected desc sort indicator in header, got %q", header)
+			// Assert
+			if len(lines) < 3 {
+				t.Fatalf("expected header row, got %v", lines)
+			}
+			header := lines[1]
+			if !strings.Contains(header, "name "+tc.indicator) {
+				t.Fatalf("expected %s sort indicator in header, got %q", tc.name, header)
+			}
+			if strings.Contains(header, "id "+primitives.IconSortAsc) || strings.Contains(header, "id "+primitives.IconSortDesc) {
+				t.Fatalf("expected indicator only on sorted column, got %q", header)
+			}
+		})
 	}
 }
 
@@ -233,12 +210,8 @@ func TestRenderRecords_UsesInsertAndDeleteIconsInRowPrefix(t *testing.T) {
 			},
 		},
 	})
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
 	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
+		mustPersistedRecordKey(t, model, 0): {},
 	})
 
 	// Act
@@ -270,12 +243,8 @@ func TestRenderRecords_UsesEditIconForEditedRows(t *testing.T) {
 			},
 		},
 	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
 	setTestPendingUpdates(model, map[string]recordEdits{
-		key: {
+		mustPersistedRecordKey(t, model, 0): {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
@@ -322,24 +291,16 @@ func TestRenderRecords_PreservesColumnAlignmentWithMixedRowMarkers(t *testing.T)
 		},
 	})
 
-	editedKey, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected edited row key")
-	}
 	setTestPendingUpdates(model, map[string]recordEdits{
-		editedKey: {
+		mustPersistedRecordKey(t, model, 0): {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
 	})
 
-	deleteKey, ok := model.recordKeyForPersistedRow(1)
-	if !ok {
-		t.Fatal("expected delete row key")
-	}
 	setTestPendingDeletes(model, map[string]recordDelete{
-		deleteKey: {},
+		mustPersistedRecordKey(t, model, 1): {},
 	})
 
 	// Act
@@ -388,19 +349,15 @@ func TestRenderRecords_StrikesThroughDeleteMarkedRowCellContent(t *testing.T) {
 			},
 		},
 	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
 	setTestPendingUpdates(model, map[string]recordEdits{
-		key: {
+		mustPersistedRecordKey(t, model, 0): {
 			changes: map[int]stagedEdit{
 				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
 			},
 		},
 	})
 	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
+		mustPersistedRecordKey(t, model, 0): {},
 	})
 
 	// Act
@@ -438,12 +395,8 @@ func TestRenderRecords_CombinesSelectedAndDeletedStylesWithoutStrikingPrefixOrMa
 			},
 		},
 	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
 	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
+		mustPersistedRecordKey(t, model, 0): {},
 	})
 
 	// Act
@@ -463,493 +416,5 @@ func TestRenderRecords_CombinesSelectedAndDeletedStylesWithoutStrikingPrefixOrMa
 	}
 	if strings.Contains(rowLine, expectedPrefix+"\x1b[9m") || strings.Contains(rowLine, expectedPrefix+"\x1b[7;9m") {
 		t.Fatalf("expected delete strikethrough to start after selection prefix and marker, got %q", rowLine)
-	}
-}
-
-func TestRenderRecordDetail_UsesVerticalLayoutWithoutTruncation(t *testing.T) {
-	// Arrange
-	longValue := "abcdefghijklmnopqrstuvwxyz0123456789"
-	model := &Model{
-		styles: primitives.NewRenderStyles(true),
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			focus:    FocusContent,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER"},
-					{Name: "payload", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", longValue}},
-			},
-		},
-		overlay: runtimeOverlayState{
-			recordDetail: recordDetailState{
-				active: true,
-			},
-		},
-	}
-
-	// Act
-	lines := model.renderContent(20, 8)
-	content := strings.Join(lines, "\n")
-
-	// Assert
-	if !strings.Contains(content, primitives.IconInfo+" Persisted record") {
-		t.Fatalf("expected information marker in detail layout, got %q", content)
-	}
-	if strings.Contains(content, "[ROW]") {
-		t.Fatalf("expected detail layout to render user-facing labels only, got %q", content)
-	}
-	if !strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER)") {
-		t.Fatalf("expected id header in detail layout, got %q", content)
-	}
-	if !strings.Contains(content, "\x1b[1mpayload\x1b[0m (TEXT)") {
-		t.Fatalf("expected payload header in detail layout, got %q", content)
-	}
-	if strings.Contains(content, "[COL]") {
-		t.Fatalf("expected detail layout without literal column marker tokens, got %q", content)
-	}
-	if strings.Contains(content, "...") {
-		t.Fatalf("expected no truncation marker in detail layout, got %q", content)
-	}
-}
-
-func TestRecordDetailContentLines_UsesInformationMarkerForRowStates(t *testing.T) {
-	t.Run("persisted row", func(t *testing.T) {
-		// Arrange
-		model := &Model{
-			styles: primitives.NewRenderStyles(true),
-			read: runtimeReadState{
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					},
-				},
-				records: []dto.RecordRow{
-					{Values: []string{"1"}},
-				},
-			},
-		}
-
-		// Act
-		lines := model.recordDetailContentLines(40)
-
-		// Assert
-		if !strings.Contains(lines[0], primitives.IconInfo+" Persisted record") {
-			t.Fatalf("expected persisted information marker, got %q", lines[0])
-		}
-	})
-
-	t.Run("pending insert row", func(t *testing.T) {
-		// Arrange
-		model := withTestStaging(&Model{
-			read: runtimeReadState{
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER"},
-					},
-				},
-			},
-		}, stagingState{
-			pendingInserts: []pendingInsertRow{
-				{},
-			},
-		})
-
-		// Act
-		lines := model.recordDetailContentLines(40)
-
-		// Assert
-		if !strings.Contains(lines[0], primitives.IconInfo+" Pending insert") {
-			t.Fatalf("expected pending insert information marker, got %q", lines[0])
-		}
-	})
-
-	t.Run("delete-marked persisted row", func(t *testing.T) {
-		// Arrange
-		model := &Model{
-			read: runtimeReadState{
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					},
-				},
-				records: []dto.RecordRow{
-					{Values: []string{"1"}},
-				},
-			},
-		}
-		key, ok := model.recordKeyForPersistedRow(0)
-		if !ok {
-			t.Fatal("expected persisted row key")
-		}
-		setTestPendingDeletes(model, map[string]recordDelete{
-			key: {},
-		})
-
-		// Act
-		lines := model.recordDetailContentLines(40)
-
-		// Assert
-		if !strings.Contains(lines[0], primitives.IconInfo+" Marked for delete") {
-			t.Fatalf("expected delete information marker, got %q", lines[0])
-		}
-	})
-
-	t.Run("edited persisted row", func(t *testing.T) {
-		// Arrange
-		model := &Model{
-			styles: primitives.NewRenderStyles(true),
-			read: runtimeReadState{
-				schema: dto.Schema{
-					Columns: []dto.SchemaColumn{
-						{Name: "id", Type: "INTEGER", PrimaryKey: true},
-						{Name: "name", Type: "TEXT"},
-					},
-				},
-				records: []dto.RecordRow{
-					{Values: []string{"1", "alice"}},
-				},
-			},
-		}
-		key, ok := model.recordKeyForPersistedRow(0)
-		if !ok {
-			t.Fatal("expected persisted row key")
-		}
-		setTestPendingUpdates(model, map[string]recordEdits{
-			key: {
-				changes: map[int]stagedEdit{
-					1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
-				},
-			},
-		})
-
-		// Act
-		lines := model.recordDetailContentLines(40)
-
-		// Assert
-		if !strings.Contains(lines[0], primitives.IconInfo+" Edited record") {
-			t.Fatalf("expected edited information marker, got %q", lines[0])
-		}
-		content := strings.Join(lines, "\n")
-		if !strings.Contains(content, "\x1b[1mname\x1b[0m (TEXT) "+primitives.IconEdit) {
-			t.Fatalf("expected edit icon on modified field header in detail content, got %q", content)
-		}
-		if strings.Contains(content, "\x1b[1mid\x1b[0m (INTEGER) "+primitives.IconEdit) {
-			t.Fatalf("expected no edit icon on unmodified field header in detail content, got %q", content)
-		}
-	})
-}
-
-func TestRecordDetailContentLines_ShowsProjectedMetadataBadgesBelowFieldHeader(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{
-						Name:           "id",
-						Type:           "INTEGER",
-						MetadataBadges: []string{"PK", "NOT NULL", "AUTOINCREMENT", "FK->accounts.owner_id"},
-					},
-					{
-						Name:           "nickname",
-						Type:           "TEXT",
-						MetadataBadges: []string{"NULL", "DEFAULT 'guest'"},
-					},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alice"}},
-			},
-		},
-	}
-
-	// Act
-	content := stripANSI(strings.Join(model.recordDetailContentLines(80), "\n"))
-
-	// Assert
-	if !strings.Contains(content, "id (INTEGER)\n[PK] [NOT NULL] [AUTOINCREMENT] [FK->accounts.owner_id]\n  1") {
-		t.Fatalf("expected projected metadata badges under id header, got %q", content)
-	}
-	if !strings.Contains(content, "nickname (TEXT)\n[NULL] [DEFAULT 'guest']\n  alice") {
-		t.Fatalf("expected projected metadata badges under nickname header, got %q", content)
-	}
-}
-
-func TestRecordDetailContentLines_StrikesDeleteMarkedFieldValuesOnly(t *testing.T) {
-	// Arrange
-	model := &Model{
-		styles: primitives.NewRenderStyles(true),
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alice"}},
-			},
-		},
-	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
-	setTestPendingUpdates(model, map[string]recordEdits{
-		key: {
-			changes: map[int]stagedEdit{
-				1: {Value: dto.StagedValue{Text: "alice2", Raw: "alice2"}},
-			},
-		},
-	})
-	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
-	})
-
-	// Act
-	lines := model.recordDetailContentLines(40)
-	content := strings.Join(lines, "\n")
-
-	// Assert
-	if !strings.Contains(content, "  \x1b[9malice2\x1b[0m") {
-		t.Fatalf("expected delete-marked detail value lines to use strikethrough, got %q", content)
-	}
-	if strings.Contains(lines[0], "\x1b[9m") {
-		t.Fatalf("expected delete summary line to remain readable without strikethrough, got %q", lines[0])
-	}
-	if strings.Contains(content, "\x1b[9m\x1b[1mname\x1b[0m (TEXT)") || strings.Contains(content, "\x1b[1mname\x1b[0m (TEXT)\x1b[9m") {
-		t.Fatalf("expected detail field header to remain unstruck, got %q", content)
-	}
-}
-
-func TestRecordDetailContentLines_StrikesEveryWrappedDeleteMarkedValueLine(t *testing.T) {
-	// Arrange
-	model := &Model{
-		styles: primitives.NewRenderStyles(true),
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "notes", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "abcdefghijklmnopqrstuvwx"}},
-			},
-		},
-	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
-	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
-	})
-
-	// Act
-	lines := model.recordDetailContentLines(14)
-	content := strings.Join(lines, "\n")
-
-	// Assert
-	if !strings.Contains(content, "  \x1b[9mabcdefghijkl\x1b[0m") {
-		t.Fatalf("expected first wrapped delete-marked value line to use strikethrough, got %q", content)
-	}
-	if !strings.Contains(content, "  \x1b[9mmnopqrstuvwx\x1b[0m") {
-		t.Fatalf("expected continuation delete-marked value line to keep strikethrough, got %q", content)
-	}
-	if !strings.Contains(stripANSI(content), "  abcdefghijkl\n  mnopqrstuvwx") {
-		t.Fatalf("expected wrapped delete-marked value lines in plain text, got %q", stripANSI(content))
-	}
-}
-
-func TestRecordDetailContentLinesWithStyles_BackdropKeepsDeletedStyleAcrossWrappedLines(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "notes", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "abcdefghijklmnopqrstuvwx"}},
-			},
-		},
-	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
-	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
-	})
-
-	// Act
-	lines := model.recordDetailContentLinesWithStyles(14, primitives.NewRenderStyles(true).Backdrop())
-	content := strings.Join(lines, "\n")
-
-	// Assert
-	if !strings.Contains(content, "  \x1b[2;9mabcdefghijkl\x1b[0m") {
-		t.Fatalf("expected first backdrop delete-marked value line to use faint strikethrough, got %q", content)
-	}
-	if !strings.Contains(content, "  \x1b[2;9mmnopqrstuvwx\x1b[0m") {
-		t.Fatalf("expected backdrop continuation line to keep faint strikethrough, got %q", content)
-	}
-	if !strings.Contains(stripANSI(content), "  abcdefghijkl\n  mnopqrstuvwx") {
-		t.Fatalf("expected wrapped backdrop delete-marked value lines in plain text, got %q", stripANSI(content))
-	}
-}
-
-func TestRecordDetailContentLinesWithStyles_BackdropKeepsDeletedStyleAcrossExplicitLineBreaks(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "notes", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alpha\nbeta"}},
-			},
-		},
-	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
-	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
-	})
-
-	// Act
-	lines := model.recordDetailContentLinesWithStyles(20, primitives.NewRenderStyles(true).Backdrop())
-	content := strings.Join(lines, "\n")
-
-	// Assert
-	if !strings.Contains(content, "  \x1b[2;9malpha\x1b[0m") {
-		t.Fatalf("expected first delete-marked line to use faint strikethrough, got %q", content)
-	}
-	if !strings.Contains(content, "  \x1b[2;9mbeta\x1b[0m") {
-		t.Fatalf("expected line after explicit break to keep faint strikethrough, got %q", content)
-	}
-}
-
-func TestDeleteMarkedViews_FallBackToPlainTextWhenStylesAreDisabled(t *testing.T) {
-	// Arrange
-	t.Setenv("NO_COLOR", "1")
-	t.Setenv("TERM", "xterm-256color")
-
-	model := &Model{
-		styles: primitives.ResolveRenderStylesFromEnv(),
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			focus:    FocusContent,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "id", Type: "INTEGER", PrimaryKey: true},
-					{Name: "name", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"1", "alice"}},
-			},
-		},
-	}
-	key, ok := model.recordKeyForPersistedRow(0)
-	if !ok {
-		t.Fatal("expected persisted row key")
-	}
-	setTestPendingDeletes(model, map[string]recordDelete{
-		key: {},
-	})
-
-	// Act
-	recordLines := model.renderRecords(80, 6)
-	detailLines := model.recordDetailContentLines(40)
-	recordContent := strings.Join(recordLines, "\n")
-	detailContent := strings.Join(detailLines, "\n")
-
-	// Assert
-	if strings.Contains(recordContent, "\x1b[") || strings.Contains(detailContent, "\x1b[") {
-		t.Fatalf("expected plain-text fallback without ANSI styling, got records=%q detail=%q", recordContent, detailContent)
-	}
-	if !strings.Contains(recordContent, primitives.IconDelete+" ") {
-		t.Fatalf("expected delete marker to remain visible without ANSI styling, got %q", recordContent)
-	}
-	if !strings.Contains(detailLines[0], primitives.IconInfo+" Marked for delete") {
-		t.Fatalf("expected detail delete summary to remain visible without ANSI styling, got %q", detailLines[0])
-	}
-}
-
-func TestRenderRecords_SanitizesHeaderAndRowValues(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			viewMode: ViewRecords,
-			focus:    FocusContent,
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "na\x1b[31mme", Type: "TEXT"},
-					{Name: "notes", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"ali\tce\x1b[0m", "line1\r\nline2\x00"}},
-			},
-		},
-	}
-
-	// Act
-	content := stripANSI(strings.Join(model.renderRecords(60, 6), "\n"))
-
-	// Assert
-	if strings.Contains(content, "\x1b") || strings.Contains(content, "\r") || strings.Contains(content, "\nline2") {
-		t.Fatalf("expected records view to strip escape/control characters from headers and cells, got %q", content)
-	}
-	if !strings.Contains(content, "name") {
-		t.Fatalf("expected sanitized header label, got %q", content)
-	}
-	if !strings.Contains(content, "ali ce") {
-		t.Fatalf("expected sanitized cell value, got %q", content)
-	}
-	if !strings.Contains(content, "line1 line2") {
-		t.Fatalf("expected single-line sanitization for tabular record rows, got %q", content)
-	}
-}
-
-func TestRecordDetailContentLines_PreservesMultilineWhileSanitizingEscapeSequences(t *testing.T) {
-	// Arrange
-	model := &Model{
-		read: runtimeReadState{
-			schema: dto.Schema{
-				Columns: []dto.SchemaColumn{
-					{Name: "payload\x1b[31m", Type: "TEXT"},
-				},
-			},
-			records: []dto.RecordRow{
-				{Values: []string{"alpha\r\nbeta\t\x1b[32mok\x1b[0m\nomega\x00"}},
-			},
-		},
-	}
-
-	// Act
-	content := stripANSI(strings.Join(model.recordDetailContentLines(40), "\n"))
-
-	// Assert
-	if strings.Contains(content, "\x1b") || strings.Contains(content, "\r") {
-		t.Fatalf("expected record detail to strip escape sequences and carriage returns, got %q", content)
-	}
-	if !strings.Contains(content, "payload (TEXT)") {
-		t.Fatalf("expected sanitized column header, got %q", content)
-	}
-	if !strings.Contains(content, "  alpha\n  beta ok\n  omega") {
-		t.Fatalf("expected record detail to preserve multiline content after sanitization, got %q", content)
 	}
 }

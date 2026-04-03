@@ -17,10 +17,7 @@ func TestDatabaseSelector_EnterSelects(t *testing.T) {
 			{Name: "local", Path: "/tmp/example.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -39,10 +36,7 @@ func TestDatabaseSelector_EscCancels(t *testing.T) {
 			{Name: "local", Path: "/tmp/example.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
@@ -66,12 +60,9 @@ func TestDatabaseSelector_EscDismissesWhenBrowseEscBehaviorIsRuntimeResume(t *te
 			{Name: "local", Path: "/tmp/example.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+	model := newTestSelectorModel(t, manager, SelectorLaunchState{
 		BrowseEscBehavior: SelectorBrowseEscBehaviorRuntimeResume,
 	})
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
 
 	// Act
 	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
@@ -91,65 +82,41 @@ func TestDatabaseSelector_EscDismissesWhenBrowseEscBehaviorIsRuntimeResume(t *te
 	}
 }
 
-func TestDatabaseSelector_QDoesNotCancelOrQuit(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/example.sqlite"},
-		},
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+func TestDatabaseSelector_BrowseIgnoresQuitLikeKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		key  tea.KeyMsg
+	}{
+		{name: "q", key: tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}},
+		{name: "ctrl+c", key: tea.KeyMsg{Type: tea.KeyCtrlC}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			manager := &fakeSelectorManager{
+				entries: []dto.ConfigDatabase{
+					{Name: "local", Path: "/tmp/example.sqlite"},
+				},
+			}
+			model := newTestSelectorModel(t, manager)
 
-	// Act
-	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+			// Act
+			updated, cmd := model.Update(tc.key)
 
-	// Assert
-	selector := updated.(*databaseSelectorModel)
-	if selector.canceled {
-		t.Fatal("expected q to keep selector active")
-	}
-	if selector.chosen {
-		t.Fatal("expected q not to confirm selection")
-	}
-	if selector.mode != selectorModeBrowse {
-		t.Fatalf("expected browse mode to stay active, got %v", selector.mode)
-	}
-	if cmd != nil {
-		t.Fatalf("expected q not to quit selector, got %T", cmd())
-	}
-}
-
-func TestDatabaseSelector_CtrlCDoesNotCancelOrQuit(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/example.sqlite"},
-		},
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
-
-	// Act
-	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-
-	// Assert
-	selector := updated.(*databaseSelectorModel)
-	if selector.canceled {
-		t.Fatal("expected Ctrl+C to keep selector active")
-	}
-	if selector.chosen {
-		t.Fatal("expected Ctrl+C not to confirm selection")
-	}
-	if selector.mode != selectorModeBrowse {
-		t.Fatalf("expected browse mode to stay active, got %v", selector.mode)
-	}
-	if cmd != nil {
-		t.Fatalf("expected Ctrl+C not to quit selector, got %T", cmd())
+			// Assert
+			selector := updated.(*databaseSelectorModel)
+			if selector.canceled {
+				t.Fatalf("expected %s to keep selector active", tc.name)
+			}
+			if selector.chosen {
+				t.Fatalf("expected %s not to confirm selection", tc.name)
+			}
+			if selector.mode != selectorModeBrowse {
+				t.Fatalf("expected browse mode to stay active, got %v", selector.mode)
+			}
+			if cmd != nil {
+				t.Fatalf("expected %s not to quit selector, got %T", tc.name, cmd())
+			}
+		})
 	}
 }
 
@@ -161,10 +128,7 @@ func TestDatabaseSelector_MoveSelection(t *testing.T) {
 			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
@@ -192,7 +156,7 @@ func TestDatabaseSelector_EditIsUnavailableForSessionScopedCLIEntry(t *testing.T
 			{Name: "local", Path: "/tmp/local.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+	model := newTestSelectorModel(t, manager, SelectorLaunchState{
 		AdditionalOptions: []DatabaseOption{
 			{
 				Name:       "/tmp/direct.sqlite",
@@ -201,9 +165,6 @@ func TestDatabaseSelector_EditIsUnavailableForSessionScopedCLIEntry(t *testing.T
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
 	model.browse.selected = 1
 
 	// Act
@@ -228,7 +189,7 @@ func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing
 			{Name: "local", Path: "/tmp/local.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager, SelectorLaunchState{
+	model := newTestSelectorModel(t, manager, SelectorLaunchState{
 		AdditionalOptions: []DatabaseOption{
 			{
 				Name:       "/tmp/direct.sqlite",
@@ -237,9 +198,6 @@ func TestDatabaseSelector_DeleteIsUnavailableForSessionScopedCLIEntry(t *testing
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
 	model.browse.selected = 1
 
 	// Act

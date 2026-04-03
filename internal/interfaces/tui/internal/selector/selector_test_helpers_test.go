@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -11,6 +12,22 @@ import (
 	"github.com/mgierok/dbc/internal/application/port"
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
+
+func newTestSelectorModel(t *testing.T, manager *fakeSelectorManager, state ...SelectorLaunchState) *databaseSelectorModel {
+	t.Helper()
+
+	var launchState SelectorLaunchState
+	if len(state) > 0 {
+		launchState = state[0]
+	}
+
+	model, err := newDatabaseSelectorModel(context.Background(), manager, launchState)
+	if err != nil {
+		t.Fatalf("expected selector model, got error %v", err)
+	}
+
+	return model
+}
 
 func typeText(model *databaseSelectorModel, text string) *databaseSelectorModel {
 	current := model

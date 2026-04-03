@@ -1,7 +1,6 @@
 package selector
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -18,10 +17,7 @@ func TestDatabaseSelector_AddCreatesEntryAndRefreshesList(t *testing.T) {
 			{Name: "local", Path: "/tmp/local.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
@@ -53,10 +49,7 @@ func TestDatabaseSelector_EditUpdatesEntry(t *testing.T) {
 			{Name: "analytics", Path: "/tmp/analytics.sqlite"},
 		},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
 	// Act
@@ -83,78 +76,84 @@ func TestDatabaseSelector_EditUpdatesEntry(t *testing.T) {
 	}
 }
 
-func TestDatabaseSelector_AddKeepsFormWhenCreateFails(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
+func TestDatabaseSelector_FormSubmissionKeepsFormOpenOnConnectionValidationError(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		manager          *fakeSelectorManager
+		openForm         tea.KeyMsg
+		fillForm         func(*databaseSelectorModel) *databaseSelectorModel
+		expectedMode     selectorMode
+		expectedOptionCt int
+		assertCalls      func(*testing.T, *fakeSelectorManager)
+	}{
+		{
+			name: "add keeps form when create fails",
+			manager: &fakeSelectorManager{
+				entries:   []dto.ConfigDatabase{{Name: "local", Path: "/tmp/local.sqlite"}},
+				createErr: errors.New("cannot connect to database"),
+			},
+			openForm: tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}},
+			fillForm: func(model *databaseSelectorModel) *databaseSelectorModel {
+				model = typeText(model, "analytics")
+				model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+				model = typeText(model, "/tmp/analytics.sqlite")
+				return model
+			},
+			expectedMode:     selectorModeAdd,
+			expectedOptionCt: 1,
+			assertCalls: func(t *testing.T, manager *fakeSelectorManager) {
+				t.Helper()
+				if len(manager.created) != 0 {
+					t.Fatalf("expected no created entries, got %d", len(manager.created))
+				}
+			},
 		},
-		createErr: errors.New("cannot connect to database"),
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
-
-	// Act
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	model = typeText(model, "analytics")
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
-	model = typeText(model, "/tmp/analytics.sqlite")
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
-
-	// Assert
-	if model.mode != selectorModeAdd {
-		t.Fatalf("expected add form to stay open, got mode %v", model.mode)
-	}
-	if len(model.options) != 1 {
-		t.Fatalf("expected options to stay unchanged, got %d", len(model.options))
-	}
-	if !strings.Contains(model.form.errorMessage, "cannot connect") {
-		t.Fatalf("expected connection error in form, got %q", model.form.errorMessage)
-	}
-	if len(manager.created) != 0 {
-		t.Fatalf("expected no created entries, got %d", len(manager.created))
-	}
-}
-
-func TestDatabaseSelector_EditKeepsFormWhenUpdateFails(t *testing.T) {
-	// Arrange
-	manager := &fakeSelectorManager{
-		entries: []dto.ConfigDatabase{
-			{Name: "local", Path: "/tmp/local.sqlite"},
+		{
+			name: "edit keeps form when update fails",
+			manager: &fakeSelectorManager{
+				entries:   []dto.ConfigDatabase{{Name: "local", Path: "/tmp/local.sqlite"}},
+				updateErr: errors.New("cannot connect to database"),
+			},
+			openForm: tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}},
+			fillForm: func(model *databaseSelectorModel) *databaseSelectorModel {
+				model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
+				model = typeText(model, "prod")
+				model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
+				model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
+				model = typeText(model, "/tmp/prod.sqlite")
+				return model
+			},
+			expectedMode:     selectorModeEdit,
+			expectedOptionCt: 1,
+			assertCalls: func(t *testing.T, manager *fakeSelectorManager) {
+				t.Helper()
+				if len(manager.updated) != 0 {
+					t.Fatalf("expected no updated entries, got %d", len(manager.updated))
+				}
+			},
 		},
-		updateErr: errors.New("cannot connect to database"),
-	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			model := newTestSelectorModel(t, tc.manager)
 
-	// Act
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
-	model = typeText(model, "prod")
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyTab})
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyCtrlU})
-	model = typeText(model, "/tmp/prod.sqlite")
-	model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
+			// Act
+			model = sendKey(model, tc.openForm)
+			model = tc.fillForm(model)
+			model = sendKey(model, tea.KeyMsg{Type: tea.KeyEnter})
 
-	// Assert
-	if model.mode != selectorModeEdit {
-		t.Fatalf("expected edit form to stay open, got mode %v", model.mode)
-	}
-	if len(model.options) != 1 {
-		t.Fatalf("expected options to stay unchanged, got %d", len(model.options))
-	}
-	if model.options[0].Name != "local" {
-		t.Fatalf("expected original option to remain unchanged, got %q", model.options[0].Name)
-	}
-	if !strings.Contains(model.form.errorMessage, "cannot connect") {
-		t.Fatalf("expected connection error in form, got %q", model.form.errorMessage)
-	}
-	if len(manager.updated) != 0 {
-		t.Fatalf("expected no updated entries, got %d", len(manager.updated))
+			// Assert
+			if model.mode != tc.expectedMode {
+				t.Fatalf("expected form mode %v, got %v", tc.expectedMode, model.mode)
+			}
+			if len(model.options) != tc.expectedOptionCt {
+				t.Fatalf("expected options to stay unchanged, got %d", len(model.options))
+			}
+			if !strings.Contains(model.form.errorMessage, "cannot connect") {
+				t.Fatalf("expected connection error in form, got %q", model.form.errorMessage)
+			}
+			tc.assertCalls(t, tc.manager)
+		})
 	}
 }
 
@@ -163,10 +162,7 @@ func TestDatabaseSelector_ForcedSetupEscCancelsStartup(t *testing.T) {
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
@@ -188,10 +184,7 @@ func TestDatabaseSelector_ForcedSetupAllowsContinueAfterFirstEntry(t *testing.T)
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	model = typeText(model, "local")
@@ -214,10 +207,7 @@ func TestDatabaseSelector_ForcedSetupSupportsOptionalAdditionalEntries(t *testin
 	manager := &fakeSelectorManager{
 		entries: []dto.ConfigDatabase{},
 	}
-	model, err := newDatabaseSelectorModel(context.Background(), manager)
-	if err != nil {
-		t.Fatalf("expected selector model, got error %v", err)
-	}
+	model := newTestSelectorModel(t, manager)
 
 	// Act
 	model = typeText(model, "local")
