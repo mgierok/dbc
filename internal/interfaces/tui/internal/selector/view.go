@@ -93,7 +93,7 @@ func (m *databaseSelectorModel) boxLines(listHeight, totalWidth int, totalHeight
 		Title:     primitives.SemanticText(primitives.SemanticRoleTitle, title),
 		Summary:   primitives.SemanticLine{primitives.Span(primitives.SemanticRoleLabel, "Config:"), primitives.Span(primitives.SemanticRoleSummary, " "+configPath)},
 		Rows:      m.mainContentRows(listHeight),
-		Footer:    primitives.StandardizedPopupFooter{Right: primitives.SemanticText(primitives.SemanticRoleMuted, primitives.RuntimeStatusContextHelpHint())},
+		Footer:    primitives.StandardizedPopupFooter{Right: primitives.SemanticText(primitives.SemanticRoleMuted, primitives.RuntimePopupContextHelpHint())},
 		WidthMode: primitives.PopupWidthContent,
 		Styles:    m.styles,
 	})

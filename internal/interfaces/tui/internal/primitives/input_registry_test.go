@@ -138,8 +138,20 @@ func TestRuntimeStatusContextHelpHint_IsDeterministic(t *testing.T) {
 	hint := RuntimeStatusContextHelpHint()
 
 	// Assert
-	if hint != "Context help: ?" {
+	if hint != "?" {
 		t.Fatalf("expected deterministic context-help hint, got %q", hint)
+	}
+}
+
+func TestRuntimePopupContextHelpHint_IsDeterministic(t *testing.T) {
+	// Arrange
+
+	// Act
+	hint := RuntimePopupContextHelpHint()
+
+	// Assert
+	if hint != "?" {
+		t.Fatalf("expected deterministic popup context-help hint, got %q", hint)
 	}
 }
 

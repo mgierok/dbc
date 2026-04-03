@@ -229,7 +229,7 @@ func TestDatabaseSelector_ViewShowsSourceMarkersAndKeepsFooterHint(t *testing.T)
 	if !strings.Contains(view, primitives.FrameTopLeft+"Select database") {
 		t.Fatalf("expected selector title in top border, got %q", view)
 	}
-	if !strings.Contains(view, "Context help: ?") {
+	if !strings.Contains(view, "?") {
 		t.Fatalf("expected context-help hint in selector, got %q", view)
 	}
 }

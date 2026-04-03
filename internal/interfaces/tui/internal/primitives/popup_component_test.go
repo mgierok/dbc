@@ -168,7 +168,7 @@ func TestRenderStandardizedPopup_ContentWidthModeUsesSelectableRowsAndFooterWidt
 		Title:     SemanticText(SemanticRoleTitle, "DB"),
 		Summary:   SemanticText(SemanticRoleSummary, "Cfg"),
 		Rows:      PopupSelectableRows([]string{"local"}, 0),
-		Footer:    StandardizedPopupFooter{Right: SemanticText(SemanticRoleMuted, "Context help: ?")},
+		Footer:    StandardizedPopupFooter{Right: SemanticText(SemanticRoleMuted, "?")},
 		WidthMode: PopupWidthContent,
 	}
 
@@ -177,11 +177,11 @@ func TestRenderStandardizedPopup_ContentWidthModeUsesSelectableRowsAndFooterWidt
 
 	// Assert
 	actualWidth := TextWidth(stripANSI(lines[0]))
-	minExpectedWidth := TextWidth("Context help: ?") + (popupContentSidePadding * 2) + 2
-	if actualWidth != minExpectedWidth {
-		t.Fatalf("expected content-width popup width %d, got %d for %q", minExpectedWidth, actualWidth, stripANSI(lines[0]))
+	expectedWidth := TextWidth("local") + TextWidth(SelectionSelectedPrefix()) + (popupContentSidePadding * 2) + 2
+	if actualWidth != expectedWidth {
+		t.Fatalf("expected content-width popup width %d, got %d for %q", expectedWidth, actualWidth, stripANSI(lines[0]))
 	}
-	if !strings.Contains(stripANSI(lines[len(lines)-2]), "Context help: ?") {
+	if !strings.Contains(stripANSI(lines[len(lines)-2]), "?") {
 		t.Fatalf("expected footer row before bottom border, got %q", stripANSI(lines[len(lines)-2]))
 	}
 }
@@ -195,7 +195,7 @@ func TestRenderStandardizedPopup_KeepsFrameWidthAndRightBorderAlignedWithUnicode
 			IconConfigSource + " local" + FrameSegmentSeparator + "/tmp/local.sqlite",
 			IconCLISource + " /tmp/direct.sqlite" + FrameSegmentSeparator + "/tmp/direct.sqlite",
 		}, 0),
-		Footer:    StandardizedPopupFooter{Right: SemanticText(SemanticRoleMuted, "Context help: ?")},
+		Footer:    StandardizedPopupFooter{Right: SemanticText(SemanticRoleMuted, "?")},
 		WidthMode: PopupWidthContent,
 		Styles:    NewRenderStyles(true),
 	}

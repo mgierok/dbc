@@ -20,7 +20,7 @@ func TestRenderStatus_ShowsContextHelpHintOnRight(t *testing.T) {
 	status := stripANSI(model.renderStatus(120))
 
 	// Assert
-	if !strings.HasSuffix(status, "Context help: ?") {
+	if !strings.HasSuffix(status, "?") {
 		t.Fatalf("expected right-aligned context-help hint suffix, got %q", status)
 	}
 }
@@ -56,7 +56,7 @@ func TestRenderStatus_RightHintPriorityOnNarrowWidth(t *testing.T) {
 	status := stripANSI(model.renderStatus(20))
 
 	// Assert
-	if !strings.HasSuffix(status, "Context help: ?") {
+	if !strings.HasSuffix(status, "?") {
 		t.Fatalf("expected narrow status line to keep full right hint, got %q", status)
 	}
 }

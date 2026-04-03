@@ -207,5 +207,9 @@ func RuntimeStatusRecordDetailShortcuts() string {
 }
 
 func RuntimeStatusContextHelpHint() string {
-	return fmt.Sprintf("Context help: %s", keyLabel(KeyRuntimeOpenContextHelp))
+	return keyLabel(KeyRuntimeOpenContextHelp)
+}
+
+func RuntimePopupContextHelpHint() string {
+	return keyLabel(KeyRuntimeOpenContextHelp)
 }
