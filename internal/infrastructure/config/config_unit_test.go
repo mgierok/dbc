@@ -9,214 +9,199 @@ import (
 	"github.com/mgierok/dbc/internal/infrastructure/config"
 )
 
-func TestDecode_SingleDatabase(t *testing.T) {
-	// Arrange
-	input := `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"}]}`
+func TestDecode_ReturnsConfigForValidDocuments(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input string
+		want  []config.DatabaseConfig
+	}{
+		{
+			name:  "trimmed empty document",
+			input: " \n\t ",
+			want:  nil,
+		},
+		{
+			name:  "empty databases list",
+			input: `{"databases":[]}`,
+			want:  []config.DatabaseConfig{},
+		},
+		{
+			name:  "single database",
+			input: `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"}]}`,
+			want: []config.DatabaseConfig{
+				{Name: "local", Path: "/tmp/example.sqlite"},
+			},
+		},
+		{
+			name:  "multiple databases",
+			input: `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"},{"name":"analytics","db_path":"/tmp/analytics.sqlite"}]}`,
+			want: []config.DatabaseConfig{
+				{Name: "local", Path: "/tmp/example.sqlite"},
+				{Name: "analytics", Path: "/tmp/analytics.sqlite"},
+			},
+		},
+	}
 
-	// Act
-	cfg, err := config.Decode(strings.NewReader(input))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			input := strings.NewReader(tc.input)
 
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(cfg.Databases) != 1 {
-		t.Fatalf("expected 1 database, got %d", len(cfg.Databases))
-	}
-	if cfg.Databases[0].Name != "local" {
-		t.Fatalf("expected name %q, got %q", "local", cfg.Databases[0].Name)
-	}
-	if cfg.Databases[0].Path != "/tmp/example.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/example.sqlite", cfg.Databases[0].Path)
-	}
-}
+			// Act
+			got, err := config.Decode(input)
 
-func TestDecode_MultipleDatabases(t *testing.T) {
-	// Arrange
-	input := `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"},{"name":"analytics","db_path":"/tmp/analytics.sqlite"}]}`
-
-	// Act
-	cfg, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(cfg.Databases) != 2 {
-		t.Fatalf("expected 2 databases, got %d", len(cfg.Databases))
-	}
-	if cfg.Databases[0].Name != "local" {
-		t.Fatalf("expected name %q, got %q", "local", cfg.Databases[0].Name)
-	}
-	if cfg.Databases[0].Path != "/tmp/example.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/example.sqlite", cfg.Databases[0].Path)
-	}
-	if cfg.Databases[1].Name != "analytics" {
-		t.Fatalf("expected name %q, got %q", "analytics", cfg.Databases[1].Name)
-	}
-	if cfg.Databases[1].Path != "/tmp/analytics.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/analytics.sqlite", cfg.Databases[1].Path)
-	}
-}
-
-func TestDecode_EmptyDocument(t *testing.T) {
-	// Arrange
-	input := ``
-
-	// Act
-	cfg, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(cfg.Databases) != 0 {
-		t.Fatalf("expected zero databases, got %d", len(cfg.Databases))
+			// Assert
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			assertDatabaseConfigs(t, got.Databases, tc.want)
+		})
 	}
 }
 
-func TestDecode_UnknownTopLevelField(t *testing.T) {
-	// Arrange
-	input := `{"title":"dbc"}`
+func TestDecode_ReturnsErrorForInvalidDocuments(t *testing.T) {
+	testCases := []struct {
+		name            string
+		input           string
+		wantErr         error
+		wantErrContains string
+	}{
+		{
+			name:            "unknown top level field",
+			input:           `{"title":"dbc"}`,
+			wantErrContains: `unknown field "title"`,
+		},
+		{
+			name:            "legacy database section",
+			input:           `{"database":{"name":"legacy","db_path":"/tmp/example.sqlite"}}`,
+			wantErrContains: `unknown field "database"`,
+		},
+		{
+			name:            "multiple json documents",
+			input:           `{} {}`,
+			wantErrContains: "single JSON object",
+		},
+		{
+			name:    "missing database name",
+			input:   `{"databases":[{"db_path":"/tmp/example.sqlite"}]}`,
+			wantErr: config.ErrMissingDatabaseName,
+		},
+		{
+			name:    "missing database path",
+			input:   `{"databases":[{"name":"local"}]}`,
+			wantErr: config.ErrMissingDatabasePath,
+		},
+	}
 
-	// Act
-	_, err := config.Decode(strings.NewReader(input))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			input := strings.NewReader(tc.input)
 
-	// Assert
-	if err == nil {
-		t.Fatal("expected malformed config error, got nil")
+			// Act
+			_, err := config.Decode(input)
+
+			// Assert
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.wantErrContains) {
+				t.Fatalf("expected error containing %q, got %q", tc.wantErrContains, err.Error())
+			}
+		})
 	}
 }
 
-func TestDecode_EmptyDatabasesList(t *testing.T) {
-	// Arrange
-	input := `{"databases":[]}`
-
-	// Act
-	cfg, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+func TestDecode_EnforcesConfigSizeLimit(t *testing.T) {
+	testCases := []struct {
+		name    string
+		size    int
+		wantErr error
+	}{
+		{
+			name: "config at size limit",
+			size: 1 << 20,
+		},
+		{
+			name:    "config above size limit",
+			size:    (1 << 20) + 1,
+			wantErr: config.ErrConfigTooLarge,
+		},
 	}
-	if len(cfg.Databases) != 0 {
-		t.Fatalf("expected zero databases, got %d", len(cfg.Databases))
-	}
-}
 
-func TestDecode_LegacyDatabaseSection(t *testing.T) {
-	// Arrange
-	input := `{"database":{"name":"legacy","db_path":"/tmp/example.sqlite"}}`
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			input := configDocumentWithTotalSize(t, tc.size)
 
-	// Act
-	_, err := config.Decode(strings.NewReader(input))
+			// Act
+			cfg, err := config.Decode(strings.NewReader(input))
 
-	// Assert
-	if err == nil {
-		t.Fatal("expected malformed config error, got nil")
-	}
-}
-
-func TestDecode_MultipleDatabasesMissingName(t *testing.T) {
-	// Arrange
-	input := `{"databases":[{"db_path":"/tmp/example.sqlite"}]}`
-
-	// Act
-	_, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if !errors.Is(err, config.ErrMissingDatabaseName) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabaseName, err)
-	}
-}
-
-func TestDecode_MultipleDatabasesMissingPath(t *testing.T) {
-	// Arrange
-	input := `{"databases":[{"name":"local"}]}`
-
-	// Act
-	_, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if !errors.Is(err, config.ErrMissingDatabasePath) {
-		t.Fatalf("expected error %v, got %v", config.ErrMissingDatabasePath, err)
+			// Assert
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("expected error %v, got %v", tc.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if len(cfg.Databases) != 1 {
+				t.Fatalf("expected 1 database, got %d", len(cfg.Databases))
+			}
+			if cfg.Databases[0].Path != "/tmp/db.sqlite" {
+				t.Fatalf("expected path %q, got %q", "/tmp/db.sqlite", cfg.Databases[0].Path)
+			}
+			if cfg.Databases[0].Name == "" {
+				t.Fatal("expected non-empty database name")
+			}
+		})
 	}
 }
 
-func TestDecode_ReturnsErrorWhenConfigExceedsSizeLimit(t *testing.T) {
-	// Arrange
-	input := configDocumentWithTotalSize(t, (1<<20)+1)
-
-	// Act
-	_, err := config.Decode(strings.NewReader(input))
-
-	// Assert
-	if !errors.Is(err, config.ErrConfigTooLarge) {
-		t.Fatalf("expected error %v, got %v", config.ErrConfigTooLarge, err)
+func TestResolvePathForOS_ReturnsHomeConfigPath(t *testing.T) {
+	testCases := []struct {
+		name string
+		goos string
+		home string
+	}{
+		{
+			name: "linux",
+			goos: "linux",
+			home: "/home/tester",
+		},
+		{
+			name: "macos",
+			goos: "darwin",
+			home: "/Users/tester",
+		},
+		{
+			name: "unknown os",
+			goos: "plan9",
+			home: "/home/tester",
+		},
 	}
-}
 
-func TestDecode_AllowsConfigAtSizeLimit(t *testing.T) {
-	// Arrange
-	input := configDocumentWithTotalSize(t, 1<<20)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			expected := filepath.Join(tc.home, ".config", "dbc", "config.json")
 
-	// Act
-	cfg, err := config.Decode(strings.NewReader(input))
+			// Act
+			got := config.ResolvePathForOS(tc.goos, tc.home, "")
 
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if len(cfg.Databases) != 1 {
-		t.Fatalf("expected 1 database, got %d", len(cfg.Databases))
-	}
-	if cfg.Databases[0].Path != "/tmp/db.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/db.sqlite", cfg.Databases[0].Path)
-	}
-	if len(cfg.Databases[0].Name) == 0 {
-		t.Fatal("expected non-empty database name")
-	}
-}
-
-func TestResolvePathForOS_LinuxUsesHomeConfig(t *testing.T) {
-	// Arrange
-	home := "/home/tester"
-
-	// Act
-	path := config.ResolvePathForOS("linux", home, "")
-
-	// Assert
-	expected := filepath.Join(home, ".config", "dbc", "config.json")
-	if path != expected {
-		t.Fatalf("expected %q, got %q", expected, path)
-	}
-}
-
-func TestResolvePathForOS_MacOSUsesHomeConfig(t *testing.T) {
-	// Arrange
-	home := "/Users/tester"
-
-	// Act
-	path := config.ResolvePathForOS("darwin", home, "")
-
-	// Assert
-	expected := filepath.Join(home, ".config", "dbc", "config.json")
-	if path != expected {
-		t.Fatalf("expected %q, got %q", expected, path)
-	}
-}
-
-func TestResolvePathForOS_UnknownOSUsesHomeConfig(t *testing.T) {
-	// Arrange
-	home := "/home/tester"
-
-	// Act
-	path := config.ResolvePathForOS("plan9", home, "")
-
-	// Assert
-	expected := filepath.Join(home, ".config", "dbc", "config.json")
-	if path != expected {
-		t.Fatalf("expected %q, got %q", expected, path)
+			// Assert
+			if got != expected {
+				t.Fatalf("expected %q, got %q", expected, got)
+			}
+		})
 	}
 }
 
@@ -234,4 +219,17 @@ func configDocumentWithTotalSize(t *testing.T, totalSize int) string {
 	}
 
 	return prefix + strings.Repeat("a", nameLength) + suffix
+}
+
+func assertDatabaseConfigs(t *testing.T, got []config.DatabaseConfig, want []config.DatabaseConfig) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("expected %d databases, got %d", len(want), len(got))
+	}
+	for index := range want {
+		if got[index] != want[index] {
+			t.Fatalf("expected database at index %d to be %#v, got %#v", index, want[index], got[index])
+		}
+	}
 }

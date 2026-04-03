@@ -12,29 +12,34 @@ import (
 
 func TestLoadFile_LoadsConfigFromPath(t *testing.T) {
 	// Arrange
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.json")
-	content := `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"}]}`
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
-		t.Fatalf("failed to write temp config file: %v", err)
-	}
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeConfigFile(t, path, `{"databases":[{"name":"local","db_path":"/tmp/example.sqlite"}]}`)
 
 	// Act
-	cfg, err := config.LoadFile(path)
+	got, err := config.LoadFile(path)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if len(cfg.Databases) != 1 {
-		t.Fatalf("expected one database, got %d", len(cfg.Databases))
+	assertDatabaseConfigs(t, got.Databases, []config.DatabaseConfig{
+		{Name: "local", Path: "/tmp/example.sqlite"},
+	})
+}
+
+func TestLoadFile_ReturnsEmptyConfigForTrimmedEmptyFile(t *testing.T) {
+	// Arrange
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeConfigFile(t, path, " \n\t ")
+
+	// Act
+	got, err := config.LoadFile(path)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
-	if cfg.Databases[0].Name != "local" {
-		t.Fatalf("expected name %q, got %q", "local", cfg.Databases[0].Name)
-	}
-	if cfg.Databases[0].Path != "/tmp/example.sqlite" {
-		t.Fatalf("expected path %q, got %q", "/tmp/example.sqlite", cfg.Databases[0].Path)
-	}
+	assertDatabaseConfigs(t, got.Databases, nil)
 }
 
 func TestLoadFile_ReturnsErrorWhenFileDoesNotExist(t *testing.T) {
@@ -52,12 +57,8 @@ func TestLoadFile_ReturnsErrorWhenFileDoesNotExist(t *testing.T) {
 
 func TestLoadFile_ReturnsErrorWhenConfigExceedsSizeLimit(t *testing.T) {
 	// Arrange
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.json")
-	content := strings.Repeat(" ", (1<<20)+1)
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
-		t.Fatalf("failed to write temp config file: %v", err)
-	}
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeConfigFile(t, path, strings.Repeat(" ", (1<<20)+1))
 
 	// Act
 	_, err := config.LoadFile(path)
@@ -65,5 +66,16 @@ func TestLoadFile_ReturnsErrorWhenConfigExceedsSizeLimit(t *testing.T) {
 	// Assert
 	if !errors.Is(err, config.ErrConfigTooLarge) {
 		t.Fatalf("expected error %v, got %v", config.ErrConfigTooLarge, err)
+	}
+}
+
+func writeConfigFile(t *testing.T, path string, content string) {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatalf("failed to create config directory: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write temp config file: %v", err)
 	}
 }
