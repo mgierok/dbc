@@ -8,58 +8,91 @@ import (
 	"testing"
 )
 
-func TestValidateSupportedOS_AcceptsMacOSAndLinux(t *testing.T) {
+func TestValidateSupportedOS(t *testing.T) {
 	t.Parallel()
 
-	cases := []string{"darwin", "linux"}
-	for _, goos := range cases {
-		goos := goos
-		t.Run(goos, func(t *testing.T) {
+	cases := []struct {
+		name      string
+		goos      string
+		wantErr   bool
+		errTokens []string
+	}{
+		{
+			name:    "accepts darwin",
+			goos:    "darwin",
+			wantErr: false,
+		},
+		{
+			name:    "accepts linux",
+			goos:    "linux",
+			wantErr: false,
+		},
+		{
+			name:      "rejects windows",
+			goos:      "windows",
+			wantErr:   true,
+			errTokens: []string{"unsupported operating system", "windows"},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			// Act
-			err := validateSupportedOS(goos)
+			err := validateSupportedOS(tc.goos)
 
 			// Assert
-			if err != nil {
-				t.Fatalf("expected supported OS %q to pass validation, got %v", goos, err)
+			if !tc.wantErr {
+				if err != nil {
+					t.Fatalf("expected supported OS %q to pass validation, got %v", tc.goos, err)
+				}
+				return
 			}
+
+			assertErrorContains(t, err, tc.errTokens...)
 		})
 	}
 }
 
-func TestValidateSupportedOS_RejectsWindows(t *testing.T) {
-	t.Parallel()
-
-	// Act
-	err := validateSupportedOS("windows")
-
-	// Assert
-	if err == nil {
-		t.Fatal("expected unsupported-OS error, got nil")
-	}
-	if !strings.Contains(err.Error(), "unsupported operating system") {
-		t.Fatalf("expected unsupported-OS token, got %q", err.Error())
-	}
-	if !strings.Contains(err.Error(), "windows") {
-		t.Fatalf("expected OS name in error, got %q", err.Error())
-	}
-}
-
-func TestParseStartupOptions_AcceptsDirectLaunchAliases(t *testing.T) {
+func TestParseStartupOptions_SuccessCases(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
 		name string
 		args []string
+		want startupOptions
 	}{
 		{
-			name: "short alias",
+			name: "accepts short direct launch alias",
 			args: []string{"-d", "/tmp/direct.sqlite"},
+			want: startupOptions{directLaunchConnString: "/tmp/direct.sqlite"},
 		},
 		{
-			name: "long alias",
+			name: "accepts long direct launch alias",
 			args: []string{"--database", "/tmp/direct.sqlite"},
+			want: startupOptions{directLaunchConnString: "/tmp/direct.sqlite"},
+		},
+		{
+			name: "accepts long help alias",
+			args: []string{"--help"},
+			want: startupOptions{informationalCommand: startupInformationalHelp},
+		},
+		{
+			name: "accepts short help alias",
+			args: []string{"-h"},
+			want: startupOptions{informationalCommand: startupInformationalHelp},
+		},
+		{
+			name: "accepts long version alias",
+			args: []string{"--version"},
+			want: startupOptions{informationalCommand: startupInformationalVersion},
+		},
+		{
+			name: "accepts short version alias",
+			args: []string{"-v"},
+			want: startupOptions{informationalCommand: startupInformationalVersion},
 		},
 	}
 
@@ -69,85 +102,66 @@ func TestParseStartupOptions_AcceptsDirectLaunchAliases(t *testing.T) {
 			t.Parallel()
 
 			// Act
-			options, err := parseStartupOptions(tc.args)
+			got, err := parseStartupOptions(tc.args)
 
 			// Assert
 			if err != nil {
 				t.Fatalf("expected no error, got %v", err)
 			}
-			if options.directLaunchConnString != "/tmp/direct.sqlite" {
-				t.Fatalf("expected direct-launch connection string to be parsed, got %q", options.directLaunchConnString)
+			if got != tc.want {
+				t.Fatalf("expected startup options %+v, got %+v", tc.want, got)
 			}
 		})
 	}
 }
 
-func TestParseStartupOptions_AcceptsInformationalAliases(t *testing.T) {
+func TestParseStartupOptions_ValidationFailures(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name     string
-		args     []string
-		expected startupInformationalCommand
+		name      string
+		args      []string
+		errTokens []string
 	}{
 		{
-			name:     "long help alias",
-			args:     []string{"--help"},
-			expected: startupInformationalHelp,
+			name:      "rejects repeated help aliases",
+			args:      []string{"--help", "-h"},
+			errTokens: []string{"more than once"},
 		},
 		{
-			name:     "short help alias",
-			args:     []string{"-h"},
-			expected: startupInformationalHelp,
+			name:      "rejects repeated version aliases",
+			args:      []string{"--version", "-v"},
+			errTokens: []string{"more than once"},
 		},
 		{
-			name:     "long version alias",
-			args:     []string{"--version"},
-			expected: startupInformationalVersion,
+			name:      "rejects mixed informational and direct launch flags",
+			args:      []string{"--help", "-d", "/tmp/direct.sqlite"},
+			errTokens: []string{"cannot be combined"},
 		},
 		{
-			name:     "short version alias",
-			args:     []string{"-v"},
-			expected: startupInformationalVersion,
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Act
-			options, err := parseStartupOptions(tc.args)
-
-			// Assert
-			if err != nil {
-				t.Fatalf("expected no error, got %v", err)
-			}
-			if options.informationalCommand != tc.expected {
-				t.Fatalf("expected informational command %v, got %v", tc.expected, options.informationalCommand)
-			}
-			if options.directLaunchConnString != "" {
-				t.Fatalf("expected direct-launch connection string to stay empty, got %q", options.directLaunchConnString)
-			}
-		})
-	}
-}
-
-func TestParseStartupOptions_ReturnsErrorForRepeatedLogicalInformationalAliases(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		args []string
-	}{
-		{
-			name: "help aliases repeated logically",
-			args: []string{"--help", "-h"},
+			name:      "rejects mixed informational flags",
+			args:      []string{"--help", "--version"},
+			errTokens: []string{"cannot be combined"},
 		},
 		{
-			name: "version aliases repeated logically",
-			args: []string{"--version", "-v"},
+			name:      "rejects short direct launch alias without value",
+			args:      []string{"-d"},
+			errTokens: []string{"missing value", "-d/--database"},
+		},
+		{
+			name:      "rejects long direct launch alias without value",
+			args:      []string{"--database"},
+			errTokens: []string{"missing value", "-d/--database"},
+		},
+		{
+			name:      "rejects whitespace-only direct launch value",
+			args:      []string{"--database", "\n  "},
+			errTokens: []string{"empty value", "-d/--database"},
+		},
+		{
+			name:      "rejects unsupported argument",
+			args:      []string{"--unknown"},
+			errTokens: []string{"unsupported startup argument", "-d <sqlite-db-path>"},
 		},
 	}
 
@@ -160,201 +174,7 @@ func TestParseStartupOptions_ReturnsErrorForRepeatedLogicalInformationalAliases(
 			_, err := parseStartupOptions(tc.args)
 
 			// Assert
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), "more than once") {
-				t.Fatalf("expected duplicate-flag guidance, got %q", err.Error())
-			}
-		})
-	}
-}
-
-func TestParseStartupOptions_ReturnsErrorForMixedInformationalAndDirectLaunchFlags(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		args []string
-	}{
-		{
-			name: "help mixed with direct launch",
-			args: []string{"--help", "-d", "/tmp/direct.sqlite"},
-		},
-		{
-			name: "version mixed with direct launch",
-			args: []string{"--version", "--database", "/tmp/direct.sqlite"},
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Act
-			_, err := parseStartupOptions(tc.args)
-
-			// Assert
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), "cannot be combined") {
-				t.Fatalf("expected mixed-mode guidance, got %q", err.Error())
-			}
-		})
-	}
-}
-
-func TestParseStartupOptions_ReturnsErrorForMixedInformationalFlags(t *testing.T) {
-	t.Parallel()
-
-	// Act
-	_, err := parseStartupOptions([]string{"--help", "--version"})
-
-	// Assert
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !strings.Contains(err.Error(), "cannot be combined") {
-		t.Fatalf("expected mixed informational guidance, got %q", err.Error())
-	}
-}
-
-func TestParseStartupOptions_ReturnsErrorForMissingDirectLaunchValue(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		args []string
-	}{
-		{
-			name: "short alias missing value",
-			args: []string{"-d"},
-		},
-		{
-			name: "long alias missing value",
-			args: []string{"--database"},
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Act
-			_, err := parseStartupOptions(tc.args)
-
-			// Assert
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), "missing value") {
-				t.Fatalf("expected missing-value guidance, got %q", err.Error())
-			}
-			if !strings.Contains(err.Error(), "-d/--database") {
-				t.Fatalf("expected argument hint in error, got %q", err.Error())
-			}
-		})
-	}
-}
-
-func TestParseStartupOptions_ReturnsErrorForWhitespaceOnlyDirectLaunchValue(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		args []string
-	}{
-		{
-			name: "short alias whitespace value",
-			args: []string{"-d", "   \t"},
-		},
-		{
-			name: "long alias whitespace value",
-			args: []string{"--database", "\n  "},
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Act
-			_, err := parseStartupOptions(tc.args)
-
-			// Assert
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), "empty value") {
-				t.Fatalf("expected empty-value guidance, got %q", err.Error())
-			}
-			if !strings.Contains(err.Error(), "-d/--database") {
-				t.Fatalf("expected argument hint in error, got %q", err.Error())
-			}
-		})
-	}
-}
-
-func TestParseStartupOptions_ReturnsErrorForUnsupportedArgument(t *testing.T) {
-	t.Parallel()
-
-	// Act
-	_, err := parseStartupOptions([]string{"--unknown"})
-
-	// Assert
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !strings.Contains(err.Error(), "unsupported startup argument") {
-		t.Fatalf("expected unsupported-argument error, got %q", err.Error())
-	}
-	if !strings.Contains(err.Error(), "-d <sqlite-db-path>") {
-		t.Fatalf("expected supported usage hint, got %q", err.Error())
-	}
-}
-
-func TestParseStartupOptions_ReturnsUsageErrorTypeForValidationFailures(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name string
-		args []string
-	}{
-		{
-			name: "unsupported argument",
-			args: []string{"--unknown"},
-		},
-		{
-			name: "missing value",
-			args: []string{"--database"},
-		},
-		{
-			name: "mixed informational and direct launch",
-			args: []string{"--help", "--database", "/tmp/direct.sqlite"},
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Act
-			_, err := parseStartupOptions(tc.args)
-
-			// Assert
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-
-			var usageErr startupUsageError
-			if !errors.As(err, &usageErr) {
-				t.Fatalf("expected startupUsageError type, got %T", err)
-			}
+			_ = assertUsageError(t, err, tc.errTokens...)
 		})
 	}
 }
@@ -383,6 +203,37 @@ func TestClassifyStartupFailure_MapsUsageErrorsToExitCodeTwoWithUsageContract(t 
 		if !strings.Contains(failure.stderrOutput, token) {
 			t.Fatalf("expected usage contract token %q in output %q", token, failure.stderrOutput)
 		}
+	}
+}
+
+func TestRunStartupDispatchWithOS_ShortCircuitsUnsupportedOS(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	informationalCalled := false
+	runtimeCalled := false
+
+	// Act
+	err := runStartupDispatchWithOS(
+		"windows",
+		[]string{"--help"},
+		func(startupInformationalCommand) error {
+			informationalCalled = true
+			return nil
+		},
+		func(startupOptions) error {
+			runtimeCalled = true
+			return nil
+		},
+	)
+
+	// Assert
+	assertErrorContains(t, err, "unsupported operating system", "windows")
+	if informationalCalled {
+		t.Fatal("expected informational handler to stay skipped for unsupported OS")
+	}
+	if runtimeCalled {
+		t.Fatal("expected runtime handler to stay skipped for unsupported OS")
 	}
 }
 
@@ -578,10 +429,29 @@ func TestRunStartupDispatch_UsesRuntimeStartupWhenInformationalFlagsAreAbsent(t 
 	}
 }
 
-func TestRunStartupDispatch_HelpAliasesProduceEquivalentRenderedOutput(t *testing.T) {
+func TestRunStartupDispatch_InformationalAliasesProduceEquivalentRenderedOutput(t *testing.T) {
 	t.Parallel()
 
-	renderHelp := func(args []string) (string, error) {
+	cases := []struct {
+		name      string
+		longArgs  []string
+		shortArgs []string
+	}{
+		{
+			name:      "help aliases",
+			longArgs:  []string{"--help"},
+			shortArgs: []string{"-h"},
+		},
+		{
+			name:      "version aliases",
+			longArgs:  []string{"--version"},
+			shortArgs: []string{"-v"},
+		},
+	}
+
+	renderOutput := func(t *testing.T, args []string) string {
+		t.Helper()
+
 		rendered := ""
 		err := runStartupDispatch(
 			args,
@@ -590,61 +460,31 @@ func TestRunStartupDispatch_HelpAliasesProduceEquivalentRenderedOutput(t *testin
 				return nil
 			},
 			func(_ startupOptions) error {
-				t.Fatal("expected runtime startup handler to stay skipped for help dispatch")
+				t.Fatal("expected runtime startup handler to stay skipped for informational dispatch")
 				return nil
 			},
 		)
-		return rendered, err
+		if err != nil {
+			t.Fatalf("expected no error for %v, got %v", args, err)
+		}
+
+		return rendered
 	}
 
-	// Act
-	longHelpOutput, longErr := renderHelp([]string{"--help"})
-	shortHelpOutput, shortErr := renderHelp([]string{"-h"})
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	if longErr != nil {
-		t.Fatalf("expected no error for --help, got %v", longErr)
-	}
-	if shortErr != nil {
-		t.Fatalf("expected no error for -h, got %v", shortErr)
-	}
-	if longHelpOutput != shortHelpOutput {
-		t.Fatalf("expected equivalent help output for aliases, got --help=%q and -h=%q", longHelpOutput, shortHelpOutput)
-	}
-}
+			// Act
+			longOutput := renderOutput(t, tc.longArgs)
+			shortOutput := renderOutput(t, tc.shortArgs)
 
-func TestRunStartupDispatch_VersionAliasesProduceEquivalentRenderedOutput(t *testing.T) {
-	t.Parallel()
-
-	renderVersion := func(args []string) (string, error) {
-		rendered := ""
-		err := runStartupDispatch(
-			args,
-			func(command startupInformationalCommand) error {
-				rendered = renderStartupInformationalOutput(command)
-				return nil
-			},
-			func(_ startupOptions) error {
-				t.Fatal("expected runtime startup handler to stay skipped for version dispatch")
-				return nil
-			},
-		)
-		return rendered, err
-	}
-
-	// Act
-	longVersionOutput, longErr := renderVersion([]string{"--version"})
-	shortVersionOutput, shortErr := renderVersion([]string{"-v"})
-
-	// Assert
-	if longErr != nil {
-		t.Fatalf("expected no error for --version, got %v", longErr)
-	}
-	if shortErr != nil {
-		t.Fatalf("expected no error for -v, got %v", shortErr)
-	}
-	if longVersionOutput != shortVersionOutput {
-		t.Fatalf("expected equivalent version output for aliases, got --version=%q and -v=%q", longVersionOutput, shortVersionOutput)
+			// Assert
+			if longOutput != shortOutput {
+				t.Fatalf("expected equivalent rendered output for aliases, got long=%q short=%q", longOutput, shortOutput)
+			}
+		})
 	}
 }
 

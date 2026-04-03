@@ -55,7 +55,7 @@ func TestNewRuntimeStartupDependencies_UsesDefaultConfigPathAndBuildsUseCases(t 
 	}
 }
 
-func TestNewRuntimeStartupOrchestrator_SetsDirectLaunchPendingFromOptions(t *testing.T) {
+func TestNewRuntimeStartupOrchestrator_TracksDirectLaunchPendingFromOptions(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -68,32 +68,16 @@ func TestNewRuntimeStartupOrchestrator_SetsDirectLaunchPendingFromOptions(t *tes
 	if !orchestrator.directLaunchPending {
 		t.Fatal("expected direct launch to start in pending state")
 	}
-	if orchestrator.selectDatabaseFn == nil {
-		t.Fatal("expected selectDatabaseFn to be initialized")
-	}
-	if orchestrator.runSelectedDatabaseFn == nil {
-		t.Fatal("expected runSelectedDatabaseFn to be initialized")
-	}
-	if orchestrator.connectDatabaseFn == nil {
-		t.Fatal("expected connectDatabaseFn to be initialized")
-	}
-	if orchestrator.openRuntimeRunDepsFn == nil {
-		t.Fatal("expected openRuntimeRunDepsFn to be initialized")
-	}
-	if orchestrator.runRuntimeSessionFn == nil {
-		t.Fatal("expected runRuntimeSessionFn to be initialized")
-	}
 }
 
 func TestRunRuntimeStartup_WrapsDependencyResolutionFailure(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
 	// Arrange
 	expectedErr := errors.New("config path unavailable")
-	newRuntimeStartupDependenciesFn = func() (runtimeStartupDependencies, error) {
-		return runtimeStartupDependencies{}, expectedErr
-	}
+	withStartupRuntimeHooks(t, startupRuntimeHookOverrides{
+		newDependencies: func() (runtimeStartupDependencies, error) {
+			return runtimeStartupDependencies{}, expectedErr
+		},
+	})
 
 	// Act
 	err := runRuntimeStartup(startupOptions{})
@@ -111,30 +95,29 @@ func TestRunRuntimeStartup_WrapsDependencyResolutionFailure(t *testing.T) {
 }
 
 func TestRunRuntimeStartup_UsesResolvedDependenciesAndOrchestrator(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
 	// Arrange
 	options := startupOptions{directLaunchConnString: "/tmp/direct.sqlite"}
 	expectedDeps := runtimeStartupDependencies{}
 	orchestratorCalled := false
-	newRuntimeStartupDependenciesFn = func() (runtimeStartupDependencies, error) {
-		return expectedDeps, nil
-	}
-	newRuntimeStartupOrchestratorFn = func(gotOptions startupOptions, gotDeps runtimeStartupDependencies) *runtimeStartupOrchestrator {
-		orchestratorCalled = true
-		if gotOptions != options {
-			t.Fatalf("expected options %+v, got %+v", options, gotOptions)
-		}
-		if gotDeps != expectedDeps {
-			t.Fatalf("expected dependencies %+v, got %+v", expectedDeps, gotDeps)
-		}
-		return &runtimeStartupOrchestrator{
-			selectDatabaseFn: func() (tui.DatabaseOption, startupPath, error) {
-				return tui.DatabaseOption{}, startupPathSelector, tui.ErrDatabaseSelectionCanceled
-			},
-		}
-	}
+	withStartupRuntimeHooks(t, startupRuntimeHookOverrides{
+		newDependencies: func() (runtimeStartupDependencies, error) {
+			return expectedDeps, nil
+		},
+		newOrchestrator: func(gotOptions startupOptions, gotDeps runtimeStartupDependencies) *runtimeStartupOrchestrator {
+			orchestratorCalled = true
+			if gotOptions != options {
+				t.Fatalf("expected options %+v, got %+v", options, gotOptions)
+			}
+			if gotDeps != expectedDeps {
+				t.Fatalf("expected dependencies %+v, got %+v", expectedDeps, gotDeps)
+			}
+			return &runtimeStartupOrchestrator{
+				selectDatabaseFn: func() (tui.DatabaseOption, startupPath, error) {
+					return tui.DatabaseOption{}, startupPathSelector, tui.ErrDatabaseSelectionCanceled
+				},
+			}
+		},
+	})
 
 	// Act
 	err := runRuntimeStartup(options)
@@ -148,26 +131,47 @@ func TestRunRuntimeStartup_UsesResolvedDependenciesAndOrchestrator(t *testing.T)
 	}
 }
 
-func TestRuntimeStartupOrchestratorRun_ReturnsNilWhenSelectorIsCanceled(t *testing.T) {
+func TestRuntimeStartupOrchestratorRun_ReturnsNilWhenSelectionEndsWithoutDatabase(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	orchestrator := &runtimeStartupOrchestrator{
-		selectDatabaseFn: func() (tui.DatabaseOption, startupPath, error) {
-			return tui.DatabaseOption{}, startupPathSelector, tui.ErrDatabaseSelectionCanceled
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "selector canceled",
+			err:  tui.ErrDatabaseSelectionCanceled,
 		},
-		runSelectedDatabaseFn: func(tui.DatabaseOption, startupPath) (bool, error) {
-			t.Fatal("expected selected database runner to stay unused after selector cancel")
-			return false, nil
+		{
+			name: "selector dismissed",
+			err:  tui.ErrDatabaseSelectionDismissed,
 		},
 	}
 
-	// Act
-	err := orchestrator.run()
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+			// Arrange
+			orchestrator := &runtimeStartupOrchestrator{
+				selectDatabaseFn: func() (tui.DatabaseOption, startupPath, error) {
+					return tui.DatabaseOption{}, startupPathSelector, tc.err
+				},
+				runSelectedDatabaseFn: func(tui.DatabaseOption, startupPath) (bool, error) {
+					t.Fatal("expected selected database runner to stay unused after selection end")
+					return false, nil
+				},
+			}
+
+			// Act
+			err := orchestrator.run()
+
+			// Assert
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		})
 	}
 }
 
@@ -288,9 +292,6 @@ func TestRuntimeStartupOrchestratorRun_ReopensRequestedDatabaseWithoutSelectorRo
 }
 
 func TestRuntimeStartupOrchestratorSelectDatabase_UsesSelectorState(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
 	// Arrange
 	expectedState := tui.SelectorLaunchState{
 		StatusMessage:    "Connection failed for \"analytics\": ping failed",
@@ -317,22 +318,24 @@ func TestRuntimeStartupOrchestratorSelectDatabase_UsesSelectorState(t *testing.T
 		loadDatabaseSelectorState: usecase.NewLoadDatabaseSelectorState(store),
 	})
 	orchestrator.selectorState = expectedState
-	selectDatabaseWithStateFn = func(
-		ctx context.Context,
-		loadDatabaseSelectorState *usecase.LoadDatabaseSelectorState,
-		createConfiguredDatabase *usecase.CreateConfiguredDatabase,
-		updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
-		deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
-		state tui.SelectorLaunchState,
-	) (tui.DatabaseOption, error) {
-		if loadDatabaseSelectorState == nil {
-			t.Fatal("expected loadDatabaseSelectorState to be wired")
-		}
-		if !reflect.DeepEqual(state, expectedState) {
-			t.Fatalf("expected selector state %+v, got %+v", expectedState, state)
-		}
-		return expectedOption, nil
-	}
+	withStartupRuntimeHooks(t, startupRuntimeHookOverrides{
+		selectDatabaseWithState: func(
+			ctx context.Context,
+			loadDatabaseSelectorState *usecase.LoadDatabaseSelectorState,
+			createConfiguredDatabase *usecase.CreateConfiguredDatabase,
+			updateConfiguredDatabase *usecase.UpdateConfiguredDatabase,
+			deleteConfiguredDatabase *usecase.DeleteConfiguredDatabase,
+			state tui.SelectorLaunchState,
+		) (tui.DatabaseOption, error) {
+			if loadDatabaseSelectorState == nil {
+				t.Fatal("expected loadDatabaseSelectorState to be wired")
+			}
+			if !reflect.DeepEqual(state, expectedState) {
+				t.Fatalf("expected selector state %+v, got %+v", expectedState, state)
+			}
+			return expectedOption, nil
+		},
+	})
 
 	// Act
 	selected, path, err := orchestrator.selectDatabase()
@@ -496,58 +499,63 @@ func TestRuntimeStartupOrchestratorRunSelectedDatabase_ReturnsPresentedFailureFo
 	}
 }
 
-func TestRunRuntimeSession_PropagatesRunError(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
-	// Arrange
-	expectedErr := errors.New("tui failed")
-	tuiRunFn = func(_ context.Context, _ tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
-		return tui.RuntimeExitResult{}, expectedErr
-	}
-
-	// Act
-	_, err := runRuntimeSession(tui.RuntimeRunDeps{})
-
-	// Assert
-	if !errors.Is(err, expectedErr) {
-		t.Fatalf("expected run error %v, got %v", expectedErr, err)
-	}
-}
-
-func TestRunRuntimeSession_ReturnsExitResultFromTUI(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
-	// Arrange
-	expected := tui.RuntimeExitResult{
-		Action: tui.RuntimeExitActionOpenDatabaseNext,
-		NextDatabase: tui.DatabaseOption{
-			Name:       "analytics",
-			ConnString: "/tmp/analytics.sqlite",
-			Source:     tui.DatabaseOptionSourceCLI,
+func TestRunRuntimeSession_DelegatesToTUI(t *testing.T) {
+	cases := []struct {
+		name    string
+		result  tui.RuntimeExitResult
+		runErr  error
+		wantErr bool
+	}{
+		{
+			name:    "propagates run error",
+			runErr:  errors.New("tui failed"),
+			wantErr: true,
+		},
+		{
+			name: "returns exit result from tui",
+			result: tui.RuntimeExitResult{
+				Action: tui.RuntimeExitActionOpenDatabaseNext,
+				NextDatabase: tui.DatabaseOption{
+					Name:       "analytics",
+					ConnString: "/tmp/analytics.sqlite",
+					Source:     tui.DatabaseOptionSourceCLI,
+				},
+			},
+			wantErr: false,
 		},
 	}
-	tuiRunFn = func(_ context.Context, _ tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
-		return expected, nil
-	}
 
-	// Act
-	result, err := runRuntimeSession(tui.RuntimeRunDeps{})
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			withStartupRuntimeHooks(t, startupRuntimeHookOverrides{
+				runTUI: func(context.Context, tui.RuntimeRunDeps) (tui.RuntimeExitResult, error) {
+					return tc.result, tc.runErr
+				},
+			})
 
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no runtime error, got %v", err)
-	}
-	if result != expected {
-		t.Fatalf("expected runtime exit result %+v, got %+v", expected, result)
+			// Act
+			result, err := runRuntimeSession(tui.RuntimeRunDeps{})
+
+			// Assert
+			if tc.wantErr {
+				if !errors.Is(err, tc.runErr) {
+					t.Fatalf("expected run error %v, got %v", tc.runErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no runtime error, got %v", err)
+			}
+			if result != tc.result {
+				t.Fatalf("expected runtime exit result %+v, got %+v", tc.result, result)
+			}
+		})
 	}
 }
 
 func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_ExposesCurrentDatabaseAndAdditionalOptions(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
 	// Arrange
 	selectedA := tui.DatabaseOption{
 		Name:       "primary",
@@ -573,15 +581,17 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_ExposesCurrentDatabaseAndA
 		}
 		return dbA, nil
 	}
-	closeDatabaseFn = func(db *sql.DB) error {
-		switch db {
-		case dbA:
-			currentClosed = true
-		default:
-			t.Fatalf("unexpected close target %p", db)
-		}
-		return nil
-	}
+	withStartupRuntimeHooks(t, startupRuntimeHookOverrides{
+		closeDatabase: func(db *sql.DB) error {
+			switch db {
+			case dbA:
+				currentClosed = true
+			default:
+				t.Fatalf("unexpected close target %p", db)
+			}
+			return nil
+		},
+	})
 
 	// Act
 	runtimeDeps, err := orchestrator.openRuntimeRunDeps(selectedA)
@@ -618,9 +628,6 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_ExposesCurrentDatabaseAndA
 }
 
 func TestRuntimeStartupOrchestratorRun_RuntimeInitiatedCLIReopenFailureReturnsToSelectorWithTrackedOption(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
 	// Arrange
 	selectedCLI := tui.DatabaseOption{
 		Name:       "/tmp/runtime-cli.sqlite",
@@ -669,9 +676,6 @@ func TestRuntimeStartupOrchestratorRun_RuntimeInitiatedCLIReopenFailureReturnsTo
 }
 
 func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_CloseLogsFailure(t *testing.T) {
-	restore := snapshotStartupRuntimeTestHooks()
-	defer restore()
-
 	// Arrange
 	logged := ""
 	db := &sql.DB{}
@@ -679,15 +683,17 @@ func TestRuntimeStartupOrchestratorOpenRuntimeRunDeps_CloseLogsFailure(t *testin
 	orchestrator.connectDatabaseFn = func(tui.DatabaseOption) (*sql.DB, error) {
 		return db, nil
 	}
-	closeDatabaseFn = func(got *sql.DB) error {
-		if got != db {
-			t.Fatalf("expected close on db %p, got %p", db, got)
-		}
-		return errors.New("close failed")
-	}
-	logPrintfFn = func(format string, args ...any) {
-		logged = fmt.Sprintf(format, args...)
-	}
+	withStartupRuntimeHooks(t, startupRuntimeHookOverrides{
+		closeDatabase: func(got *sql.DB) error {
+			if got != db {
+				t.Fatalf("expected close on db %p, got %p", db, got)
+			}
+			return errors.New("close failed")
+		},
+		logPrintf: func(format string, args ...any) {
+			logged = fmt.Sprintf(format, args...)
+		},
+	})
 
 	// Act
 	runtimeDeps, err := orchestrator.openRuntimeRunDeps(tui.DatabaseOption{
@@ -738,23 +744,5 @@ func TestConnectSelectedDatabase_OpensReachableSQLiteFile(t *testing.T) {
 	}
 	if err := db.Close(); err != nil {
 		t.Fatalf("expected sqlite connection close to succeed, got %v", err)
-	}
-}
-
-func snapshotStartupRuntimeTestHooks() func() {
-	oldDepsFactory := newRuntimeStartupDependenciesFn
-	oldOrchestratorFactory := newRuntimeStartupOrchestratorFn
-	oldSelectDatabase := selectDatabaseWithStateFn
-	oldTUIRun := tuiRunFn
-	oldCloseDatabase := closeDatabaseFn
-	oldLogPrintf := logPrintfFn
-
-	return func() {
-		newRuntimeStartupDependenciesFn = oldDepsFactory
-		newRuntimeStartupOrchestratorFn = oldOrchestratorFactory
-		selectDatabaseWithStateFn = oldSelectDatabase
-		tuiRunFn = oldTUIRun
-		closeDatabaseFn = oldCloseDatabase
-		logPrintfFn = oldLogPrintf
 	}
 }
