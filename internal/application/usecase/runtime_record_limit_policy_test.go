@@ -8,19 +8,20 @@ import (
 )
 
 func TestRuntimeRecordLimitPolicy_Default_ReturnsExpectedLimit(t *testing.T) {
-	// Arrange
+	t.Parallel()
+
 	policy := usecase.NewRuntimeRecordLimitPolicy()
 
-	// Act
 	limit := policy.Default()
 
-	// Assert
 	if limit != 20 {
 		t.Fatalf("expected default record limit 20, got %d", limit)
 	}
 }
 
 func TestRuntimeRecordLimitPolicy_Validate_AcceptsBoundaryValues(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		limit int
@@ -31,13 +32,12 @@ func TestRuntimeRecordLimitPolicy_Validate_AcceptsBoundaryValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
+			t.Parallel()
+
 			policy := usecase.NewRuntimeRecordLimitPolicy()
 
-			// Act
 			err := policy.Validate(tc.limit)
 
-			// Assert
 			if err != nil {
 				t.Fatalf("expected limit %d to be accepted, got error %v", tc.limit, err)
 			}
@@ -46,6 +46,8 @@ func TestRuntimeRecordLimitPolicy_Validate_AcceptsBoundaryValues(t *testing.T) {
 }
 
 func TestRuntimeRecordLimitPolicy_Validate_RejectsOutOfRangeValuesWithDeterministicHint(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		limit int
@@ -57,13 +59,12 @@ func TestRuntimeRecordLimitPolicy_Validate_RejectsOutOfRangeValuesWithDeterminis
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
+			t.Parallel()
+
 			policy := usecase.NewRuntimeRecordLimitPolicy()
 
-			// Act
 			err := policy.Validate(tc.limit)
 
-			// Assert
 			if err == nil {
 				t.Fatalf("expected limit %d to be rejected", tc.limit)
 			}
@@ -75,26 +76,24 @@ func TestRuntimeRecordLimitPolicy_Validate_RejectsOutOfRangeValuesWithDeterminis
 }
 
 func TestRuntimeRecordLimitPolicy_Effective_ReturnsDefaultForUnsetValue(t *testing.T) {
-	// Arrange
+	t.Parallel()
+
 	policy := usecase.NewRuntimeRecordLimitPolicy()
 
-	// Act
 	limit := policy.Effective(0)
 
-	// Assert
 	if limit != 20 {
 		t.Fatalf("expected default effective limit 20, got %d", limit)
 	}
 }
 
 func TestRuntimeRecordLimitPolicy_Effective_ClampsOversizedValue(t *testing.T) {
-	// Arrange
+	t.Parallel()
+
 	policy := usecase.NewRuntimeRecordLimitPolicy()
 
-	// Act
 	limit := policy.Effective(1001)
 
-	// Assert
 	if limit != 1000 {
 		t.Fatalf("expected oversized effective limit to clamp to 1000, got %d", limit)
 	}

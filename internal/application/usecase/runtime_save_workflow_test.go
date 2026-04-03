@@ -8,13 +8,12 @@ import (
 )
 
 func TestRuntimeSaveWorkflow_PlanRequest_ReturnsNoOpStatusWhenSaveOnlyIsClean(t *testing.T) {
-	// Arrange
+	t.Parallel()
+
 	workflow := usecase.NewRuntimeSaveWorkflow()
 
-	// Act
 	decision := workflow.PlanRequest(usecase.RuntimeSaveIntentSaveOnly, false)
 
-	// Assert
 	if decision.StartSave {
 		t.Fatal("expected clean save-only request not to start save")
 	}
@@ -30,13 +29,12 @@ func TestRuntimeSaveWorkflow_PlanRequest_ReturnsNoOpStatusWhenSaveOnlyIsClean(t 
 }
 
 func TestRuntimeSaveWorkflow_PlanRequest_ExitsImmediatelyWhenSaveAndQuitIsClean(t *testing.T) {
-	// Arrange
+	t.Parallel()
+
 	workflow := usecase.NewRuntimeSaveWorkflow()
 
-	// Act
 	decision := workflow.PlanRequest(usecase.RuntimeSaveIntentSaveAndQuit, false)
 
-	// Assert
 	if decision.StartSave {
 		t.Fatal("expected clean save-and-quit request not to start save")
 	}
@@ -52,6 +50,8 @@ func TestRuntimeSaveWorkflow_PlanRequest_ExitsImmediatelyWhenSaveAndQuitIsClean(
 }
 
 func TestRuntimeSaveWorkflow_PlanStart_StartsSaveWithExpectedSuccessActionForEffectiveChanges(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name          string
 		intent        usecase.RuntimeSaveIntent
@@ -69,13 +69,12 @@ func TestRuntimeSaveWorkflow_PlanStart_StartsSaveWithExpectedSuccessActionForEff
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
+			t.Parallel()
+
 			workflow := usecase.NewRuntimeSaveWorkflow()
 
-			// Act
 			decision := workflow.PlanStart(tc.intent, true)
 
-			// Assert
 			if !decision.StartSave {
 				t.Fatal("expected effective changes to start save")
 			}
@@ -93,6 +92,8 @@ func TestRuntimeSaveWorkflow_PlanStart_StartsSaveWithExpectedSuccessActionForEff
 }
 
 func TestRuntimeSaveWorkflow_PlanStart_SkipsContinuationWhenDirtyStateBuildsNoEffectiveChanges(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name           string
 		intent         usecase.RuntimeSaveIntent
@@ -110,13 +111,12 @@ func TestRuntimeSaveWorkflow_PlanStart_SkipsContinuationWhenDirtyStateBuildsNoEf
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
+			t.Parallel()
+
 			workflow := usecase.NewRuntimeSaveWorkflow()
 
-			// Act
 			decision := workflow.PlanStart(tc.intent, false)
 
-			// Assert
 			if decision.StartSave {
 				t.Fatal("expected empty effective changes not to start save")
 			}
@@ -134,13 +134,12 @@ func TestRuntimeSaveWorkflow_PlanStart_SkipsContinuationWhenDirtyStateBuildsNoEf
 }
 
 func TestRuntimeSaveWorkflow_ResolveResult_ReturnsErrorDecisionWhenSaveFails(t *testing.T) {
-	// Arrange
+	t.Parallel()
+
 	workflow := usecase.NewRuntimeSaveWorkflow()
 
-	// Act
 	decision := workflow.ResolveResult(usecase.RuntimeSaveSuccessActionQuitRuntime, 0, errors.New("boom"))
 
-	// Assert
 	if decision.ClearStaging {
 		t.Fatal("expected failed save not to clear staging")
 	}
@@ -156,6 +155,8 @@ func TestRuntimeSaveWorkflow_ResolveResult_ReturnsErrorDecisionWhenSaveFails(t *
 }
 
 func TestRuntimeSaveWorkflow_ResolveResult_ReturnsAdapterActionForSuccessfulSave(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name           string
 		successAction  usecase.RuntimeSaveSuccessAction
@@ -176,13 +177,12 @@ func TestRuntimeSaveWorkflow_ResolveResult_ReturnsAdapterActionForSuccessfulSave
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// Arrange
+			t.Parallel()
+
 			workflow := usecase.NewRuntimeSaveWorkflow()
 
-			// Act
 			decision := workflow.ResolveResult(tc.successAction, 3, nil)
 
-			// Assert
 			if !decision.ClearStaging {
 				t.Fatal("expected successful save to clear staging")
 			}

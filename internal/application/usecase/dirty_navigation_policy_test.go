@@ -1,167 +1,155 @@
 package usecase_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/mgierok/dbc/internal/application/usecase"
 )
 
-func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
-	// Arrange
+func TestDirtyNavigationPolicy_BuildPrompt_ReturnsExpectedCopyAndOptions(t *testing.T) {
+	t.Parallel()
+
 	policy := usecase.NewDirtyNavigationPolicy()
 
-	// Act
-	prompt := policy.BuildTableSwitchPrompt(3)
+	tests := []struct {
+		name     string
+		build    func() usecase.DirtyDecisionPrompt
+		expected usecase.DirtyDecisionPrompt
+	}{
+		{
+			name:  "table switch",
+			build: func() usecase.DirtyDecisionPrompt { return policy.BuildTableSwitchPrompt(3) },
+			expected: usecase.DirtyDecisionPrompt{
+				Title:   "Switch Table",
+				Message: "Switching tables will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data?",
+				Options: []usecase.DirtyDecisionOption{
+					{ID: usecase.DirtyDecisionDiscard, Label: "Discard changes and switch table"},
+					{ID: usecase.DirtyDecisionCancel, Label: "Continue editing"},
+				},
+			},
+		},
+		{
+			name:  "config",
+			build: func() usecase.DirtyDecisionPrompt { return policy.BuildConfigPrompt() },
+			expected: usecase.DirtyDecisionPrompt{
+				Title:   "Config",
+				Message: "Unsaved changes detected. Choose save, discard, or cancel.",
+				Options: []usecase.DirtyDecisionOption{
+					{ID: usecase.DirtyDecisionSave, Label: "Save and open config"},
+					{ID: usecase.DirtyDecisionDiscard, Label: "Discard and open config"},
+					{ID: usecase.DirtyDecisionCancel, Label: "Cancel"},
+				},
+			},
+		},
+		{
+			name:  "database reload",
+			build: func() usecase.DirtyDecisionPrompt { return policy.BuildDatabaseReloadPrompt(3) },
+			expected: usecase.DirtyDecisionPrompt{
+				Title:   "Reload Database",
+				Message: "Reloading the current database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel.",
+				Options: []usecase.DirtyDecisionOption{
+					{ID: usecase.DirtyDecisionSave, Label: "Save and reload database"},
+					{ID: usecase.DirtyDecisionDiscard, Label: "Discard changes and reload database"},
+					{ID: usecase.DirtyDecisionCancel, Label: "Cancel"},
+				},
+			},
+		},
+		{
+			name:  "database open",
+			build: func() usecase.DirtyDecisionPrompt { return policy.BuildDatabaseOpenPrompt(3) },
+			expected: usecase.DirtyDecisionPrompt{
+				Title:   "Open Database",
+				Message: "Opening another database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel.",
+				Options: []usecase.DirtyDecisionOption{
+					{ID: usecase.DirtyDecisionSave, Label: "Save and open database"},
+					{ID: usecase.DirtyDecisionDiscard, Label: "Discard changes and open database"},
+					{ID: usecase.DirtyDecisionCancel, Label: "Cancel"},
+				},
+			},
+		},
+		{
+			name:  "quit",
+			build: func() usecase.DirtyDecisionPrompt { return policy.BuildQuitPrompt(3) },
+			expected: usecase.DirtyDecisionPrompt{
+				Title:   "Quit",
+				Message: "Quitting will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data and quit?",
+				Options: []usecase.DirtyDecisionOption{
+					{ID: usecase.DirtyDecisionDiscard, Label: "Discard changes and quit"},
+					{ID: usecase.DirtyDecisionCancel, Label: "Continue editing"},
+				},
+			},
+		},
+	}
 
-	// Assert
-	if prompt.Title != "Switch Table" {
-		t.Fatalf("expected title Switch Table, got %q", prompt.Title)
-	}
-	expectedMessage := "Switching tables will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data?"
-	if prompt.Message != expectedMessage {
-		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
-	}
-	if len(prompt.Options) != 2 {
-		t.Fatalf("expected 2 options, got %d", len(prompt.Options))
-	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "Discard changes and switch table" {
-		t.Fatalf("unexpected first option: %#v", prompt.Options[0])
-	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "Continue editing" {
-		t.Fatalf("unexpected second option: %#v", prompt.Options[1])
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			prompt := tc.build()
+
+			assertDirtyDecisionPrompt(t, prompt, tc.expected)
+		})
 	}
 }
 
-func TestDirtyNavigationPolicy_BuildTableSwitchPrompt_ClampsNegativeCountToZero(t *testing.T) {
-	// Arrange
+func TestDirtyNavigationPolicy_BuildPrompt_ClampsNegativeCountToZero(t *testing.T) {
+	t.Parallel()
+
 	policy := usecase.NewDirtyNavigationPolicy()
 
-	// Act
-	prompt := policy.BuildTableSwitchPrompt(-5)
+	tests := []struct {
+		name            string
+		build           func() usecase.DirtyDecisionPrompt
+		expectedMessage string
+	}{
+		{
+			name:            "table switch",
+			build:           func() usecase.DirtyDecisionPrompt { return policy.BuildTableSwitchPrompt(-5) },
+			expectedMessage: "Switching tables will cause loss of unsaved data (0 rows). Are you sure you want to discard unsaved data?",
+		},
+		{
+			name:            "database reload",
+			build:           func() usecase.DirtyDecisionPrompt { return policy.BuildDatabaseReloadPrompt(-5) },
+			expectedMessage: "Reloading the current database will cause loss of unsaved data (0 rows) unless you save first. Choose save, discard, or cancel.",
+		},
+		{
+			name:            "database open",
+			build:           func() usecase.DirtyDecisionPrompt { return policy.BuildDatabaseOpenPrompt(-5) },
+			expectedMessage: "Opening another database will cause loss of unsaved data (0 rows) unless you save first. Choose save, discard, or cancel.",
+		},
+		{
+			name:            "quit",
+			build:           func() usecase.DirtyDecisionPrompt { return policy.BuildQuitPrompt(-5) },
+			expectedMessage: "Quitting will cause loss of unsaved data (0 rows). Are you sure you want to discard unsaved data and quit?",
+		},
+	}
 
-	// Assert
-	expectedMessage := "Switching tables will cause loss of unsaved data (0 rows). Are you sure you want to discard unsaved data?"
-	if prompt.Message != expectedMessage {
-		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			prompt := tc.build()
+
+			if prompt.Message != tc.expectedMessage {
+				t.Fatalf("expected message %q, got %q", tc.expectedMessage, prompt.Message)
+			}
+		})
 	}
 }
 
-func TestDirtyNavigationPolicy_BuildConfigPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
-	// Arrange
-	policy := usecase.NewDirtyNavigationPolicy()
+func assertDirtyDecisionPrompt(t *testing.T, actual, expected usecase.DirtyDecisionPrompt) {
+	t.Helper()
 
-	// Act
-	prompt := policy.BuildConfigPrompt()
-
-	// Assert
-	if prompt.Title != "Config" {
-		t.Fatalf("expected title Config, got %q", prompt.Title)
+	if actual.Title != expected.Title {
+		t.Fatalf("expected title %q, got %q", expected.Title, actual.Title)
 	}
-	if prompt.Message != "Unsaved changes detected. Choose save, discard, or cancel." {
-		t.Fatalf("unexpected message: %q", prompt.Message)
+	if actual.Message != expected.Message {
+		t.Fatalf("expected message %q, got %q", expected.Message, actual.Message)
 	}
-	if len(prompt.Options) != 3 {
-		t.Fatalf("expected 3 options, got %d", len(prompt.Options))
-	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionSave || prompt.Options[0].Label != "Save and open config" {
-		t.Fatalf("unexpected save option: %#v", prompt.Options[0])
-	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionDiscard || prompt.Options[1].Label != "Discard and open config" {
-		t.Fatalf("unexpected discard option: %#v", prompt.Options[1])
-	}
-	if prompt.Options[2].ID != usecase.DirtyDecisionCancel || prompt.Options[2].Label != "Cancel" {
-		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
-	}
-}
-
-func TestDirtyNavigationPolicy_BuildDatabaseReloadPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
-	policy := usecase.NewDirtyNavigationPolicy()
-
-	prompt := policy.BuildDatabaseReloadPrompt(3)
-
-	if prompt.Title != "Reload Database" {
-		t.Fatalf("expected title Reload Database, got %q", prompt.Title)
-	}
-	expectedMessage := "Reloading the current database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel."
-	if prompt.Message != expectedMessage {
-		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
-	}
-	if len(prompt.Options) != 3 {
-		t.Fatalf("expected 3 options, got %d", len(prompt.Options))
-	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionSave || prompt.Options[0].Label != "Save and reload database" {
-		t.Fatalf("unexpected save option: %#v", prompt.Options[0])
-	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionDiscard || prompt.Options[1].Label != "Discard changes and reload database" {
-		t.Fatalf("unexpected discard option: %#v", prompt.Options[1])
-	}
-	if prompt.Options[2].ID != usecase.DirtyDecisionCancel || prompt.Options[2].Label != "Cancel" {
-		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
-	}
-}
-
-func TestDirtyNavigationPolicy_BuildDatabaseOpenPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
-	policy := usecase.NewDirtyNavigationPolicy()
-
-	prompt := policy.BuildDatabaseOpenPrompt(3)
-
-	if prompt.Title != "Open Database" {
-		t.Fatalf("expected title Open Database, got %q", prompt.Title)
-	}
-	expectedMessage := "Opening another database will cause loss of unsaved data (3 rows) unless you save first. Choose save, discard, or cancel."
-	if prompt.Message != expectedMessage {
-		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
-	}
-	if len(prompt.Options) != 3 {
-		t.Fatalf("expected 3 options, got %d", len(prompt.Options))
-	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionSave || prompt.Options[0].Label != "Save and open database" {
-		t.Fatalf("unexpected save option: %#v", prompt.Options[0])
-	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionDiscard || prompt.Options[1].Label != "Discard changes and open database" {
-		t.Fatalf("unexpected discard option: %#v", prompt.Options[1])
-	}
-	if prompt.Options[2].ID != usecase.DirtyDecisionCancel || prompt.Options[2].Label != "Cancel" {
-		t.Fatalf("unexpected cancel option: %#v", prompt.Options[2])
-	}
-}
-
-func TestDirtyNavigationPolicy_BuildQuitPrompt_UsesExpectedCopyAndOptions(t *testing.T) {
-	// Arrange
-	policy := usecase.NewDirtyNavigationPolicy()
-
-	// Act
-	prompt := policy.BuildQuitPrompt(3)
-
-	// Assert
-	if prompt.Title != "Quit" {
-		t.Fatalf("expected title Quit, got %q", prompt.Title)
-	}
-	expectedMessage := "Quitting will cause loss of unsaved data (3 rows). Are you sure you want to discard unsaved data and quit?"
-	if prompt.Message != expectedMessage {
-		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
-	}
-	if len(prompt.Options) != 2 {
-		t.Fatalf("expected 2 options, got %d", len(prompt.Options))
-	}
-	if prompt.Options[0].ID != usecase.DirtyDecisionDiscard || prompt.Options[0].Label != "Discard changes and quit" {
-		t.Fatalf("unexpected first option: %#v", prompt.Options[0])
-	}
-	if prompt.Options[1].ID != usecase.DirtyDecisionCancel || prompt.Options[1].Label != "Continue editing" {
-		t.Fatalf("unexpected second option: %#v", prompt.Options[1])
-	}
-}
-
-func TestDirtyNavigationPolicy_BuildQuitPrompt_ClampsNegativeCountToZero(t *testing.T) {
-	// Arrange
-	policy := usecase.NewDirtyNavigationPolicy()
-
-	// Act
-	prompt := policy.BuildQuitPrompt(-5)
-
-	// Assert
-	expectedMessage := "Quitting will cause loss of unsaved data (0 rows). Are you sure you want to discard unsaved data and quit?"
-	if prompt.Message != expectedMessage {
-		t.Fatalf("expected message %q, got %q", expectedMessage, prompt.Message)
+	if !reflect.DeepEqual(actual.Options, expected.Options) {
+		t.Fatalf("expected options %#v, got %#v", expected.Options, actual.Options)
 	}
 }
